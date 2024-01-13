@@ -1,0 +1,313 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/informal-poll-disable-the-emergency-shutdown-module/16292",
+            "title": "[Informal poll] Disable the Emergency Shutdown Module ",
+            "index": 16292,
+            "category": [
+                "Governance",
+                "Proposal Ideas"
+            ],
+            "tags": [
+                "esm"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#1",
+                    "likes": "8",
+                    "time": "03/07/2022-09:46:54",
+                    "content": " Setting the Emergency Shutdown Module (ESM) Threshold In this post, we investigate how to set the ESM threshold value and the tradeoffs that should be taken into account.  How does the ESM work? The Emergency Shutdown Module exists to allow a minority of MKR holders to shut down the protocol by depositing their MKR into the ESM. MKR deposited into the ESM is immediately burned. If the amount of MKR deposited into the ESM exceeds the ESM Threshold, emergency shutdown is activated. Note that delegates cannot deposit MKR delegated to them into the ESM - it must be done by the MKR token owners. More details about the emergency shutdown process can be found here. The current ESM threshold is 150,000 MKR.  Mode of attack considered The ability to shutdown the Maker protocol this way represents a possible attack vector. The attack considered here is the \u201cshorting attack\u201d. The goal of the attacker in this scenario is to open a short on MKR, trigger the ESM and then close the short when the price of MKR drops. The ESM threshold should be such that this attack is unprofitable.  Trade-offs Since the ESM threshold determines the fixed cost of the shorting attack, setting it to be too low could result in any entity with access to sufficient funds being able to profit by triggering the ESM. Setting the ESM threshold to be too high could result in it being unusable in a genuine emergency. In this post, this possibility is not considered since it is currently unclear what circumstances merit a genuine deployment of the ESM. More on this towards the end of the post.  Assumptions  Methodology (Critical)   The total amount of MKR that can be borrowed by the attacker is limited by the total amount MKR available on Compound, Aave and centralized exchanges. An additional safety factor is incorporated since MKR can be resupplied on these platforms after the attacker borrows all available MKR.   Leveraged shorts are equivalent to non-leveraged shorts since the attack is constrained by the total amount of MKR available to borrow.   Synthetic options to short MKR on DeFi such as on Synthetix, dydx, gains.trade, etc. are not significant in volume.   The attacker\u2019s total profit is bounded by the total MKR that can be borrowed multiplied by the price drop suffered by MKR due to the attack i.e. there are no other correlated assets such as ETH or DAI to short.    Methodology (Non-critical) These assumptions benefit the attacker. If they turn out to be false, the attacker\u2019s profits only decrease.   The attacker performs the shorting attack and incurs no slippage to procure the MKR required to trigger the ESM.   MKR is freely available after the ESM has been triggered, allowing the attacker to close the short without slippage.   The cost of borrowing MKR (i.e. interest paid) to execute this attack is negligible.   All the MKR deposited on Compound is available to borrow. In reality, Compound Governance has restricted MKR available to borrow to a maximum of 5000 MKR through proposal 97 - however, we do not take this into account.   The attacker has sufficient collateral to borrow the MKR required for this attack.    Input values To estimate the profitability of the attack, we must know how much MKR there is available to borrow (maximum short volume) and how much the price of MKR might drop after the ESM is triggered. These two inputs (points 2. and 4.) are taken from recommendations of the Risk CU. The MKR available on lending platforms and CEXes (point 3.) is taken from the MKR analysis carried out by the Data Insights CU.   Price of MKR before attack = 1500 USD   Lowest price of MKR during attack = 75 USD   MKR Available on lending platforms and CEXes = 110,000 MKR   Safety factor for MKR availability = 1 This assumes that MKR holders could resupply lending platforms after the attacker drains them in order to exploit rising interest rates. If the total MKR on CEXes and lending platforms is x and the safety factor is s, we assume there will be s*x MKR available to borrow over the course of the attack.   ESM Threshold = 150,000 MKR    Calculations The initial cost for the attacker is to deposit 150,000 MKR into the ESM module. The cost of this is 225,000,000 USD. The attacker is able to borrow at most 110,000 x 1 = 110,000 MKR. Collateral required for this is 165,000,000 USD. Thus, the capital requirements to pull off such an attack is estimated to be 390,000,000 USD. After opening a short, the attacker closes the short as MKR hits a price low. The profits from the short is 110,000 x 1 x (1500 - 75) = 156,750,000 USD. The net profit from the attack is -68,250,000 USD. Alternative input values can be entered into this spreadsheet to repeat the above calculation.  Is the ESM too high? The situation(s) when the ESM should be legitimately triggered remains unclear. Commonly cited scenarios are when there is a critical protocol bug or if governance is malicious. If MKR holders became aware of such a scenario, it is likely to be more profitable to sell their MKR than to burn it by depositing it into the ESM. For this reason, it is also unclear what negative consequences we may face if the ESM threshold is set too high (or in the extreme case, if the ESM is disabled). The analysis is here is relatively simplistic. More realistic models of a shorting attack are likely to result in a lower safe ESM threshold. However, since the tradeoff of setting the ESM too high is not clear, such a refined analysis may not be necessary.  Comments on parameter assumptions made Thanks to @monet_supply for this analysis.   MKR price drop: Assumptions between 50-95% seem reasonable. Given relatively low MKR liquidity, even a small share of price insensitive selling during a crisis could reduce price significantly. See below for example (collected as of June 7 2022) of a trade through 1inch. Selling as little as 10,000 MKR could cause 50% price decline based on DEX liquidity. Similar illiquidity exists on CEX markets, eg Binance spot MKRUSDT market has only ~500 MKR in bids down to 50% decline from current price.  936\u00d7862 127 KB  On the other hand, high volatility tends to increase leveraged trading activity (as seen in Terra collapse), with short covering and squeezes providing price support that prevents an immediate collapse to 0. This is the reasoning behind 95% upper bound in price decline after emergency shutdown. Influences on potential drawdown include degree of continued support from large investors, solvency position of the protocol at time of shutdown (DAI holders facing significant losses is negative for MKR price due to lower user trust and/or greater compensation costs), and collateral damage inflicted on other DeFi or CeFi organizations. Greater collateral damage is negative for MKR price due to lower future integration potential and brand value. Coordination and advanced planning should help improve outcomes and market confidence in the event of an ESM attack, and better market confidence should increase an attacker\u2019s cost of repurchasing borrowed MKR.   MKR supply safety factor: We can gather some empirical evidence of this from recent borrowing activity on DeFi lending protocols. It seems that there is very little supply elasticity with respect to deposit rate changes, and in fact there may be a negative relationship between deposit rate and supply due to user fears of governance or ESM attacks. For the purposes of this analysis, it seems reasonable to assume no net increase in borrowable MKR liquidity due to increasing deposit rates. Some users may deposit funds to earn yield but others may remove liquidity to reduce attack risk.  900\u00d7558 63.2 KB     Comments on the model   Financial incentives are not the only incentives that may be in play when the protocol is attacked. For instance, actors backed by nation states may be able to trigger the ESM without worry about the financial cost of doing so. How to protect the protocol against such attacks is unclear. A relevant thread on the Maker Forum discussing this is here. In general, disabling the ESM entirely may be prudent if such attacks are of concern.   The protocol can be restarted after the ESM is triggered. Hence, an attacker who triggers the ESM in a shorting attack does not spell the end of the Maker protocol. Moreover, since the MKR deposited to trigger the ESM is immediately burned and it represents over 15% of MKR supply, the effect of such an action may even cause the price of MKR to rise, thereby blunting the shorting attack.   The attacker may consider shorting DAI, ETH or other tokens with the expectation that problems with Maker could have wider repercussions across the crypto markets. There may be market volatility which can be profitable. Finally, Maker\u2019s competitors may see an increase in usage and tokens associated with those protocols may go up in value. However, it is worth noting that vault owners will not lose any of their collateral and DAI will remain backed by all the collateral held by the protocol. Over a short period, DAI is likely to remain approximately pegged to USD since it remains backed. While the shorting attack inconveniences DAI holders, users and vault owners, the ESM is specifically designed to allow it to be triggered without causing losses to any of these parties or creating race conditions among them and causing market turmoil. Nevertheless, these possibilities should be considered in a more refined analysis.   The current ESM threshold of 150,000 MKR requires 9 unique individual wallets to collude (more details on the spreadsheet). While some of top 9 individual wallets may be owned by the same entity, it is unlikely that any single individual has the power to trigger the ESM.   Fire drills for the ESM have been suggested as a possibility to ensure that the ESM can be triggered by MKR holders when needed. However, if MKR holders were made aware of a critical bug, it is likely to be more profitable for them to simply sell their MKR and rebuy later than to deposit their MKR into the ESM. While fire drills help, they do not capture this aspect of a real emergency where financial incentives are not the same.    Conclusion The current ESM threshold of 150,000 MKR is sufficiently large as of the date of this post to deter a shorting attack. A good rule of thumb is to ensure that the ESM threshold significantly exceeds the total amount of MKR available to borrow on lending platforms and centralized exchanges. Given the lack of clarity around when the ESM should legitimately be triggered and given that in such a situation, MKR holders are financially incentivized to sell their tokens than deposit them in the ESM, it is worth considering whether the community wants to simply disable the ESM altogether. This can be done with no technical difficulty by increasing the ESM Threshold to some sufficiently large number beyond the total current supply of MKR. Note also that disabling the ESM means that if the protocol is to be shut down, it would need to be done via an Executive Vote. This would be subject to the GSM Pause Delay that is currently 48 hours.  Acknowledgements Many thanks to @LongForWisdom , @Patrick_J, @data-insights-cu  and  @Risk-Core-Unit  for various comments and feedback. The dataset of MKR holders used here was created by @data-insights-cu. Tagging @Protocol-Engineering @Risk-Core-Unit and @Recognized-Delegates for further inputs. If the community is in favour of this proposal, this will move to a signal request.    Disable the Emergency Shutdown Module  Yes, disable the ESM No, retain the ESM (no change) Abstain     0 voters     ",
+                    "links": [
+                        "https://docs.google.com/spreadsheets/d/15UEqcu0qaBoP-B-KNsPU9xOU_S1f1kllnAGkWPGC69I/edit?usp=sharing",
+                        "https://forum.makerdao.com/t/risk-what-if-a-powerful-intelligence-agency-attacked-the-emergency-shutdown/7525/1",
+                        "https://docs.google.com/spreadsheets/d/15UEqcu0qaBoP-B-KNsPU9xOU_S1f1kllnAGkWPGC69I/edit#gid=0",
+                        "https://makerdao.world/en/learn/governance/param-gsm-pause-delay/",
+                        "https://forum.makerdao.com/t/sourcecred-bi-weekly-happenings-10/16685",
+                        "https://forum.makerdao.com/t/governance-and-risk-198-thursday-july-07-at-17-00-utc/16370/3",
+                        "https://forum.makerdao.com/t/weekly-forum-recap/16247/4",
+                        "https://forum.makerdao.com/t/sourcecred-acontecimientos-bi-semanales-10-traduccion/16689",
+                        "https://forum.makerdao.com/t/immunefi-security-cu-update-for-july/16987"
+                    ],
+                    "GPT-summary": "The post discusses the Emergency Shutdown Module (ESM) of the Maker protocol and how to set the ESM threshold value to prevent a shorting attack. The author explains the tradeoffs involved in setting the threshold and the assumptions made in the analysis. The post also suggests disabling the ESM altogether due to the lack of clarity around when it should be triggered and the financial incentives for MKR holders to sell their tokens instead of depositing them in the ESM. The post invites feedback and input from various units and recognized delegates.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.4009219348659
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Doo_StableLab",
+                    "index": "#2",
+                    "likes": "3",
+                    "time": "03/07/2022-10:35:02",
+                    "content": "While I understand the reason ESM was there, I also had a question about whether it\u2019s just another attack vector (because ESM might be triggered due to bug and the attacker in theory might be able to ruin Maker without the intended cost). In addition, in reality, if a significant number of contributors and MKR holders disagree with the protocol (such in theory, corrupted system or malicious actors), then they can fork the protocol and restart instead of burning millions in MKR, which seems much more likely. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.041666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/makercaesar",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "03/07/2022-10:45:02",
+                    "content": "The ESM treshold has been steadily increased because looking at how much MKR you can borrow to perform an attack, wouldn\u2019t it be logical since we are minus 85% off the price to keep increasing the ESM treshold, because the cost of the attack has also gone down with it. I am talking here about a treshold of minimum of 300.000 MKR. I wonder why you still need the ESM and why you don\u2019t shut it down completely. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.218253968253968
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Dairyman",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "03/07/2022-10:48:36",
+                    "content": "    makercaesar:  I am talking here about a treshold of minimum of 300.000 MKR   If you have that much MKR, can\u2019t you block a malicious proposal? There wasn\u2019t even that much MKR voting last week ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Moi",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "03/07/2022-13:17:56",
+                    "content": "I agree with you, in that (catastrophic) case that they manage to activate the ESM, the protocol fork is much more feasible for attackers, but that would make us a case where those faithful to the protocol choose some of the protocol before activation and everything will continue as before , something similar to ETH and ETH Classic, the most logical thing besides eliminating the ESM could be to have a threshold parameter depending on the price of Maker, which is configured depending on what the best connoisseurs of the protocol think, instead of being algorithmic , you know, the algorithm is much easier to manipulate, although all this happens as long as the attacker or the group of attackers is willing to spend a lot of money, and in that case, the community can fork the protocol and problem solved, in conclusion a changing threshold parameter is placed every time the price of Maker goes down or up or the ESM is completely removed ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.255050505050505
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#6",
+                    "likes": "10",
+                    "time": "03/07/2022-15:16:17",
+                    "content": "Strongly against disabling the ESM. We have 8.6b USD worth of assets that could be stolen by a malicious spell. Taking the hat is maybe around 100-150k MKR worth ~100m USD. In theory a cohort of individuals could issue themselves collateral to the tune of ~$70k USD per MKR. This is a massive incentive especially with the price of MKR so low. This does not even have to be well-known individuals, but instead a smart contract which anonymously pays out stakers (see TakerDAO). If you are choosing between losing everything and shutting the system down, you will pick shutting the system down. The ESM provides a guarantee to DAI holders that even in this scenario they will still be able redeem DAI for $1 of collateral. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.718253968253968
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#7",
+                    "likes": "6",
+                    "time": "03/07/2022-15:32:43",
+                    "content": "Sighs, Abstain. My points AGAIN for what they are worth. This issue has already been brought up REPEATEDLY over the past 4 years and isn\u2019t new. More than 2 years ago a working group was formed with the goal of producing a report for MakerDAO regarding the following issues:  Implications of performing an ESM not just on Maker, but vault users, and DAI holders as well as DeFI in a larger sense. Analysis of the pros and cons of both required MKR to activate the ESM, and/or whether to just shut off the ESM Goals of the ESM (exactly what are we trying to protect) and whether these goals could be achieved in other ways than ESM.  The above analysis in the post is focused exclusively on MKR and the profitability of doing a MKR short attack and ignores the following key market elements. Maker PSM would effectively be locked which means the DAI PEG is going to float (presumably with backing collateral value - which is now 82% dominated by stables). Point here is that once the ESM is activated if someone has also accumulated enough DAI as well as a leveraged DAI short position they could profit not just from MKR falling in price but also from DAI losing the PEG, and if well heeled could drive the DAI PEG however they want up or down. All base collateral is locked in the system, excess capital would be freed (unclear to me when this happens and also unclear to me whether the PSMs would actually lock as well - my assumption is this all happens when ESM is triggered but don\u2019t have formal confirmation from PECU). ESM on Maker would be a market shock and while MKR price would be directly affected the reality is the chaos in markets if DAI loses the $1 price PEG is more significant than MKR losing its market cap. Fortunately with > 80% stables backing DAI this means while the PEG will fluctuate the price can only fall or rise so far (at least from a backing capital valuation - in this sense the large stables PSMs backing DAI actually help moderate DAI PEG as compared to DAI being exclusively backed by volatile collateral) The chaos from DAI losing it\u2019s PEG, excess collateral being locked and for all paying collateral to redeem for over 80% stables means this is a collateral to stable conversion event. In the past I saw this as a collateral for cash exchange event, now it is mostly a USDC for DAI conversion event - so this is moderated - until Maker decides to push off USDC into bonds or some other real world assets - then this means a cash lockup until RWA pays back their loans. The above illustrates that in the analysis you and monet have presented that MakerDAO still lacks a full report on:  What happens when ESM is triggered on all vaults including PSM. All of the possible profit modes and effects - particularly on DAI not just MKR Projected possible implications on the entire DeFI complex. What happens as MakerDAO collateral profile changes (like if significant RWA is added) Cycling time of capital Loss not just of Market cap but of revenues to Maker. Loss of reputation and the PR nightmare that would be created (and hence loss of current and future business). Where is the analysis of the scenarios the ESM would even be used, and whether it would be successful at mitigating the issue Whether the ESM could even be activated with 150K MKR (not one single fire alarm type test has been put forward on this specific case) Are there other ways to achieve the goals for (8) that don\u2019t involve ESM? Other stuff I have not even thought of.  So before deciding to just kill the ESM perhaps a small as possible expert working group should be formed to answer the above questions, produce a report with recommendations to the DAO before deciding whether/how to change the ESM threshold, or to deactivate it all together. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.2962577255030086
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#8",
+                    "likes": "3",
+                    "time": "03/07/2022-15:42:24",
+                    "content": "What if the total value locked (TVL) by the protocol was 100x higher or the MKR price was 100x lower? As TVL goes up and MKR market cap goes down it becomes more economically rational to try to attack the protocol and confiscate the TVL for MKR attackers. In this scenario, protocol security relies on a subset of MKR holders that are either altruistic or stand ready to trigger the ESM and relaunch the protocol with the attackers\u2019 MKR burnt. If there is no ESM then we only rely on altruism. Addendum: The attack to worry about is not leveraging shorting MKR or an Oracle attack or moving the DAI peg away from USD. The simplest way to attack the protocol is to confiscate the assets locked in vaults. PS. The ESM is similar to how the Ethereum proof-of-stake chain is secured against attacks. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.684027777777779
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#9",
+                    "likes": "2",
+                    "time": "03/07/2022-15:50:46",
+                    "content": "Yes exactly. Steal-all-collateral attack requires coordination of only around 15% or so of the supply (maybe more if we can rally a blocker in the 2 days). A major deterrent to this is that any other 15% can stop this attack and probably destroy the price of their MKR in the process. There is enough well-known entities to rally 15% imo. It\u2019s not so much about whether you can rally 15% it\u2019s more that there is a plausible chance this can happen. Enough to make attackers guess twice about committing resources to this attack. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.767045454545454
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#10",
+                    "likes": "2",
+                    "time": "03/07/2022-15:55:03",
+                    "content": "It has been pointed out that at some point it is just easier to execute a governance attack directly. Deposit enough MKR in governance to get control of hat, write a spell, move hat to spell.   The GSM here is meant to thwart this kind of governance attack and presumably Maker Operations monitors for this kind of activity. Even so if you have enough of the free MKR available to defeat a proposal against all the other MKR that can muster you effectively have enough MKR to execute a more normal governance attack via the HAT. This should be factored into this whole ESM issue.  People seem to think that just raising the ESM threshold in $$ terms somehow helps here when in fact all one is doing is changing the threshold so that if the ESM were required (and I can assure you there would be cases the ESM today couldn\u2019t be activated fast enough if there was a problem) MKR holders wouldn\u2019t be able to activate it, much less do it in a timely fashion. Also ignored is the issue someone could just borrow a large chunk of MKR to execute any number of malicious activities including changing votes, or even halting or passing a particular executive.  One issue still undiscussed in detail is whether MKR should be allowed (in 1 or 2 blocks) to enter and exit the system it is controlling. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.1419172932330826
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#11",
+                    "likes": "2",
+                    "time": "03/07/2022-16:07:43",
+                    "content": "    MakerMan:  It has been pointed out that at some point it is just easier to execute a governance attack directly.   I\u2019m not sure that you (@MakerMan) understood the scenario that I was describing. Suppose we disable the ESM. My point is that it is economically rational to attack the protocol when TVL is much larger than the MKR market cap. The attackers could be us, all the Core Unit members and VCs and smaller MKR holders. Why not? Nobody else is watching the protocol carefully enough to notice. The malicious executive will pass because nobody here will raise the alarm.     hexonaut:  In theory a cohort of individuals could issue themselves collateral to the tune of ~$70k USD per MKR.   And that\u2019s the situation now. What if the potential USD per MKR was 100x? So my point is that we need the ESM because it provides another way to economically incentivize MKR holders to defend the protocol. Instead of a huge payday by attacking the protocol and confiscating the collateral, attackers would have to contend with some subset of MKR holders activating the ESM. If the ESM was activated against an attack then the collateral could not be confiscated and the attackers\u2019 MKR could be burnt. Burning that much MKR is certain to increase the price of MKR substantially. That\u2019s the economic incentive made available by keeping the ESM available for use. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.808673469387755
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#12",
+                    "likes": "2",
+                    "time": "03/07/2022-16:09:40",
+                    "content": "I am arguing for keeping the ESM same as you. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "03/07/2022-18:11:40",
+                    "content": "    hexonaut:  In theory a cohort of individuals could issue themselves collateral to the tune of ~$70k USD per MKR. If you are choosing between losing everything and shutting the system down, you will pick shutting the system down   Thanks for this post! I\u2019d like to take this line of thought further to determine exactly when the ESM is going to be used legitimately to defend the protocol. Presumably when such a malicious spell gains significant malicious MKR support and passes an executive vote, the first fight will be to disable it by cancelling the executive in the GSM Pause Delay period. This defence fails and now the good guys have the choice of A. Shutting down the protocol by triggering the ESM, which burns their MKR or B. Selling their MKR tokens for whatever residual value it has and moving on It\u2019s unclear why a given MKR holder is financially incentivized to pick option A over B. Why would they want to be the ones to make the financial sacrifice to defend DAI holders? I agree that we can probably rally 15% of the supply but can they realistically be expected to make a decision to burn their MKR in such a short timeframe?     psychonaut:  The attackers could be us, all the Core Unit members and VCs and smaller MKR holders. . . . In this scenario, protocol security relies on a subset of MKR holders that are either altruistic or stand ready to trigger the ESM and relaunch the protocol with the attackers\u2019 MKR burnt.   @psychonaut, the attackers\u2019 MKR is not burned though. It is the defenders\u2019 MKR that gets deposited into the ESM and burned. In the scenario you describe where the CUs, VCs, etc. turn malicious, those who trigger the ESM don\u2019t really have a guarantee that the protocol will relaunch (who\u2019s gonna relaunch it anyway?) and that they will be rewarded for defending DAI. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3048245614035086
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#14",
+                    "likes": "2",
+                    "time": "03/07/2022-18:43:54",
+                    "content": "    AstronautThis:  A. Shutting down the protocol by triggering the ESM, which burns their MKR or B. Selling their MKR tokens for whatever residual value it has and moving on It\u2019s unclear why a given MKR holder is financially incentivized to pick option A over B. Why would they want to be the ones to make the financial sacrifice to defend DAI holders? I agree that we can probably rally 15% of the supply but can they realistically be expected to make a decision to burn their MKR in such a short timeframe?   Selling 150k worth of MKR is not an option as that is a huge amount into an illiquid market. The incentive is to burn your MKR here because then at least you stand a chance of being made whole when the system reboots. The other piece here is uncertainty. While it does seem like there aren\u2019t many incentives to burn your MKR, can you say with certainty that this will not happen? Maybe this chance is small (I don\u2019t think so), but it\u2019s still there to deter anyone from putting millions on the line in an attack scenario. If we remove the ESM then the attacker has 100% certainty if they can rally enough MKR they will get the collateral. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.167658730158731
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#15",
+                    "likes": "3",
+                    "time": "03/07/2022-19:29:11",
+                    "content": "    AstronautThis:  In the scenario you describe where the CUs, VCs, etc. turn malicious, those who trigger the ESM don\u2019t really have a guarantee that the protocol will relaunch (who\u2019s gonna relaunch it anyway?) and that they will be rewarded for defending DAI.   You are conflating two scenarios that I intended to present as disjoint alternatives. Let me try again.  No ESM CUs, VCs, etc. turn malicious and confiscate all value locked in the protocol. Who cares whether the system is re-launched; we all retire.  ESM (status quo) We don\u2019t have to rely on altruism alone to prevent CUs, VCs, etc. from turning malicious because the ESM is another way to benefit economically from a protocol attack. CUs, VCs, etc will not attack the protocol. If some rogue group of MKR holders attack (e.g. led by @Piratical ) then the CUs & VCs have a credible defense in that they can trigger the ESM and re-launch the protocol with a new MKR distribution that re-issues the MKR burnt in triggering ESM and burns the MKR used to launch the attack. The new MKR distribution promises massive profits for honest, altruistic actors. However, this re-launch is not guaranteed to succeed; CUs and VCs will need to exert some effort politically to ensure that there is an orderly transition to the new system. Hm, another thing to check is how RWAs will be handled in this situation. Will RWAs migrate to the new instance of the protocol? Are smart contract addresses hardcoded into legal agreements? Can these addressed be updated in the rare event that we need to change all the addressed over to a re-launched protocol? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.985621521335807
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#16",
+                    "likes": "1",
+                    "time": "03/07/2022-21:00:59",
+                    "content": "Those are fair points, @hexonaut and @psychonaut. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MadShills",
+                    "index": "#17",
+                    "likes": "1",
+                    "time": "04/07/2022-00:18:42",
+                    "content": "Sam is right. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.428571428571428
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/brianmcmichael",
+                    "index": "#18",
+                    "likes": "13",
+                    "time": "04/07/2022-02:41:56",
+                    "content": "Please don\u2019t do this, or consider doing it in the future. The ESM is the community\u2019s only protection against a coordinated attack on MakerDAO. See TakerDAO:  Screenshot_20220703-2230491080\u00d71855 219 KB  Let\u2019s imagine that a project like TakerDAO succeeds in getting a spell into the system to abscond with all of the collateral, and does it \u201clegitimately\u201d by holding an amount of MKR that can\u2019t be overcome by the rest of the active MKR. Your ONLY option as minority tokenholders is to trigger the ESM and shut down the system to prevent all users from losing their assets. Once triggered, it will be disruptive for sure, but it will ensure the the system is able to fairly distribute collateral to the proper parties. PECU can help to get the system back online in that case, but if Maker is attacked in a way that causes catastrophic loss of funds, well, we\u2019re probably not coming back from that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.879629629629629
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/brianmcmichael",
+                    "index": "#19",
+                    "likes": "6",
+                    "time": "04/07/2022-03:20:54",
+                    "content": "    AstronautThis:  It\u2019s unclear why a given MKR holder is financially incentivized to pick option A over B. Why would they want to be the ones to make the financial sacrifice to defend DAI holders?   Maybe you\u2019ll sell at a loss, but the speculators who are buying from you at firesale prices are buying on hope that the system will re-launch and the attacking MKR will be forked out, thus increasing their proportionate share of the resulting system. It\u2019s in their financial interest to take that MKR and burn it, and if sacrificed valorously there\u2019s a speculative potential that those who burned tokens will receive an honorarium. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#20",
+                    "likes": "0",
+                    "time": "04/07/2022-12:26:58",
+                    "content": "Thanks for these posts guys! At least for me, I learnt quite a bit more about Maker\u2019s inner workings and security  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#21",
+                    "likes": "8",
+                    "time": "04/07/2022-13:28:47",
+                    "content": "And please note the rule is if @brianmcmichael and myself agree on something you know it\u2019s a good idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Tosh9.0",
+                    "index": "#22",
+                    "likes": "5",
+                    "time": "04/07/2022-18:17:57",
+                    "content": "My only response to this poll is that I wish there were a \u201cHELL NO, FOR THE LOVE OF GOD DO NOT TURN OFF THE ESM\u201d option. Turning off the ESM removes the final sword of Damocles hanging over the potentially nefarious whales or \u201cTakerDAO\u201d. I understand adjusting the amount up or down over time, but the whole removal disempowers MKR holders, which, as I have repeated often, is the last thing the DAO should do. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely negative feedback on proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.388888888888888
+                }
+            ]
+        }
+    ]
+}

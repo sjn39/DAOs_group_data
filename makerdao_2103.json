@@ -1,0 +1,53 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/teleport-bug-disclosure-remediation-plan/19552",
+            "title": "Teleport Bug Disclosure & Remediation Plan ",
+            "index": 19552,
+            "category": [
+                "Updates",
+                "Notices"
+            ],
+            "tags": [
+                "layer-2",
+                "optimism",
+                "pe-001",
+                "arbitrum",
+                "starknet"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#1",
+                    "likes": "8",
+                    "time": "26/01/2023-09:29:35",
+                    "content": " Teleport Bug Disclosure & Remediation Plan Executive summary As per our earlier notice on this issue, PECU has identified a minor issue in dss-teleport that can result in some teleport withdrawals on L1 to be temporarily blocked until some of the debt incurred by TeleportJoin is settled, which can take up to 7 days on Optimism and Arbitrum. This has been found to affect two Optimism Teleport users for a total of 1.02 DAI that were temporarily blocked. These users have been unblocked by manually calling the settle() function of TeleportJoin. To prevent this issue from occurring again, a new set of dss-teleport contracts will be redeployed. In the meantime, it has been decided to temporarily shut down the L2 side of the teleport bridge to avoid any further blocked withdrawals. Explanation of the issue When users \u201cteleport\u201d their Dai from L2 to L1, some amount of Dai is minted on L1 by the TeleportJoin contract against a temporary debt that will need to be repaid during a subsequent settle() operation (which typically takes place several days later). The system is designed in such a way that if a user initiates a teleport on L2 but for some reason does not mint their Dai on L1 (i.e. no new debt is incurred), settle() can still happen and will be accounted for by allowing the debt for that domain to go negative, which represents a temporary \u201csurplus\u201d of Dai in TeleportJoin. In such a scenario, when users subsequently try to withdraw Dai from L1, TeleportJoin will (partially) tap into that surplus instead of minting the entire withdrawn amount. In the above scenario, if another domain (say, Starknet) happens to have incurred a positive debt, calling settle() for a domain (say, Optimism) that incurred less debt than the amount being settled will result in (some of) the surplus of Dai being used to repay the debt of that other domain (Starknet). The issue is that in that particular case, TeleportJoin will incorrectly record the value of the surplus for the settled domain (Optimism) by failing to deduce the amount used to repay the debt of the other domain (Starknet). As a result, when users try to withdraw Dai from the settled domain (Optimism), TeleportJoin will want to tap into the surplus, which will actually be lower than was recorded (given that some of that \u201csurplus\u201d Dai was used to repay the other domain\u2019s debt instead of being available to be withdrawn) and will consequently mint less Dai than necessary. The request to withdraw Dai will fail as a result. However, this is only a temporary situation given that, as soon as the other domain (Starknet) is settled, TeleportJoin will hold the necessary amount of Dai for the withdrawal to complete successfully. Impact of the issue The issue impacted two users after this problematic settle() was executed. This is a settlement of 0.01 DAI from Optimism to L1. The corresponding DAI teleported from Optimism had not yet been minted on L1 so there was no Optimism debt to repay. When settle() happened, 246 wei of Starknet debt were repaid instead and TeleportJoin incorrectly recorded a negative debt (surplus) of 0.01 DAI for Optimism. As a result subsequent teleports from Optimism were blocked and two users were unable to withdraw a total of 1.02 Dai. Remediation Plan The issue was discovered around 2023-01-18 12:00 UTC and as a first mitigation step, at 2023-01-18 14:37 UTC the aforementioned users were unblocked by executing a manual settle() of the Starknet debt. As a second intervention, we will pause the L2 Teleport gateways, as part of next week\u2019s spell (2023-02-03). This means that users will temporarily not be able to initiate new teleports from L2. Finally, we intend to redeploy a new version of TeleportJoin that fixes the debt accounting issue described above. The necessary fix has already been prepared and will undergo internal review and external audit. Because TeleportOracleJoin and our integration-level relayer contracts all hardcode the address of TeleportJoin, we will need to redeploy those contracts as well. This will be done as part of a future spell.  And from me, a big thank you to the PECU team for this write-up, their continued testing, and ongoing L2 integration efforts across the community  ",
+                    "links": [
+                        "https://etherscan.io/tx/0xa706ea0c7517fb0482834428324688afc23ed2bd2c798a6cf55c6cac0d005c09",
+                        "https://optimistic.etherscan.io/tx/0x47bb9c98bdc0975be997007ce43c57744d38ca79c765c614bc7ca9936da3982b",
+                        "https://optimistic.etherscan.io/tx/0xa78ba45eacc476a3442c577934b4c0d7725899a3d8dbb4331da89fb4ed29a926",
+                        "https://optimistic.etherscan.io/tx/0x5692eb32dbf357b69b4b8b7a86eaa5066ddd7a0a43c511aab8238423b6cff0d3",
+                        "https://etherscan.io/tx/0xbad8f0c912ea54a37b416f233d0f1a5827c618ea499dc696498e3b7b4c45e4e8",
+                        "https://forum.makerdao.com/t/stablelab-by-stablenode-delegate-platform/13246/137",
+                        "https://forum.makerdao.com/t/starknet-changes-for-executive-spell-on-the-week-of-2023-01-30/19607"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.983585858585858
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "25/02/2023-09:29:53",
+                    "content": "This topic was automatically closed 30 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

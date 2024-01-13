@@ -1,0 +1,76 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/random-critique-of-eip-706-devp2p-snappy-compression/2469",
+            "title": "Random critique of EIP-706 (DEVp2p snappy compression) ",
+            "index": 2469,
+            "category": [
+                "Primordial Soup"
+            ],
+            "tags": [
+                "snappy",
+                "compression",
+                "eip",
+                "eip-706",
+                "devp2p"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "18/01/2019-01:23:49",
+                    "content": "Here\u2019s what I\u2019m guessing digging into EIP-706, mostly after a few days playing with trinity. It was introduced as a means to reduce network load on \u201cfull nodes\u201d. No consideration was given to CPU/RAM, because that wasn\u2019t the dire issue to be solved; and it tried to be simple. It applies compression wholesale, to all messages past DEVp2p\u2019s Hello, including to all sub-protocols past DEVp2p, - e.g., when doing sync, peer exchange, or other fully-validating node communication. This produces (substantial) net savings through compressing bulk data. The overhead for Ping, Pong, and Disconnect was not considered, likely because it\u2019s minuscule in comparison to \u201cbulk data\u201d benefits; probably also due to reviewers\u2019 time constraints. There is no negotiation of compression; it is applied strictly according to advertised DEVp2p version. Consequently, there is no provision to turn compression off. This was not considered, because there were no sub-protocols in widespread use that would be harmed by compression.  To address this (general) ungracefulness, I\u2019ve started pondering (vaguely) of opening an EIP, proposing a version 6 of DEVp2p, where compression (or any feature, for that matter) is optional, requires explicit negotiation, and (perhaps?..) applies to sub-protocols\u2019 messages only. (OTOH, I\u2019m starting to feel like I\u2019m re-inventing IRC capability negotiation, or something\u2026)  My interest got piqued after hearing rumours (FUD, nonsense, apocryphal blasphemy) that \u201ccompression will become mandatory\u201d. This might be a non-issue for machines that run \u201cfull nodes\u201d these days, but is an additional stress for mobile devices, including IoT. In fact, for an IoT device, should it want to communicate over some ultra-simple as-of-yet-unwritten Ethereum-native messaging protocol, compression might just be a deal breaker. If there is mandatory compression, we\u2019re discouraging this protocol from being written. ",
+                    "links": [
+                        "https://ircv3.net/specs/core/capability-negotiation.html"
+                    ],
+                    "GPT-summary": "The post is a critique of EIP-706, which introduces a means to reduce network load on \"full nodes\" by applying compression to all messages past DEVp2p's Hello, including to all sub-protocols past DEVp2p. The author of the post provides constructive criticism of the proposal, pointing out that no consideration was given to CPU/RAM, and that there is no negotiation of compression, which is applied strictly according to advertised DEVp2p version. The author also explains their interest in opening an EIP proposing a version 6 of DEVp2p, where compression is optional, requires explicit negotiation, and applies to sub-protocols' messages only. The post also raises questions about the impact of mandatory compression on mobile devices and IoT.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.78125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/atoulme",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "18/01/2019-06:59:31",
+                    "content": "I just had to do this for my implementation of RLPx (https://github.com/ConsenSys/cava/pull/122/commits/cd35b6f7e9ac3e9f9a4f1b5b691d86a8362a8072 and https://github.com/ConsenSys/cava/pull/122). It\u2019s a very messy change. Most clients have implemented the change and it does save a lot of traffic. I expect btw to see the same level of compression with SSZ for Eth 2.0. I believe compressing network traffic is necessary. Your web browser does a zip compression all the time too. There is a lot to hate about RLPx - compression is one aspect, but you can also see both sides of the handshake keep egress/ingress MACs updated for every byte in and out. We also allow only one TCP connection between 2 peers (at least there is a disconnect reason to disconnect if a peer with the same identity is already connected). I\u2019m not sure about having one more version of DEVp2p. I\u2019m playing with secure scuttlebutt right now to see if we could make it work for Ethereum network communications: https://ssbc.github.io/scuttlebutt-protocol-guide/ ",
+                    "links": [
+                        "https://github.com/ConsenSys/cava/pull/122",
+                        "https://ssbc.github.io/scuttlebutt-protocol-guide/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.031547619047619
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "19/01/2019-13:52:26",
+                    "content": " I believe compressing network traffic is necessary. Your web browser does a zip compression all the time too.  I\u2019m not against compression per-se. I do understand the benefits.  My grumbling is about the way it is \u201cnegotiated\u201d. Peers both advertising v5 of DEVp2p must use it. Essentially, a protocol feature is \u201cnegotiated\u201d implicitly, by advertising a protocol number. This is what I meant by \u201cungracefulness\u201d in OP. Should a v6 of DEVp2p be proposed, for whatever reason (say, a change in encryption scheme); if it doesn\u2019t also include a provision for \u201cproper\u201d negotiation of compression via messaging, then compression becomes mandatory, since all nodes will interpret: DEVp2p >= 5 ? compress. I\u2019m afraid HTTP is not a good example of this, because there, it\u2019s achieved by \u201cadvertising compression tokens\u201d. Not HTTP/1.2 or something. If anything, I\u2019m advocating for HTTP-style.   Another concern I haven\u2019t voiced (mainly, because I know next to nothing about) is possible negative impact on Whisper/Swarm or protocols involving \u201conion routing\u201d, where multiple layers of encryption prevent bandwidth savings of compression-on-top.  We also allow only one TCP connection between 2 peers (\u2026).  That seems like a sane, safe default to me. DEVp2p specs seem to have had a mention of multiplexing in the past - it\u2019s gone now in its explicit form, but probably still implied. If, say, one wanted to use both eth and pss sub-protocols, that should be possible (using one connection): that\u2019s how Swarm PoC 3 says to be doing it, at least. ",
+                    "links": [
+                        "https://ethereum.stackexchange.com/questions/37051/ethereum-network-messaging",
+                        "https://github.com/ethereum/devp2p/blob/master/devp2p.md",
+                        "https://blog.ethereum.org/2018/06/21/announcing-swarm-proof-of-concept-release-3/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.595238095238095
+                }
+            ]
+        }
+    ],
+    "group_index": "652"
+}

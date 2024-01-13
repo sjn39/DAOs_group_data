@@ -1,0 +1,46 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip34-modulo-de-transmision-de-pagos-keg/7695",
+            "title": "MIP34: M\\xc3\\xb3dulo de Transmisi\\xc3\\xb3n de Pagos Keg ",
+            "index": 7695,
+            "category": [
+                "Latin America"
+            ],
+            "tags": [
+                "mips",
+                "espa\\xc3\\xb1ol"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Sebix",
+                    "index": "#1",
+                    "likes": "3",
+                    "time": "27/04/2021-22:37:35",
+                    "content": " MIP34: M\u00f3dulo de Transmisi\u00f3n de Pagos Keg  Pre\u00e1mbulo MIP#: 34 T\u00edtulo: M\u00f3dulo de Transmisi\u00f3n de Pagos Keg Autor(es): Sam MacPherson (@hexonaut) Colaboradores: Ninguno Etiquetas: technical, module, smart-contracts Tipo: T\u00e9cnica Estado: Aceptada Fecha de Propuesta: 2021-01-11 Fecha de Ratificaci\u00f3n: 2021-25-03 Dependencias: n/a Reemplaza: n/a Licencia: AGPL3+    Referencias  El keg propuesto  Flapper Distributor - Un caso de uso del keg   Sumario Resumido Esta propuesta proporciona la implementaci\u00f3n de un contrato inteligente de un Sistema de Transmisi\u00f3n de Pagos de Maker.  Sumario Extendido El Keg es una herramienta para transmitir DAI ERC20 a un grupo preestablecido de direcciones. Estos grupos de direcciones pueden se\u00f1alarse como destinos de pago proveyendo al keg nombres legibles por humanos. Estos grupos de direcciones son llamados flights.  Cualquiera puede realizar un pago al Keg, siempre que especifiquen una destinaci\u00f3n flight y tengan los DAI suficientes. Tambi\u00e9n se incluir\u00e1n dos contratos, Tap y FlapTap, para facilitar los pagos desde el B\u00fafer de Excedentes y desde el Flapper respectivamente.  Sumario de Componentes MIP34c1: Keg: sumario del contrato Keg. MIP34c2: Tap: sumario del contrato Tap. MIP34c3: FlapTap: Sumario del contrato FlapTap. MIP34c4: Casos de Testeo: Listas de casos de testeo existentes, incluyendo los test de integraci\u00f3n. MIP34c5: Consideraciones de Seguridad: Comentarios sobre la naturaleza limitada de las implicaciones de seguridad al a\u00f1adir el PSM. MIP34c6: Licencia: establece la licencia bajo la cual la propuesta y el c\u00f3digo se distribuyen.  Motivaci\u00f3n Se requiere un mecanismo para financiar el trabajo de los equipos de dominio con el fin de reducir o eliminar la medida en que el Protocolo Maker depende de la Fundaci\u00f3n Maker. Esto se podr\u00eda lograr mediante votaciones \u00fanicas de Gobernanza por una suma global, pero esto introduce un gasto general al proceso de gobernanza. Este m\u00f3dulo apunta a reducir ese gasto haciendo que Gobernanza apruebe previamente los presupuestos a tasa fija. Adicionalmente, los FlapTap proveen un mecanismo para redirigir una fracci\u00f3n fija de las subastas de excedentes (Flapper) hacia otro objetivo. Esto le dar\u00e1 a Gobernanza una forma de controlar las ganancias del protocolo.  Especificaci\u00f3n / Detalle de la Propuesta  MIP34c1: Keg El contrato Keg define a los flights, que son una lista direcciones de destino junto con los montos relativos de cu\u00e1nto deber\u00eda obtener cada direcci\u00f3n. La Gobernanza puede crear, actualizar y borrar flights implementando las funciones de seat() y revoke(). Una vez que un flight ha sido registrado cualquiera puede dar el approve para que los DAI sean enviados al Keg a trav\u00e9s del m\u00e9todo pour(). El descriptor flight bytes32 es un nombre human-friendly para la lista de objetivos, que por ejemplo, podr\u00edan ser \u201coperaciones-contratosinteligentes\u201d. Keg tambi\u00e9n define un modificador stoppable para permitir a la Gobernanza pausar pagos.  MIP34c2: Tap Tap permite a la Gobernanza definir los pagos por streaming del B\u00fafer de Excedentes a una tasa fija. El flight es el grupo de destino de las direcciones en el Keg. El rate es la tasa por segundo de DAI que se transmite desde el Buffer de Excedentes. Una vez iniciado, cualquiera puede utilizar la funci\u00f3n pump() para retirar fondos del Buffer de Excedentes a trav\u00e9s de vat.suck() al flight de destino. Tap tambi\u00e9n es compatible con el modificador stoppable para permitirle a la Gobernanza pausar pagos.  MIP34c3: FlapTap FlapTap se sienta entre el vow y el flapper. El par\u00e1metro flow controla el porcentaje de fondos que van al keg - el resto va al flapper como siempre. FlapTap se le designa ser lo menos invasivo posible al conservar los supuestos de kick() y cage(). Un cambio de comportamiento inevitable es que vow.bump ya no tiene una relaci\u00f3n uno a uno con la cantidad enviada a la subasta, sino que es la cantidad enviada a la subasta + Keg.  MIP34c4: Casos de Testeo Vea Keg.t.sol  test_flap_tap_cage test_pour_flight test_keg_deploy test_seat testFail_seat_bad_shares test_tap_rate_change_with_pump testFail_flap_tap_invalid_flow testFail_tap_rate_change_without_pump test_pour_flight_one_wei test_flap_tap_deploy testFail_seat_zero_address test_tap_pump testFail_seat_zero_length testFail_pour_flight_invalid testFail_seat_unequal_length testFail_pour_flight_not_enough_dai testFail_pour_flight_zero   MIP34c5: Consideraciones sobre Seguridad Keg no requiere ning\u00fan permiso de acceso al sistema de Maker, de tal forma que no tiene ning\u00fan riesgo de seguridad. Tap es simple y s\u00f3lo interact\u00faa con vat.suck() en la manera que est\u00e1 autorizado. La superficie de ataque es m\u00ednima y facil de auditar. El riesgo m\u00e1s significativo proviene de FlapTap que requiere una modificaci\u00f3n del protocolo central para estar entre vow y flapper. El c\u00f3digo en s\u00ed es simple, pero la modificaci\u00f3n del protocolo central deber\u00eda ser considerada cuidadosamente.  MIP34c6: Licencia  AGPL3+   Esta es una traducci\u00f3n libre del art\u00edculo original en ingl\u00e9s, gracias a @Sebix y @Lozadaluis12. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/flapperdistributor-a-way-to-distribute-system-surplus-while-minimizing-governance/4591",
+                        "https://github.com/makerdao/keg/blob/master/src/Keg.t.sol",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://mips.makerdao.com/mips/details/60626de7e65b747f996b3d53"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.236111111111112
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Saludiego_201",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "28/04/2021-03:16:58",
+                    "content": "Much\u00edsimas gracias @Sebix !! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ]
+}

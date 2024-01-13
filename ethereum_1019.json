@@ -1,0 +1,131 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-2542-add-txgaslimit-callgaslimit-txgasrefund-opcodes/4075",
+            "title": "EIP 2542 - add TXGASLIMIT, CALLGASLIMIT, TXGASREFUND opcodes ",
+            "index": 4075,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/forshtat",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "03/03/2020-15:26:33",
+                    "content": "This is a discussion thread for EIP-2542 During our work on the Gas Station Network we have encountered a problem with the way such concepts as gas limit and gas refund are somewhat hidden from smart contracts. With the current EVM, the core GSN smart contract (RelayHub) is not able to precisely track the gas usage by a transaction due to these limitations. Exposing such parameters as transaction gas limit, current execution frame gas limit, and current refund counter is an extremely simple and useful improvement to the EVM. ",
+                    "links": [
+                        "https://www.opengsn.org/"
+                    ],
+                    "GPT-summary": "The post is an explanation of EIP-2542, which proposes adding new opcodes to the EVM to expose gas limit and refund parameters to smart contracts. The author explains the problem with the current system and how the proposed changes would improve it. A 3rd party gives constructive criticism by asking questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.225732600732601
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "20/03/2020-15:08:46",
+                    "content": "Main counter points  It solidifies evm-internals, specifically how refund and callcontext-gas is implemented in clients. As of now, geth implements a global refund counter, aleth and parity implements context-wise refund, and later resolves the actual valie later on. I think origin_gas is gameable. If the I make a contract which first consumes a lot of gas, then calls the meta-relayer to execute a meta-tx, then I will be paid extra for that gas which I consumed \u201cprivately\u201d before doing the relay-work.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.2976190476190474
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/forshtat",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "22/03/2020-17:44:20",
+                    "content": "Regarding 1 - I\u2019ve looked into it, and I now think that \u2018refund\u2019 value is indeed to complex to calculate in all clients to be accessed via an opcode. On the other hand, however the \u2018callcontext-gas\u2019 calculation is implemented by clients, it is definitely available as a parameter and can be easily exposed into the EVM. I think the only complication with this value would be EIP-150 that introduced the \u201call but one 64th\u201d ceiling for call-gas value, so I explicitly referenced this inside the EIP. Regarding 2 - This parameter can be gameable only with a naive implementation, but it is easy to protect against it being abused. I have added to the EIP an example where a meta-transaction sender signs a tx gas limit in the transaction, and a contract verifies it. This can be paired with some other checks to make sure the \u2018relay\u2019 does not steal gas from you. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.458333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "23/03/2020-10:00:02",
+                    "content": "    forshtat:  Regarding 2 - This parameter can be gameable only with a naive implementation, but it is easy to protect against it being abused. I have added to the EIP an example where a meta-transaction sender signs a tx gas limit in the transaction, and a contract verifies it. This can be paired with some other checks to make sure the \u2018relay\u2019 does not steal gas from you.   Sorry, I can\u2019t seem to find it in the EIP. Could you point me to it? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.006944444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/forshtat",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "23/03/2020-16:34:58",
+                    "content": "Sorry, the link in the original post is to a specific commit, not the PR itself. Here is the link to \u2018master\u2019 https://github.com/forshtat/EIPs/blob/master/EIPS/eip-2542.md The example is a remote approximation of how meta-transaction frameworks handle this task: function verifyGasLimit(uint256 desiredGasLimit, bytes memory signature, address signer, bytes memory someOtherData) public {     require(ecrecover(abi.encodePacked(desiredGasLimit, someOtherData), signature) == signer, \"Signature does not match\");     require(tx.gasLimit == desiredGasLimit, \"Transaction limit does not match the signed value. The signer did not authorize that.\");     ...  Of course, there is a lot of nuance to this problem, but the basic idea still applies. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "24/03/2020-09:11:28",
+                    "content": "I don\u2019t see how that fixes anything. So if I use tx.gasLimit set to exactly what the desiredGasLimit is, what prevents me from exhausting the gas before entering the relayer? Note: I\u2019m not saying you\u2019re wrong, it might be just me being stupid, so please educate me ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.1875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/forshtat",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "24/03/2020-12:49:28",
+                    "content": "Well, the real-world contract would probably have a lot of other checks to prevent this from happening. First, the meta-transaction signer may sign on msg.sender as well, so it cannot run random code first. Also, if the \u2018relays\u2019 who are calling some execute(..) function on a \u2018relayer\u2019 contract have no reason to be smart contracts themselves the \u2018relayer\u2019 contract could check that it is called directly(something like tx.origin == msg.sender or tx.gasLimit == msg.gasLimit). Next, the \u2018relayer\u2019 contract could only allow calls from registered relay addresses. This also would allow a relay network to blacklist or penalize relays in one way or another. Worst case, it can also check the signature on msg.gasLimit instead. This is only required if there is a need for \u2018relays\u2019  to actually be smart contracts for some reason. There is a caveat to this, of course, because CALL does not guarantee the gas limit to be enforced, the \u2018relays\u2019  smart contracts would have to do that. Anyway, these considerations I believe will be quite different for each application. My point here is that the opcode is not gameable by itself. Code using it may be gameable if not implemented correctly, but hey, this is true for 0x01 ADD as well!  ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.982829670329671
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "24/03/2020-19:10:03",
+                    "content": "    forshtat:  My point here is that the opcode is not gameable by itself. Code using it may be gameable if not implemented correctly, but hey, this is true for 0x01 ADD as well   I don\u2019t fully agree. I think the ORIGIN opcode is \u2018bad\u2019 in the same way: whenever you want to use it, you\u2019re probably doing it the wrong way and need to validate N other things aswell in order to not break your usecase. A niche opcode which is trivial to mistake for a good generic tool Whereas the semantics of ADD are simple, straightforward and easy to explain. It adds two numbers together. Explaining msg.gasLimit is a lot more difficult: 'It\u2019s the original gasLimit from the outer transaction, which will be somewhat higher than gasLimit, you can use it to figure out how much it\u2019s cost so far to get \u201chere\u201d, but you can\u2019t really trust number but need to verify it\" It\u2019s generally considered \u2018bad form\u2019 to treat contracts dfiferently from EOA. Considering that a lot of people uses mutlsig wallets, it\u2019s not good to build flows which require the caller to be an EOA. In general, it sounds like today, there are a lot of \u2018hacks\u2019 around fixing this usecase. If we were to add that particular opcode, there would be a different flora of \u2018hacks\u2019.We\u2019d simply change one set of problems for another. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.440217391304348
+                }
+            ]
+        }
+    ],
+    "group_index": "1019"
+}

@@ -1,0 +1,498 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4987-held-token-standard-nfts-defi/7117",
+            "title": "EIP-4987 \"held\" token standard (NFTs + DeFi) ",
+            "index": 7117,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft",
+                "erc-721",
+                "defi",
+                "erc-20",
+                "erc1155"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "1",
+                    "likes": "7",
+                    "time": "23/09/2021-21:56:37",
+                    "content": "Hi all, As NFTs and DeFi start to converge, there will more commonly be a distinction between the actual owner of an ERC721 token and the functional owner/user. Examples include:  staked NFTs lending protocols that accept NFTs as collateral fractionalized NFTs  Currently, usage in one of those DeFi mechanisms would conflict with ownership verification for gaming, PFPs, art gallery showcases, etc. Want to start up a thread on a standard ERC interface that could be used to very easily check the \u201cfunctional owner\u201d of an NFT held by another smart contract. Hopefully, something like this already exists that I am not aware of. But if not\u2026 I would propose something very lightweight that could be implemented by contracts with little overhead. (edit: this is not the final proposed interface, please see below) interface ERC721Hold {      // emitted when the token is transferred to the contract     event Hold(address indexed _from, uint256 indexed _tokenId);      // emitted when the token is released back to the user     event Release(address indexed _to, uint256 indexed _tokenId);      // returns the functional owner of the held token     function ownerOf(uint256 _tokenID) external view returns (address);      // returns the address to the underlying held ERC721 asset     function asset() external view returns (address); }  Note: this would also implement ERC165 so applications could easily check a contract for this interface. Note: the method ownerOf was intentionally reused from ERC721 so that contracts which fully wrap and tokenize a held NFT position can implement both ERC721 and ERC721Hold without additional overhead. Here is some example logic to check for the NFT owner while respecting the ERC721Hold interface library {     function getOwner(address addr, uint256 id) public pure returns (address) {         IERC721 token = IERC721(addr);         address owner = token.ownerOf(id);         if (owner.isContract()) {             try IERC165(token_).supportsInterface(0x00000000) returns (bool ret) {                 if (ret && IERC721Hold(owner).asset() == addr) {                     return IERC721Hold(owner).ownerOf(id);                 }             } catch {                 return owner;             }         }         return owner;     } }  Really appreciate any thoughts or feedback! Thanks all, Devin ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc721-extension-to-enable-rental/8472",
+                        "https://ethereum-magicians.org/t/improving-nft-standard/6012/25",
+                        "https://ethereum-magicians.org/t/erc-4799-non-fungible-token-wrapping-standard/8396/4"
+                    ],
+                    "GPT-summary": "The author proposes a new ERC interface for NFTs that would allow for easy checking of the \"functional owner\" of an NFT held by another smart contract. The post explains the proposed interface and provides example logic to check for the NFT owner while respecting the ERC721Hold interface. The author is asking for feedback and thoughts on the proposal, and some 3rd parties are asking questions and providing constructive criticism.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Interoperability and Scalability",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.490684523809524
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "26/09/2021-15:31:48",
+                    "content": "Another aspect to consider is that contracts could potentially hold tokens from more than one NFT collection. In this case, the above interface would be too limiting. To further generalize, something like this could used interface ERC721Hold {      // emitted when the token is transferred to the contract     event Hold(address indexed _user, address indexed _tokenAddress, uint256 indexed _tokenId);      // emitted when the token is released back to the user     event Release(address indexed _user, address indexed _tokenAddress, uint256 indexed _tokenId);      // returns the functional owner of the held token     function functionalOwnerOf(address _tokenAddress, uint256 _tokenID) external view returns (address); }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "3",
+                    "likes": "2",
+                    "time": "06/10/2021-01:00:07",
+                    "content": "Twitter discussion for reference:  twitter.com   Devin Conley @devinaconley    I started an EIP discussion on a standard interface to represent NFT \"functional ownership\" when held by another smart contract. This is very relevant for many DeFi + NFT use cases.  Would love to hear any thoughts or feedback! https://t.co/gPAkgg1Vf8   1:27 PM - 24 Sep 2021           26                9            ",
+                    "links": [
+                        "https://twitter.com/devinaconley/status/1441499642668064769",
+                        "https://twitter.com/devinaconley/status/1441499642668064769",
+                        "https://twitter.com/devinaconley/status/1441499642668064769"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.859285714285715
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "31/10/2021-14:38:33",
+                    "content": "Hey Ron - thanks for the thoughts on this! The use case you describe where the original owner lends an NFT to a temporary functional owner is a good one. And it is certainly supported by this proposed interface. The lending smart contract functionalOwnerOf() method would simply return the renter\u2019s address. The reason the NFT would be held by another smart contract is to enforce the mechanics of whatever system is being interacted with. The exact details of what/why would depend on the protocol or agreement. You are right that application code would need to be updated to recognize this \u201cheld NFT\u201d interface. That is the main motivation behind adopting a common standard like what is proposed here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.757783882783882
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MindfulFroggie",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "31/10/2021-15:40:33",
+                    "content": "Sorry for deleting the reply. After submitting it I figured out I didn\u2019t understand you correctly. Now I understand it much better  Basically the owner of the token would be a contract address where the token is being held, and that contract will hold the information regarding the true owner. Is that right? I understand how the use case I described can be supported. I was trying to think of a way of switching the owner in the ERC721 contract to point to the true owner but with limiting the transfer rights the owner has over the token. However I guess it is not possible as the transferFrom function will always accepts the transfer if the registered owner is the msg.sender. Just to be sure, regarding your proposal, existing ERC721 contracts wouldn\u2019t have to make any updates. Only 3rd parties looking for a true owner (in case of a contract owner) will need this \u201coverhead\u201d. And any 3rd party who wants to allow some DeFi or lending mechanisms, which will support the proposed feature, will need to implement the current ERC proposal. Is that correct? So how can we advance this proposal?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.782967032967034
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "01/11/2021-10:10:27",
+                    "content": "No problem, glad it is making sense now.     MindfulFroggie:  Basically the owner of the token would be a contract address where the token is being held, and that contract will hold the information regarding the true owner. Is that right?   Right, according to the original ERC721 contract, the ownerOf() will be the smart contract holding the token.     MindfulFroggie:  Just to be sure, regarding your proposal, existing ERC721 contracts wouldn\u2019t have to make any updates   Exactly you are right on. This is designed to work with any existing ERC721. The overhead of adoption here is on DeFi mechanisms to implement the proposed standard interface and on third parties to recognize that standard. Still collecting some more feedback, then will be opening up the actual EIP ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.266581632653061
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/julesl23",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "01/11/2021-13:11:02",
+                    "content": "I think this is the better interface (the one with functionalOwnerOf). This would then work for ERC-1155. Maybe then submit two interfaces or rename it so that it applies to both? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MindfulFroggie",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "01/11/2021-14:51:51",
+                    "content": "To support ERC1155 (as well as ERC721) the interface should be modified. The issue with ERC1155 is that (I think) it is a problem to look for the owner of a token ID, as there could be multiple owners in case that the token ID points to a fungible token. I think it might make sense to retrieve the multiple possible owners, and to follow with a query of the balance of a specific owner. Anyway I would suggest the following moidification for ERC1155 support: interface ERCTokenHold {      // emitted when the token is transferred to the contract     event Hold(address indexed _user, address indexed _tokenAddress, uint256 indexed _tokenId, uint256 indexed _value);      // emitted when the token is released back to the user     event Release(address indexed _user, address indexed _tokenAddress, uint256 indexed _tokenId, uint256 indexed _value);      // returns the functional owner (or owners) of the held token     function functionalOwnerOf(address _tokenAddress, uint256 _tokenID) external view returns (address[]);        // returns the functional balance of an owner for a specific token ID     function functionalBalanceOf(address _tokenAddress, address _owner, uint256 _tokenID) external view returns (uint256); }  In case of an ERC721 contract, the value can be ignored (and no use for the functionalBalanceOf function). I guess this would also support ERC20? Ignoring the token ID. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "02/11/2021-01:20:58",
+                    "content": "    julesl23:  This would then work for ERC-1155. Maybe then submit two interfaces or rename it so that it applies to both?   Yep, planning to submit two different interfaces for ERC721 and ERC1155     MindfulFroggie:  To support ERC1155 (as well as ERC721) the interface should be modified.   This could definitely work, but I think it feels cleaner to use explicit independent interfaces for each token type. This will also allow ERC165 responses to be more descriptive ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "03/11/2021-11:45:59",
+                    "content": "@devinaconley I think that the proposal that you are describing addresses the same need as the EIP-4400 that we submitted recently. I think that it would be interesting for you to check it out and get your feedback. I am curious to know whether the proposed 4400 standard will address your needs  Personally, I think that the overriding of the owner method is a dangerous direction, so moving to functionalOwnerOf is the right step. I am excited to see that other people are recognising the need for such a standard as it would enable NFT lending/renting/staking! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.139880952380952
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "03/11/2021-17:47:14",
+                    "content": "Hey @Daniel-K-Ivanov - thanks for sharing that proposal. Likewise, glad to see other folks are looking seriously at this kind of standard.     Daniel-K-Ivanov:  I think that it would be interesting for you to check it out and get your feedback. I am curious to know whether the proposed 4400 standard will address your needs    EIP4400 (ERC721Consumer) definitely seems to be in the same spirit! But I think there are a couple key differences in the approach:  this proposal puts the burden of reporting on the holding contract \u201cowner\u201d, where ERC721Consumer puts that burden on the token contract  ERC721Consumer requires an upgrade for existing ERC721 tokens the bookkeeping for ERC721Consumer will likely have higher gas costs, as that is another dictionary to be managed during transfer, staking, sales, etc. the ERC721Consumer approach is probably more flexible for EOA usage without a smart contract      Daniel-K-Ivanov:  Personally, I think that the overriding of the owner method is a dangerous direction, so moving to functionalOwnerOf is the right step.   Agreed on this   Overall, good to see another take on this problem. Definite pros and cons to each approach ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.5890151515151505
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/flaskr",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "10/02/2022-02:42:36",
+                    "content": "I agree that this is very different from EIP-4400 as these have a very large impact on the functionality:   this proposal puts the burden of reporting on the holding contract \u201cowner\u201d, where ERC721Consumer puts that burden on the token contract  ERC721Consumer requires an upgrade for existing ERC721 tokens   I was playing around with a variant of this with time-based \u2018hold\u2019, while wrapping the \u2018hold/lend\u2019 as a ERC721 itself. I think that the functionality (payment/lending) that I\u2019m looking for can be built on top of what you\u2019re proposing. I\u2019m using virtualOwnerOf to make it distinct from ownerOf function.    GitHub    GitHub - flaskr/nft-lend-v2: Non-custodial NFT lending via pseudo-ownership Non-custodial NFT lending via pseudo-ownership. Contribute to flaskr/nft-lend-v2 development by creating an account on GitHub.      Let me know if you\u2019ll like some examples done or if you\u2019re looking for help to write/push this forward! ",
+                    "links": [
+                        "https://github.com/flaskr/nft-lend-v2"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.441964285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "10/02/2022-03:15:27",
+                    "content": "Hey @flaskr - thanks for the feedback on this. Great to hear that this proposed interface would fit with your use case and need for an associated standard. Appreciate that! I am actually working on the EIP draft and a code example now, which should be wrapped up this weekend. Would be great to include another example from your side as well. I\u2019ll keep you posted here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "10/02/2022-03:23:44",
+                    "content": "Would be great to get some thoughts on naming convention here. The idea is that all interface functions will be named with this prefix (e.g. in the ERC1155 case, heldOwnerOf and heldBalanceOf) What function prefix(es) do you prefer?     heldOwnerOf tokenOwnerOf functionalOwnerOf virtualOwnerOf delegateOwnerOf     0 voters     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 9.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/flaskr",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "10/02/2022-10:36:54",
+                    "content": "I do think that \u2018heldOwnerOf\u2019 isn\u2019t very readable as a sentence. functionalOwner has my vote. I just added support for EIP-165 and \u201ccross-ERC721Hold\u201d owner queries to my repo. On interface between ownerOf(id) and ownerOf(address, id) Personally, I prefer the interface to be specific to a single ERC-721. This is because I would like the option to implement the \u2018functional ownership\u2019 as an ERC-721 itself - being able to transfer/sell your lease can be very powerful. It\u2019s possible to add in the ownerOf(address, id) function to an ERC-721 wrapper but it looks pretty redundant. Having to support the extra address calldata might cost extra gas too. I also envision a separate contract or interface that allows people to check ownerOf(address, id). Why not have 2 interfaces? A contract could implement both if it wants to, but it keeps one from polluting the other. eg. ERC721Hold  ownerOf(id)  ERC721ManyHold  ownerOf(tokenAddress, id)  I would also like one for ERC1155 but the scope might be too big. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.408418367346939
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "01/04/2022-00:48:19",
+                    "content": "    flaskr:  This is because I would like the option to implement the \u2018functional ownership\u2019 as an ERC-721 itself - being able to transfer/sell your lease can be very powerful.   I actually mentioned the possibility of reusing the ownerOf method for a tokenized position in the initial post. The consensus was that overriding this method from two different interfaces was a little hacky/dangerous     flaskr:  I also envision a separate contract or interface that allows people to check ownerOf(address, id). Why not have 2 interfaces? A contract could implement both if it wants to, but it keeps one from polluting the other.   One challenge with using separate interfaces is that a calling method would need to check two different interface identifiers to look up functional ownership ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4319444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "07/04/2022-20:37:27",
+                    "content": "Just wrapped up an example implementation of the proposed standard here    GitHub    GitHub - devinaconley/token-hold-example: Reference implementation for EIP on... Reference implementation for EIP on held token standard - GitHub - devinaconley/token-hold-example: Reference implementation for EIP on held token standard      ",
+                    "links": [
+                        "https://github.com/devinaconley/token-hold-example"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "11/04/2022-23:40:20",
+                    "content": "And submitted the proposal draft for this held token standard here   github.com/ethereum/EIPs         Draft proposal for held token standard   ethereum:master \u2190 devinaconley:master            opened 08:23PM - 11 Apr 22 UTC               devinaconley             +228 -0       This PR includes a proposal for a new held token standard       ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/4987",
+                        "https://github.com/devinaconley",
+                        "https://github.com/ethereum/EIPs/pull/4987/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.170454545454546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "14/04/2022-17:44:07",
+                    "content": "Looking good so far, and apologies if this has already been covered, but if a holder contract holds both an ERC-20 and an ERC-721, what happens? Would it possibly make more sense to just have a single function per operation (ex. heldBalanceOf(address owner, address token, uint256 tokenId)) where tokenId is always 0x0 for ERC-20s? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.228571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "14/04/2022-20:38:41",
+                    "content": "Thanks for the review @SamWilsn ! Addressing your feedback and suggestions now. The thinking behind separate interfaces for each token type is that any consumer logic will usually only want to query held token info on a specific token type at a time. In the case of a contract holding both ERC-20 and ERC-721, the heldBalanceOf(address owner, address token) is actually the same signature. If a contract is also holding ERC-1155, the function could be overloaded with heldBalanceOf(address owner, address token, uint256 tokenId). The consumer would hit the appropriate signature depending on the interface of interest. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "14/04/2022-20:50:16",
+                    "content": "@SamWilsn your feedback on events brings up another good question. I think there\u2019s a case to be made that this interface should not require any events to be emitted. One of the main goals is for this interface to be extremely lightweight and non-intrusive. Additional events/gas doesn\u2019t help with that Plus, we could arguably get all the equivalent data by indexing underlying token Transfer events and filtering where to or from match our holder of interest ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.236111111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/7flash",
+                    "index": "23",
+                    "likes": "1",
+                    "time": "04/05/2022-03:35:11",
+                    "content": "Agree\u2026 its good idea\u2026 very useful\u2026 There are apps where users can deposit their NFTs\u2026 But then its not visible in their wallet and marketplaces\u2026 If this standard being adopted\u2026 then user can deposit his NFT to another contract, but it still remains visible in his wallet\u2026 Particularly in our case, we want to allow users prove ownership of their NFTs\u2026 including those NFTs already staked into some contracts\u2026 If this standard being supported by staking contract\u2026 then we can read heldOwnerOf to find actual owner\u2026 also we can listen Hold and Release events\u2026 to deterministically reduce database\u2026 I think events are important\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.888888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/7flash",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "04/05/2022-03:35:41",
+                    "content": "and events are not so bad\u2026 they are not being saved into blockchain\u2026 I mean they are much cheaper than storage data in smart contract ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.169642857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "06/05/2022-13:26:29",
+                    "content": "Thanks for the thoughts here @7flash, glad to hear this would be applicable for your use case ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "06/05/2022-13:29:15",
+                    "content": "And a general update, the draft has been merged in and can be found published here:  Ethereum Improvement Proposals   EIP-4987: Held token standard Standard interface to query ownership and balance of held tokens      An interface was included for each \u201cheld token\u201d type, for example ERC721 /**  * @notice the ERC721 holder standard provides a common interface to query  * token ownership and balance information  */ interface IERC721Holder is IERC165 {   /**    * @notice emitted when the token is transferred to the contract    * @param owner functional token owner    * @param tokenAddress held token address    * @param tokenId held token ID    */   event Hold(     address indexed owner,     address indexed tokenAddress,     uint256 indexed tokenId   );    /**    * @notice emitted when the token is released back to the user    * @param owner functional token owner    * @param tokenAddress held token address    * @param tokenId held token ID    */   event Release(     address indexed owner,     address indexed tokenAddress,     uint256 indexed tokenId   );    /**    * @notice get the functional owner of a held token    * @param tokenAddress held token address    * @param tokenId held token ID    * @return functional token owner    */   function heldOwnerOf(address tokenAddress, uint256 tokenId)     external     view     returns (address);    /**    * @notice get the held balance of the token owner    * @param tokenAddress held token address    * @param owner functional token owner    * @return held token balance    */   function heldBalanceOf(address tokenAddress, address owner)     external     view     returns (uint256); }  ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4987"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.84375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TwompsonPlanetWEARTH",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "20/07/2022-06:20:23",
+                    "content": "I think this would be a great addition to the existing 721, especially in the use case of Meteverse access as in our scenario. Our 721 give instant access to token gated portals in our metaverse, a virtual meta mall, these access controllers can be staked through GYSR to earn our erc-20, this is how we are doing our initial token drop, exclusively through NFT access passes to the mall, whose rewards tokens are used to build and buy within. This new token standard would allow members to not have to own more than one, where the current contracts of staking require the custody thus the holder loses access. I would love to see this standard implemented. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.931818181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "28",
+                    "likes": "2",
+                    "time": "04/08/2022-15:17:42",
+                    "content": "Hey folks! Wanted to share that this EIP has officially moved to \u201cReview\u201d   Ethereum Improvement Proposals   EIP-4987: Held token interface Interface to query ownership and balance of held tokens      Would greatly appreciate any additional feedback or thoughts! @MindfulFroggie @julesl23 @Daniel-K-Ivanov @flaskr @SamWilsn @7flash @TwompsonPlanetWEARTH ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4987"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/leeren",
+                    "index": "29",
+                    "likes": "1",
+                    "time": "23/08/2022-07:10:45",
+                    "content": "Great work designing this EIP. This is definitely something a lot of projects across different industries could benefit from enormously, whether it be DeFi protocols or consumer NFTs. It\u2019s worth mentioning that two other proposals try to tackle the same ownership attribution problem. One, which was already mentioned, is the already finalized EIP-4400, and the other is EIP-4799. EIP-4987, however, is the only proposal that does so in a way that is both simple and backwards-compatible. I do think it would be helpful to include in the EIP a code snippet of the getOwner function you described, or at least a slightly more thorough explanation of how the chain of ownership validation would work, as this doesn\u2019t seem to be too clearly laid out. Another point to note is that until wallets / UIs adopt such a standard, for projects that care more about using this as a solution to mirror ownership (particularly consumer NFT projects), it seems like the best temporary solution may be for the originally owned NFT to proxy ownership calls to the owning contract. I\u2019m curious @devinaconley if you might have any other ideas here. Also, personally, I don\u2019t like any of the suggested prefixes for the naming convention. My recommendation would be making it user (as in userOwnerOf or userBalanceOf) since in terms of semantics the functional owner is almost always also the user of the NFT. Really excited to see this prop go through! ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4799"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.746829710144928
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "02/09/2022-14:47:07",
+                    "content": "Hey @leeren thanks for the thoughts and feedback!     leeren:  EIP-4987, however, is the only proposal that does so in a way that is both simple and backwards-compatible.   Appreciate you digging into alternatives, great to hear. We put a major focus on the interface being lightweight and backwards compatible.     leeren:  I do think it would be helpful to include in the EIP a code snippet of the getOwner function you described, or at least a slightly more thorough explanation of how the chain of ownership validation would work, as this doesn\u2019t seem to be too clearly laid out.   Good idea, will make an addition to include this.     leeren:  seems like the best temporary solution may be for the originally owned NFT to proxy ownership calls to the owning contract.   The challenge there would needing to update the core ERC721 to do that. I think that individual projects can start by simply updating their own webapps to reflect held ownership of tokens. Generally, I think adoption follows in 3 phases. First, of course, core protocols that hold tokens need to implement this interface. Then individual projects can consume this standard for their governance, access controls, etc. Finally, we can work with larger platforms for more universal adoption.     leeren:  My recommendation would be making it user (as in userOwnerOf or userBalanceOf) since in terms of semantics the functional owner is almost always also the user of the NFT.   Tried adding this to the poll, but longer possible. I do like this suggestion as well, curious to hear other\u2019s thoughts ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.997395833333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CareWater333",
+                    "index": "31",
+                    "likes": "1",
+                    "time": "06/09/2022-17:29:34",
+                    "content": "Nice work on this standard. Wanted to comment on a possible use-case for the ERC20 side of things. I\u2019m implementing a vault where some ERC20 tokens owned by the vault are reserved for distribution. I\u2019m considering using something like hold(reservedAddress, this) to mark those tokens. I will need to know how many tokens are not reserved, so I wonder if this is something that should be added to the standard. Seems like there are other use-cases where querying the amount of held tokens is useful. I see two possible solutions. One just returns the unreserved balance: function unheldBalanceOf(address owner) external view returns (uint256) The other overrides heldBalanceOf with a different signature to indicate total held balance, and then I can subtract from balanceOf to get the unreserved balance. function heldBalanceOf(address owner) external view returns (uint256) To be honest I\u2019m not sure if either of these are necessary for the standard, but one of them would be useful for my case. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "07/09/2022-07:02:20",
+                    "content": "Hey @CareWater333 - thanks for the feedback/thoughts here. First, agreed that the ERC20 distribution vault you are describing is a perfect use case for this standard. The held token interface would allow external system to include users in governance, membership, verification, etc. even before their tokens are vested.     CareWater333:  I will need to know how many tokens are not reserved   Question on this, what kind of system will be consuming this data on \u201cnot reserved\u201d tokens? Is it on-chain or off-chain? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.821428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CareWater333",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "12/09/2022-04:02:00",
+                    "content": "On chain. This is an implementation of ERC4626, and the share price calculation needs to be based on the number of tokens not already reserved for distribution. I\u2019ve already implemented it - it\u2019s not hard. The question is if it\u2019s useful enough to make part of the standard. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.557291666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "21/11/2022-23:36:47",
+                    "content": "Just pushed an update to EIP-4987  more detailed revert specification harden example implementation add chained ownership lookup snippet (cc @leeren ) misc cleanup    github.com/ethereum/EIPs         EIP-4987 hardening/cleanup   ethereum:master \u2190 devinaconley:master              opened 11:17PM - 21 Nov 22 UTC                 devinaconley               +46 -11       Changes - more detailed revert specification - harden example implementation \u2026- add chained ownership lookup snippet - misc cleanup       Would welcome any additional feedback here! ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/6019",
+                        "https://github.com/ethereum/EIPs/pull/6019",
+                        "https://github.com/devinaconley",
+                        "https://github.com/ethereum/EIPs/pull/6019/files",
+                        "https://github.com/ethereum/EIPs/pull/6019"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 7.800000000000001
+                }
+            ]
+        }
+    ],
+    "group_index": "1448"
+}

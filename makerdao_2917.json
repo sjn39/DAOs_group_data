@@ -1,0 +1,565 @@
+{
+    "poll_list": [
+        {
+            "title": "Inclusion Poll for Peg Stability Module (MIP29)- January 11, 2021",
+            "index": "5071",
+            "option": "Yes",
+            "supporting_mkr": "65,085",
+            "highest_fraction": 0.98
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip29-peg-stability-module/5071",
+            "title": "MIP29 - Peg Stability Module ",
+            "index": 5071,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "mips",
+                "pegstab-module",
+                "mip-accepted"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#1",
+                    "likes": "19",
+                    "time": "09/11/2020-17:44:49",
+                    "content": "MIP29: Peg Stability Module Preamble MIP#: 29 Title: Peg Stability Module Author(s): Sam MacPherson (@hexonaut) Contributors: None Type: Technical Status: Formal Submission (FS) Date Proposed: 2020-11-09 Date Ratified: <yyyy-mm-dd> Dependencies: n/a Replaces: n/a License: AGPL3+  References  The proposed dss-psm implementation Pre-MIP discussion  Sentence Summary This proposal provides a smart contract implementation of the Peg Stability Module. Paragraph Summary The PSM acts a special vault which is attached to a permissioned gemJoin with 100% Collateralization Ratio and 0% Stability Fees. Instead of crediting gems to the supplier of the tokens, it pools them together and takes out a debt position at 100% Collateralization Ratio issuing the newly minted ERC20 Dai to the person who supplied the collateral. In the reverse direction, anyone can go from ERC20 Dai to the collateral token as long as there is debt available to clear. Optional fees tin and tout can be activated as well which send a fraction of the trade into the vow. This implementation conforms to the description laid out in the Pre-MIP discussion. Component Summary MIP29c1: Definitions: defines Toll In (tin) and Toll Out (tout). MIP29c2: Proposed code: contains snippet of proposed implementation. MIP29c3: Test cases: lists existing test cases, including integration test MIP29c4: Security considerations: comments on the limited nature of the security implications of adding the PSM. MIP29c5: Formal verification/audit information: comments on the amenability of the proposed code to formal verification, even though formal specification, audit, or code review have yet to be conducted. MIP29c6: Licensing: states the license under which the proposal and code are distributed. Motivation Creating more Dai utility through a stable peg The number one objective of the Maker protocol and Maker governance is to maintain the stability of Dai, so that the people, businesses and DeFi protocols that rely on it can trust that their money is protected from volatility. Delivering against this promise will drive continued growth of the project. The Peg Stabilization Module can restore the peg and utility of Dai to users around the world, which makes it a very important change to consider. Strengthening the collateral portfolio by replacing collateral types that cannot be liquidated The Maker protocol currently has a lot of Dai generated from the USDC-A collateral type, which has liquidations disabled. This is an undesirable situation, because the Maker Protocol wasn\u2019t designed to support having collateral types with liquidations turned off, and it could potentially result in Vaults with more debt than collateral value that would be abandoned by their owners, yet still remain in the collateral portfolio. But having liquidations disabled was necessary due to the fact that the current auction system is not well suited for liquidating low-risk assets, so it was done as a short term solution that would be replaced in the future. The Peg Stabilization Module is such a solution that would be able to replace this collateral type. It would allow Maker Governance to altogether remove stablecoin based collateral types from the system in the short run, solving the issue of disabled liquidations entirely, and removing any risk that the system will end up having abandoned, unliquidated Vaults with more debt than collateral value. Encouraging natural Dai generation from other collateral types through stability and liquidity A significant advantage of the Peg Stabilization Module is that it helps with stability and liquidity when the price goes above the peg. It also helps to provide liquidity and stability for when there is Dai supply to sell. This means that it helps encourage vault creation and Dai generation from other assets, such as ETH, because it gives vault users a lot of reliable liquidity to sell their Dai to if they are looking to pull fiat currency out from their vault. Generally, a reliable peg makes Vault holders more willing to generate Dai. In contrast, an uncertain peg makes it riskier to generate Dai, since it is less clear if it will be possible to later unwind the position again without having to buy back Dai at a price different from the peg. Providing a solution to this issue with the Peg Stabilization Module is a significant advantage in the short run to try to get the Protocol back into a natural balance. Still, it will also continue to be a substantial advantage in the long term. It generally improves the user experience and value proposition the system offers to its users, both Dai users and Vault users. Natural unwinding During times when the Maker Protocol is out of balance, the Peg Stabilization Module will keep the Dai peg stabilized by building up potentially large amounts of stablecoins as collateral. Since the Peg Stabilization Module encourages natural Dai generation, the built-up stablecoins within the Peg Stabilization Module will be used by new Vault users to exit to fiat if there is a significant buildup (this will only be temporary). This means that the Peg Stabilization Module naturally unwinds itself as the system goes back into a balanced state. Therefore, the Peg Stabilization Module will not contribute to the long-term buildup of stablecoins as collateral in the system. Instead, it will work against it by helping to bring the system back into balance quickly. This ultimately minimizes the amount of time the Maker Protocol needs to have substantial exposure to stablecoins. Becoming the trading hub for stablecoin swaps Another long term advantage that the Peg Stabilization Module offers is the ability to become a hub for trading different stablecoins against each other. If Maker Governance adds multiple stablecoins to Peg Stabilization Modules and enables low-fee 1:1 trading for each of them (against Dai), it would allow the trading of different stablecoins against each other as a side-effect. As a result, this would ultimately help with overall liquidity in the DeFi ecosystem. At the same time, Maker would be compensated by charging the Peg Stabilization Module spread twice for providing the service. Specification MIP29c1: Definitions   Toll In: The fraction of the Gem \u2192 Dai transaction sent to the vow as a fee. Encoded as tin in wad units.  Toll Out: The fraction of the Dai \u2192 Gem transaction sent to the vow as a fee. Encoded as tin in wad units.  MIP29c2: Proposed code see psm.sol. The core functionality is simple: function sellGem(address usr, uint256 gemAmt) external {     uint256 gemAmt18 = mul(gemAmt, to18ConversionFactor);     uint256 fee = mul(gemAmt18, tin) / WAD;     uint256 daiAmt = sub(gemAmt18, fee);     gemJoin.join(address(this), gemAmt, msg.sender);     vat.frob(ilk, address(this), address(this), address(this), int256(gemAmt18), int256(gemAmt18));     vat.move(address(this), vow, mul(fee, RAY));     daiJoin.exit(usr, daiAmt);      emit SellGem(usr, gemAmt, fee); } function buyGem(address usr, uint256 gemAmt) external {     uint256 gemAmt18 = mul(gemAmt, to18ConversionFactor);     uint256 fee = mul(gemAmt18, tout) / WAD;     uint256 daiAmt = add(gemAmt18, fee);     require(dai.transferFrom(msg.sender, address(this), daiAmt), \"DssPsm/failed-transfer\");     daiJoin.join(address(this), daiAmt);     vat.frob(ilk, address(this), address(this), address(this), -int256(gemAmt18), -int256(gemAmt18));     gemJoin.exit(usr, gemAmt);     vat.move(address(this), vow, mul(fee, RAY));      emit BuyGem(usr, gemAmt, fee); }  MIP29c3: Test cases see psm.t.sol  testFail_sellGem_over_line test_sellGem_fee test_swap_both_other_small_fee test_swap_both_other test_swap_both_fees testFail_swap_both_small_fee_insufficient_dai testFail_sellGem_insufficient_gem testFail_direct_deposit test_swap_both_no_fee testFail_two_users_insufficient_dai test_swap_both_zero test_sellGem_no_fee  MIP29c4: Security considerations The proposed solution is simple and non-invasive, interacting with only the permissioned gemJoin. The rest of the function calls are all calls into the Maker system that anyone can make. MIP29c5: Formal verification/audit information The proposed contract is written in a way which is amenable to formal specification and verification, in accordance with the style and practices of the core multi-collateral DAI contracts, though it has not been formally specified. No audit or code review has taken place yet. MIP29c6: Licensing  AGPL3+  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/peg-stabilization-modules-a-pre-mip-discussion/3045",
+                        "https://forum.makerdao.com/t/peg-stabilization-modules-a-pre-mip-discussion/3045",
+                        "https://github.com/BellwoodStudios/dss-psm/blob/master/src/psm.sol",
+                        "https://github.com/BellwoodStudios/dss-psm/blob/master/src/psm.t.sol",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/weekly-mips-update-23/5914",
+                        "https://forum.makerdao.com/t/mip29-modulo-de-estabilizacion-de-la-paridad/5110",
+                        "https://forum.makerdao.com/t/signal-request-accelerate-the-psm-launch/5094",
+                        "https://forum.makerdao.com/t/mip36-peg-stability-compound-governance-dai-leverage/6029",
+                        "https://forum.makerdao.com/t/maker-relay-ep-27-happy-2021/6016",
+                        "https://forum.makerdao.com/t/maker-relay-ep-26/5759",
+                        "https://forum.makerdao.com/t/maker-relay-ep-25/5671",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24/5534",
+                        "https://forum.makerdao.com/t/foundation-statement-on-the-psm/5521",
+                        "https://forum.makerdao.com/t/mip27-debt-ceiling-instant-access-module/4625/22",
+                        "https://forum.makerdao.com/t/2020-year-end-schedule/5218",
+                        "https://forum.makerdao.com/t/know-your-mip-kym-01-pilot-peg-stability-module-friday-november-20-17-30-utc/5219/3",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-119-thursday-november-19-16-00-utc/5112/2",
+                        "https://forum.makerdao.com/t/know-your-mip-kym-01-pilot-peg-stability-module-friday-november-20-17-30-utc/5219",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-118-thursday-november-12-16-00-utc/5008/3",
+                        "https://forum.makerdao.com/t/week-24-dai-distributions-sourcecred-funding-mip13c3-sp6/5223",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21-en-espanol/5199",
+                        "https://forum.makerdao.com/t/ideas-on-dai-peg-usdc-a-vault-fees-etc-a-basic-analysis-suggestions/5147",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/5",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-118-thursday-november-12-16-00-utc/5008/8",
+                        "https://forum.makerdao.com/t/peg-stabilization-modules-a-pre-mip-discussion/3045/38",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21/5181",
+                        "https://forum.makerdao.com/t/the-history-of-a-dai-at-par-value-what-can-we-learn-from-it/12310",
+                        "https://forum.makerdao.com/t/maker-relay-ep-63-en-espanol/10443",
+                        "https://forum.makerdao.com/t/maker-relay-ep-63/10400",
+                        "https://forum.makerdao.com/t/maker-relay-ep-30/6303",
+                        "https://forum.makerdao.com/t/maker-governance-review-january-2021/6296",
+                        "https://forum.makerdao.com/t/weekly-mips-update-26/6291",
+                        "https://forum.makerdao.com/t/maker-relay-ep-29/6214",
+                        "https://forum.makerdao.com/t/maker-relay-ep-28/6118",
+                        "https://forum.makerdao.com/t/road-to-dao-the-core-unit-operating-model/6105",
+                        "https://forum.makerdao.com/t/weekly-mips-update-25/6092",
+                        "https://forum.makerdao.com/t/weekly-mips-update-24/6052",
+                        "https://forum.makerdao.com/t/maker-relay-ep-27-en-espanol-feliz-2021/6035"
+                    ],
+                    "GPT-summary": "The post is a formal submission of a proposal for a Peg Stability Module (PSM) for the Maker protocol. The proposal provides a smart contract implementation of the PSM, which acts as a special vault attached to a permissioned gemJoin with 100% Collateralization Ratio and 0% Stability Fees. The post explains the motivation behind the proposal, its component summary, and its specification. The post also discusses the advantages of the PSM, such as restoring the peg and utility of Dai, strengthening the collateral portfolio, encouraging natural Dai generation, and becoming the trading hub for stablecoin swaps.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Interoperability and Scalability",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.404135042446731
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "09/11/2020-18:52:04",
+                    "content": "@hexonaut, That sure is a shiny MIP but sorry for not speaking code. gemjoin? vat? What does this MIP actually do? Could you please maybe come up with a worked out example? In english? \u201cBob the whale has 1 million USDC and heads over to oasis.app\u201d \u2026now how does this story develop? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#3",
+                    "likes": "2",
+                    "time": "09/11/2020-19:07:01",
+                    "content": "Haha I figured as a technical MIP I would keep it technical. It will do exactly what was described in the pre-mip discussion. You can trade between dai and usdc/tusd/etc at 1:1 for a fee provided there is liquidity. You can picture it like the sai-dai bridge but with fees. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "09/11/2020-19:58:31",
+                    "content": "In the present market 1 DAI = 1.01 USDC. Maker has approved the collateral type USDC-PSM as per MIP29. Bob the whale has 1 million USDC and heads to Oasis.app. Bob puts 1 million USDC into USDC-PSM and gets 1 million DAI as per MIP29. Bob happy as it is the cheapest DAI in the market. is this a correct ELI5 version? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving explanation of proposal"
+                    ],
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "09/11/2020-20:03:37",
+                    "content": "Pretty much except you probably don\u2019t want the fees at exactly 0%, so Bob will get some fraction of 1 million Dai. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "09/11/2020-20:05:17",
+                    "content": "So let\u2019s say Bob gets 1 million DAI minus 2x gas fees as we want the spread real tight. Is this approximately correct? Still a lot better than 1.01 spread currently. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving positive feedback on proposal"
+                    ],
+                    "Sentiment": 4.732142857142857
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "09/11/2020-20:20:03",
+                    "content": "The fees are a percent of the transaction amount and don\u2019t have anything to do with gas. They can be whatever we want. If they are 1% then it will be roughly the same as the current stablecoin vaults but with no stability fee. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.833333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "09/11/2020-20:23:17",
+                    "content": "\u2026story of Bob the whale continues\u2026 Bob takes his DAI, does his thing and then wants his USDC back. He takes 1 million DAI (minus some fees) and starts looking around. Bob could go to Oasis, but why? If the market peg is not 1:1 there is a better deal elsewhere. Bob uses some other market, maybe Curve. Bob gets 1010000 USDC (minus fees) as the peg is still 1 DAI = 1.01 USD. Bob heads over to Oasis again. Rinse and repeat. edit: is this ELI5 still correct? ",
+                    "links": [
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/6"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#9",
+                    "likes": "3",
+                    "time": "09/11/2020-20:33:36",
+                    "content": "The ELI5 is more like: You want DAI?, I give it to you for 1.01 USDC. You want USDC? I give it to you for 1.00 DAI if I still have some USDC left from step above. Parameters can change, but let\u2019s start with the current state. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#10",
+                    "likes": "6",
+                    "time": "09/11/2020-20:38:30",
+                    "content": "@Planet_X and all interested: it might be interesting (surely it was for me, @hexonaut kindly pointed it to me) to read the pre-MIP thread: here. What we can do now is discuss (energetically!) on how:  Properly reward @hexonaut for the code/community contribution. This is extremely important and should be rewarded as such. Approve some spending of the surplus to pay for third parties (Trail of bits, bounties, etc) to verify the code. We want this as quickly as possible. But at the time we need ultra-safe code. We will have to pay good money to have both of these things.  While the verification (and perhaps code optimisations) are performed, we need to discuss a roadmap to how launch this PSM (for USDC first): What ceiling and what fixed-fees do we want?  This is very exciting. Thanks again @hexonaut. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 6.515384615384615
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "09/11/2020-20:50:15",
+                    "content": "    SebVentures:  You want DAI?, I give it to you for 1.01 USDC.   This is not how I read this MIP. Goal is 1:1 trading, adjusted by fees. If the fees are indeed 1% this means MIP29 can not help the peg inside the 0.99-1.01 range. Am I correct? Edit: outside corrected to inside ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#12",
+                    "likes": "1",
+                    "time": "09/11/2020-20:55:53",
+                    "content": "If the fees both ways are set to 1% it will enforce a hard limit of 0.99-1.01 provided there is debt ceiling room or usdc available because it\u2019s free money otherwise. There are a number of other benefits outlined in the pre-mip though. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.479166666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#13",
+                    "likes": "1",
+                    "time": "09/11/2020-20:59:00",
+                    "content": "Does this contract have a enable/disable switch? We definitely want to disable it when the DAI savings rate (DSR) is greater than zero, yes? Maybe it should have a switch for each direction so we can set it to drain DAI liquidity in preparation to increase the DSR above zero. Hm, can the switch be locked to the condition DSR!=0? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#14",
+                    "likes": "3",
+                    "time": "09/11/2020-21:01:18",
+                    "content": "    Planet_X:  If the fees are indeed 1% this means MIP29 can not help the peg inside the 0.99-1.01 range.   It\u2019s a parameter, I used tin at 1% and tout at 0%. I find this solution strictly superior to USDC-A so I don\u2019t want to give the impression that we need to narrow the peg band more that what is currently done. It can, but it\u2019s not mandatory. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#15",
+                    "likes": "3",
+                    "time": "09/11/2020-21:01:18",
+                    "content": "It has all the same controls as a regular vault type. We can turn off minting dai by setting the dc to 0. We cannot turn it off the other way though and we should let it drain first before turning on the dsr (same with usdc-a, etc). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#16",
+                    "likes": "1",
+                    "time": "09/11/2020-23:30:58",
+                    "content": "Looks good Thanks. That is important :     iammeeoh:  What we can do now is discuss (energetically!) on how:  Properly reward @hexonaut for the code/community contribution. This is extremely important and should be rewarded as such. Approve some spending of the surplus to pay for third parties (Trail of bits, bounties, etc) to verify the code. We want this as quickly as possible. But at the time we need ultra-safe code. We will have to pay good money to have both of these things.  While the verification (and perhaps code optimisations) are performed, we need to discuss a roadmap to how launch this PSM (for USDC first): What ceiling and what fixed-fees do we want?  This is very exciting. Thanks again @hexonaut.   ",
+                    "links": [
+                        "https://forum.makerdao.com/t/maker-relay-ep-25-en-espanol/5680",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24-en-espanol/5574",
+                        "https://forum.makerdao.com/t/maker-governance-review-november-2020/5453",
+                        "https://forum.makerdao.com/t/maker-relay-ep-23-en-espanol/5442",
+                        "https://forum.makerdao.com/t/maker-relay-ep-23/5419",
+                        "https://forum.makerdao.com/t/weekly-mips-update-22/5416",
+                        "https://forum.makerdao.com/t/maker-relay-ep-22-en-espanol/5290",
+                        "https://forum.makerdao.com/t/maker-relay-episode-22/5288",
+                        "https://forum.makerdao.com/t/weekly-mips-update-21/5222"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.391666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#17",
+                    "likes": "2",
+                    "time": "10/11/2020-10:38:53",
+                    "content": "    iammeeoh:  Approve some spending of the surplus to pay for third parties (Trail of bits, bounties, etc) to verify the code. We want this as quickly as possible. But at the time we need ultra-safe code. We will have to pay good money to have both of these things.   MIP14 allows you to do this, but you need to know specifically where you are sending the DAI. In terms of actually engaging auditors, you\u2019d probably want to approach them and secure an agreement for work provided that DAI is paid upfront. In terms of using it for bounties, this is currently possible, again, you just need a recipient address.     iammeeoh:  While the verification (and perhaps code optimisations) are performed, we need to discuss a roadmap to how launch this PSM (for USDC first): What ceiling and what fixed-fees do we want?   I\u2019d largely agree with some of the others and say that the first step should be replicating the current stable-coin vault types in terms of fees. The ceiling should probably start low to limit risk. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.0064935064935066
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#18",
+                    "likes": "2",
+                    "time": "10/11/2020-11:26:51",
+                    "content": "    LongForWisdom:  MIP14 allows you to do this, but you need to know specifically where you are sending the DAI.   Thanks LFW. Yesterday in MakerDAO\u2019s chat, @hexonaut said: Screenshot 2020-11-10 at 12.23.302278\u00d7284 88.3 KB So let\u2019s wait a few days to see how this thing evolves. Ideally, the Smart contract team can give us indications on the necessity or not of 3rd party audits and stuff like that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author is advertising proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.114285714285714
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/latetot",
+                    "index": "#19",
+                    "likes": "0",
+                    "time": "10/11/2020-18:51:04",
+                    "content": "Awesome work - so glad to see progress on this ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#20",
+                    "likes": "1",
+                    "time": "11/11/2020-07:19:57",
+                    "content": "Some basic questions. Is tin and tout in this design expected to be managed by governance or just set and left alone?  I can\u2019t imagine these are fixed values because then this part of the code would have to be redeployed on changes to tin/tout?! Are tin and tout always expected to be above 0 and hence PEG always bracket 1-tout <= PEG <= 1+tin? What is a scenario where this module actually causes the PEG to regulate around 1?    (i.e. what are the tin and tout settings in this scenario and why is the PEG at 1 vs 1+tin and how much stablecoin liquidity is there in the PSM at this time). Correct me if I am wrong in the understanding here. with tin = 1% and tout=0.   Lets say a user comes to the PSM and wants to swap 1010USDC for 1000 DAI.  My understanding of the above code is the contract basically creates a vault and deposits 1010 USDC and mints 1010DAI.  1000 goes back to the USDC depositor and 10DAI goes into the surplus? What happens in the above code if say for some reason USDC is trading at .985 US while DAI is trading at $1+tin for sake of illustration.  In the above example: What is to stop the system from minting 1000 DAI worth (1000+tin*1000)USD for 1000 USDC that is worth only $985US? If there is something that stops the above, how does the price in USD of the stablecoin being converted relate to how much DAI the user gets and is this displayed in the User Interface to the PSM?  I think I disagree with the bolded part of the quote below:     hexonaut:  Therefore, the Peg Stabilization Module will not contribute to the long-term buildup of stablecoins as collateral in the system. Instead, it will work against it by helping to bring the system back into balance quickly. This ultimately minimizes the amount of time the Maker Protocol needs to have substantial exposure to stablecoins.   I don\u2019t see how a fixed tin and tout value causes any work other than to act as a pricing bracket at 1-tin as long as there is stablecoin liquidity in the PSM, and 1+tout as long as there is available DAI DC.  As @LongForWisdom repeatedly points out without liquidity on either end here the facility ceases to regulate. What is the backup PEG regulation if the PSM runs out of liquidity? On the PEG downside everyone feels like stablecoin liquidity will exhaust rather rapidly and Maker has SF and DSR to cause the PEG to rise back to 1.   But do we really give up our stablecoin PEG liquidity buffer at 1 PEG price or do we perhaps lower the 1-tout down to .99 and use the stablecoin liquidity in that case to act as a price stabilizer on the low side? On the PEG highside is there going to be another facility that is available in case the PSM DC exhausts before governance can extend it? Also on first glance there is no rate control on this.   Literally someone could come and eat all of the available liqudiity in one shot (think flash loan here that costs tin% for the entire available DC), killing the PSMs ability to manage the PEG for some time (GSM delay to extend DC?!).   Is the DC alone the best way to control capital flows into and out of this facility or should the rate of flow be controlled to some extent. Looking at this proposal it really just looks like another variation of a USDC vault except fees are taken out up front.   I have concerns over how the USD price of stablecoins minting DAI will be managed against the USD PEG price of DAI and what happens here if the collateral value in USD happens to drop below $1 as this will negative affect 1:1 collateral:DAI backing collateral value. Notice during an ES these USD price oracles on collateral and DAI would be taken into account in normal vault claiming left over collateral\u2026   With the PSM the oracle price, if it is considered at all, is only at the time the exchange is made(we don\u2019t care what the price of USDC does because we simply are not going to liquidate positions). I think this adds an extra hazard for DAI holders in terms of collateral backing.   Even at LR of 101 on USDC vaults with SF = 0 if USDC were to drop to what .99 with PEG at 1.01 or higher (for some reason) pretty much puts DAI holders in an ES short some collateral value. The whole backing value was one of the main reasons I really wasn\u2019t hot to go to LR of 101 on USDC-A with liquidations off mostly because one is limiting the collateral value buffer to only a 1% USD price change on the collateral (.99).   If I my understanding is correct the PSM here is no longer has such a collateral USD value buffer as DAI is minted for stablecoins at 1:1 with profit immediately going into the surplus. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.535858585858586
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#21",
+                    "likes": "2",
+                    "time": "11/11/2020-13:10:15",
+                    "content": "    MakerMan:  Is tin and tout in this design expected to be managed by governance or just set and left alone? I can\u2019t imagine these are fixed values because then this part of the code would have to be redeployed on changes to tin/tout?!   These can be changed after deployment by governance.     MakerMan:  Are tin and tout always expected to be above 0 and hence PEG always bracket 1-tout <= PEG <= 1+tin?   It\u2019s up to governance how they want to set these. It\u2019s possible to leave one or both of them at 0% depending on the size of the debt ceiling. I\u2019m guessing we probably won\u2019t want to set the fees both to 0% as your bracket equation is correct as long as there is debt ceiling or liquidity available to go either way.     MakerMan:  with tin = 1% and tout=0. Lets say a user comes to the PSM and wants to swap 1010USDC for 1000 DAI. My understanding of the above code is the contract basically creates a vault and deposits 1010 USDC and mints 1010DAI. 1000 goes back to the USDC depositor and 10DAI goes into the surplus?   This is correct.     MakerMan:  What happens in the above code if say for some reason USDC is trading at .985 US while DAI is trading at $1+tin for sake of illustration.  In the above example: What is to stop the system from minting 1000 DAI worth (1000+tin*1000)USD for 1000 USDC that is worth only $985US? If there is something that stops the above, how does the price in USD of the stablecoin being converted relate to how much DAI the user gets and is this displayed in the User Interface to the PSM?    This is essentially the case where Dai is trading above $1.01 USDC (not USD). In this case free money is available, and the price will be arbitraged until it reaches $1.01 again (or the debt ceiling is reached).     MakerMan:  I don\u2019t see how a fixed tin and tout value causes any work other than to act as a pricing bracket at 1-tin as long as there is stablecoin liquidity in the PSM, and 1+tout as long as there is available DAI DC. As @LongForWisdom repeatedly points out without liquidity on either end here the facility ceases to regulate. What is the backup PEG regulation if the PSM runs out of liquidity?   Yes this would be more against short term price shocks in the other way. Definitely if we sustain a price of < $1 the PSM will clear out quickly and we need to move onto Stability Fee price regulation after that same as before. That being said, this is the case where the tout is set to ~0%. We could increase that if we want to maintain a pool of USDC for extreme price shocks in the other direction. These are all options available that need to be discussed. It\u2019s not really my place to comment on what the fees will be. I\u2019m just putting the code out there. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.422149122807017
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#22",
+                    "likes": "1",
+                    "time": "12/11/2020-19:07:35",
+                    "content": "Note: I\u2019ve updated the design to put the PSM on the other side of the join adapter. Will update the MIP to match shortly. EDIT: Updated to the new design. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0189393939393945
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#23",
+                    "likes": "0",
+                    "time": "14/11/2020-03:40:03",
+                    "content": "    hexonaut:  This is essentially the case where Dai is trading above $1.01 USDC (not USD). In this case free money is available, and the price will be arbitraged until it reaches $1.01 again (or the debt ceiling is reached).   Hello Sam!   Nice work on the simple code btw and thank you for the reply. I think you miss the point of the example here or I am missing something.   The point here is that if the USD value of the stablecoin being exchanged for DAI is depressed we can run into a situation where the PSM is DC maxed.   To be fair with the current OSM USD prices on USDC being locked to 1 this hazard exists now.   These are the only vaults and collateral types where Maker has locked the OSM prices to $1 and this lock opens up a value hazard if for any reason the stablecoin prices with locked OSM USD prices drop in USD value below the PSM profit margin. This is a general issue here due to the OSM stablecoin prices being locked at $1 USD and I wondered if the stablecoin OSM prices were to change whether this code would obey those somehow or whether it would ignore them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.802083333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#24",
+                    "likes": "0",
+                    "time": "14/11/2020-13:02:01",
+                    "content": "I\u2019m not sure if I quite follow. The amount of USDC needed to restore the peg is about 400M, so I don\u2019t foresee any large slippage on USDC/USD with the hard peg in place. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.454365079365079
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Paperliss",
+                    "index": "#25",
+                    "likes": "0",
+                    "time": "25/11/2020-06:48:33",
+                    "content": "I\u2019m concerned about what would happen if USDT lost its peg, if anyone can trade it 1:1 for DAI how could we keep our peg? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#26",
+                    "likes": "0",
+                    "time": "25/11/2020-12:44:30",
+                    "content": "PSM will only work with USDC to start and we, the community, at Maker do not like/trust USDT so I don\u2019t think USDT will ever get added and if it did the DC on it would be very small as to not have too much exposure to that risk. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving feedback on proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#27",
+                    "likes": "0",
+                    "time": "25/11/2020-12:50:18",
+                    "content": "I\u2019m going to assume you meant USDC instead of USDT. If USDC looses its peg then we would need to take on debt equivalent to the losses same as any other collateral type. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.6875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#28",
+                    "likes": "0",
+                    "time": "25/11/2020-15:29:16",
+                    "content": "PSM is in front of a vault, and as any vault there is a ceiling. If the usdc lost its peg, the usdc PSM vault will get full as the USDC-A and B vault. Both vault carry the same risk. I am not sure if that answers your question. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.166666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#29",
+                    "likes": "5",
+                    "time": "04/01/2021-21:07:08",
+                    "content": "Please note I have submitted MIP29 for January\u2019s governance cycle. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#30",
+                    "likes": "2",
+                    "time": "03/02/2021-22:57:43",
+                    "content": "This mip was accepted 01/28/21 with the January MIPs bundle  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Julian",
+                    "index": "#31",
+                    "likes": "0",
+                    "time": "03/03/2021-00:44:27",
+                    "content": "Does this mean that the Dai Peg Stability Module contracts are published on Ethereum? Or that they were just accepted for the executive vote? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.4375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#32",
+                    "likes": "1",
+                    "time": "03/03/2021-02:32:25",
+                    "content": "The contracts have been deployed and it\u2019s live. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.681818181818182
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip29-peg-stability-module-psm-risk-assessment/5504",
+            "title": "MIP29 - Peg Stability Module (PSM) Risk Assessment ",
+            "index": 5504,
+            "category": [
+                "Core Units",
+                "Risk"
+            ],
+            "tags": [
+                "pegstab-module",
+                "mip29"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#1",
+                    "likes": "14",
+                    "time": "06/12/2020-15:13:59",
+                    "content": "There are two ways to write PSM Risk Assessment. One that is isolated from current 101% LR stablecoins implementation and one that compares PSM with current implementation of low LR stablecoin vaults and its impact on risk. I decided to choose the latter since risks with 101% LR stablecoin vaults were already discussed a couple of times and are well known to the community. Yet, PSM does increase stablecoin exposure among other things and both risks and benefits need to be properly addressed. In this risk assessment I want to primarily focus on the following topics:  Impact on increased stablecoins exposure Risk compensation of increased stablecoin exposure Impact on market making activities Additional features of PSM  Increased stablecoin exposure MKR holders have voted yes (with only 55% support though) to support PSM implementation with 0.1% tin and 0.1% tout parameters. tin parameter of 0.1% effectively means that governance is capping DAI price to $1.001 (assuming stablecoins in PSM are worth $1). The most liquid venue for stablecoin trading is currently Curve where DAI price in large extent gets defined. Looking at the bid side of Curve\u2019s orderbook, we can see that 93m DAI needs to be sold into Curve pools to reach the DAI/USDC price of 1.001. If we look at other important stablecoins pairs such as ones with USDT and TUSD, we can estimate additional 90m DAI selling is needed, bringing the aggregate amount to around 180m DAI. Finally, there are other venues where DAI is in demand over $1.001 price mark and we could easily estimate that additional 250m DAI minted from stablecoins might be needed to reduce DAI price below $1.001. This means Maker would increase DAI backing with stablecoins from current 45% towards 55% if a tin parameter of 0.1% is selected. Note that this is only estimation and situation can change until PSM implementation is effective (such as recent proposal of Compound to lower DAI borrowing on their platform which might put pressure of the peg) DAI/USDC orderbook on Curve  Risk compensation By implementing PSM, risk profile of Maker should worsen since additional stablecoins are onboarded and low fee collection will probably not offset increased risks. This is because only 0.1% fee is collected on stablecoin exposure versus 4% in the past (actually only 1% if assuming recent 101% LR). However the 0.1% is one time fee collection \u201con the way in\u2019\u2019 and can multiply on a yearly basis if DAI demand and supply imbalances cause DAI to hit $0.999 floor and $1.001 ceiling frequently. It is questionable though if a high turnover can be reached to accumulate yearly fees well over 1%, yet it is theoretically possible, especially if Maker starts competing with other stablecoin trading venues (addressed later). However I want to note that PSM is much more efficient, when it comes to fee collection versus current 101% LR stablecoin vault implementation. The maximum amount of fees Maker could collect with 101% LR stablecoin vault was 1%, which may sound better than 0.1% (even though one time), but there were many known issues with unwinding of such vaults and actual collection of those fees. Impact on market making ecosystem Community discussed the impact of PSM on market making (MM) ecosystem and primarily exposed the problem of MM losing incentive or opportunity to arbitrage the peg the way they were used to until now. In the pre-low LR stablecoin vaults world, speculators could speculate on the price and arb it very freely. Once 101% LR stablecoin vaults were established, this arbitrage was reduced severely. If and when PSM with 0.1% tin is implemented, the arbitrage MM used to do is more or less gone. However there is a different type of arbitrage now. It isn\u2019t as speculative anymore, but has direct realization of arbitrage profits. Every time DAI price leaves the tin and tout bounds, everybody can immediately realize profit by trading through PSM. This is much different from how DAI peg relied on MM in the past, where MM needed some assurance governance will rebalance demand and supply so that DAI reaches $1 peg again and they could exit their positions and realize profits. In that sense, the arbitrage opportunity under PSM is still present, but 1) is way less speculative than it was in the past, 2) doesn\u2019t enable high returns as in the past but on the other hand 3) enables direct realization of arbitrage profits. PSM features One feature that PSM enables for DeFi ecosystem is zero slippage stablecoin trading. However it depends on debt ceilings and type of stablecoin that will be supported. Maker will therefore directly compete with AMMs like Curve, although it would still charge higher fees (0.1% tin & tout versus 0.04% Curve fee). Yet it will offer zero slippage and traders performing larger trades might want to utilize Maker instead of other AMMs. Another feature of PSM is that it will enable Maker governance to follow DAI demand and supply imbalance. With a more narrowly defined DAI price, each demand or supply shock would be directly observed by the amount of stablecoin collateral held in the PSM. Finally, PSM enables easier unwinding of current low LR stablecoins vaults. Vault owners might be more tempted to exit their positions when DAI price gets decreased due to PSM and governance would have less issues with coordinating liquidation of such vaults. There were also ideas that these vaults could be directly liquidated to PSM using specific techniques. Final Note To conclude, PSM with proposed tin and tout parameters offers an alternative way of peg management for Maker. It starts relying more on stablecoins and their pricing, arbitrage becomes different and risk compensation gets reduced. However, PSM is much more effective than low LR stablecoin implementation. @Risk-Core-Unit understands that the governance is in favour of lowering the business risks by having DAI price much closer to $1 and less volatile and is prepared to sacrifice increased collateral risk profile (more stablecoin exposure with much lower risk compensation). As I have mentioned in the past, PSM is really focused on DAI peg, but worsens collateral risk. So it becomes a question of business risk versus collateral risk to which this assessment doesn\u2019t provide an answer. Negative rates are potentially a better implementation in terms of collateral risk, but possibly much worse from a business risk perspective and peg management efficiency. Nevertheless I think everybody agrees that the primary goal still stands to onboard RWA and other yielding collateral (such as CropJoin implementation) that scales DAI supply and reduces PSM\u2019s risk profile. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/maker-relay-ep-24-en-espanol/5574",
+                        "https://forum.makerdao.com/t/signal-request-psm-parameters/5532",
+                        "https://forum.makerdao.com/t/road-to-the-psm/5353",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/8",
+                        "https://forum.makerdao.com/t/maker-relay-ep-25-en-espanol/5680",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24/5534",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-121-thursday-december-10-16-00-utc/5468/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-25/5671",
+                        "https://forum.makerdao.com/t/weekly-sourcecred-distribution-work-reaches-ath/5670"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": [
+                        "Token economics",
+                        "Risk management",
+                        "Community and engagement",
+                        "Smart contract updates",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.411629072681704
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mario",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "07/12/2020-02:09:59",
+                    "content": "Excellent, from what I\u2019ve seen curve\u2019s trading volume usdc-dai is roughly 7-8 million so I find it highly unlikely that we would accrue the same amount of revenue although this is definitely the way to move forward ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.4
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "07/12/2020-02:10:57",
+                    "content": "Really? I think we could bring in even more lol. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mario",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "07/12/2020-02:11:19",
+                    "content": "Would love to be wrong! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.6875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "08/03/2021-08:11:24",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ],
+    "group_index": "2917"
+}

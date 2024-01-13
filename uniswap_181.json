@@ -1,0 +1,103 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://gov.uniswap.org/t/temperature-check-upgrade-the-nonfungiblepositionmanager-smart-contract-to-reduce-gas-consumption/16517",
+            "title": "Temperature Check - Upgrade the NonFungiblePositionManager smart contract to reduce gas consumption ",
+            "index": 16517,
+            "category": [
+                "Temperature Check"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://gov.uniswap.org/u/guil-lambert",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "22/03/2022-20:22:09",
+                    "content": "Proposal Discussion Topic This proposal asks the following question: Should the NonFungiblePositionManager.sol contract be optimized to reduce gas consumption? Description The Uniswap core smart contract for each pool handles flash loans, swaps, price oracles, and the deployment of liquidity (v3-core/UniswapV3Pool.sol at main \u00b7 Uniswap/v3-core \u00b7 GitHub). While it is possible to directly interact with the core smart contracts, most users interact with the set of peripheral smart contracts developed by Uniswap Labs (GitHub - Uniswap/v3-periphery: \ud83e\udd84 \ud83e\udd84 \ud83e\udd84 Peripheral smart contracts for interacting with Uniswap v3) Swapping and liquidity providing is carried through the SwapRouter.sol and NonfungiblePositionManager.sol smart contracts, respectively. The SwapRouter has been updated recently to version (1.1.0), while the NonfungiblePositionManager (NFPM) hasn\u2019t changed since it was deployed last May (it is still deployed as \"Uniswap V3: Positions NFT\u201d at address 0xC36442b4a4522E871399CD717aBDD847Ab11FE88). One problem with the NFPM smart contract, however, is that it is consuming a significant amount of gas at every transaction. If we look at this Dune analytics dashboard made by Shippooor DAO (@shippooor on twitter): Dune Analytics, we see that, in total, more than to 9909 ETH has been used to mint all positions created through the Positions NFT smart contract:  image1920\u00d7517 28.2 KB  Since the total supply is currently slightly above 200000, this means each LP position costs close to 0.05 ETH in gas to mint, on average. Similarly, the average burn cost is ~0.03 ETH, meaning that adding+withdrawing liquidity to Uniswap v3 through the NonFungiblePositionManager can cost up to 0.08 ETH. If we look at the size distribution for all Uniswap positions, we see that 10% of all positions have less than $250 in total locked value and 20% have between $250 and $2500 in value locked. So these 30% of all positions will have to pay at least between 10-100% of the deposited value in gas fees.  image1920\u00d7813 69.9 KB  Interestingly, about 53% of all positions generated profits with a median return equal to 1267$ without taking the gas fees into account. Taking fees into account, only 39% of all positions are profitable (64336/170161). Proposal The purpose of this Temperature Check is to gauge the interest of the Uniswap community in reducing the gas consumption of the NonFungiblePositionManager smart contract. Governance participants are more than welcome to chip in and discuss the contents of this proposal here. A follow-up proposal may request funds to pay for a solidity dev (which could be from the Uniswap Labs team) to research alternative methods for managing Uniswap v3 liquidity positions with gas reduction as a first priority. Funds may also be needed to pay for the audit, deployment cost, etc. Ultimately, Uniswap governance will consider the proposed solutions and vote on a resolution to deploy a \u201clite\u201d version of the NonFungiblePositionManager contract that will be the one facing users on the app.uniswap.org interface. Possible solutions include: 1. Recycling of existing NFT positions. Adding liquidity to an existing NFT position costs much less gas than creating a new NFT. For instance, looking at a few LP transactions in the ETH-UNI pool:  Mint new token: 431,925 (Ethereum Transaction Hash (Txhash) Details | Etherscan) increaseLiquidity: 235,142 (Ethereum Transaction Hash (Txhash) Details | Etherscan) decreaseLiquidity: 190,326 (Ethereum Transaction Hash (Txhash) Details | Etherscan)  The https://app.yewbow.org interface already facilitates the recycling of NFT position by displaying existing tokens owned by the current user whenever deploying a new position:  image1920\u00d71402 95.2 KB  Piggybacking on this, one way to reduce gas costs with minimal change to the NFPM code would be to return the ownership of burned NFT positions to the new NFPM contract by default. These positions could then be \u201crecycled\u201d by other users, where they would gain the ownership of the ERC721 token instead of minting a new token and simply add liquidity to it though increaseLiquidity() 2. Using ERC1155 instead of ERC721 to track positions : Uniswap v3 positions are what I would call semi-fungible: two different users that deploy the same amounts of liquidity to the same pool using the same upper/lower ticks are effectively creating fungible positions. For instance, all \u201cFull Range\u201d positions are fungible, and I could find 73 of them in the ETH-USDC-0.3% pool. Similarly, I was able to find 41 positions with liquidity between (1675, 2945) in the ETH-USDC-0.3% pool, all of the would be \u201cfungible\u201d (although a different feeGrowthInside0LastX128, feeGrowthInside1LastX128 would be tied to each owner). ERC1155 could replace the current ERC721 implementation. One way would be to encode the pool Id (80 bits), upperTick (24 bits), and lowerTick (24 bits) inside the 256bit id of an ERC1155 so that the balance of the token issued would correspond to the amount of liquidity deployed. 3. Store all the information in the smart contract, no need to emit any token All the relevant information about LPs position is already stored in the core contract inside the Position Struct. So issuing a token, whether it is a ERC721 or ERC1155 is not necessary per se if positions can be tracked off-chain (eg. using the Uniswap subgraph). Many protocols directly interact with the core smart contracts to manage liquidity. Examples of such protocols include: Charm Finance, Gelato, Visor/Gamma protocol, DefiEdge.io, Unipilot, etc. Each one shows significant gas consumption improvements over the NFPM contract. For example, calling the rebalance() function on an Alpha Vaults from Charm Finance directly interacts with the v3-core smart contract and only consumes 532,577 gas to call the burn() function twice and mint() function twice Ethereum Transaction Hash (Txhash) Details | Etherscan) Looking through the Etherscan trace, the \u201cmint\u201d part of Charm Finance rebalance is only 113203 gas \u2013 although a more realistic goal for a revised NFPM may be 250,000 or lower, similar to the cost to addLiquidity().  image1916\u00d71520 127 KB  Conclusions I am not a solidity programmer, so my role in this proposal is to bring attention to this issue, which ultimately affects \u201cretail\u201d users (like me!) at a much higher level than whales/institutions. Changing the NonFungiblePositionManager, however, would break the current subgraph and would require a rewriting of the GitHub - Uniswap/interface: \ud83e\udd84 An open source interface for the Uniswap protocol to handle the new tokenId standard. So it is unclear whether the efforts would be worth it. Lowering gas fees is also personal for me. I completed the Uni v3 LPing portion of my taxes last week. I was very active this year, deployed 200+ positions and testing out different strategies. For those that follow me on twitter/medium, you know that I have written several articles about LPing on Uni v3 and you may be glad to know that I practice what I preach: deploying small 1-2 ETH LP positions in medium-to-high volatility assets, keep the ranges narrow (+/-10%) and leaving the position before \u201cImPeRmaNEnt LoSs\u201d. I\u2019ve suffered some big losses, won big on others, but fortunately I was net positive in my USD-based PnL. I\u2019d say I became more sophisticated as time went on, so my PnL might be a bit higher for the last quarter. However, this net positive PnL does not take into account the gas fees. Deploying a LP position costs up to $250 per transaction, so I ended up being net negative in both ETH terms and USD terms. Obviously, this is 100% my fault for being so active, but part of me thinks some of these costs could be avoided if the NFT smart contract did not consume as much gas unnecessarily. Snapshot vote: Will post the link soon? I cannot create a new proposal on snapshot.org it seems  ",
+                    "links": [
+                        "https://github.com/Uniswap/v3-periphery",
+                        "https://dune.xyz/shippooordao/Uniswap-v3-MintBurn-gas-usage",
+                        "https://global.discourse-cdn.com/business6/uploads/uniswap1/original/2X/a/a2ea5742b6567e5681954e3d7ab43af0a66ce47d.jpeg",
+                        "https://global.discourse-cdn.com/business6/uploads/uniswap1/original/2X/5/5f3e212cb99f6d5390d75e4266ba2c88eea2b288.jpeg",
+                        "http://app.uniswap.org",
+                        "https://etherscan.io/tx/0x33650d8978257af6b0e0794fc3b62056839ccf031946c23908d48c5604c3ce94",
+                        "https://etherscan.io/tx/0xf081b5642d55ccb53f41631801ad636fd6a414d6d4de418fa798d10aeeaf8e4f",
+                        "https://etherscan.io/tx/0x6486374eee7fc8344e5f27dab9e6c5c8099ed77de11f323ee40bca4f658b0de2",
+                        "https://app.yewbow.org",
+                        "https://global.discourse-cdn.com/business6/uploads/uniswap1/original/2X/d/d547232c93e4dcc2116a406b77a5efd6bba21989.jpeg",
+                        "http://DefiEdge.io",
+                        "https://etherscan.io/tx/0x609af7656c685bfcfcb194e83540deab1a7ccb1cc81d03ba3a93f724fbf5a79a",
+                        "https://global.discourse-cdn.com/business6/uploads/uniswap1/original/2X/7/780c70e7d284d69bbde1f879fb878cab77d2eb9f.jpeg",
+                        "https://github.com/Uniswap/interface",
+                        "http://snapshot.org"
+                    ],
+                    "GPT-summary": "The proposal suggests reducing the gas consumption of the NonFungiblePositionManager smart contract in Uniswap v3. The post explains the problem with the current contract and proposes three possible solutions. The author seeks feedback and collaboration from the Uniswap community to gauge interest and discuss the proposal's contents. The post also includes data on gas consumption and costs for LP positions and suggests that reducing gas fees would benefit retail users.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "Grants, Funding and resource allocation",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.5450064732775015
+                },
+                {
+                    "author_link": "https://gov.uniswap.org/u/ishaan",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "22/03/2022-20:33:01",
+                    "content": "I definitely agree with the premise of this proposal. Of course, security should be of utmost importance. DM on Twitter @ishaan0x if you need help creating a snapshot ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://gov.uniswap.org/u/ishaan",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "22/03/2022-20:33:45",
+                    "content": "also obligatory tagging @t11s hehe ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://gov.uniswap.org/u/ishaan",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "22/03/2022-20:35:50",
+                    "content": "last thing, is governance the most efficient tool for this? I feel a proposal might be overkill ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://gov.uniswap.org/u/guil-lambert",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "22/03/2022-23:53:07",
+                    "content": "I think that\u2019s a rather large change for LPs. They may lose the ability to deploy NFT positions and this may break the staking contract --although not many protocols are actively using uni v3 staking it seems. Anyone could deploy their own periphery smart contracts, but the one that is used by the  app.uniswap.org interface would be the canonical one. The transition from NFT \u2192 whatever may cause confusion if it\u2019s not 100% backed by Uniswap, this is mostly to help legitimize the process. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.954365079365079
+                }
+            ]
+        }
+    ],
+    "group_index": "181"
+}

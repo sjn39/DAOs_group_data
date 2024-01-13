@@ -1,0 +1,150 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/minimalistic-on-chain-cross-game-nft-attributes/7823",
+            "title": "Minimalistic on-chain cross-game NFT attributes ",
+            "index": 7823,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "erc-721"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "22/12/2021-17:50:51",
+                    "content": "A proposal to extend the ERC721 standard with a struct and a few functions to allow players, for example, games, to use NFTs storing data on the token itself. I abandoned this proposal, see below Extended info and implementation at   GitHub    GitHub - ndujaLabs/erc721playable: A implementation of MCIP-1: Multi-player... A implementation of MCIP-1: Multi-player On-chain NFT Attributes proposal - GitHub - ndujaLabs/erc721playable: A implementation of MCIP-1: Multi-player On-chain NFT Attributes proposal      The reason why ERC721 metadata are off-chain makes perfect sense in general, in particular for immutable collectibles. Still, it does not allow pure on-chain games to interact with the NFT because they cannot access the metadata. Working on Syn City and Everdragons2 Origins, I realized that we need to track a minimal set of data on-chain to allow the games evolving in a future fully-decentralized direction. Having data on-chain also has implications for the value of an NFT. Imagine that there are two NFTs with the same rarity. Now, imagine that the two NFTs are used in a game. If one of the two gets outstanding attributes, whoever buys the NFT will also purchase levels in the game where the NFT played. So, the value on the market of the \u201cgood\u201d NFT will be higher than the value of the NFT who is a bad player. This proposal suggests a simple Struct containing 32 uint8 values that can be used for anything that makes sense to be on-chain for a game. A peculiar characteristic is that only the NFT\u2019s owner can create a record for a game, but later, only the game can modify the data. I will implement it in Origins and Syn City, and every feedback is appreciated. Thanks so much ",
+                    "links": [
+                        "https://github.com/ndujaLabs/erc721playable",
+                        "https://ethereum-magicians.org/t/nft-leader-follower-protocol/10263/6"
+                    ],
+                    "GPT-summary": "The author proposes extending the ERC721 standard to allow NFTs to store data on the token itself, which would allow for on-chain games to interact with the NFTs. The proposal suggests a simple Struct containing 32 uint8 values that can be used for anything that makes sense to be on-chain for a game. The author is asking for feedback and plans to implement it in Origins and Syn City. A 3rd party gives constructive criticism and extends to the proposal, while another 3rd party asks questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Token economics",
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.079670329670329
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dylanetaft",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "22/12/2021-22:53:54",
+                    "content": "I think having an NFT token format standard for games is a neat idea as a concept. I do not think you should be enforcing as much as you are - like a version. The version could just be an attribute described in the external JSON format if it is needed.  Could be byte 0 inside the a uint256/bytes32. Perhaps attributes can be packed outside of Solidity, described in the JSON format, into a single uint256 or bytes32 in alignment with EVM word size. Not sure why setting or getting attributes needs more than the token ID - like a player id.  github.com   OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol // SPDX-License-Identifier: MIT // OpenZeppelin Contracts v4.4.1 (token/ERC721/ERC721.sol)  pragma solidity ^0.8.0;  import \"./IERC721.sol\"; import \"./IERC721Receiver.sol\"; import \"./extensions/IERC721Metadata.sol\"; import \"../../utils/Address.sol\"; import \"../../utils/Context.sol\"; import \"../../utils/Strings.sol\"; import \"../../utils/introspection/ERC165.sol\";  /**  * @dev Implementation of https://eips.ethereum.org/EIPS/eip-721[ERC721] Non-Fungible Token Standard, including  * the Metadata extension, but not including the Enumerable extension, which is available separately as  * {ERC721Enumerable}.  */ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {     using Address for address;      This file has been truncated. show original       ERC721 tokens usually have a map of token ID to Address, given an ID you can find the owner. Also, ERC721 implements a tokenURI method.  You might want a method dedicated to replying back with the JSON URL to describe your attributes, similar methodology? ",
+                    "links": [
+                        "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol",
+                        "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.347527472527473
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "26/12/2021-00:10:05",
+                    "content": "Thanks for your comment. There is no need for a new standard if we put data in the metadata.json since, despite the fields required by OpenSea, Enjin, etc., in that JSON file, you can already put whatever you like. But that would not solve the issue we are trying to solve, because a purely decentralized game cannot access off-chain files. That is why we propose a uint8[31] array that can be managed with maximum freedom by games. The version is unnecessary, and it could just be the first element of the uint8[]. Still, it is here because if a marketplace needs to understand what every field represents, they must find the information somewhere. The idea is that any player/game could expose an API that describes what every field is. And since that can change, specifying the version of the data can be helpful. Thus said, I do not have a strong opinion about it. In Syn City, it makes sense to have info about the data version; maybe it does not make sense in other games. About packing the info in a single bytes32 or uin256, yes, that is possible. But using a struct with an array of uint8 (or bytes1) offers the advantage that you can modify a single element of the array, spending around 1000 gas. While updating a bytes32 would cost more that 20,000 gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.273616264687693
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dylanetaft",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "27/12/2021-19:08:03",
+                    "content": "An array of bytes1 actually gets padded with blank space in EVM and cosumes a lot more gas than bytes32 Correct me if I am wrong but updating one element will consume a full 32 bytes of gas when using storage due to EVM word size. The version thing seems use case specific.  If you needed it, and another project didn\u2019t, whatever API is used to provide definitions of properties could pull the version from your array.  Gas is so expensive on L1 and every byte is precious, that\u2019s why I am bringing it up.  Maybe another project doesn\u2019t maintain rolling versions for NFTs on layer 2, maybe they do rolling upgrades on them. Gotcha - for completely on chain games.  What about a contract with a view function that returns metadata about properties, and setting the property definition contract on the game NFT? I am interested in this just because I am also looking at making a game that uses NFTs.  If everyone starts following a convention then interopability becomes possible. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.925
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "09/01/2022-23:09:39",
+                    "content": "Since the array is in the struct, it will update only the specified value. I tested it, and if you change only a single uint8, you spent a bit more that 1000 gas. Of course, there is the cost of the standard transaction, but if you update many parameters at the same time, you end up spending much less than updating a single bytes32. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None"
+                    ],
+                    "Sentiment": 5.295238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "09/01/2022-23:12:57",
+                    "content": "The proposal talks about an info contract that explains what any property is in the chapter about integration with NFT marketplaces but that part is not defined yet, because it makes sense only after than this first step is supported by the community. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "02/07/2022-22:44:29",
+                    "content": "NOTICE: this proposal has been abandoned after trying to use it in a couple of projects because in almost every scenario uint8 values are not enough for what it is needed and when working with conversions, the cost to save the changes becomes higher because of the calculation compared with using custom struct in the contract. This kills the advantage coming for using a common structure amongst games. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.916666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Christophe",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "04/07/2022-15:04:38",
+                    "content": "Your use case may be answered partially by EIP-5185: NFT Updatable Metadata Extension if you want to have a look. In this case you would be able to store offchain lot\u2019s of variable data that would be shared between chains. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "24/07/2022-00:29:05",
+                    "content": "I know that proposal. The problem there is that a contract cannot access the attributes, which was the primary goal of my proposal. BTW, I am working on a different format \u2014 GitHub - ndujaLabs/attributable: A proposal for standard attributes on chain \u2014 which is not incompatible with EIP-5185, since that works off-chain, while my proposal focuses on on-chain data. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.666666666666666
+                }
+            ]
+        }
+    ],
+    "group_index": "1549"
+}

@@ -1,0 +1,175 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/oil-adding-a-second-fuel-source-to-the-evm-pre-eip/4270",
+            "title": "Oil: adding a second fuel source to the EVM (pre-EIP) ",
+            "index": 4270,
+            "category": [
+                "Working Groups",
+                "Ethereum 1.x Ring"
+            ],
+            "tags": [
+                "evm",
+                "eth1x"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/suhabe",
+                    "index": "1",
+                    "likes": "3",
+                    "time": "11/05/2020-18:37:43",
+                    "content": "This proposal is for adding a second fuel source to the EVM called oil that is unobservable and works in parallel with gas. The idea was originally devised by Alexey Akhunov, and the name of oil was suggested by Griffin Hotchkiss. Thanks to Martin Swende for the encouragement to pursue the idea. Motivation  Gas is currently being used for two different purposes:  To pay for compute, memory, and storage resources To prevent re-entrancy by hardwiring the amount of gas a call can use.   Adjusting the gas schedule to better reflect resource usage causes unintended consequences because contracts may be written in a way such that correctness depends on a specific gas schedule.  Making an instruction cheaper may make a re-entrancy path feasible Making an instruction more expensive may make a call fail because the amount of gas hard-wired to it is now insufficient to execute the call   Oil is a new fuel source that works very similarly to gas, but works in parallel to it.  Specification  A transaction has a gasLimit and gasPrice. Currently, a transaction pays $E$ ether for allocating gasLimit amount of gas to the transaction based on the gasPrice. With oil, a transaction pays $E$ ether for allocating gasLimit amount of gas to the transaction based on the gasPrice, and additionally oilLimit amount of oil to the transaction where oilLimit is set equal to gasLimit. A transaction still only specifies a gasLimit. The EVM will internally set the oilLimit to be the same as the gasLimit specified by the transaction. Gas metering and gas semantics do not change. If the transaction runs out of oil at any point during execution, the transaction reverts. Unlike with gas, where out-of-gas reverts only the current frame, and lets the caller examine the result, out-of-oil always reverts the entire transaction (all frames). A caller contract cannot restrict how much oil a callee contract can use, unlike gas. The oil cost of all instructions is exactly the same as the gas cost, until further EIPs to modify oil schedule to reprice EVM operations. An OIL instruction to read current oil will not be added, and this is intentional. The amount of ETH refunded for a transaction is now calculated using the minimum of the unused oil and unused gas, rather than just unused gas.  If the transaction has an EVMC_SUCCESS status code, the sender is refunded the amount of ETH that is the minimum of the remaining gas and remaining oil in the state, exchanged at the gasPrice. Similarly, if the transaction has an EVMC_REVERT status code, the state is reverted as usual, and the sender is refunded the amount of ETH that is the minimum of the remaining gas and remaining oil in the state, exchanged at the gasPrice.    Example Consider the following two contracts where contract A is stored at address $a$ and contract B is stored at $b$. Initially, let the gas cost of each instruction equal the oil cost of each instruction. contract A {     function set(B b) public {         b.set();     } } contract B {     uint public amount;     function set() public {         amount = address(this).balance;     } }  Suppose a transaction $TX_1$ is sent to $A$ to invoke A.set on $B$ with initial gas $G_{init}$, where $G_{init}$ is set to exactly the gas cost of executing  $a$.set($b$). Then, the initial oil $O_{init}$ would be equal to $G_{init}$ and the transaction would be accepted. Now, suppose the oil cost of the BALANCE opcode is increased and that a $TX_2$ is sent that is identical to $TX_1$. This transaction $TX_2$ would get rejected with an out-of-oil error because the total oil cost would exceed $O_{init}$. ",
+                    "links": [
+                        "https://ethresear.ch/u/gichiba/summary"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.141629711751663
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcsfred2",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "11/05/2020-18:56:15",
+                    "content": "Would you consider another noun that is \u201cgreener\u201d besides \u201coil\u201d? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "11/05/2020-19:10:51",
+                    "content": "sure, what is your suggestion? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcsfred2",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "11/05/2020-19:40:56",
+                    "content": "What about jouleth? It alludes to the joule, which a unit of energy. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "11/05/2020-19:52:42",
+                    "content": "Sounds cool, lets see what other people think ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "6",
+                    "likes": "2",
+                    "time": "11/05/2020-22:25:19",
+                    "content": "\u201cLiquid\u201d might be a good one, given that \u201cPlasma\u201d is already taken  But actually \u201cgas2\u201d may be easier on everyone (following the convention of the CREATE2 opcode), even if it is boring. In client and dapp code gas2 would clearly show which version any related functionality is referring to, and also leaves the space open for future additions. Also, documentation and other resources order terms alphabetically . ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.819444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "12/05/2020-04:28:09",
+                    "content": "when I started off, I tried to use the term \u201cgas2\u201d. But it turned out quite confusing when you talk about it. Because people who are listening cannot clearly set apart \u201cgas1\u201d and \u201cgas2\u201d, and the person explaining tends to often conflate them while speaking. That is why a distinct enough name helps ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gichiba",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "12/05/2020-05:22:28",
+                    "content": "Ha! Sorry that the discussion started out about the naming and not about the actual proposal! But since we\u2019re here I\u2019ll just lightly defend using \u2018oil\u2019 (thanks for the h/t): In a two-stroke engine one must put into the tank a mix of mostly gas and a little bit of oil, because the engine is designed in such a way that prevents the crankcase from having its own lubrication (as is the case in more complex four-stroke engines). Gas provides the energy for the piston to move, and oil reduces the friction that might cause the piston to halt. Since \u2018gas\u2019 is an established and relatively intuitive metaphor for powering a virtual stack machine humming along, \u2018oil\u2019 fits quite nicely into this proposal, as both gas and oil go into the same \u2018combustion chamber\u2019 of an EVM execution, but once inside they are meant to perform slightly different yet related functions. Gas is required for execution and system resources (out of gas), while oil is required to prevent re-entrancy and \u2018frictions\u2019 within contract calls (out of oil). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.604166666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "12/05/2020-07:16:10",
+                    "content": "I\u2019m sorry for my part in it too @gichiba! Usually I am averse to these kinds of analogies, but when I first read the proposal I did think that the name refers to the relationship between gas and oil in engines. This is a very good TL;DR. Something similar might be added at the top of the EIP to help people understand the distinction:  gas and oil go into the same \u2018combustion chamber\u2019 of an EVM execution, but once inside they are meant to perform slightly different yet related functions. Gas is required for execution and system resources (out of gas), while oil is required to prevent re-entrancy and \u2018frictions\u2019 within contract calls (out of oil).  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.436111111111112
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rumkin",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "12/05/2020-12:47:43",
+                    "content": "In my opinion transaction must be completely reverted every time gas runs out. It\u2019s required to preserve consistency of the contract state. And contract developer should be able to define an edge-case when out of gas error from underlying call shouldn\u2019t be propagated up. To prevent reentrancy there should be a call stack available from runtime. Reentrance-friendly methods should be specified explicitly. The oil proposal indicates that current behaviour is tricky and is a thing to fix. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "12/05/2020-13:23:07",
+                    "content": "    rumkin:  The oil proposal indicates that current behaviour is tricky and is a thing to fix.   Agreed. There was a proposal to just modify the semantics of gas, but this is going to be so breaking that the only practical way to introduce such as change would be versioning. Which is the thing we would like to avoid if we can. Introducing oil first and then, when it catches on, deciding when gas can be deprecated, and then removed, could be a viable path ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "12/05/2020-13:25:17",
+                    "content": "    gichiba:  Gas is required for execution and system resources (out of gas), while oil is required to prevent re-entrancy and \u2018frictions\u2019 within contract calls (out of oil).   Well, oil would not anything about re-entrancy. Neither should gas be used for the purpose of preventing re-entrancy, but it is in some cases. Re-entrancy is a bit of a distraction here, I think, so I would not emphasise it in an analogy ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "13",
+                    "likes": "2",
+                    "time": "12/05/2020-13:27:26",
+                    "content": "    jpitts:  Usually I am averse to these kinds of analogies, but when I first read the proposal I did think that the name refers to the relationship between gas and oil in engines.   I am averse to the OVER-use of analogies even in this case. The reason I like \u201cOil\u201d is simply because it is a short name, and it is distinct enough from gas, so you are less likely to confuse which one is which when explaining ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.083333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/_bl0ckhead",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "14/05/2020-21:47:48",
+                    "content": "I want to echo the objection to using the term \u201coil\u201d. While it does have somewhat of an engine analogy it also continues to normalize the dependency on petrochemicals. Perhaps \u201cCalories\u201d or \u201cCarbs\u201d instead? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gichiba",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "15/05/2020-05:54:51",
+                    "content": "Both the terms \u2018gas\u2019 and \u2018oil\u2019 could serve as a reminder that the EVM is (for the moment) running atop a Proof-of-Work chain, which literally throws away energy in order to be secure\u2026 But yes, I have said my piece about the name, and I hope the name is the most controversial thing about this proposal. Please consider its merits regardless of what this second gas-analog is called ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                }
+            ]
+        }
+    ],
+    "group_index": "1060"
+}

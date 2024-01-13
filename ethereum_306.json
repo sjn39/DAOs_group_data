@@ -1,0 +1,394 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/minimalistic-transferable-interface/12517",
+            "title": "Minimalistic transferable interface ",
+            "index": 12517,
+            "category": [
+                "Tokens"
+            ],
+            "tags": [
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "10/01/2023-20:35:26",
+                    "content": "There are a lot of popular discussions about non-transferable tokens, with a good proposal at EIP-4973 - Account-bound Tokens I have been working recently on a subordinate NFT (ERC-721 Subordinate), and I realized that before everything else, we must address the problem that an exchange must know if a token is transferable or not. Before going into so many details (like in the EIP-4973), it is necessary to solve this simple problem. How can we avoid people spending gas trying to transfer or approve a non-transferable token? I think we must define a minimalistic interface that tells a caller if a token is not-transferable. This way, a marketplace can check if an NFT supports the transferability interface. If not, the caller assumes it is a standard ERC721 token, and it is transferable. If it supports the interface, the caller executes function isTransferable(uint tokenId) external view returns (bool);  to verify if that token is transferable or not. The function is helpful because a token can be locally transferable or transferable under certain circumstances. In a game that can depend of other assets, of the status of the gamer, on other related contracts. Since a soulbound token is a sub-case of a more general case, an account-bound token like in EIP-4973 can just implement this simple interface and start from that. It is hard to find a short name to define it in a way that can be applied to token that are always non-transferable and tokens for which the transferability can depend on the context. I would suggest something like interface IERCxxxx {    function isTransferable(uint256 tokenId) external view returns (bool);  }  Sometimes the most obvious name is the best. ADD-ON January 20th As you can see in the discussion below, there are cases where the transferability of a token can be affected by the context, i.e., by its current owner or the possible recipient, but adding all those parameters in the equation over-complicates this proposal. If a token may be non-transferable because of any internal reason, the function isTransferable should return false. This interface must be consumed by external entities (marketplaces, exchanges, pools, etc.), and for them knowing the internal logic that makes a token potentially non-transferable is irrelevant. ADD-ON February 9th With @stoicdev0 and other people, we proposed a new interface at  Ethereum Improvement Proposals   ERC-6454: Minimalistic Non-Transferrable NFTs An interface for Non-Transferrable Non-Fungible Tokens extension allowing for tokens to be non-transferrable.      Initially, I had doubts about calling the function isNotTransferable instead of isTransferable, but the naming makes sense because by default an ERC721 is transferrable, so, this interface focus on the case when an NFT may be not transferrable, and the function names follows that. (Still, I like simplicity and I would prefer to call the function isTransferable) ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc721subordinate/12479",
+                        "https://eips.ethereum.org/EIPS/eip-6454",
+                        "https://eips.ethereum.org/EIPS/eip-6454"
+                    ],
+                    "GPT-summary": "The author proposes a minimalistic interface to solve the problem of knowing if a token is transferable or not. The proposed interface is helpful for marketplaces to check if an NFT supports transferability. The author suggests a name for the interface and explains that the function should return false if a token may be non-transferable because of any internal reason. The author also mentions a new interface proposed by other people.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.319140383426097
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stoicdev0",
+                    "index": "2",
+                    "likes": "4",
+                    "time": "10/01/2023-21:21:47",
+                    "content": "This feels very similar to 5663, in draft state. Only difference I think, is naming (they use soulbound) and that the 5663 includes event. There\u2019s also 5192, in final state, which calls this locked and has 2 events instead of one. Having said that. I think events are limiting, I have a use case where the token is locked or not depending on the address having another token. I\u2019m sure there are many other cases in gaming like this. In these use cases, events don\u2019t make sense and you cannot trust the state of a token just by indexing them. So, I like this one better, but I\u2019d call it something with soulbound since is what everyone is using now. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.982142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "10/01/2023-22:05:16",
+                    "content": "@stoicdev0 I was thinking the same. There are quite a few EIPs proposed in addressing the exact same problem. IMHO It\u2019s ok to propose competing EIPs but I\u2019d suggest first get familiar and maybe reach out for potential collaboration and /or discuss why propose a competing EIP and it\u2019s merit in rationale/motivation. That said, I do enjoy seeing this EIP of which the interface is much simpler than competetors ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "11/01/2023-01:08:48",
+                    "content": "Thanks for pointing out to them. I can\u2019t find the EIP-5663. EIP-5192: Minimal Soulbound NFTs solves the issue with trying to transfer something that is locked, but assumes that the contract implements a switch between two states and emits an event when the switch happens. That is not always the case. It may be true with personal badges and tokens like that, but there can be a token that is observing a contract and decides if the NFT is locked or not based on that. In that case, the state of the token can not be predicted listening to the event. The only reliable way to know if it is locked or not is calling the view. I am totally fine with the word locked, but I find it a bit risky because a token being locked can mean a lot of things. For example, in ERC721Lockable, a contract we implemented to allow people to stake their NFTs keeping the ownership of them, we use the word lock in a similar way. I think that a more specific word would be better. Anyway, I will take a look at that discussion. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/final-eip-5192-minimal-soulbound-nfts/9814/29"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.7064393939393945
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "11/01/2023-01:09:58",
+                    "content": "I would be happy to participate in other discussion. Sometimes, the only way to discover that there is a conversation in place, is to start a new one and get feedback  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.014204545454546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "11/01/2023-01:14:16",
+                    "content": "    stoicdev0:  5663   I found it EIP-5633: Composable Soulbound NFT, EIP-1155 Extension Again, this is very specific on the terminology, and has the same problem and emits an event to say to the world that that token has been bounded to a wallet. But that may not be the case. I think that a more general naming would be better and it should not emit an event, because the state can change dynamically. In a composable environment like the EVM that should be obvious. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "11/01/2023-04:31:44",
+                    "content": "Maybe it makes sense to add a similar interface for approvals interface IERCyyyy {     function isApprovable(uint tokenId) external view returns(boolean); }  because all the combinations can be true:  The token is approvable and transferable The token is approvable but not transferable The token is not approvable and not transferable The tokens is transferable but not approvable (i.e., is transferable only by the owner)  Having two separate interfaces, one for transfers and one for approval, is the most flexible. If the basic interfaces are minimalistic, it is easy and inexpensive to combine them and obtain whatever you like. Complex interfaces create always problems. Anyway, the transferability is the most relevant, and a wise exchange can avoid trying to approve something that cannot be transferred. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.174242424242424
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stoicdev0",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "12/01/2023-19:28:45",
+                    "content": "I\u2019m with you on this. We\u2019re creating an advanced NFT standard which includes 5773, 6059 and 6220 (to be merged) and in our repo we have a soulbound implementation in place which is basically the same you\u2019re proposing, just a different name. We did it this way because of the same reason you mention, events would limit implementations. So again, I like this one better. Just thought it would be good for you to have the other 2 on the radar. Let me know if we can be of any help. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.921875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "13/01/2023-20:18:30",
+                    "content": "I just realized that a function like function isTransferable(uint tokenId) external view returns (bool);  is not working in all the scenarios and I would like to have your opinion about it. I will make an example that unfortunately is a bit complex. In Mobland a user can install a Farm over a Turf, in order to plant Seed and have rewards in Weed tokens. Farm and Turf are NFTs. Seed and Weed are ERC20. To use, for example, a Farm in the GamePool, the user  approves the GamePool as a spender allows the GamePool to lock the Farm  The result is that the user is still the owner of the Farm token, but they cannot transfer the token as long as it is locked in the GamePool. In the most common case, the Farm will stay locked until all the Weed has been harvested and the user can unlock the Farm. However, we could have allowed the user to lose the Farm because an attacking team has stolen it. In that case, the GamePool could have transferred the Farm token to the attackers. Can you see the issue with the current proposals? That Farm is non-transferable by most wallet, but is transferable by the locker, i.e., the GamePool. So, a simple function that expects only the tokenId as a parameter will fail. A more general case, that would cover any possible combination is function isTransferable(   address from,    address to,    uint tokenId)  external view returns(bool);  What do you think? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.966666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "14/01/2023-20:12:44",
+                    "content": "There are in fact more scenarios that a generic interface should cover. Let\u2019s look at the factor that can influence the transferability of an NFT. The token id I think this is obvious. The spender As I said above, making the example of the GamePool, some spender may be able to transfer some may not. The current owner In a game it is possible that someone has to own other assets, or having some balance to be able to transfer an asset. The recipient Same like for the current owner Then, to address all the possible scenarios, the function should be function isTransferable(   address sender,   address from,   address to,   uint tokenId ) external view returns(bool);  I would say that in this form, it has lost its original simplicity, but a function that covers only single cases, sooner or later, must be amended. Better to have it ready for a long future. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.549689440993789
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/andyscraven",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "15/01/2023-04:08:32",
+                    "content": "I like this approach and I agree that events cannot be relied upon in such an implementation. Although this is not as simple as the original idea it is always a balance between simplicity and thinking about what might come down the road. I think this is a good balance. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.919444444444444
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "15/01/2023-20:33:14",
+                    "content": "My last iteration may have been overkill and unnecessary. When transferring a token, there are two primary types of exchanges involved: internal marketplaces (such as those inside a game) and public marketplaces (such as OpenSea). Internal marketplaces do not need to call a view to see if an NFT is transferable or not because they already know all the rules. On the other hand, public marketplaces simply want to know if they can transfer a token or not. This means that we can remove the \u201cspender\u201d from the required parameters and assume that external exchanges (such as marketplaces or pools) need to know if they can transfer the token or not. However, we still need to consider that the current owner or the recipient can influence the transferability of an NFT. Above, @stoicdev0 was pointing out a use case where the token is locked or not depending on the address having another token Moreover, the NFT knows who is the current owner or approved, so there is no need for it as a parameter and only the recipient is needed. Therefore, I suggest using the function: function transferable(   address recipient,   uint tokenId ) external view returns(bool);  (The simpler name \u201ctransferable\u201d works just as well as \u201cisTransferable\u201d and simplicity is usually best.) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.1187499999999995
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/toledoroy",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "18/01/2023-23:22:15",
+                    "content": "Just brainstorming this a little bit further. What do you think about instead of having every contract implement all these new functionality and add that little piece of data to its own state, to just have a central contract on each chain to manage all that sort of data (on-chain metadata, so to speak) in one place. Contract as a service sort of thing that would hold arbitrary information for all other contracts on the chain.  That could have a huge DRY impact ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.234848484848484
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stoicdev0",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "19/01/2023-13:52:10",
+                    "content": " However, we still need to consider that the current owner or the recipient can influence the transferability of an NFT. Above, @stoicdev0 was pointing out a use case where the token is locked or not depending on the address having another token  No special need for this beyond not having events since they don\u2019t make sense in this scenario. You can implement whatever logic you want to return the result, that includes calling other contracts. I don\u2019t like this depending on recipient or anything besides the tokenId. It\u2019s too specific IMO for a minimalistic interface. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.696428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "19/01/2023-20:03:17",
+                    "content": "    stoicdev0:  I don\u2019t like this depending on recipient or anything besides the tokenId. It\u2019s too specific IMO for a minimalistic interface.   I prefer the simplest solution too, but in your specific case, if a token can be transferred depending on the address having another token, I would expect that a similar rule can be applied also to the receiver. So, if you do not specify the receiver, how can you establish if that token is transferable or not? The tradeoff is between the simplest possible interface and a bit more complex interface that covers all the possible scenarios. If we go with the first case, maybe a partial implementation of ERC5192 is enough. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.175
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "19/01/2023-20:06:09",
+                    "content": "    toledoroy:  What do you think about instead of having every contract implement all these new functionality and add that little piece of data to its own state, to just have a central contract on each chain to manage all that sort of data (on-chain metadata, so to speak) in one place   That is an interesting approach, but how can that central contract know all the rules applicable to the NFT in different games, defi, etc.? It would require that the game, somehow, tells the registry how to manage the single case. It seems not feasible. Much easier that everyone manages its own stuff and there is a simple way to tell others what is going on. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.573931277056277
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/toledoroy",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "19/01/2023-21:06:28",
+                    "content": "Yeah, well, the contract has to explicitly declare that either way. And either way, we\u2019d need to add some code to write that data. It would make it simpler to read, find and index. Well, I guess you could call it an index contract. It just seems that looking at the crypto space as a community of microservices, and especially when limited to 24k, it might make more sense to have a central service that handles all similar things everyone needs. Like arbitrary identifying data, such as this, contractURI, etc\u2019 Maybe some kind of an arbitrary data protocol for taking out all of these birds and future birds with one stone. It would also maybe offer some relief to the spaghetti and lack of backward compatibility issue that each of these standard changes introduces. \u2026 just a thought  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.376623376623376
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yuki-js",
+                    "index": "21",
+                    "likes": "1",
+                    "time": "20/01/2023-01:36:41",
+                    "content": "I recently submitted the \u201cUntransferability Indicator\u201d EIP. Currently it is for EIP-1155 tokens, but eventually I want to implement untransferability for any token specification.    EIP-6268: UNTransferability Indicator for EIP-1155 EIPs       I submitted an EIP, that is inspired by EIP-5172 and have a similar simple interface.  This is something like EIP-5172 for EIP-1155.     I support your idea if it can be applied to ERC-20 token. IMO, any tokens have transferability by default. Untransferable tokens is the specific case of them. So, I think it\u2019s better \u201cUntransferability Indicator\u201d or \u201cUntransferability Interface\u201d than \u201cTransferable Interface\u201d ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "20/01/2023-17:49:57",
+                    "content": "    toledoroy:  It would also maybe offer some relief to the spaghetti and lack of backward compatibility issue that each of these standard changes introduces.   That is a big problem. For Everdragons2 we are building a contract-as-a-service system to generate subordinate contracts and I am very sensitive to that issue. The problem is that a service like that, to be reliable, should index the entire blockchain. Some kind of Google for EVM. It would be fantastic, if we had something like that. I am sure that can be done, but composability, for now, is what we have and we take advantage of it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.164285714285715
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "23",
+                    "likes": "1",
+                    "time": "20/01/2023-20:23:15",
+                    "content": "    stoicdev0:  No special need for this beyond not having events since they don\u2019t make sense in this scenario. You can implement whatever logic you want to return the result, that includes calling other contracts.   I think you are right. Let\u2019s go back to the initial formulation. A minimalistic case where it just says if a tokenId is transferable or not. In the end, that is needed by external entities, like marketplaces, the internal marketplace does not need to call the view because it knows what to do. I think the discussion has been very productive. A question for the moderators In general, is it better to update the initial post or is it better to link an updated document? I may create a simple repo for it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.473901098901099
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "20/01/2023-23:51:36",
+                    "content": "    yuki-js:  I support your idea if it can be applied to ERC-20 token.   Since an ERC20 is fungible, it can be either transferable or not transferable, if this interface would be applied. If that is not the case, for example a token can be vested and there can be cases where the owner cannot transfer it or the recipient cannot receive it, this interface doesn\u2019t work. We need a more complex function, like the one I proposed a few comments above: function isTransferable(   address from,    address to,    uint tokenIdOrAmount)  external view returns(bool);  This would support also ERC20 and any other asset that is transferable between two addresses. The problem here is if to keep the interface minimalistic and simple, or make it capable of managing any possible scenario. It looks like the tendency is towards the first case. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.1625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/toledoroy",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "21/01/2023-05:16:53",
+                    "content": "Cool. Thanks for the feedback. That\u2019s what I use that in my protocols, I\u2019ll try to push it forwards a bit. as for a simple solution for finding out if a token is transferable, I think it should be enough for us all to agree on an error message (like \u2018Token-Not-transferable\u2019) in case it\u2019s soulbound. Then if a contract doesn\u2019t have a transfer function, or returns such an error, we can deduce it\u2019s soulbound. Seems simpler and more lightweight. Honestly, NFT standards only leave you about 18kb to work with. I would have a hard time supporting any additions to them. It seems to make much more sense to just remove the transfer functions. Wouldn\u2019t that serve the same purpose with less code? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.746794871794871
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "21/01/2023-21:10:03",
+                    "content": "    toledoroy:  as for a simple solution for finding out if a token is transferable, I think it should be enough for us all to agree on an error message (like \u2018Token-Not-transferable\u2019) in case it\u2019s soulbound   If the token is non-transferable, despite if we agree or not on a specific error, that transaction will revert consuming at least 40000 gas. It is better to allow a marketplace to check that before calling it. If not, we don\u2019t really solve the issue. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/toledoroy",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "22/01/2023-16:25:25",
+                    "content": "From my experience if transactions are going to fail metamask will tell you beforehand. You can also simulate the transaction before sending it to the chain to check if it might fail and that\u2019s free. Maybe you can expand more about the specific situation where a revert incur a cost? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.9
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "22/01/2023-20:27:01",
+                    "content": "    toledoroy:  You can also simulate the transaction before sending it to the chain to check if it might fail and that\u2019s free.   I think that that is exactly what MetaMask does. But it is a work around in absence of a clear solution that is valid for everyone and everyone can verify. Anyway, I got your point and it is valid. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.237500000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/toledoroy",
+                    "index": "29",
+                    "likes": "1",
+                    "time": "22/01/2023-23:59:53",
+                    "content": "Gotcha. Thanks, and good luck!  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "12/02/2023-01:33:58",
+                    "content": "I am working on a new project where, for security reasons, the tokens are transferable only by the owner and cannot be approved without the owner make the contract approvable. So, I am thinking that it could make sense to have a just-a-bit-less-minimalistic interface like interface IERCxxx {   function isTransferable(uint tokenId) external view returns (bool);   function isApprovable(uint tokenId) external view returns (bool); }  Of course, we may suggest a new interface only for the approvability, but any token who would implement both, would spend more gas because it has to check the two interfaceId. What do you think? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.551948051948052
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stoicdev0",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "15/02/2023-13:28:34",
+                    "content": "I\u2019m strongly against it, it defeats the purpose of minimalism. I have created 4-5 use cases using the minimal version and in non of them there was approvable in any way. I would do a different EIP for that. It\u2019s true implementers of both will spend a bit more gas on the check (unless you use a mapping, in which case the extra gas is only paid once, and by the issuer). The alternative is to force all implementers of only soulbound to have an extra unused method, it\u2019s a clear choice IMO. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6416666666666675
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "18/02/2023-01:11:54",
+                    "content": "I\u2019m feeling conflicted. While I agree with the principle, I\u2019m currently working on several projects related to escrows and secure vaults, and in none of them can I use the IERC6454 function. By default, the tokens in these projects are non-tradeable for security reasons, which means they can\u2019t be approved. The scenario where you only need to check the transferability of a token and don\u2019t have to worry about its approvability seems rare. A token that is non-transferable can either be approved for future transferability or cannot be approved at all. As an exchange, it\u2019s challenging to decide whether to try to approve the spending or not. The easy solution is to have a second interface that checks only for approvability, but I don\u2019t find it exciting. I believe that whoever wrote the ERC721 proposal overlooked these two views. They should have been there from the beginning. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.805555555555556
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "18/02/2023-01:52:07",
+                    "content": "Anyway, I have implemented an IERC721Approvable interface inside the protector-protected-protocol. I wonder if it would make sense to make a standard proposal of it. I think I will start a new discussion about it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/5cent-AI",
+                    "index": "34",
+                    "likes": "1",
+                    "time": "18/02/2023-06:27:49",
+                    "content": "In eip6147, by querying the guard information, it is already possible to know whether the token can be transferred. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "18/02/2023-22:37:44",
+                    "content": "Nice proposal. But it would make no sense for someone to implement it without implementing the entire protocol. Here (as in ERC6454) we are talking about the minimal effort necessary to let an exchange know it the token is transferable or not. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stoicdev0",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "20/02/2023-17:52:16",
+                    "content": "I guess you\u2019re biased here by your projects. Let me give you few simple cases where this makes sense on it\u2019s own:  Reputational NFTs: They\u2019re bound to an address, no need for approval. We have a version with Social Recovery where holders can vote to help someone recover their reputation NFT after lost keys. We could force approvals there, but it would be really forced as the approval is not by one party but by the community together. Nested Non-transferable NFTs: We introduced Nestable tokens in ERC-6059. We have quite a few collections where once you mint and NFT into another, it becomes attached to it for good. No approval needed at all. This has many use cases in gaming. Non-transferable depending on context: I have a project where you can transfer an NFT out depending on the balance of an specific ERC20 token. An approve scheme is not practical there, it depends on the balance at the time of execution.  This can of course be any other condition, like number of certain emojis on token (introduced in ERC-6381), non-transferable after certain number of blocks or after certain number of transfers, and I\u2019m sure many others we\u2019re not seeing just yet. So I insist we should not limit them. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-6381"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.883730158730158
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "37",
+                    "likes": "1",
+                    "time": "20/02/2023-19:23:36",
+                    "content": "I agree with you on the points you list. What I realized is that we are restricting the field of application, while, ideally, we want to have an interface that is applicable in most cases, i.e., that covers what is missed in the original ERC721 proposal. Thus said, I will stick with the minimalistic approach, because as you say makes sense in many scenarios, while I will propose an interface for the approvability. Whoever needs both, can implement both. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.84375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "38",
+                    "likes": "1",
+                    "time": "21/03/2023-15:50:02",
+                    "content": "This is rather late to the game, but negated booleans are really annoying for programmers. I\u2019d recommend using isTransferable instead of isNonTransferable. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.5
+                }
+            ]
+        }
+    ],
+    "group_index": "306"
+}

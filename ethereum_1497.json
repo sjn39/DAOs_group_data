@@ -1,0 +1,380 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-4400-erc-721-consumer-extension/7371",
+            "title": "ERC-4400: ERC-721 Consumer Extension ",
+            "index": 7371,
+            "category": [
+                "Tokens"
+            ],
+            "tags": [
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "30/10/2021-22:03:20",
+                    "content": " Abstract This specification defines standard functions outlining a consumer role for instance(s) of ERC-721. An implementation allows reading the current consumer for a given NFT (tokenId) along with a standardized event for when an consumer has changed. The proposal depends on and extends the existing ERC-721.  Motivation Many ERC-721 contracts introduce their own custom role that grants permissions for utilising/consuming a given NFT instance. The need for that role stems from the fact that other than owning the NFT instance, there are other actions that can be performed on an NFT. For example, various metaverses useoperator /contributor roles for Land (ERC-721), so that owners of the land can authorise other addresses to deploy scenes to them (f.e. commissioning a service company to develop a scene). It is common for NFTs to have utility other than simply owning it. That being said, it requires a separate standardized consumer role, allowing compatibility with user interfaces and contracts, managing those contracts. Having a consumer role will enable protocols to integrate and build on top of dApps that issue ERC721 tokens. Example of kinds of contracts and applications that can benefit from this standard are predominantly metaverses that have land and other types of digital assets in those metaverses (scene deployment on land, renting land/characters/clothes/passes to events etc.)  Specification The keywords \u201cMUST\u201d, \u201cMUST NOT\u201d, \u201cREQUIRED\u201d, \u201cSHALL\u201d, \u201cSHALL NOT\u201d, \u201cSHOULD\u201d, \u201cSHOULD NOT\u201d, \u201cRECOMMENDED\u201d, \u201cMAY\u201d, and \u201cOPTIONAL\u201d in this document are to be interpreted as described in RFC 2119. Every contract compliant to the ERC721 Consumer extension MUST implement the ERC721Consumer interface. The consumer extension is OPTIONAL for ERC-721 contracts. /// @title ERC-721 Consumer Role extension /// Note: the ERC-165 identifier for this interface is 0x953c8dfa interface ERC721Consumer /* is ERC721 */ {     /// @notice This emits when consumer of a _tokenId changes.     /// address(0) used as previousConsumer indicates that there was no consumer set prior to this event     /// address(0) used as a newConsumer indicates that the consumer role is absent       event ConsumerChanged(address indexed previousConsumer, address indexed newConsumer);     /// @notice Get the consumer of a token     /// @dev address(0) consumer address indicates that there is no consumer currently set for that token     /// @param _tokenId The identifier for a token     /// @return The address of the consumer of the token     function consumerOf(uint256 _tokenId) view external returns (address);     /// @notice Set the address of the new consumer for the given token instance     /// @dev Throws unless `msg.sender` is the current owner, an authorised operator, or the approved address for this token. Throws if `_tokenId` is not valid token     /// @dev Set _newConsumer to address(0) to renounce the consumer role     /// @param _newConsumer The address of the new consumer for the token instance     function changeConsumer(address _newConsumer, uint256 _tokenId) external; }  Every contract implementing the ERC721Consumer extension is free to define the permissions of a consumer (e.g. what are consumers allowed to do within their system) with only one exception - consumers MUST NOT be considered owners, authorised operators or approved addresses as per the ERC721 specification. Thus, they MUST NOT be able to execute transfers & approvals. The consumerOf() function MAY be implemented as pure or view. The changeConsumer(address _newConsumer, uint256 _tokenId) function MAY be implemented as public or external. The ConsumerChanged event MUST be emitted when a consumer is changed.  Rationale Key factors influencing the standard:  Keeping the number of functions in the interfaces to a minimum to prevent contract bloat. Simplicity Gas Efficiency Not reusing or overloading other already existing roles (e.g. owners, operators, approved addresses)   Name The chosen name resonates with the purpose of its existence. Consumers can be considered entities that utilise the token instances, without necessarily having ownership rights to it. The other name for the role that was considered was operator, however it is already defined and used within the ERC721 standard.  Restriction on the Permissions There are numerous use-cases where a distinct role for NFTs is required that MUST NOT have owner permissions. A contract that implements the consumer role and grants ownership permissions to the consumer renders this standard pointless.  Backwards Compatibility There are no other standards that define a similar role for NFTs and the name (consumer) is not used by other ERC721 related standards.  Reference Implementation The following is a snippet for reference implementation of the ERC721Consumer extension. The full repository can be found here //SPDX-License-Identifier: MIT pragma solidity ^0.8.0; import \"@openzeppelin/contracts/token/ERC721/ERC721.sol\"; import \"./IERC721Consumer.sol\"; contract ConsumerImpl is IERC721Consumer, ERC721 {     mapping(uint256 => address) consumers;     constructor() ERC721(\"ReferenceImpl\", \"RIMPL\") {     }     function consumerOf(uint256 _tokenId) view external returns (address) {         return consumers[_tokenId];     }     function changeConsumer(address _newConsumer, uint256 _tokenId) external {         require(msg.sender == this.ownerOf(_tokenId), \"IERC721Consumer: caller is not owner nor approved\");         address previousConsumer = consumers[_tokenId];         consumers[_tokenId] = _newConsumer;         emit ConsumerChanged(previousConsumer, _newConsumer);     }     /**      * @dev See {IERC165-supportsInterface}.      */     function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC721) returns (bool) {         return interfaceId == type(IERC721Consumer).interfaceId || super.supportsInterface(interfaceId);     } }  ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-721",
+                        "https://eips.ethereum.org/EIPS/eip-721",
+                        "https://github.com/Daniel-K-Ivanov/eip-721-consumer-extension",
+                        "https://ethereum-magicians.org/t/delegator-extension-that-enables-erc721-to-be-loaned/7885/2",
+                        "https://ethereum-magicians.org/t/erc-standard-for-held-non-fungible-token-nfts-defi/7117/11",
+                        "https://ethereum-magicians.org/t/improving-nft-standard/6012/25",
+                        "https://ethereum-magicians.org/t/erc721-extension-to-enable-rental/8472/10",
+                        "https://ethereum-magicians.org/t/unsecured-leasing-nft-promotes-the-development-of-metaverses-sharing-economy/7643/3",
+                        "https://ethereum-magicians.org/t/entangled-tokens/8702/5",
+                        "https://ethereum-magicians.org/t/erc721-extension-to-enable-rental/8472"
+                    ],
+                    "GPT-summary": "The post introduces a proposal for a standard function that defines a consumer role for ERC-721 tokens. The proposal aims to allow compatibility with user interfaces and contracts, managing those contracts, and enable protocols to integrate and build on top of dApps that issue ERC721 tokens. The post also provides the specification, rationale, and reference implementation of the proposal. The post does not advertise the proposal, but rather explains it and invites feedback and questions from third parties.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.2286715943630835
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "03/11/2021-11:48:34",
+                    "content": "Link to the EIP PR - Optional ERC721Consumer Extension by Daniel-K-Ivanov \u00b7 Pull Request #4400 \u00b7 ethereum/EIPs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MindfulFroggie",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "04/11/2021-13:52:30",
+                    "content": "Hi Daniel, I\u2019m super happy you\u2019re promoting this EIP. I think we should promote both this EIP and this one in parallel. One comment I have is that with the current proposal, only the owner of the NFT can call the changeConsumer function. I think it would be good to add (or use) the mechanism of the ERC721 to aprove third parties to be able to use this function. I imagine that there will be 3rd parties platforms (dapps) which NFT owners will use in order take advantage of this feature. Therefore the contract should give the 3rd parties the permission to change the consumers without the NFT owner having to do any action. What do you think? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.1060606060606055
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "04/11/2021-19:10:29",
+                    "content": "    MindfulFroggie:  One comment I have is that with the current proposal, only the owner of the NFT can call the changeConsumer function. I think it would be good to add (or use) the mechanism of the ERC721 to aprove third parties to be able to use this function.   Thank you for the feedback! Are you referring to the approved and operator addresses that can be authorised by the owner of the ERC-721 to spend/manage the tokens? If yes, I think that we can do that and will update the reference implementation with your suggestion ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.325000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MindfulFroggie",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "04/11/2021-20:08:56",
+                    "content": "Yes. That would be great. From the openzeplin implementation:     // Mapping from token ID to approved address     mapping(uint256 => address) private _tokenApprovals;      // Mapping from owner to operator approvals     mapping(address => mapping(address => bool)) private _operatorApprovals;  I do wonder if the approved  addresses should be the same as the ERC721 approved addresses. Or should it be a different dictionary instead \u2192 let\u2019s say _tokenConsumeApprovals. I think I\u2019d go with the 1st option, but it is worth a thought. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.916666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MindfulFroggie",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "12/11/2021-09:56:59",
+                    "content": "Just found this EIP. It is much more elaborate and as you can see it is stagnant and has no activity for a long time. edit: probably because it is gas expansive. I keep studying solidity, and I think that there\u2019s no way to use your proposed standard for current ERC721 projects without migrating the contracts, so this is a major drawback. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.84375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "24/11/2021-10:27:00",
+                    "content": "The EIP has been updated with comments received from the community and implementors of the proposal. @MindfulFroggie I\u2019ve addressed your feedback by enabling approved address + operators to be able to change the consumer. Let me know what you think  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wschwab",
+                    "index": "8",
+                    "likes": "3",
+                    "time": "28/11/2021-13:19:54",
+                    "content": "Hey there! I was looking over your EIP (I left a review earlier which you resolved), and was wondering if you might want to switch the current setup so that there can be an array of addresses that are consumers instead of just one, since the current setup only allows for one address per tokenId. This doesn\u2019t contradict cases where only one consumer is desired, since the implementing contract can always set a cap on how many addresses can be pushed to the array. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.357142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "30/11/2021-11:12:09",
+                    "content": "At some point, I was thinking the same thing. Indeed there might be use-cases where you would like to have more than one consumer. I will think about it and maybe even update the proposal with your suggestion. I would like to see how much overhead it would introduce implementation/gas cost wise. Thank you for the feedback though! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.96875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "07/02/2022-12:30:35",
+                    "content": "The EIP has been updated with reference implementations in LandWorks (already live on mainnet). I have updated the use-cases to include nft staking as-well, since other than no collateral NFT renting, there are other use-cases for this standard which are implemented in the NFT staking mechanism of LandWorks here:   github.com   EnterDAO/LandWorks-YF-Contracts/blob/main/contracts/LandWorksDecentralandStaking.sol // SPDX-License-Identifier: MIT pragma solidity 0.8.10;  /******************************************************************************\\ * Custom implementation of the StakingRewards contract by Synthetix. * * https://docs.synthetix.io/contracts/source/contracts/stakingrewards * https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol /******************************************************************************/  import \"@openzeppelin/contracts/token/ERC721/IERC721.sol\"; import \"@openzeppelin/contracts/token/ERC20/IERC20.sol\"; import \"@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol\"; import \"@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol\"; import \"@openzeppelin/contracts/security/ReentrancyGuard.sol\"; import \"@openzeppelin/contracts/security/Pausable.sol\"; import \"@openzeppelin/contracts/access/Ownable.sol\"; import \"./interfaces/ILandWorks.sol\"; import \"./interfaces/IDecentralandEstateRegistry.sol\";       This file has been truncated. show original      The EIP has been marked as \u201cfor review\u201d. Any feedback is greatly appreciated! ",
+                    "links": [
+                        "https://github.com/EnterDAO/LandWorks-YF-Contracts/blob/main/contracts/LandWorksDecentralandStaking.sol",
+                        "https://github.com/EnterDAO/LandWorks-YF-Contracts/blob/main/contracts/LandWorksDecentralandStaking.sol"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.436688311688311
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ilanolkies",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "22/02/2022-21:10:55",
+                    "content": "Hi, how are you? I was discussing about this EIP these days.  Idea I think maybe more robust way to face the problem of a standard way of understanding a role that is not the owner could be like roleOf(bytes32 tokenId, bytes4 roleId) returns (address) (or address[] as mentioned above).  Considering This came up while reading  various metaverses use operator /contributor roles for Land  And also considreing \u201cMortgage/rental\u201d use case mentioned above.  Result So this EIP would have a list of standard roles for NFTs (different than owner role) and the specification for each role could reside on newer EIPs linked from here. This way wallets can then implement standard controls for standard behaviours on standard roles on NFTs.  Use case Now you could say owner can make use of transfer and approve. With this EIP we could then say role: CONSUMER can utilise the token instances, without necessarily having ownership rights to it (as mentioned in the EIP). Then, other roles like role: TENANT, might add standard functions to query how long the rental is for or a function to extend rental, thus showing these operations in standard way in all wallets and platforms. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.108333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "24/02/2022-10:27:34",
+                    "content": "Hi @ilanolkies Thanks for the suggestion / feedback. You are right that this proposal introduces new EIP for every role it would require, yes and its not scalable approach. From a first look your proposal sounds good as it can be applied to many roles. The only thing that concerns me is the fact that when a protocol wants to integrate a ERC721 implementing the EIP, they will need to know the exact roleId that has certain permissions and since the roleId can be arbitrary, we will not actually enforce a standard that will help procotols utilise the EIP. Example \u2192 Generic NFT renting protocol wants to support ERC721s that implement the EIP and have a renter role. What would be the roleId that the protocol will be looking for when changing the role / querying the role?  Each NFT issuer can define their own ID. In order for this to work, we must define all roles explicitly and their ID. F.e defining that bytes4(keccak(\"renter\")) is the roleId for someone that has permissions to utilise the NFT, but not be able to transfer it. What do you think would be the mitigation of this issue? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.157754010695187
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ilanolkies",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "24/02/2022-16:21:54",
+                    "content": "Yes. I really assumed it was clear that roles should have standard ids too Role for \u201crenter\u201d should have same behavior and same id in any token supporting ERC-4400. Then other roles will have other standard accepted IDs associated with other standard behaviors specified on later EIPs that are accepted as standard by ERC-4400 Similar to what ERC-165 does with interface IDs Then workflow for having a new standard interface would be  Get the EIP for the standard ERC-4400 extension approved Propose PR to the list in ERC-4400 adding the interface id and a link to the EIP  This is similar to what ENS does for supporting standard records that can be queried by any wallet. See EIP-137 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.140340909090909
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "14",
+                    "likes": "1",
+                    "time": "25/02/2022-13:55:39",
+                    "content": "That\u2019s an interesting concept. I will circle that to other NFT discussions in the forum to gather more feedback. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.458333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ArthurBraud",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "10/03/2022-19:11:11",
+                    "content": "Hey Daniel, I like your proposal. One observation that I had is that this interface requires the consumer to trust the owner/operator as they are no guarantee that the rental agreements will be honored. For example, after a consumer pays the rental fees, the owner or an approver will still be able to change the consumer. Or I am missing something? I spent some time looking at NFT rental and to address this trust issue, I thought to delegate the rental agreement logic to a contract IERC721RentalAgreement. This contract controls whether the rent can be started or stopped. The rent is initiated and stopped from the ERC721 and a callback function to IERC721RentalAgreement can guarantee that the rental terms are fulfilled.  For example, IERC721RentalAgreement can enforce that the renter cannot be changed when there is an active rent. (Also maybe IERC721RentalAgreement contract could handle the role definition?) Here is the more concrete idea: ERC721 extension to enable rental ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.597222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ilanolkies",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "11/03/2022-19:45:00",
+                    "content": "Do you think it is worth it to discuss the standard way of generically querying extension for roles in another thread? I mean, in a separate thread of how renting should be implemented. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.979166666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "13/03/2022-10:54:45",
+                    "content": "Hi @ArthurBraud Thank you for the reply and feedback! You are right that the owner is able to change the consumer after he pays for the rent, however, the owner would be actually a smart contract/protocol, meaning that unless there is a bug in the implementation of the protocol, the rents will be honoured. In order for generic NFT renting to be implemented, we need only the primitive that enables it. It would be easier to have the required \u201cprimitive\u201d as standard (aka consumer/delegator etc) and utilise that for the implementation of renting than to propose and finalise a whole renting spec. Maybe I am missing something, but the renting protocol itself can decide on the renting agreements as it would be part of the business logic of the protocol. The only thing it would need is the ability to delegate the utility of the NFT to the renter which is tackled by the consumer role.  Actually focusing on the primitive aka \u201cconsumer\u201d role, enables other use-cases compared to focusing on rent specification solely. F.e one can implement delegation to 3rd parties or NFT staking. Let\u2019s keep iterating on the ideas so that we can come up with a solution for this problem. All of us think that it is a pain point and will be an enabler for the NFT community so we are all in the same boat  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.336538461538462
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "13/03/2022-11:07:52",
+                    "content": "I was thinking about the generic role extension that you\u2019ve proposed. To me it seems that it can be applied generally to all types of contracts, f.e not only ERC721s but ERC20 or any contract for that matter. The spec for defining \u201croles\u201d if described as the ENS reference that you\u2019ve provided can be applied to everything. I am not stating that this is a negative thing. The drawback that I am seeing is that if we define a spec for \u201cGeneric Contract Role querying\u201d and have specs for \u201cConsumer Role\u201d or any other type of role, we end up with a spec that overlaps (is a subset) with the existing ERC165 spec. Both of them address the same need: providing information on what is supported by the target contract. Going with a concrete example. Let\u2019s say that one way is to go with the same existing proposals:  ERC165 support + Role-specific extension  and the other way is:  \u201cGeneric Role Querying\u201d + \u201cRole-specific extension\u201d  Wouldn\u2019t it be the same whether we use ERC165 to figure out whether something is supported or not vs using the \u201cgeneric role querying\u201d to figure that out? Maybe I am missing something. Can you please provide your thoughts on my concerns? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/awnyrvan",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "17/03/2022-16:56:24",
+                    "content": "Hello Daniel @Daniel-K-Ivanov We are trying to use this erc4400 standard in our dapp. Would love you have your guidance. Would you be available for a call? Cheers, Anir ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ilanolkies",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "06/04/2022-15:20:01",
+                    "content": "    Daniel-K-Ivanov:  ERC165 support + Role-specific extension   It is not just for querying what interfaces the contract support. It is for accessing the given role via its role ID. Maybe I am being to generic but this will enable easier integration from wallets and dapps if need to support different role type ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MissieBish",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "18/05/2022-15:04:50",
+                    "content": "Hello, I was wondering why the consumer should be reset to address(0) when there is a transfer. Wouldn\u2019t it make more sense to default it to the owner\u2019s address? I have in mind projects who refer to the consumer address to give out benefits, like airdrops or whatever. I guess it would make more sense for the owner to be the default consumer when he/she isn\u2019t renting out the token. Cheers, Aloys ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "19/05/2022-10:19:07",
+                    "content": "Hello @MissieBish The proposed design clears the consumer address similar to why approved addresses for a given tokenId are cleared on transfer. We wouldn\u2019t want to keep the same consumer on transfer since it is an attack/exploit vector to the new owner of the tokenId. Do you think that ERC4400 must specify the address to which consumer must be updated on transfer? I am citing this: On every transfer, the consumer MUST be changed to the zero address the same way approve address is changed.  I think that if we enforce the default address to which we must change the consumer on transfer we will be again enforcing a rule that might not fit every use case. F.e some projects may want to provide the utility of the NFT to both the owner and the consumer, but projects may prefer NOT to provide the utility of the NFT to the owner but only the consumer. That being said, I think that we can update the spec in the following way: On every transfer, the current consumer MUST be changed to a default address. It is RECOMMENDED for implementors to use `address(0)` as that default address.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.9602272727272725
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MissieBish",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "19/05/2022-18:24:14",
+                    "content": "Hello Daniel, Thank you for your reply. To answer your question, I do not think that the updated consumer address should be specified on transfer. It could have unwanted ramifications (for example, a borrowed nft could be returned to the original owner with a modified consumer address). I think your proposed modification to the spec is very appropriate, it does give more flexibility to ERC4400 implementations to fit their intended needs more closely (I have a real life example in mind: I rent a flat, my landlord sells the flat, I\u2019m still the renter of that flat despite the new owner. A land register ERC4400 can deal with that under your proposed modified spec). All the best, Aloys ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.675619834710744
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MidnightLightning",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "17/06/2022-14:54:22",
+                    "content": "This idea has been on my mind as well recently, and looking through various threads on this forum it seems others have too, and it seems this one is most active and willing to be updated to fit the needs of various use-cases. The need to have another \u201crole\u201d (or set of roles) beyond \u201cowner\u201d and \u201capproved\u201d (the labels used in the ERC721 standard) I agree with the general concept of. I think updating this EIP to have a more generic form of \u201croles\u201d that a contract can use, plus have the option to extend with custom roles is a good direction to go in. EIP634 is the (currently draft) standard for how the ENS specifies text metadata on their tokens, in which the standard has a few Global keys that it defines, plus lays out a structure for custom keys. That standard only allows for one value of each text key, but for this extension on the ERC721 standard, because the ERC721 standard allows for both \u201capproved\u201d (for one token) and \u201capproved for all\u201d, it might be a good idea to keep that concept of every \u201crole\u201d could be assigned to one address, or one address marked as having that role for all tokens. Alternatively, the roles could be identified by bytes32 values that are hashes of known structures. That\u2019s a style that\u2019s done in the OpenZeppelin AccessControl template contract, and used as typeHash identifiers in EIP712. With that idea, a \u201crenter\u201d role would be identified not as \"renter\", but as keccak256(\"renter\"). Additionally, this EIP is structured to be an \u201cextension\u201d meaning that new ERC721 contracts deployed after this standard could choose to implement it. Existing ERC721 contracts could use the new extension by creating a new contract and having users convert (\u201cwrap\u201d or \u201cupgrade\u201d) to the new contract, and then they could have \u201cin-place\u201d/\u201cnon-custodial\u201d staking/renting, but the current ecosystem of NFT marketplaces would then treat that new contract as a new \u201ccollection\u201d and not carry the previous collection\u2019s history forward (and makes user experience harder, as users need to then be given ways to be assured the new collection is legitimate and not a scam/copycat collection). For contracts that already exist, or platform infrastructures that want to provide generic staking/rental options for many different tokens, or for multisig wallets that hold ERC721 tokens, extending this EIP to have consumerOf(address tokenCollection, uint256 tokenId) (representing an inquiry like \u201chey smart contract, you\u2019re marked as having some role for token #100 from collection ABC. For your logic, what (if any) other address has rights to trigger you to do something on behalf of token #100 from collection ABC?\u201d) would be helpful. This would allow chaining together role requests, to find a final EOA that represents the human behind the role, making wallet and portfolio UIs able to better enumerate all tokens a user has some rights/roles to. For completeness (and to tag them as linked from here), my research searching around for similar proposals yielded these other EIPs that have attempted to do similar things:   EIP900 - Simple Staking Interface: Created early 2018 and is now marked Stagnant in the EIPs repository.  EIP1132 - Time-locking tokens within a contract: Created in late 2018 and is merged into the EIPs repository as a Draft.  EIP4353 - Viewing Staked Tokens in NFT: Drafted late 2021, had a merge request to the EIPs repository that got closed without merging in. Discussion comments on this one were that it might be too specific to a single application use.  ERC4902 - Decentralized Autonomous Access: An attempt to quantify different holding patterns as different levels of \u201ctrust\u201d. Drafted early 2022 and closed out without merging.  And other discussion threads here on relevant topics:  ERC721 Rental idea discussion Lockable ERC721s  EIP4907 \u201cuser\u201d role and expiration metadata extension for ERC721  ",
+                    "links": [
+                        "https://docs.openzeppelin.com/contracts/4.x/api/access#AccessControl",
+                        "https://eips.ethereum.org/EIPS/eip-712",
+                        "https://eips.ethereum.org/EIPS/eip-900",
+                        "https://ethereum-magicians.org/t/eip-1132-time-locking-of-tokens-within-a-contract/1060",
+                        "https://ethereum-magicians.org/t/eip-4353-viewing-staked-tokens-in-nft/7234",
+                        "https://ethereum-magicians.org/t/erc-4902-decentralized-autonomous-access-daa/8700",
+                        "https://ethereum-magicians.org/t/erc721-extension-to-enable-rental/8472/10",
+                        "https://ethereum-magicians.org/t/erc721s-lockable-nfts/8800",
+                        "https://ethereum-magicians.org/t/eip4907-erc-721-user-and-expires-extension/8572"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.376750202922079
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poojaranjan",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "20/06/2022-13:49:15",
+                    "content": "EIP-4400: ERC-721 Consumable Extension  with @Daniel-K-Ivanov      ",
+                    "links": [
+                        "https://www.youtube.com/watch?v=X0qPai9qPL0"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1497"
+}

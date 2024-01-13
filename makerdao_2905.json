@@ -1,0 +1,38 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip25-modulo-de-acunacion-flash/5014",
+            "title": "MIP25: M\\xc3\\xb3dulo de Acu\\xc3\\xb1aci\\xc3\\xb3n Flash ",
+            "index": 5014,
+            "category": [
+                "Latin America"
+            ],
+            "tags": [
+                "mips"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/JoseFerrari",
+                    "index": "#1",
+                    "likes": "2",
+                    "time": "05/11/2020-23:52:57",
+                    "content": "MIP25: M\u00f3dulo de Acu\u00f1aci\u00f3n Flash Pre\u00e1mbulo MIP#: 25 T\u00edtulo: Acu\u00f1aci\u00f3n del M\u00f3dulo Flash Autor(es): Sam MacPherson (@hexonaut) Colaboradores: Chris Mooney (@godsflaw), Brian McMichael (@brianmcmichael), Gonzalo Balabasquer (@gbalabasquer) Tipo: T\u00e9cnica Status: Presentaci\u00f3n Formal Fecha de la Propuesta: 2020-09-25 Fecha de Ratificaci\u00f3n: <yyyy-mm-dd> Dependencias: n/a Reemplaza: n/a Licencia: AGPL3+   Referencias  La implementaci\u00f3n de dss-flash propuesta Declaraci\u00f3n de Intenciones  Sumario Abreviado Esta propuesta proporciona la implementaci\u00f3n del contrato inteligente para Flash, un m\u00f3dulo que habilita a cualquier usuario a ejecutar una acu\u00f1aci\u00f3n flash de Dai. Sumario Extendido Las acu\u00f1aciones flash le permiten a cualquiera acu\u00f1ar tanto Dai como necesite con la \u00fanica condici\u00f3n de que lo pague todo en la misma transacci\u00f3n con una tarifa. Esto le permite a cualquiera explotar las oportunidades de arbitraje en el espacio DeFi sin tener que comprometer capital por adelantado. Esta implementaci\u00f3n se ajusta a la descripci\u00f3n establecida en el [MIP13c3-SP2 9] Sumario de Componentes MIP25c1: Definiciones: define el Techo de Deuda (line) y las Tarifas de Acu\u00f1aci\u00f3n (toll). MIP25c2: C\u00f3digo Propuesto: contiene un fragmento de la implementaci\u00f3n propuesta. MIP25c3: Casos de Prueba: enumera los casos de prueba existentes, incluida la prueba de integraci\u00f3n. MIP25c4: Consideraciones de Seguridad: hace observaciones sobre la naturaleza limitada de las implicaciones de seguridad de agregar el Flash. MIP25c5: Verificaci\u00f3n formal/informaci\u00f3n de auditor\u00eda: comenta acerca de la susceptibilidad del c\u00f3digo propuesto a ser objeto de una verificaci\u00f3n formal, aunque todav\u00eda no se hayan realizado especificaciones, auditor\u00edas o revisiones del c\u00f3digo. MIP25c6: Licencia: declara la licencia bajo la cu\u00e1l la propuesta y el c\u00f3digo son distribuidos. Motivaci\u00f3n Flash puede proporcionar muchos beneficios al ecosistema Dai, entre ellos:  Una mejora en las eficiencias de mercado para Dai. Democratizaci\u00f3n del arbitraje: todos pueden participar. Las vulnerabilidades que requieren una gran cantidad de capital se descubrir\u00e1n m\u00e1s r\u00e1pidamente, lo que hace que el espacio de DeFi sea m\u00e1s seguro en general. Las tarifas proporcionan una fuente de ingresos para el protocolo.  Especificaci\u00f3n MIP25c1: Definiciones   Techo de Deuda:  La m\u00e1xima cantidad de Dai que se puede tomar prestado por transacci\u00f3n. Codificado como line en unidades rad.  Tarifas de Acu\u00f1aci\u00f3n: Cu\u00e1nto Dai adicional debe ser devuelto al m\u00f3dulo Flash al finalizar la transacci\u00f3n.  La tarifa es transferida al vow  al finalizar una mint exitosa. Codificado como toll en unidades wad.  MIP25c2: C\u00f3digo Propuesto Ver flash.sol. La funcionalidad de acu\u00f1aci\u00f3n central es simple: function mint(     address _receiver,      // direcci\u00f3n de conformant IFlashMintReceiver     uint256 _amount,        // cantidad para realizar la acu\u00f1aci\u00f3n flash [wad]     bytes calldata _data    // informaci\u00f3n arbitraria para pasarle al _reciever ) external lock {     uint256 arad = rad(_amount);      require(arad > 0, \"DssFlash/amount-zero\");     require(arad <= line, \"DssFlash/ceiling-exceeded\");      vat.suck(address(this), _receiver, arad);      uint256 fee = mul(_amount, toll) / WAD;     uint256 bal = vat.dai(address(this));      IFlashMintReceiver(_receiver).execute(_amount, fee, _data);      uint256 frad = rad(fee);     require(vat.dai(address(this)) == add(bal, add(arad, frad)), \"DssFlash/invalid-payback\");      vat.heal(arad);     vat.move(address(this), vow, frad);     emit Mint(_receiver, _amount, fee); }   La interfaz IFlashMintReceiver: interface IFlashMintReceiver {      /**     * Debe transferir _amount + _fee devuelta al contrato de acu\u00f1aci\u00f3n flash cuando este completada.      */function execute(uint256 _amount, uint256 _fee, bytes calldata _params) external;  }   MIP25c3: Casos de Prueba Ver flash.t.sol  test_dex_trade test_mint_with_fee testFail_mint_zero_amount testFail_mint_amount_over_line testFail_mint_insufficient_dai testFail_mint_too_much_dai testFail_mint_line_zero testFail_mint_unauthorized_suck testFail_mint_reentrancy test_mint_data test_mint_no_fee_payback test_preexisting_dai_in_flash  MIP25c4: Consideraciones de Seguridad La soluci\u00f3n propuesta es sencilla y no invasiva; interact\u00faa \u00fanicamente con un solo componente del sistema (el Vat) a trav\u00e9s de un m\u00e9todo existente para suck. Un modificador lock ha sido agregado a mint para prevenir cualquier posible bug de reentrada. MIP25c5: Verificaci\u00f3n formal/Informaci\u00f3n de auditor\u00eda El contrato propuesto est\u00e1 escrito de modo que es susceptible de especificaci\u00f3n formal y verificaci\u00f3n, de acuerdo con el estilo y las pr\u00e1cticas de los principales contratos de DAI multicolaterales, aunque no haya sido especificado formalmente. Ninguna auditor\u00eda o revisi\u00f3n del c\u00f3digo ha tenido lugar a\u00fan. MIP25c6: Licencias  AGPL3+ 1  Esto es una traducci\u00f3n del art\u00edculo original en ingl\u00e9s, gracias a @JoseFerrari y @blimpa  por la traducci\u00f3n. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip13c3-sp2-declaration-of-intent-dai-flash-mint-module/3635",
+                        "https://forum.makerdao.com/t/mip13c3-sp2-declaration-of-intent-dai-flash-mint-module/3635",
+                        "https://github.com/hexonaut/dss-flash/blob/master/src/flash.sol",
+                        "https://github.com/hexonaut/dss-flash/blob/master/src/flash.t.sol",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/mip25-flash-mint-module/4400",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21-en-espanol/5199"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.354166666666666
+                }
+            ]
+        }
+    ]
+}

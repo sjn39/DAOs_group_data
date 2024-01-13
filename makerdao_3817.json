@@ -1,0 +1,261 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/pre-mip-using-gyroscope-to-cut-through-dai-s-gordian-knot-its-usdc-dependency/8865",
+            "title": "[Pre-MIP] Using Gyroscope to cut through Dai\\xe2\\x80\\x99s Gordian knot: its USDC dependency ",
+            "index": 8865,
+            "category": [
+                "Governance",
+                "Proposal Ideas"
+            ],
+            "tags": [
+                "psm"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/aklamun",
+                    "index": "#1",
+                    "likes": "10",
+                    "time": "20/06/2021-13:44:51",
+                    "content": "tldr: Dai\u2019s Peg Stability Module (PSM), which integrates Dai deeply with USDC, is critical to maintaining the Dai peg in a crisis. The Gyroscope mechanism can complement Dai by providing the path to decentralizing the PSM (and so re-decentralizing Dai). With this post, we\u2019re looking to gauge interest in developing Gyroscope closely with Maker toward this end. Authors: Jonas Klemm (@jooooo5as), Lewis Gudgeon (@fsxforte), Ariah Klages-Mundt (@aklamun)  What is the PSM and why is it needed? The PSM allows users to swap collateral such as USDC for DAI at a fixed exchange rate without needing to take on debt or manage a Maker vault. A particular advantage of this PSM approach is that it provides an upper bound on the Dai price as Dai can be minted for 1 USDC, and liquidity is guaranteed. The 12th March 2020 or \u2018Black Thursday\u2019 made it clear that guaranteeing liquidity and establishing Dai price ceilings can be as important as having Dai price floors. During this period of market stress, where collateral assets such as ETH rapidly depreciated, Dai was driven above its peg, aiding a \u2018deleveraging spiral\u2019. In Maker, a \u2018deleveraging spiral\u2019 occurs when (i) margins shrink, (ii) leverage becomes too high, and (iii) positions are unwound and must be paid for in Dai. Since asset prices are rapidly depreciating, there is also little to no demand for leverage on those assets, resulting in a supply squeeze. This supply squeeze pushes Dai above peg, further decreasing the effective collateral margin, as a future deleveraging becomes more expensive. As vaults are incentivized to avoid liquidation penalties, this cycle perpetuates, with more vaults buying Dai on the open market to deleverage, driving up the price of Dai and so on.  Screenshot 2021-06-20 at 22.20.451172\u00d7762 61 KB  Enter the PSM. With the PSM, these deleveraging spirals are bypassed, and system stress is now restricted to market-developments and not artificially bloated by a Dai peg deviation. The PSM is working as intended, as displayed below. The time \u2018t\u2019 specifies a major shock to the value of ETH before the PSM was implemented (12th March 2020 or \u2018Black Thursday\u2019) and after the PSM was implemented (19th May 2021).  Screenshot 2021-06-20 at 22.23.481264\u00d7728 49 KB  So far so good. However, introducing the PSM also surfaced Dai\u2019s \u2018Gordian Knot\u2019 - the old optimization problem of having the two seemingly conflicting goals of decentralization and price stability. This goal conflict is particularly present if the intention is to avoid a high degree of over-collateralization. While there might not be a silver bullet to magically resolve this goal conflict, there is still much room for improvement. Improvements that can also address some of Dai\u2019s persisting collateral and platform dependencies.  Screenshot 2021-06-20 at 22.23.551418\u00d7618 114 KB  *Data from https://Daistats.com/#/ and Dune Analytics as of 6th June The two charts below show MakerDAO without (left chart) and with the PSM (right chart) during two market shocks with rapidly depreciating collateral value. Liquidations and Dai price during Black Thursday Growth of PSM balance during most recent ETH shock  Chart1200\u00d7742 42 KB   Chart1200\u00d7742 52.8 KB  Based on data from Dune Analytics and Dune Analytics as of 6th June Displayed on the left, the Dai price and the liquidations during the Black Thursday of last year (12/03/2020). Dai peaked at 1.11 USD, exacerbating liquidations of vaults. Before Black Thursday, positions worth 850k USD had been liquidated, roughly one month after the Black Thursday this figure was at 19.5m USD. Displayed on the right, the ETH price and the share of Dai that has been issued via the PSM. PSM Dai contributed to \u02dc17.5% of the total circulating Dai at the beginning of May, but contributed to \u02dc41% at the end of May. Notably, vaults worth about 75m Dai (including liquidation fees) were liquidated in May, but Dai retained its par value.  Introducing Gyroscope Before coming to the actual proposal, we have to go through the high-level set-up of Gyroscope, which - on the surface - looks similar to Maker. Gyroscope issues a stablecoin, GYD, against collateral. However, Gyroscope differs in several important design decisions:   the reserve:  is a basket of reserve assets, that jointly collateralize the issued stablecoin is only slightly over 100% collateralized, as most reserve assets are stablecoins  diversifies risks of protocols / asset types / assets [1] is continuously growing from harvesting reserve asset yields     the stablecoin, GYD:  is redeemable for its underlying collateral assets is supported by a currency peg coordination game should the reserve ratio of GYD fall below 1$, disincentivizing bank-runs, but maintaining exit liquidity  past in-/out-flows are monitored and inform incremental changes to the redemption price, effectively acting as a circuit-breaker secondary market AMMs (S-AMMs) concentrate liquidity in the price band set by the primary market (P-AMM)      the protocol:   limits other risks, such as Governance Extractable Value [2] may replenish the reserves by auctioning off governance token  includes a mint, the Gyroscope app, which in turn  acts as a P-AMM to mint and redeem GYD in a defined price band   informs and enables arbitrage cycles, functioning as a price backstop to prices on secondary markets acts as a single router, allocating assets to individual vaults/ AMMs      A different frame to think of Gyroscope is to imagine multiple \u2018lines of defense\u2019 that are supposed to unlock synergy effects, i.e., become stronger as a total than the sum of its parts. Consequently, we see the Gyroscope design as the keystone to a fully liquid and decentralized stablecoin. In this analogy, the first line of defense is the diversified \u2018all-weather\u2019 reserve, while the second line of defense are the Gyroscope AMMs, which include the currency peg-coordination game as a circuit-breaker. Recapitalizations of the reserve by auctioning off governance tokens will be (a part of) the tertiary lines of defense. An example of the first line of defense - i.e., a reserve configuration that diversifies on the dimensions of protocol, asset type and asset - is shown below. Notably, the below graphic depicts a stylized Gyroscope that is independent of Dai. If Gyroscope were to deeply integrate with Maker, Dai should not be a major reserve asset of GYD. Similarly, the precise form of the Gyroscope reserve is intended to coevolve with the changing ecosystem of crypto assets and applications.  1280\u00d7332 41.9 KB  The second line of defense relies on two market types that can be summarized as below:  A P-AMM design that accounts for potential shocks to underlying assets and maintains peg within a price band Multiple S-AMMs that concentrate liquidity within the primary market band  The stylized P-AMM redemption curve is shown below against the example of a 50-50 Uniswap pool. The shape of the redemption curve is a function of the current reserve ratio and outflows.  1510\u00d7852 73.2 KB  If GYD is undercollateralized and trades below par, the redemption curve starts near $1 to enable good liquidity around the peg and eventually moves to the \u2018circuit-breaker phase\u2019, if continued redemptions occur. The goal is to disincentivize bank-runs and attacks on the currency peg, while enabling users to exit, but rewarding users that wait for the transitory downturn to pass. Even if GYD holders decide to exit, Gyroscope provides rational reasons to bet on Gyroscope repegging soon, as either outflows equilibrate back towards zero or the reserve recovers (e.g., through yield), leading to improved redemption prices and closer liquidity around the peg. The stylized S-AMM redemption curve is shown below against the example of a 50-50 Uniswap pool.  1520\u00d7854 76.4 KB  In Gyroscope the secondary market AMMs concentrate the liquidity in a price band that follows the minting and redemption quotes set by the primary market AMM. With healthy reserves, S-AMM liquidity is concentrated within a narrow band. If there is a shock to the collateral and the P-AMM sets new redemption prices (as described above) this price band will widen. Notably, S-AMM liquidity provision is very robust, as S-AMMs are redundant (i.e., provide different paths in/out of GYD) and independent from each other (e.g. if the paired asset fails, remaining S-AMM pools can still function, unlike one common Curve pool). The interplay of the two different market types (i.e., S-AMMs and P-AMMs) is illustrated in the below graphic. This interaction is fundamental to realizing our vision of a highly liquid, yet decentralized stablecoin that is not forced to rely on custodial stablecoins as go-betweens for maintaining peg and does not pool local risks into a global system. It is thus a keystone to the strategy of Gyroscope to build decentralized liquidity for GYD and - after the integration with Maker - for Dai, as we discuss next. 719\u00d7650 45.8 KB  In case you still have open questions on how GYD intends to sustain its peg you can listen to an explanation of Gyroscope, look up details in the docs, whitepaper and Github, or reach out on Discord. Also look out for our P-AMM technical paper and implementation coming shortly.  Proposal - DAI-GYD PSM In summary, we propose the addition of a GYD denominated PSM. Initially, this GYD-PSM could be merely complementary and grow over time, to eventually fully replace the current USDC-PSM. Whenever a (i) \u2018Black Thursday\u2019-type collateral depreciation would create a mass liquidation of Maker vaults, the (ii) GYD denominated PSM could - in the fashion of the current implementation - (iii) avoid a Dai price appreciation after a (iv) supply squeeze, that would otherwise (v) trigger new liquidations. The main benefit of using GYD over USDC is that GYD is able to provide very similar guarantees as USDC while featuring drastically decreased centralization. GYD is a claim on a basket of collateral assets, not only on USDC. But Gyroscope is more than a stablecoin that is issued and redeemable against a collateral basket, as the core value proposition of GYD is to mitigate systemically important risk factors. Gyroscope is aiming to do so, by segregating risks and generally optimizing for resilience. As such, Gyroscope\u2019s \u2018all-weather\u2019 design is built to withstand:  credit defaults of collateral assets smart contract exploits of single AMMs adverse local legislation affecting a collateral asset or AMM operator bank-runs on GYD censorship of GYD  While there are several relevant concerns that could be raised in regards to a GYD:DAI PSM, many of these concerns can be addressed. Price variance around the peg:  Even if GYD is pegged to 1$, it is likely that GYD will not always trade exactly at peg value, but fluctuate within a price band. Under normal conditions, this price band would be very narrow, but it may expand during shocks to reserve assets. The acceptable range of a GYD price band is influenced by various parameters that are yet to be defined. Whenever, GYD is trading above peg, for example, newly minted units trade at par + premium. That premium can be tweaked to allow for a broader or narrower price band.  Credit and smart contract risk of GYD:  Gyroscope uses several assets and protocols and is thus exposed to a wide range of risks (e.g. credit default, smart contract exploit, \u2026). While there might be a greater sum of individual risk factors, risks are segregated and never system-relevant on their own. In order for GYD to be severely impacted, it would not require one black swan event (e.g. Compound exploit), but several black swan events that would have to occur simultaneously.  Scale:  With over 4bn Dai in circulation, the demand for the PSM asset is significant. Meeting this demand could be a challenge, even for USDC, which has a current circulation of about 14.3bn units (Dai x \u02dc3.5). While the USDC supply provides an upper bound for its ability to function as a PSM peg asset, there is no such direct upper bound for GYD. True to its DeFi origins, minting new GYD to meet demand spikes is possible irrespective of bank opening times. As GYD is further issued against more than one asset it is generally more scalable than USDC.  Lastly, it is foreseen for Gyroscope to have several secondary mechanisms that are deemed complementary to the main stability mechanism. It is intended that leveraged ETH loans are one of these mechanisms. As such, a Dai-GYD PSM would be mutually beneficial.  Current State and moving forward  Current state Gyroscope is still under heavy development. There is currently an alpha testnet implementation with gamified levels that anyone is invited to try. Read a guide here or jump right to the Gyroscope dApp. The full v1 is being developed with an aim to launch in Q4.  Moving forward With this post, we\u2019re looking to gauge interest in developing Gyroscope closely with Maker. We can foresee two different ways on how to eventually build out the proposed integration with the Gyroscope launch:  Create a GYD-PSM with an initially very low debt ceiling and increase the debt ceiling over time to eventually completely replace the USDC-PSM. Start Gyroscope as a USDC wrapper and collaborate to transition the system to Gyroscope\u2019s full features.  The overarching goal is to smoothly unwind PSM risks by gradually decentralizing and diversifying the PSM. We would be happy to work together with Maker to bring a version of Gyroscope to market that can serve as a Dai PSM. ",
+                    "links": [
+                        "https://en.wikipedia.org/wiki/Gordian_Knot",
+                        "https://daistats.com/#/",
+                        "https://duneanalytics.com/SebVentures/maker---accounting_1",
+                        "https://duneanalytics.com/SebVentures/psm",
+                        "https://duneanalytics.com/queries/2121/3863",
+                        "https://medium.com/gyroscope-protocol/gyroscope-is-different-part-1-72dcb8c303a4",
+                        "https://ournetwork.substack.com/p/our-network-deep-dive-2",
+                        "https://docs.gyro.finance/learn/how-the-pieces-fit-together/gyro-amms/p-amm",
+                        "https://docs.gyro.finance/learn/how-the-pieces-fit-together/gyro-amms/s-amm",
+                        "https://youtu.be/Qjly4GAbwq0?t=1481",
+                        "https://docs.gyro.finance/learn/how-the-pieces-fit-together",
+                        "https://gyro.finance/pdfs/Gyroscope_Lite_Paper.pdf",
+                        "https://github.com/stablecoin-labs",
+                        "https://discord.com/invite/2vnqnS7wE6",
+                        "https://docs.gyro.finance/gamified-testnet/testnet-walk-through",
+                        "https://test.gyro.finance/",
+                        "https://forum.makerdao.com/t/weekly-relay-march-15-21-2022/14119",
+                        "https://forum.makerdao.com/t/weekly-mips-update-79-pinata/14106",
+                        "https://forum.makerdao.com/t/relay-semanal-8-14-de-marzo/13987",
+                        "https://forum.makerdao.com/t/weekly-relay-march-8-14-2022/13906",
+                        "https://forum.makerdao.com/t/weekly-mips-update-78/13903",
+                        "https://forum.makerdao.com/t/relay-semanal-1-7-de-marzo-de-2022/13773",
+                        "https://forum.makerdao.com/t/weekly-relay-march-1-7-2022/13731",
+                        "https://forum.makerdao.com/t/weekly-mips-update-77/13706",
+                        "https://forum.makerdao.com/t/monthly-governance-review-february-2022/13661",
+                        "https://forum.makerdao.com/t/relay-semana-22-28-de-febrero-del-2022/13587",
+                        "https://forum.makerdao.com/t/weekly-relay-february-22-28-2022/13499",
+                        "https://forum.makerdao.com/t/weekly-mips-update-76/13493",
+                        "https://forum.makerdao.com/t/weekly-mips-update-75/13330",
+                        "https://forum.makerdao.com/t/weekly-mips-update-74/13234",
+                        "https://forum.makerdao.com/t/weekly-mips-update-73/13092",
+                        "https://forum.makerdao.com/t/weekly-mips-update-72/12945",
+                        "https://forum.makerdao.com/t/weekly-mips-update-71/12826",
+                        "https://forum.makerdao.com/t/weekly-mips-update-70/12695",
+                        "https://forum.makerdao.com/t/weekly-mips-update-69/12543",
+                        "https://forum.makerdao.com/t/weekly-mips-update-68/12460",
+                        "https://forum.makerdao.com/t/weekly-mips-update-67/12387",
+                        "https://forum.makerdao.com/t/weekly-mips-update-66/12190",
+                        "https://forum.makerdao.com/t/weekly-mips-update-65/12033",
+                        "https://forum.makerdao.com/t/weekly-mips-update-64/11878",
+                        "https://forum.makerdao.com/t/weekly-mips-update-63/11768",
+                        "https://forum.makerdao.com/t/weekly-mips-update-62/11653",
+                        "https://forum.makerdao.com/t/weekly-mips-update-61/11523",
+                        "https://forum.makerdao.com/t/weekly-mips-update-60/11347",
+                        "https://forum.makerdao.com/t/weekly-mips-update-59/11186",
+                        "https://forum.makerdao.com/t/weekly-mips-update-58/11074",
+                        "https://forum.makerdao.com/t/weekly-mips-update-57/10921",
+                        "https://forum.makerdao.com/t/weekly-mips-update-56/10691",
+                        "https://forum.makerdao.com/t/weekly-mips-update-55/10539",
+                        "https://forum.makerdao.com/t/weekly-mips-update-101/17392",
+                        "https://forum.makerdao.com/t/weekly-mips-update-53/10310",
+                        "https://forum.makerdao.com/t/weekly-mips-update-52/10192",
+                        "https://forum.makerdao.com/t/weekly-mips-update-51/10079",
+                        "https://forum.makerdao.com/t/weekly-mips-update-50/9992",
+                        "https://forum.makerdao.com/t/weekly-mips-update-49/9890",
+                        "https://forum.makerdao.com/t/weekly-mips-update-48/9757",
+                        "https://forum.makerdao.com/t/weekly-mips-update-47/9648",
+                        "https://forum.makerdao.com/t/weekly-mips-update-46/9532",
+                        "https://forum.makerdao.com/t/weekly-mips-update-45/9427",
+                        "https://forum.makerdao.com/t/weekly-mips-update-44/9303",
+                        "https://forum.makerdao.com/t/maker-relay-ep-50-en-espanol/8966",
+                        "https://forum.makerdao.com/t/maker-relay-episode-50/8897",
+                        "https://forum.makerdao.com/t/weekly-mips-update-54/10398",
+                        "https://forum.makerdao.com/t/weekly-mips-update-100/17265",
+                        "https://forum.makerdao.com/t/weekly-mips-update-99/17102",
+                        "https://forum.makerdao.com/t/weekly-mips-update-98/16940",
+                        "https://forum.makerdao.com/t/weekly-mips-update-97/16816",
+                        "https://forum.makerdao.com/t/weekly-mips-update-96/16688",
+                        "https://forum.makerdao.com/t/weekly-mips-update-95/16504",
+                        "https://forum.makerdao.com/t/weekly-mips-update-94/16330",
+                        "https://forum.makerdao.com/t/weekly-mips-update-93/16129",
+                        "https://forum.makerdao.com/t/weekly-mips-update-92/15933",
+                        "https://forum.makerdao.com/t/weekly-mips-update-91/15787",
+                        "https://forum.makerdao.com/t/weekly-mips-update-90/15648",
+                        "https://forum.makerdao.com/t/weekly-mips-update-89/15464",
+                        "https://forum.makerdao.com/t/weekly-mips-update-88/15329",
+                        "https://forum.makerdao.com/t/weekly-mips-update-87/15220",
+                        "https://forum.makerdao.com/t/weekly-mips-update-86-may-9-2022/15058",
+                        "https://forum.makerdao.com/t/monthly-governance-review-april-2022/14986",
+                        "https://forum.makerdao.com/t/relay-semanal-26-de-abril-02-de-mayo-de-2022/14970",
+                        "https://forum.makerdao.com/t/weekly-relay-april-26-may-2-2022/14939",
+                        "https://forum.makerdao.com/t/weekly-mips-update-85/14914",
+                        "https://forum.makerdao.com/t/weekly-mips-update-84/14786",
+                        "https://forum.makerdao.com/t/weekly-mips-update-83/14673",
+                        "https://forum.makerdao.com/t/weekly-mips-update-82/14570",
+                        "https://forum.makerdao.com/t/weekly-mips-update-81/14443",
+                        "https://forum.makerdao.com/t/monthly-governance-review-march-2022/14428",
+                        "https://forum.makerdao.com/t/relay-semanal-22-28-de-marzo-de-2022/14333",
+                        "https://forum.makerdao.com/t/weekly-relay-march-22-28-2022/14300",
+                        "https://forum.makerdao.com/t/weekly-mips-update-80/14274",
+                        "https://forum.makerdao.com/t/relay-semanal-15-21-de-marzo-de-2022/14181"
+                    ],
+                    "GPT-summary": "The post proposes the addition of a GYD denominated PSM to complement the current USDC-PSM in MakerDAO. The post explains the Gyroscope mechanism and how it can decentralize the PSM and re-decentralize Dai. The authors also discuss the benefits of using GYD over USDC and address concerns that could be raised in regards to a GYD:DAI PSM. The post concludes by gauging interest in developing Gyroscope closely with Maker and proposing two different ways to build out the proposed integration.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.396345298220298
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Doo_StableLab",
+                    "index": "#2",
+                    "likes": "8",
+                    "time": "20/06/2021-18:31:23",
+                    "content": "Thanks for applying but I think it\u2019s way too early. As we saw with various stablecoins, they require a strong track record before they can be proven to be stable and usable. Very few manage to survive in extreme market conditions. Considering it\u2019s not yet developed and will be very iliquid in the beginning, it\u2019s not a good candidate at the moment. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.165740740740741
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/aklamun",
+                    "index": "#3",
+                    "likes": "3",
+                    "time": "20/06/2021-19:04:56",
+                    "content": "Thanks appreciate the concerns. To address your point, it\u2019s designed to be liquid at the beginning because of the primary market structure in the same way that the USDC-PSM today is liquid. In integrating with Dai, there would be an extra \u201chop\u201d, but the hops can be atomically composed to a single step. In contrast, you can think of the USDC-PSM as essentially a different primary market structure that falls differently on the trade-off spectrum. As Maker is considering how to diversify risk in the PSM, I think it\u2019s worth considering this as another candidate for doing so. This is early though, which is why it\u2019s a Pre-MIP to float the idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.664285714285714
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "21/06/2021-08:51:13",
+                    "content": "Thanks for this detailed post. Perhaps you\u2019re already aware of this but Maker is already considering a bunch of new PSMs based on other stablecoins. If this is implemented, what additional benefit do you see from a GYD PSM? To me, it seems like both solutions would be roughly the same in terms of centralization since they\u2019d issue DAI backed by a basket of stablecoins. If anything having multiple separate PSMs based on the stablecoins directly seems to reduce one layer of complexity compared to going through the route of GYD \u2192 stablecoin. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.478535353535353
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "21/06/2021-10:15:50",
+                    "content": "Thanks for the proposal, Before a token is used for the PSM we first need to emboard them as a normal vault type. And considering the heavy effort to emboard a token on our side, most of the PSM voted were for stablecoin already emboard. Although, I don\u2019t think we want to have a lot of stablecoin in our portfolio probably around 10%. Therefore I do believe a PSM at this level (3b) is not a long term solution. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.770833333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/aklamun",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "21/06/2021-17:16:32",
+                    "content": "It\u2019s definitely worth comparing against the other proposed PSMs (and it\u2019s worth stressing that, in my mind, the Gyroscope mechanism should be thought of here as another form of a PSM-like mechanism, i.e., a primary market). They fall a little differently in the trade-off space mostly because Gyro-PSM handles the primary market as an aggregate mechanism and multi-PSMs would handle a number of one-to-one pricing mechanisms. Handling the primary market in aggregate has the advantage that our PAMM mechanism can be used. If no assets fail or fluctuate in price, this is a moot point, but otherwise it encodes the means to handle those situations automatically with guarantees on survival of the mechanism (i.e., reserves are not depleted). On the ground, this provides greater flexibility in handling shocks, and the system has a better shot at maintaining functionality. The alternative with multi-PSMs is that the MKR backstop has to step in to immediately cover any losses (if it can cover the size of those losses), whereas this sort of backstop (whether MKR or Gyro in that case) is still an option in the Gyro-PSM case, but (i) it may not be needed and (ii) can happen at much more flexible times because the mechanism can still function. The reserve design is also more flexible in including assets other than custodial dollar stablecoins. For instance, it can make sense to have ETH, or other non-custodial assets and stablecoins without strict prices, of course with proper exposure controls. This is made easier (and in my opinion stronger) by handling PSM assets in aggregate as a common reserve portfolio with the PAMM mechanism. Under the Gyro-PSM, I would then think of the Dai supply from a slightly different perspective: part of the supply would be reserve-backed (against the reserve portfolio) and part of the supply would be collateral-backed in the leverage market. Somewhat parallel to the structure behind central bank issued currency under a currency peg regime and commercial bank money. I think the economic complexity is somewhat similar between the options: exposure parameters (often essentially the same) are being chosen on some level. The PAMM component does add new code, which would naturally need to be properly battle tested, but that\u2019s b/c it falls on the cutting edge of designing primary market mechanisms. But it\u2019s not altogether complex: it\u2019s more about confronting the issue of how to price mint and redeem quotes as opposed to tether directly to custodial stablecoins. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.439123376623377
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/aklamun",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "21/06/2021-17:17:34",
+                    "content": "As mentioned above, I think the thing to consider for this idea is onboarding a new fundamental design for the PSM, which would be achieved through Gyroscope. If we don\u2019t end up pursuing this integration together (totally fine, we\u2019re just discussing to see if there is interest), then another later integration could be as a collateral type. In terms of potentially playing the role of a new PSM mechanism itself though, my thought is it\u2019d be best to work closely together in the process, hence discussing now. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 6.2067099567099575
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Doo_StableLab",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "21/06/2021-19:15:16",
+                    "content": "I appreciate your enthusiasm. However, as others mentioned and can see from other collateral onboarding process, the community prefers to see it working and scaling first before considering integration or onboarding to Maker system. If the launch is far away, then it\u2019s too soon to discuss anyway. And if the launch is soon then we can see it launch and see how it becomes successful. There\u2019s no reason to rush. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.21875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/aklamun",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "21/06/2021-20:27:06",
+                    "content": "Maker does need to find a long-term solution to USDC/custodial stablecoin dependency. To some extent, this may require building new things without the luxury of seeing them already work today. The stablecoin space is one of innovation after all. Our intent is simply to explore whether the Maker community might have an interest in shaping this together. There is certainly no rush, and we can proceed independently and revisit anything later on too if the community would prefer to remain on the sidelines. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.029220779220779
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cnoyes",
+                    "index": "#10",
+                    "likes": "2",
+                    "time": "30/06/2021-17:40:27",
+                    "content": "@aklamun curious how you would think about the tradeoffs to adopting this construction versus implementing negative interest rates, long-term? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/aklamun",
+                    "index": "#11",
+                    "likes": "0",
+                    "time": "01/07/2021-19:12:44",
+                    "content": "In answering this (and for Maker in deciding the route forward, even if that route is sticking with the current PSM), I think it\u2019s worth comparing the primary ways that are being explored to handle the deleveraging spiral/short squeeze problem:   Primary market mechanisms (here including PSM and this proposal with Gyro)   Negative interest rates (like in Rai)   A sort of \u201cliquidation buffer\u201d (like one of our earlier proposals, and in Liquity)   (3) includes the \u201cvault insurance pool\u201d we had suggested in this paper (blog post version here). Liquity\u2019s \u201cstability pool\u201d is a similar concept and worked to some degree in the last crisis in May. Worth noting that these are an imperfect solution, as in the buffer can be exhausted at which point we have the initial problem, but it can extend the region of stability. (2) essentially works by incentivizing vaults/CDPs to expand supply in a short squeeze and also incentivizing decreased demand in a short squeeze. It has some different problems that are worth considering also.  (Liquidity) The mechanism itself doesn\u2019t address liquidity, though of course it doesn\u2019t claim to. On the other hand, primary market mechanisms do bring good liquidity from the beginning. Primary markets are essentially why USDC/USDT/custodial stablecoins are very liquid, and also why Dai\u2019s liquidity has improved so dramatically since the introduction of the PSM. This is also generally how liquidity works in traditional finance (e.g., ETFs). Liquidity is a nice additional effect of including a primary market mechanism here. (Tightness around peg) With negative rates, the protocol needs to adapt dynamic rates in a close to optimal way to indirectly maintain the price around the peg. While I am optimistic that we can make strides here, it\u2019s worth recollecting that this is generally a hard problem that central bankers struggle with in targeting various metrics using interest rates. Maintaining tightness with indirect mechanisms is hard. On the other hand, it is much easier to do this with a primary market. By this metric, Dai has also maintained price much tighter around peg post-PSM. This is also very connected with liquidity. (Participation incentives) In my view, it\u2019s an open question whether stablecoin holders will have much demand to participate if rates are expected to be negative during large periods of time. This is more of a question of \u201ccan it actually become a currency?\u201d vs. will it only be a useful leverage tool.  Any of these might be viable solutions to the deleveraging spiral/short squeeze problem to certain extents. But, right, they make different trade-offs, and there are still some open questions. They\u2019re also not mutually exclusive. The strongest systems might use all three! ",
+                    "links": [
+                        "https://medium.com/coinmonks/insights-from-modeling-stablecoins-a30e732aef1b"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.464514652014652
+                }
+            ]
+        }
+    ]
+}

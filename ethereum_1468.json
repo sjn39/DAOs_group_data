@@ -1,0 +1,75 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/wand-aka-dsproxy-2-0/7221",
+            "title": "`Wand` aka `DSProxy 2.0` ",
+            "index": 7221,
+            "category": [
+                "Primordial Soup"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nikolai",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "06/10/2021-12:12:32",
+                    "content": "   GitHub    GitHub - nmushegian/wand: DSProxy 2.0 DSProxy 2.0. Contribute to nmushegian/wand development by creating an account on GitHub.      This is a grab bag of proxy contract R&D. I\u2019m publishing this to help bump priority for SET_INDESTRICTUBLE. Code sketch and README at time of publishing are copied below:  interface WandAuth {   function canCast(address witch, address spell, bytes4 sigil)     external returns (bool); }  contract Wand {   address public root;   address public auth;   address public code;   address public lock;    function cast(address spell, bytes calldata data)     payable public       returns (bool bit, bytes memory ret)   {     require(lock == ZERO, 'ERR_LOCK');     lock = msg.sender;      bytes4 sigil; assembly{ sigil := calldataload(data.offset) }      if (msg.sender != root) {       require(auth != ZERO, 'ERR_ROOT');       require(WandAuth(auth).canCast(msg.sender, spell, sigil), 'ERR_AUTH');     }      code = spell;     address root_ = root;     address auth_ = auth;      (bit, ret) = spell.delegatecall(data);      if (msg.sender != root) {       require(root == root_, 'ERR_SET_ROOT');       require(auth == auth_, 'ERR_SET_AUTH');     }     code = ZERO;     lock = ZERO;      // // This doesn't work, but ideally there's some way to detect selfdestruct     // uint256 size; assembly { size := codesize(); }     // require(size > 0, 'ERR_BOOM');      assembly{ log4(caller(), spell, sigil, bit, 0, 0) }   }    function give(address dest) public {     require(lock == ZERO, 'ERR_LOCK');     require(msg.sender == root, 'ERR_GIVE');     root = dest;     assembly{ log3(caller(), 'give', dest, 0, 0) }   }    function bind(address what) public {     require(lock == ZERO, 'ERR_LOCK');     require(msg.sender == root, 'ERR_BIND');     auth = what;     assembly{ log3(caller(), 'bind', what, 0, 0) }   }    constructor() {     root = msg.sender;     assembly{ log3(0, 'give', caller(), 0, 0) }   }    address constant internal ZERO = address(0); }   A Wand is a variation of the Proxy pattern with some differences and extra features  canCast authorization  The authorization pattern for access controlled calls (non-root/owner callers) has changed from DSProxy. Instead of using DSAuth to access control the proxy object itself, root (owner) retains sole access to true \u201croot\u201d functions (transfer and update authority), while cast applies the canCast access control table to the spell being cast. Concretely:  canCall(address caller, address object, bytes4 sig) -> (bool) which was used like function exec(address target, bytes calldata data) returns (bytes ret) {   assert authority.canCall(msg.sender, address(this), msg.sig)`   ... }  becomes `canCast(address caller, address spell, bytes4 sig)`  which is called like function cast(address spell, bytes calldata data) returns (bool ok, bytes ret) {   assert auth.canCast(msg.sender, spell, data[0:4]);   ... }   protected root and auth   caller-saved owner (root) and permission table (auth) makes spells somewhat safer to use.  address root_ = root; address auth_ = auth;  // this is in a fresh context, the local execution stack is not visible (bit, ret) = spell.delegatecall(data);  require(auth == auth_, 'ERR_SUDO'); require(root == root_, 'ERR_SUDO')  (The remaining loss of root control danger lies in SELFDESTRUCT, which is easier to statically detect (mitigated in future by EIP4571 SET_INDESTRUCTIBLE, or any way to detect that code has been scheduled for selfdestruct)  reentry lock and caller reference  reentry lock saves the caller in storage and exposes it via function, for access from both the spell being run external contracts. It is zero\u2019d for gas savings and consistency between spells  lock = msg.sender; ...  lock = ZERO;   spell (library) code reference  the code being delegatecalled (the spell that was cast) is also saved in storage so that the spell knows the actual contract object which has the code being run (libraries do not have a \u201clibrary object\u201d reference, but they could! These would be like singleton stateful libraries). It is also zero\u2019d after each cast (and/but is \u201ccaller save\u201d for spells calling spells)  code = spell; ...  code = ZERO; ",
+                    "links": [
+                        "https://github.com/nmushegian/wand",
+                        "https://ethereum-magicians.org/t/eip-2937-set-indestructible-opcode/4571",
+                        "https://ethereum-magicians.org/t/eip-2937-set-indestructible-opcode/4571/12"
+                    ],
+                    "GPT-summary": "The post is an explanation of a proxy contract called Wand, which is a variation of the Proxy pattern with some differences and extra features. The authorization pattern for access-controlled calls has changed from DSAuth to access control the proxy object itself, and the root (owner) retains sole access to true \u201croot\u201d functions. The post also explains the reentry lock and caller reference, and the code being delegate called. The post may be open to constructive criticism, questions, auditing, and reviewing.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.523809523809524
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PaulRBerg",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "08/10/2021-16:31:43",
+                    "content": "Lots of good ideas here! Thanks for sharing.     nikolai:  the code being delegatecalled (the spell that was cast) is also saved in storage so that the spell knows the actual contract object which has the code being run   When would this be useful? You mentioned the concept of \u201csingleton stateful libraries\u201d but I\u2019ve never seen that implemented in Ethereum. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.71875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poma",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "12/10/2021-15:58:14",
+                    "content": "Aren\u2019t checks for LOCK variable redundant?  delegatecall can override it during execution anyway Any changes to root and auth will be caught by guards after the delegatecall  Also auth and root are read 3 times before they are cached, can slightly save on gas there. I know it\u2019s super minor but reading storage and then caching it immediately catches the attention. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.895833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nikolai",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "15/10/2021-10:57:05",
+                    "content": "You are correct, see this issue and discussion: Reentry is impossible to prevent when delegate calling \u00b7 Issue #3 \u00b7 nmushegian/wand \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 1.666666666666667
+                }
+            ]
+        }
+    ],
+    "group_index": "1468"
+}

@@ -1,0 +1,185 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/issues-we-discovered-in-the-ropsten-constantinople-hard-fork/1598",
+            "title": "Issues we discovered in the Ropsten Constantinople hard fork ",
+            "index": 1598,
+            "category": [
+                "Process Improvement"
+            ],
+            "tags": [
+                "hardfork",
+                "ropsten",
+                "testnet"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "1",
+                    "likes": "7",
+                    "time": "17/10/2018-15:05:58",
+                    "content": "Here\u2019s my initial post-mortem and concern/task list following the Constantinople Ropsten hard fork, in no particular order.   A consensus bug in Parity was discovered (https://github.com/paritytech/parity-ethereum/pull/9746). We need to understand why this consensus bug occurred in the first place, and particularly why it wasn\u2019t caught by the tests. @ethchris suggests that we may need clearer EIP specs including pseudo code (https://twitter.com/ethchris/status/1052503731072315392). Apparently in this case there was some confusion over the meaning of terms like \u201ctransaction\u201d and \u201cexecution frame\u201d that may have contributed to the bug (cf. ethereum/AllCoreDevs - Gitter).   There were no miners on the new fork. Why? We need to better understand, and have more control over, how mining happens on a PoW testnet. Does the Foundation/Parity/other core dev teams need to have more miners running on a PoW testnet? Do we need to have miners on standby, fully synced, ready to jump on after a fork and assert the correct chain? Do we need to enlist the help of altrustic miners like @atlanticcrypto in this effort? How do we coordinate?   Parity has a limit on how far back nodes can automatically reorg (cf. @5chdn at ethereum/AllCoreDevs - Gitter). We should better understand this mechanism. Is this supposed to be a limit on \u201con chain governance\u201d (allowing nodes to automatically come to consensus on the canonical chain) that triggers the need for meatspace/developer intervention? Or is it more about resource constraints? What\u2019s the limit and why is it set as such? Why does parity have this limit, but not geth? UPDATE: it appears that both geth and parity have such a limit.   Geth has a debug.setHead command that allows you to manually force it onto the right chain; it appears that parity does not have such a feature. Is this desirable?   It\u2019s possible for an upgraded node in fast sync mode (geth or parity, I believe) to fast sync over a bad block which caused a fork and keep following the wrong chain. This is clearly the shortcoming for fast sync but we should discuss this in the context of forks and long reorgs - is there some way to communicate a hint to such nodes that they\u2019re on the wrong chain?   Similarly, after a fork has occurred and there are many chains (there appear to be as many as four Ropsten chains right now, cf. ethereum/AllCoreDevs - Gitter), it\u2019s very difficult for a node sycning from scratch to find the right chain. For one thing, it constantly tries to peer with nodes on the wrong chain; in this case it was necessary for nodes to turn off discovery entirely and manually enter a set of peers to get caught up to the right chain. Perhaps a \u201cfork ID\u201d as suggested by @MicahZoltu would help. Alternatively, some sort of \u201cbeacon\u201d (not to be confused with the Eth 2.0 beacon chain, sorry for the poor choice of terms) which gave nodes a verifiable hint about the current canonical chain would help (or, alternatively, a blacklist of bad blocks or chains). Some challenges here: @cdetrio points out that the P2P layer makes transmitting this information hard (ethereum/AllCoreDevs - Gitter), there\u2019s the question of centralization here (who controls the beacon?), and it\u2019s a possible DoS vector in the wrong hands.   Communication - the AllCoreDevs channel on Gitter served as our primary means of communication throughout this fork - but it\u2019s disorganized, has no threading, and it\u2019s difficult to find a canonical source of information (e.g., which is the current head? what\u2019s the current block number? what\u2019s the status of each client? what series of commands do I need to run to sync a new node to the current head? etc.). I propose the creation of a core devs \u201cWar Room\u201d where this information can be managed going into and during an upgrade or other emergent situation. Hudson set this up, which is a great example:  https://notes.ethereum.org/s/SJE9O2ksQ#   General hard fork strategy - the core devs seem to be all over the map here. @AlexeyAkhunov argues that we should roll Ropsten back to Constantinople and try the fork again. @sorpaas disagrees. Is there a minimum amount of time we need between finalizing/releasing the client code and scheduling a hard fork? Can we make sure that hard forks happen on Wednesdays rather than on Saturdays? Do we need a certain set of people to be \u201con call\u201d for the fork? Is there a minimum amount of time we need to see an upgrade running successfully on a testnet before we schedule a mainnet hard fork? Which testnet? Does it need to be an \u201cactive\u201d, PoW-based testnet like Ropsten? Do we need some escape hatch, e.g., we could send a transaction to call off or postpone a testnet hard fork if a bug is discovered?   Fork monitor - apparently @Arachnid and @cdetrio worked on this before. This might be something like a modified version of EthStats. We would definitely find this useful for the #Ewasm testnet. Would this be of value?   There\u2019s an issue in geth where it spends a lot of resources exploring chains with bad blocks that appear to have a higher TD (cf ethereum/AllCoreDevs - Gitter). According to @holiman, it may explore the same chain or same set of blocks multiple times, esp. when it\u2019s not running in archive mode (and thus doesn\u2019t retain all the block data). We may need some efficient way for geth to remember bad ancestors to prevent this issue (ethereum/AllCoreDevs - Gitter).   Ropsten has effectively been unusable, or at least very difficult to use, for about four days as of this writing, and we still have several active forks. This begs the question, what is a testnet? What is its purpose?  Do we need stable, \u201cproduction\u201d testnets and \u201cstaging\u201d testnets? @LefterisJP probably has thoughts here    ",
+                    "links": [
+                        "https://twitter.com/ethchris/status/1052503731072315392",
+                        "https://gitter.im/ethereum/AllCoreDevs?at=5bc3ac3682893a2f3be03d43",
+                        "https://gitter.im/ethereum/AllCoreDevs?at=5bc6f5536e5a401c2d857036",
+                        "https://gitter.im/ethereum/AllCoreDevs?at=5bc8f17464cfc273f9eab0c7",
+                        "https://gitter.im/ethereum/AllCoreDevs?at=5bc745136e5a401c2d87a269",
+                        "https://ethereum-magicians.org/t/disorderly-constantinople-fork-on-ropsten-testnet/1582/4",
+                        "https://gitter.im/ethereum/AllCoreDevs?at=5bc74640c7bf7c3662274429",
+                        "https://notes.ethereum.org/s/SJE9O2ksQ#",
+                        "https://gitter.im/ethereum/AllCoreDevs?at=5bc6d60c271506518d2539fd",
+                        "https://gitter.im/ethereum/AllCoreDevs?at=5bc6d7a2e65a634336ef6b92",
+                        "https://ethereum-magicians.org/t/disorderly-constantinople-fork-on-ropsten-testnet/1582/5",
+                        "https://ethereum-magicians.org/t/toolkit-for-planned-changes-forks-on-testnet/1642",
+                        "https://ethereum-magicians.org/t/collection-of-ethereum-engineering-processes-or-standardized-workflows/1824"
+                    ],
+                    "GPT-summary": "The post-mortem of the Constantinople Ropsten hard fork is discussed, and a list of concerns and tasks is presented. The post discusses issues such as a consensus bug in Parity, the absence of miners on the new fork, and the difficulty of syncing nodes to the correct chain after a fork. The author also proposes solutions to these issues, such as clearer EIP specs and a core devs \"War Room\" for communication during upgrades. The post is a constructive criticism of the hard fork and raises questions about the purpose and stability of testnets.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.948702587095444
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "17/10/2018-16:30:28",
+                    "content": "Response from @sorpaas on Gitter (https://gitter.im/ethereum/AllCoreDevs?at=5bc75431069fca52a54eb783):  Apparently in this case there was some confusion over the meaning of terms like \u201ctransaction\u201d and \u201cexecution frame\u201d that may have contributed to the bug.  No that\u2019s not the case. \u201ctransaction\u201d and \u201cexecution frame\u201d are all clearly defined. That discussion was where @AlexeyAkhunov worried that parity did it incorrectly but later turned out to be a false flag. The real issue is whether refund counter is signed. I agree pseudo code may be helpful, but it probably won\u2019t catch this bug efficiently either, because different client uses different method for refund checkpointing. Probably this should really just be a section in EIP that says \u201cimplementators please pay attention to those cases\u201d. We still need to find better ways to catch it before bug happens, though.  Geth has a debug.setHead command that allows you to manually force it onto the right chain; it appears that parity does not have such a feature. Is this desirable?  Yes, we have a feature request for that! It\u2019s just not yet implemented: https://github.com/paritytech/parity-ethereum/issues/8259 ",
+                    "links": [
+                        "https://github.com/paritytech/parity-ethereum/issues/8259"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.425324675324675
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "3",
+                    "likes": "3",
+                    "time": "17/10/2018-17:13:30",
+                    "content": "    lrettig:  We need to understand why this consensus bug occurred in the first place, and particularly why it wasn\u2019t caught by the tests.   The manually written tests were not complete, something which @winsvega clearly stated during the calls. Let no shadow fall on him. However, during two publically aired coredev-calls, we agreed that Ropsten was a testnet, and that we considered it ok to use it as such. Not until right as we were about to release fork-enabled clients did we hear from developers who wanted Ropsten to not suffer from disturbances. The decision to deploy on Ropsten was imo made because we knew it would be a good testnet, and it should have as long exposure on Ropsten as possible before a mainnet release. That being said, it\u2019s not true that we didn\u2019t test it. We had fuzzers running for a couple of weeks, but unfortunately the fuzzer engine was not properly tuned, and did not get good coverage of the SSTORE logic. Now, after @cdetrio made some tuning to it, he caught the bug within 800 testcase (a couple of minutes).  I deployed the new code this morning, and it has, since then, run 196k testcases where it tests Gets vs Parity. It will continue to run 24/7, and we will also deploy a new instance which has a different testcase generation strategy.     lrettig:   Geth has a debug.setHead command that allows you to manually force it onto the right chain; it appears that parity does not have such a feature. Is this desirable?    That command is not quite safe. It\u2019s in the debug namespace because it blindly changes internals without bothering about consistency. Things may break. If you have fast-synced and does a setHead to before your pivot block, I have no idea what will happen. In the best-case, nothing.     lrettig:  Similarly, after a fork has occurred and there are many chains (there appear to be as many as four Ropsten chains right now   That we don\u2019t know. We don\u2019t have enough visibility to see that, but could fairly easily check if the head block for the ones further back is in the chain of the ones further ahead.     lrettig:  I propose the creation of a core devs \u201cWar Room\u201d where this information can be managed going into and during an upgrade or other emergent situation.   Well, that\u2019ll be just another channel. If there\u2019s a need for a real war-room, it may not be something we want to have publically.     lrettig:  Fork monitor - apparently @Arachnid and @cdetrio worked on this before. This might be something like a modified version of EthStats. We would definitely find this useful for the #Ewasm testnet. Would this be of value?   It exists, it\u2019s a d3js-vizualisation of the chains, and has been used for all forks since the dao-fork, IIRC. Nobody set it up for Ropsten constantinople fork, however, which in hindsight was a mistake. I have tagged up some tickets/prs for geth that has come out of this excercise: https://github.com/ethereum/go-ethereum/labels/ropsten-lessons ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum/labels/ropsten-lessons"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.656926406926407
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/atlanticcrypto",
+                    "index": "4",
+                    "likes": "3",
+                    "time": "17/10/2018-17:40:31",
+                    "content": "    lrettig:  There were no miners on the new fork. Why? We need to better understand, and have more control over, how mining happens on a PoW testnet. Does the Foundation/Parity/other core dev teams need to have more miners running on a PoW testnet? Do we need to have miners on standby, fully synced, ready to jump on after a fork and assert the correct chain? Do we need to enlist the help of altrustic miners like @atlanticcrypto in this effort? How do we coordinate?   We are comfortable making a commitment to support the current or future testnets in some capacity on an ongoing basis. We believe a base level of miner commitment to the test networks is important, and we are willing to provide it. We would hope that as new testnet forks are planned we could be included in conversations regarding the infrastructure rollout timing and requirements on the core dev side. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.926136363636364
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "17/10/2018-19:53:24",
+                    "content": "    holiman:   I propose the creation of a core devs \u201cWar Room\u201d where this information can be managed going into and during an upgrade or other emergent situation.  Well, that\u2019ll be just another channel. If there\u2019s a need for a real war-room, it may not be something we want to have publically.   I\u2019m talking less about a channel for synchronous communication and more about a \u201cfact set\u201d along the lines of the things I outlined:  which is the current head? what\u2019s the current block number? what\u2019s the status of each client? what series of commands do I need to run to sync a new node to the current head?  I don\u2019t have a strong opinion about its being public or private. There are some scenarios, like a real attack, where I imagine we\u2019d want some degree of privacy, but all of the dialog and information regarding the Ropsten fork was carried out in public without issue. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.453088578088579
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Hex-Capital",
+                    "index": "6",
+                    "likes": "2",
+                    "time": "17/10/2018-20:35:00",
+                    "content": "    lrettig:   It\u2019s possible for an upgraded node in fast sync mode (geth or parity, I believe) to fast sync over a bad block which caused a fork and keep following the wrong chain. This is clearly the shortcoming for fast sync but we should discuss this in the context of forks and long reorgs - is there some way to communicate a hint to such nodes that they\u2019re on the wrong chain?    I think #5 above is super important. Shortly after the fork, I believe we ended up with 3 main chains:  Byzantium (from unupgraded mining nodes) Constantinople-Geth Constantinople-Parity (which split from Geth at 4230605)  However, because an upgraded fast node can fast sync over a bad block, even more chains were produced as people tried to resync. E.g. A Geth node fast synced to the Constantinople-Parity chain past 4230605 and then forked off at the next bad block. This could generate an infinite number of chains ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.854166666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Cygnusfear",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "18/10/2018-08:10:51",
+                    "content": "re #7 I have been lurking the AllCoreDevs channel and I would like to add support for creating an open \u2018war room\u2019. Private channels are easily opened when necessary, if the channels are private to begin with there will be no \u2018good samaritans\u2019 contributing to the issue (spinning up an extra miner/node etc). As @lrettig proposed in the excellent summary of issues: threading would definitely help organising the large amount of information, stickying threads with helpful information solves the canonical truth issue. This is, altogether with #2 & #8 highlighting the amount of  coordination between different actors in preparation for a fork. Finding the proper channel is easier with a designated communication channel for parties involved. With the amount of upcoming clients for Eth2 and thus more participants the necessity for this will probably increase. Setting up a \u2018war room\u2019 (additionally a fork monitor?) could probably be sponsored and initiated by several parties as a bounty (EF, Parity, upcoming clients) if legitimacy is an issue. Edit: Aragon is using rocket.chat, which has a lot of feature parity with Slack (https://github.com/aragon/governance/blob/master/AGP-5_Migration_to_Open_Source_Messaging_Platform.md & https://rocket.chat) ",
+                    "links": [
+                        "https://rocket.chat"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.826007326007327
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/5chdn",
+                    "index": "8",
+                    "likes": "2",
+                    "time": "18/10/2018-11:20:07",
+                    "content": "    holiman:  The manually written tests were not complete, something which @winsvega clearly stated during the calls. Let no shadow fall on him.   This is an important point. I would like to add that we all agreed that \u201cthis is fine\u201d for a testnet. Curious about testing updates on Friday. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.4375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjayrush",
+                    "index": "9",
+                    "likes": "3",
+                    "time": "19/10/2018-12:54:07",
+                    "content": "May I suggest some sort of \u201cdisaster recovery\u201d planning? Of course, it\u2019s all super-complicated and extremely difficult, but if there was some pre-planning for unexpected outcomes that might be good. (Simple suggestion: a pre-determined place to get information (wiki) that has been loudly announced prior to the fork.) I know this problem was only on the testnet, but one of the concerning aspects of the recent episode is the apparent ad-hoc nature of the recovery. I hope no-one thinks I\u2019m being critical, because I\u2019m not intending to be. I\u2019m just making a suggestion. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.225
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "20/10/2018-23:46:49",
+                    "content": "Thanks for chiming in @tjayrush. A lot of my ideas, including the above, are indeed inspired by disaster recovery training from my days working in finance. I think there\u2019s a lot we can learn from these best practices. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None"
+                    ],
+                    "Sentiment": 7.0
+                }
+            ]
+        }
+    ],
+    "group_index": "462"
+}

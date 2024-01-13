@@ -1,0 +1,212 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/automatic-authentication-signature/2429",
+            "title": "Automatic Authentication Signature ",
+            "index": 2429,
+            "category": [
+                "Wallets"
+            ],
+            "tags": [
+                "authentication"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "15/01/2019-21:36:02",
+                    "content": "Hi, I\u2019d like to discuss here the proposal about \u201cAutomatic Authentication Signature\u201d, that I explain here The idea behind authentication signature is to allow a back-end (verifier) to authenticate users via their web3 wallet signing capability. This is currently implemented crudely by some dapps with static messages that user need to confirm and ensure they are not signing a message pertaining to another application. Ideally though the back-end should generate some random message every time and request a signature from the wallet. Theoretically this should not need user confirmation as the sole purpose is to verify that the wallet is indeed in control of the private key associated with the exposed address. Indeed, it is assumed that a web3 wallet exposing a specific address has the corresponding private key. The signature required for authentication is only necessary because a dishonest user could simply expose an address as part of the web3 API for which it does not possess the private key. Currently though because wallets require user confirmation popup for every signature request, the user experience is less than ideal: User would get asked to sign a message they can\u2019t meaningfully verify (all the data being used for the sole purpose of back-end authentication). We thus need to come up with an  automatic authentication signature standard that would allow web3 wallets to recognize such specific signature requests and perform them without requiring user confirmation. This could take the form of a special signature format that wallet would recognise and would not be used in other contexts. I did not come up with a specific scheme yet but this could take the form of a specific envelope type for EIP712. To avoid signature replay and  prevent a malicious application to generate such authentication signatures, the message needs to include random data that only the verifiers knows (not unlike a CSRF token). As @PhABC rightly point out in his reply to the article, such scheme implies that applications would be then able to generate signature at will unless wallet rate-limit such requests. He then raised the concern that ECDSA might not be adequately secure for such heavy use. While I am not sure it is the case, I replied that apart from rate-limiting we can come up with alternative mechanism that involve generating private key scoped for each application/session \u2026 See the post and associated replies for more details : If you are involved in building wallet and web3 browser, I would love your feedback @danfinlay @pete @iiwok Thanks ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/712",
+                        "https://medium.com/@wighawag/automatic-authentication-signatures-for-web3-dcbcbc64d6b5",
+                        "https://ethereum-magicians.org/t/eip-erc-app-keys-application-specific-wallet-accounts/2742/4"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.255445795339413
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "2",
+                    "likes": "3",
+                    "time": "20/02/2019-17:46:13",
+                    "content": "I\u2019m glad that Discourse notified me of this thread as I was about to write a new one. I think this a great use-case where automated signing is harmless and improves the Web3 UX significantly for both users and developers. I discussed this with a few people at ETH Denver (@rouven @jamesyoung @michaelsena @oed) and I\u2019m planning to introduce this to the WalletConnect protocol sooner than later. However I want WalletConnect to embrace as many standards as possible working together with other Web3 providers like Metamask to reduce the duplication of efforts. My proposal is that Wallets should provide this authentication signature every time they expose new accounts as part of the JSON-RPC spec either as an updated eth_accounts or part of the new scope of wallet_ prefixed methods.     Add `wallet_` methods to improve dapp to wallet interaction Wallet Ring       Wallets are the most important interaction point between dapps and the Ethereum chain. Currently the most important wallet methods ( eth_sendTransaction ,  eth_sign  and  eth_signTypedData ) are part of the general api specification. For most wallets it does not make sense to provide implementations for all  eth_  methods. Therefore it would make sense to introduce a new prefix  wallet_  (this was already introduced with EIP 747: wallet_watchAsset).  This will provide the possibility to support \u2026     Whenever a Dapp requests access to the User\u2019s accounts, the Wallet should sign a standard authentication message that Dapps could verify themselves. I think this standard shouldn\u2019t be that extensive and ideally we could start pushing for adoption asap. PS - Can we move this thread to the Wallet Ring? Feels more appropriate to discuss with those participants ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-747-eth-watchtoken/1048",
+                        "https://ethereum-magicians.org/t/add-wallet-methods-to-improve-dapp-to-wallet-interaction/1848/38"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.329090909090908
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "20/02/2019-17:57:08",
+                    "content": "Hi @pedrouid Glad you like the idea. When you say that wallet should automatically sign upon accounts request, how do you envision the possibility for server to inject the random data (to ensure nobody has requested the same signature before) ? The idea I had was to make a generic signature request that can be call anytime but do not require user approval. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "20/02/2019-18:10:48",
+                    "content": "I followed up on my proposal on the wallet_ scope proposal as I feel this should be part of it. In short I think it should be part of the JSON RPC response whenever the Dapp request access the accounts that user exposes to the Dapp     Add `wallet_` methods to improve dapp to wallet interaction Wallet Ring       Hey guys, I was going to start a new thread but after replying to this existing thread on Automatic Authentication Signature. I realised this should be part of the wallet_ methods.    As you can read on the other thread, the proposal describes including a standard authentication signature that would be automatically signed by the Wallet to verify the account ownership on the Dapp side. Perhaps this could be part of either wallet_accounts or wallet_requestAccounts method where we could provide an\u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.014204545454546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "20/02/2019-18:26:47",
+                    "content": "I suggest we continue the discussion here (i moved the thread to the wallet ring) as the other thread is too generic and has already seen some unrelated discussion. I do not mean to say that the proposal should not be part of the wallet_ RPC methods though. As for replying to your comments there :    Add `wallet_` methods to improve dapp to wallet interaction   This message doesn\u2019t even require EIP-712 in my opinion, since it\u2019s not meant to be read by the user. Something as simple as doing a personal_sign for a fixed message I own this account that return a JSON RPC response as follows. {   \"id\": 1,   \"jsonrpc\": \"2.0\",   \"result\": [     {       \"address\": \"0x9b7b2B4f7a391b6F14A81221AE0920A9735B67Fb\",       \"signature\": \"0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400\"     {   ] }    Using EIP712 might indeed not be desired. As for a fixed message to be signed everytime, I think this is not a good security practice. Every dapp would then be able to get the signature for every other dapp unless we separate them via origins. I think it is important to let the dapp inject a random payload as a signature challenge. That is why I was asking how you envision the possibility to add the required random data when using eth_accounts or other such methods. This could simply be an extra parameters to the eth_accounts, etc but I do not see the issue in being simply a separate method. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.828125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "20/02/2019-18:29:35",
+                    "content": "That\u2019s fine with me. Can you just expand on why you think it\u2019s important for the dapp to inject a random payload as a signature challenge? IMO the more predictable these signatures are the better. Reduces the attack surface and makes it more interoperable. If I\u2019m able as a Dapp developer to have the Wallet automatically sign any message, I can move funds from a smart contract based wallet for example. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.294973544973546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "20/02/2019-18:46:16",
+                    "content": "I am not talking of allowing any message. As mentioned in the blog post, these messages signature request need to be identifiable form other and this should not allow the dapp to request message signature that could be valid in other context. We could simply request a prefix that should not be used outside of authentication signature request. like : Authentication Signature challenge: dkashfjdshfjdshfjhsafghsagfgasdfdsdsafdshgfjhjgjkjh Alternatively we could come up with something similar to how personal_sign use a prefix not usable in ethereum transaction. The reason to add a random payload is simply to prevent an application to get the fixed signature and use to sign in another application. If no random payload are used, the wallet would basically give the right to identify as the wallet address forever to any application. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.9935064935064934
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "20/02/2019-21:07:32",
+                    "content": "I see that makes sense. This actually would play nicely with the WalletConnect SDK as the signatures would be tightly coupled to each session uuid. Authentication Signature challenge: cbaff650-8d35-4106-8c28-394615d62e2c  Do you think it would make sense to use uuid\u2019s as part of the standard or do you see any advantages to allow completely arbitrary data to be provided instead? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.321428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "21/02/2019-20:15:09",
+                    "content": "The original idea was that the standard (at least in its generic version (not tied to a session creation)) should allow arbitrary data. This way it can be used for every kind of request without requiring the verifying end point to keep track of a session. The standard should thus allow to sign any message following this format : Automatic Signature <payload> Maybe it could be exposed this way : wallet_autoSign(data) This would not remove the ability to use it this way for a session : Automatic Signature challenge: cbaff650-8d35-4106-8c28-394615d62e2c To summarize, I can\u2019t see any reason for restricting the payload. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.359375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "21/02/2019-20:30:58",
+                    "content": "Fair enough, that makes sense. It makes no difference to restrict the challenge payload. However I would not expose an autoSign method but would instead make it a parameter when requiring accounts using the wallet_accounts method. Request {   \"id\": 1,   \"jsonrpc\": \"2.0\",   \"method\": \"wallet_accounts\",   \"params\": [\"cbaff650-8d35-4106-8c28-394615d62e2c\"] }  Response {   \"id\": 1,   \"jsonrpc\": \"2.0\",   \"result\": [     {       \"address\": \"0x9b7b2B4f7a391b6F14A81221AE0920A9735B67Fb\",       \"signature\": \"0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400\"     {   ] }  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "21/02/2019-21:21:05",
+                    "content": "hmm, I guess you want this to be tied to account request to avoid yet another back and forth for wallet connect protocol, right ? Is wallet_accounts the equivalent of eth_requestAccounts (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md)  or is wallet_accounts to be called after the user enabled access via eth_requestAccounts ? If it is the former, I see the benefit in proving ownership in one call, instead of having to do it with another call. If it is not, I would say such ownership proof should be added to eth_requestAccounts instead. I would still advocate for another variant, that can be used any time after the wallet authorized the application via eth_requestAccounts This is what I wanted to propose  as  autoSign so application can continuously request data to be signed by the wallet without requiring user input.  This can be used to communicate to a verifying endpoint without requiring sessions for example. So we would have {   \"id\": 1,   \"jsonrpc\": \"2.0\",   \"method\": \"wallet_accounts\",   \"params\": [\"cbaff650-8d35-4106-8c28-394615d62e2c\"] }  OR if  wallet_accounts is to be called after user authorized access, we should do that there instead with : {   \"id\": 1,   \"jsonrpc\": \"2.0\",   \"method\": \"eth_requestAccounts\",   \"params\": [\"cbaff650-8d35-4106-8c28-394615d62e2c\"] }  And on top of that we would also have : {   \"id\": 1,   \"jsonrpc\": \"2.0\",   \"method\": \"wallet_autoSign\",   \"params\": [\"<account address>\", \"<payload>\"] }  ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-1102-opt-in-provider-access/414/58"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.5178571428571423
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "14/05/2019-17:46:45",
+                    "content": "What\u2019s the latest status on this proposal, should we make a PR to start a Draft EIP as well? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "14/05/2019-18:24:42",
+                    "content": "It depends if we want to include the logic in 1102 itself ? In that case, we could help push forward 1102 with that proposal included. At the same time, if you are interested to move to a \u201cwallet_\u201d namespace I\u2019d be happy to move that forward too / instead. I would also introduce \u201cwallet_autoSign\u201d as a separate proposal. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "14/05/2019-20:09:20",
+                    "content": "Yes, I would signal to make wallet_autoSign proposal first. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "15/05/2019-11:48:08",
+                    "content": "Hey @pedrouid I created a first draft here : https://github.com/wighawag/EIPs/blob/automatic_signatures/EIPS/eip-automatic-signatures.md Let me know what you think, and I ll create a pull request with an specific number. I\u2019ll add you as a author too if you do not mind. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "14/06/2019-00:29:22",
+                    "content": "There are really two different motivations here, from what I can tell, and they aren\u2019t entirely compatible:  The ability for apps to get signatures at-will. The ability to reduce the number of sign-in prompts.  The first one is addressed neatly in EIP 1775, including accounting for using an app-isolated key, so that this key is only good for that app\u2019s own session persistence, etc, and so no user interaction is needed, and the ECDSA concerns are largely mitigated. The second one is the more WalletConnect like login moment, and it makes sense to want to integrate a signature into revealing accounts, because really people are getting too many confirmations, we should just ask them for what we need to do up front, and let them get on with their days. Rather than this very small incremental approach, where we\u2019re definitely going to be continuously adding new methods repeatedly to the provider, I\u2019d like an extensible sign-in pattern that we can add permissions to as needed (maybe an extension of the .enable() method\u2026 could easily take an options object\u2026). I\u2019m currently working on a proposal to this end, but first maybe I\u2019ll put out a feeler for how people think this should look, maybe in a fresh topic. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.942614924757782
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "14/06/2019-01:26:33",
+                    "content": "Hi @danfinlay thanks for the feedback, Yes, there are indeed 2 different motivations motivation 2) has already been proposed here separately on EIP-1102 (which is not yet final) see EIP-1102: Opt-in provider access and it is the most urgent motivation in my opinion: Apps are currently asking user to sign a message manually which is very ugly user experience. Worse, to alleviate slightly the problem some apps use a static friendly message, making them vulnerable to replay attacks. adding it as an optional argument to enable or requestAccounts as mentioned in the comment, make it backward compatible so nothing is blocking wallet to support it today. But note, that this is not only for WalletConnect like login. Metamask would definitely benefit from this too. As for motivation 1) I don\u2019t think we need to chose between 1775 and this. We can have both. I have given my opinion on the current 1775 draft here and from what I understood, it force separate apps into their own account, which can pose problem for apps that want to be bridged. Edit: one thing to note is that if motivation 1) is fulfilled, it automatically fulfil motivation 2) as far as account authentication is concerned but I still favor having it in enable first as this is priority and could reduce back and forth fro solution like wallet connect ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-erc-app-keys-application-specific-wallet-accounts/2742/34"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.152314814814814
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "01/08/2019-17:50:24",
+                    "content": "I submited a Pull Request for that proposal, see here : https://github.com/ethereum/EIPs/pull/2224 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "646"
+}

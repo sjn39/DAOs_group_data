@@ -1,0 +1,48 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/conclusion-to-colby-s-dao-scaling-research-forum-post-2/11876",
+            "title": "Conclusion to Colby\\xe2\\x80\\x99s DAO Scaling Research: Forum Post #2 ",
+            "index": 11876,
+            "category": [
+                "Core Units",
+                "Sustainable Ecosystem Scaling"
+            ],
+            "tags": [
+                "user-research"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/colby",
+                    "index": "#1",
+                    "likes": "2",
+                    "time": "29/11/2021-16:29:49",
+                    "content": "The purpose of this post is to inform the community about the conclusions of my research, regarding range polling. This post will get into low-level details. The previous form post is a prerequisite to reading this: Colby's Research: Range Polling. Provide Community Feedback Please! - #2 by psychonaut If you\u2019re interested in the topic, make sure to check out the slides and recording from my SES Status Update presentation last week: 2021-11-26 - Colby's Research Range Polling - Google Drive TLDR:  There are two steps to implementing a range polling strategy: the vote and the tally. For each strategy, some computation can be done ahead of time as each vote comes in. Then, the remainder of the computation (that depends on all votes being in) is done during the tally. Mean and increment polling are gas efficient and can be implemented on L1. Due to the current gas costs of L1, median polling would only be acceptable on L1 if there are a small number of voters; otherwise, it would have to be done on L2. The code can be found here: GitHub - colby-anderson/RangePolling   When polling, there has to be a certain amount of computation done in order to iterate through the votes and figure out what the consensus is. However, the votes streaming in is very similar to iterating through the votes at the end. You get to see each vote, but without knowledge of what\u2019s to come. This is very advantageous as opposed to getting all the votes at once. It allows us to spread out the computation over time. This is important when the smallest computations cost money. It\u2019s also important to note that there is a tradeoff involved here. Voters will have to pay for voting, whereas MakerDAO will have to pay for tallying the votes. The next and final stage of my research focused on how best to disperse the computation over time for each range polling strategy to minimize gas costs. Mean Implementing the mean is pretty straightforward. There are two values needed to keep track of: the numerator of the mean formula and the denominator of the mean formula. When each vote comes in, the vote multiplied by the voting weight is added to the numerator while the voting weight is added to the denominator. This way, after the last vote comes in, there is no need to iterate through all the votes; you can simply return the numerator divided by the denominator. Median Implementing the median is also pretty straightforward. To calculate a median, all the votes need to be sorted. The gas cost can better be split up if the votes are sorted as they come in, as opposed to at the very end. As a result, every time a vote comes in, the vote has to be inserted in a list of already sorted votes. Additionally, the voting weight has to be added to a state variable that keeps track of the total voting weight (exactly the same as the denominator when calculating the mean). At the end of the poll, the total weight is divided by 2 to get the midpoint. Then, the sorted list is iterated through, stopping when enough weight has been iterated through to equal the previously calculated value. Increment The increment poll is very straightforward to implement. The whitelisted address that starts the poll will select a starting value for the poll as well as a fixed increment/decrement amount. For each vote that comes in, the starting value is either decremented or incremented by the fixed value multiplied by the voting weight. At the end of the poll, the current value is returned. Clustered The clustered range poll is by far the most complex to implement. Apologies in advance, this description will require knowledge of basic computer science data structures. Every time a vote comes in, the distance between this vote and all previous votes have to be calculated. This is important because we cluster based on distance between votes. Then, each of these distances along with the corresponding points used to calculate the distance is stored in a minimum binary heap. This ensures that all distance/point combinations are sorted. At the end of the poll, the heap is iterated through, making new clusters and growing existing clusters. This continues until a cluster with a majority size has been reached. For efficiency reasons, every time a new vote is added to a cluster, the mean for that cluster is updated (instead of doing this when the largest cluster is found). Commit-Reveal The commit reveal scheme can wrap any kind of range poll. The commit phase is a new step in the process that commits a hash. The reveal phase is essentially the vote phase, along with verifying that the value was actually committed. Results  1554\u00d7964 190 KB  The above results can be found at: Range Polling Implementation Stats - Google Sheets For the above picture, the convention for a smart contract method is: ContractName.MethodName. The polls were run with 2 users. In the Big O Analysis column, the values constant mean that the average gas you see does not change based on the amount of voters. For the O(n) values, it means the gas will increase linearly in the number of voters. The automated tests used to produce the gas results are in the github repo shared in this post. This means the infrastructure is already set up to tinker with more specific optimizations and more voters in order to see the changes in average gas. With current gas prices, I don\u2019t think it is reasonable to have any sort of transactions on L1, especially for something that yields no profit, like voting. However, the gas usage of mean, increment, and median (with not many voters) are comparable with other common transactions done on L1. Median (with many voters) and clustered mean (with not many voters) can be reasonably implemented on L2. Clustered mean with many voters uses an extreme amount of gas and should be reserved for off-chain implementations. With current gas prices and lack of scalability solutions, I think the most efficient way of implementing range polls is using event-driven polls. In other words, during the voting process, only an event is emitted containing the vote. Comparative Analysis A current implementation of range polling does exist on L1. It is implemented by 1inch. More can be found at 1inch Governance Voting Explanation - Google Docs A description of how snapshot could be integrated with MakerDAO can be found at Snapshot & MakerDAO Integration - Google Docs Next Steps Once the community has enough interest in one of the polling strategies for a specific application, then more work should be done. Specifically, a solidity expert should see if any solidity-specific optimizations could be made. After this, data types should be reviewed in case the new application can use a smaller data type, thus making it more gas-efficient. Most likely, there will be a lot more application-specific optimizations that could be made. After this has been done, there should be security audits and more thorough testing to make sure the code is bug-free. For those interested in only research, it would be interesting to see if there are any lightweight fraud proofs that can be done for these polling strategies (as I couldn\u2019t find any), or if these polls could use zk-snarks for verification of off-chain computation. ",
+                    "links": [
+                        "https://drive.google.com/drive/u/2/folders/1HVa8gB63ApZYA2ubiH6FgiSn_XhCbwCS",
+                        "https://github.com/colby-anderson/RangePolling",
+                        "https://docs.google.com/spreadsheets/d/1H-oZI19VDjhnS2F-I_WokHN2epi2zEu5fftTIz6lNOg/edit?usp=sharing",
+                        "https://docs.google.com/document/d/1sbHFWgg0QOLn5wxabuXVDPaUh-3abxQQEJcMmUce0Ps/view",
+                        "https://docs.google.com/document/d/1uI2sJGL8J95XfHIXDTxon01bIm2sgvUZ7PbTNsY9Wcg/edit?usp=sharing",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-november-25-december-2/11967"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.452566632713691
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "27/02/2022-16:30:33",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

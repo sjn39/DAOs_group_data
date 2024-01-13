@@ -1,0 +1,281 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5633-composable-soulbound-nft-eip-1155-extension/10773",
+            "title": "EIP-5633: Composable Soulbound NFT, EIP-1155 Extension ",
+            "index": 10773,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft",
+                "eip-1155",
+                "eip165"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/HonorLabs",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "09/09/2022-10:37:32",
+                    "content": "  eip: 5633 title: Composable Soulbound NFT, EIP-1155 Extension description: Add composable soulbound property to EIP-1155 tokens author: HonorLabs (@honorworldio) discussions-to: EIP-5633: Composable Soulbound NFT, EIP-1155 Extension status: Draft type: Standards Track category: ERC created: 2022-09-09 requires: 165, 1155  Abstract This standard is an extension of EIP-1155. It proposes a smart contract interface that can represent any number of soulbound and non-soulbound NFT types. Soulbound is the property of a token that prevents it from being transferred between accounts. This standard allows for each token ID to have its own soulbound property.  Motivation The soulbound NFTs similar to World of Warcraft\u2019s soulbound items are attracting more and more attention in the Ethereum community. In a real world game like World of Warcraft, there are thousands of items, and each item has its own soulbound property. For example, the amulate Necklace of Calisea is of soulbound property, but another low level amulate is not. This proposal provides a standard way to represent soulbound NFTs that can coexist with non-soulbound ones. It is easy to design a composable NFTs for an entire collection in a single contract. This standard outline a interface to EIP-1155 that allows wallet implementers and developers to check for soulbound property of token ID using EIP-165. the soulbound property can be checked in advance, and the transfer function can be called only when the token is not soulbound.  Specification The key words \u201cMUST\u201d, \u201cMUST NOT\u201d, \u201cREQUIRED\u201d, \u201cSHALL\u201d, \u201cSHALL NOT\u201d, \u201cSHOULD\u201d, \u201cSHOULD NOT\u201d, \u201cRECOMMENDED\u201d, \u201cMAY\u201d, and \u201cOPTIONAL\u201d in this document are to be interpreted as described in RFC 2119. A token type with a uint256 id  is soulbound if function isSoulbound(uint256 id) returning true. In this case, all EIP-1155 functions of the contract that transfer the token from one account to another MUST throw, except for mint and burn. // SPDX-License-Identifier: CC0-1.0 pragma solidity ^0.8.0;  interface IERC5633 {   /**    * @dev Emitted when a token type `id` is set or cancel to soulbound, according to `bounded`.    */   event Soulbound(uint256 indexed id, bool bounded);    /**    * @dev Returns true if a token type `id` is soulbound.    */   function isSoulbound(uint256 id) external view returns (bool); }  Smart contracts implementing this standard MUST implement the ERC-165 supportsInterface function and MUST return the constant value true if 0x911ec470 is passed through the interfaceID argument.  Rationale If all tokens in a contract are soulbound by default, isSoulbound(uint256 id) should return true by default during implementation.  Backwards Compatibility This standard is fully EIP-1155 compatible.  Test Cases Run in terminal: npx hardhat test   Test code const { expect } = require(\"chai\"); const { ethers } = require(\"hardhat\");  describe(\"ERC5633Demo contract\", function () {    it(\"InterfaceId should equals 0x911ec470\", async function () {     const [owner, addr1, addr2] = await ethers.getSigners();      const ERC5633Demo = await ethers.getContractFactory(\"ERC5633Demo\");      const demo = await ERC5633Demo.deploy();     await demo.deployed();      expect(await demo.getInterfaceId()).equals(\"0x911ec470\");   });    it(\"Test soulbound\", async function () {     const [owner, addr1, addr2] = await ethers.getSigners();      const ERC5633Demo = await ethers.getContractFactory(\"ERC5633Demo\");      const demo = await ERC5633Demo.deploy();     await demo.deployed();      await demo.setSoulbound(1, true);     expect(await demo.isSoulbound(1)).to.equal(true);     expect(await demo.isSoulbound(2)).to.equal(false);      await demo.mint(addr1.address, 1, 2, \"0x\");     await demo.mint(addr1.address, 2, 2, \"0x\");      await expect(demo.connect(addr1).safeTransferFrom(addr1.address, addr2.address, 1, 1, \"0x\")).to.be.revertedWith(         \"ERC5633: Soulbound, Non-Transferable\"     );     await expect(demo.connect(addr1).safeBatchTransferFrom(addr1.address, addr2.address, [1], [1], \"0x\")).to.be.revertedWith(         \"ERC5633: Soulbound, Non-Transferable\"     );     await expect(demo.connect(addr1).safeBatchTransferFrom(addr1.address, addr2.address, [1,2], [1,1], \"0x\")).to.be.revertedWith(         \"ERC5633: Soulbound, Non-Transferable\"     );      await demo.mint(addr1.address, 2, 1, \"0x\");     demo.connect(addr1).safeTransferFrom(addr1.address, addr2.address, 2, 1, \"0x\");     demo.connect(addr1).safeBatchTransferFrom(addr1.address, addr2.address, [2], [1], \"0x\");      await demo.connect(addr1).burn(addr1.address, 1, 1);     await demo.connect(addr1).burnBatch(addr1.address, [1], [1]);     await demo.connect(addr2).burn(addr2.address, 2, 1);     await demo.connect(addr2).burnBatch(addr2.address, [2], [1]);   }); });   test contract: // SPDX-License-Identifier: CC0-1.0  pragma solidity ^0.8.0;  import \"@openzeppelin/contracts/token/ERC1155/ERC1155.sol\"; import \"@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol\"; import \"@openzeppelin/contracts/access/Ownable.sol\";  import \"./ERC5633.sol\";  contract ERC5633Demo is ERC1155, ERC1155Burnable, Ownable, ERC5633 {     constructor() ERC1155(\"\") ERC5633() {}      function mint(address account, uint256 id, uint256 amount, bytes memory data)         public         onlyOwner     {         _mint(account, id, amount, data);     }      function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)         public         onlyOwner     {         _mintBatch(to, ids, amounts, data);     }      function setSoulbound(uint256 id, bool soulbound)          public         onlyOwner      {         _setSoulbound(id, soulbound);     }      // The following functions are overrides required by Solidity.     function supportsInterface(bytes4 interfaceId)         public         view         override(ERC1155, ERC5633)         returns (bool)     {         return super.supportsInterface(interfaceId);     }          function _beforeTokenTransfer(address operator, address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)         internal         override(ERC1155, ERC5633)     {         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);     }      function getInterfaceId() public view returns (bytes4) {         return type(IERC5633).interfaceId;     } }   Reference Implementation // SPDX-License-Identifier: CC0-1.0  pragma solidity ^0.8.0;  import \"@openzeppelin/contracts/token/ERC1155/ERC1155.sol\"; import \"./IERC5633.sol\";  /**  * @dev Extension of ERC1155 that adds soulbound property per token id.  *  */ abstract contract ERC5633 is ERC1155, IERC5633 {     mapping(uint256 => bool) private _soulbounds;          /// @dev See {IERC165-supportsInterface}.     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155) returns (bool) {         return interfaceId == type(IERC5633).interfaceId || super.supportsInterface(interfaceId);     }      /**      * @dev Returns true if a token type `id` is soulbound.      */     function isSoulbound(uint256 id) public view virtual returns (bool) {         return _soulbounds[id];     }      function _setSoulbound(uint256 id, bool soulbound) internal {         _soulbounds[id] = soulbound;         emit Soulbound(id, soulbound);     }      /**      * @dev See {ERC1155-_beforeTokenTransfer}.      */     function _beforeTokenTransfer(         address operator,         address from,         address to,         uint256[] memory ids,         uint256[] memory amounts,         bytes memory data     ) internal virtual override {         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);          for (uint256 i = 0; i < ids.length; ++i) {             if (isSoulbound(ids[i])) {                 require(                     from == address(0) || to == address(0),                     \"ERC5633: Soulbound, Non-Transferable\"                 );             }         }     } }   Security Considerations There are no security considerations related directly to the implementation of this standard.  Copyright Copyright and related rights waived via CC0. ",
+                    "links": [],
+                    "GPT-summary": "The post is a proposal for an extension of EIP-1155 that adds a composable soulbound property to tokens. The proposal outlines a smart contract interface that can represent any number of soulbound and non-soulbound NFT types. The author explains the motivation behind the proposal and provides a specification for the implementation of the standard. A test contract and reference implementation are also provided. A 3rd party could give constructive criticism or ask questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Token economics",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.554497354497354
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/castillo",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "25/09/2022-11:45:04",
+                    "content": "I\u2019ve thought of a similar protocol before. In addition to games, there are many other application scenarios. For example, in crypto city, the property rights of citizens\u2019 houses and vehicles are applicable to non-soulbound NFTs, while educational experience and citizen points can be used as soulbound NFTs. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.78125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "29/09/2022-13:35:01",
+                    "content": "EIP-5192: Minimal Soulbound NFTs is now final. Maybe this interface can be adopted for EIP-1155 to solve your use case? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/HonorLabs",
+                    "index": "4",
+                    "likes": "2",
+                    "time": "18/10/2022-15:48:12",
+                    "content": "Thanks! I think it\u2019s a good idea, I\u2019ll check out EIP-5192 and see if it\u2019s possible. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.583333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/HonorLabs",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "18/10/2022-15:49:56",
+                    "content": "Thanks for reply. It\u2019s a pretty good application scenario. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.916666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CHANCE",
+                    "index": "7",
+                    "likes": "3",
+                    "time": "27/10/2022-18:29:50",
+                    "content": "Contrary to EIP-5192, 5633 solves the problem with well-written and thought-out code. The solution proposed here in 5633 is much better and should and could stand alone. I would prefer if every soul-bound interface is not itself soul-bound to an EIP that is a less-than-ideal developer, user, aggregate, and analyst experience. For all soul-bound proposals that address the existing token specification of ERC1155s, 5633 is the best thought-out and most realistic. Very big supporter of this implementation, thank you, @HonorLabs and I look forward to seeing this EIP progress! The act of this coming in an extension is a great choice. Yet, with 1155s, they carry one distinct nuance in that batch transfers are a default supported function which means now batchTransferFrom has 2 very costly for-loops to run. Is there an existing reference implementation of adding this functionality directly into the transfer loop to illustrate that cost impact does not \u201chave to be\u201d high? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.863333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "8",
+                    "likes": "2",
+                    "time": "27/10/2022-18:49:39",
+                    "content": "    CHANCE:  Contrary to EIP-5192, 5633 solves the problem with well-written and thought-out code.   kekw  event Soulbound(uint256 indexed id, bool bounded);  the past form of \u201cbind\u201d is \u201cbound\u201d ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CHANCE",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "27/10/2022-19:06:01",
+                    "content": "The verbiage of an EIP can easily be updated  For verbosity, 5633 serves the problem better than 5192 by removing two specific events that create a long runway for usage and adoption issues. Based on the fact that wording is your only note of resolve here, I presume you are also in support of 5633? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.883333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "27/10/2022-19:13:59",
+                    "content": " In this case, all EIP-1155 functions of the contract that transfer the token from one account to another MUST throw, except for mint and burn.  Does this mean a soulbound token can always be burned? The EIP-5633 implementation overrides function _beforeTokenTransfer of OZ but OZ uses this function in e.g. burn, so that\u2019d mean the reference implementation and the specification are divergent: openzeppelin-contracts/ERC1155.sol at master \u00b7 OpenZeppelin/openzeppelin-contracts \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.4375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CHANCE",
+                    "index": "11",
+                    "likes": "2",
+                    "time": "01/11/2022-01:53:55",
+                    "content": "While antithetical to the idea of a psuedonym-bound token, constant forfeiture prevents tokens from becoming scarlet letters as well as absolves all need of token-breaking standards such a consensual minting. Generally in EIPs, when something is not included in a must, that means it is a CAN such as:  In this case, all EIP-1155 functions of the contract that transfer the token from one account to another MUST throw, except for mint and burn that CAN throw depending on implementation details.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/HonorLabs",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "20/11/2022-04:01:29",
+                    "content": "We are very glad you like this proposal, it\u2019s an honor. Our intention is to propose a protocol that is more practical in the real world. Gas cost analysis and optimization is an important task in our next update. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/HonorLabs",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "20/11/2022-04:30:53",
+                    "content": "We implement Non-Transferable logic in the function _beforeTokenTransfer, because it\u2019s a most suitable place, the function is called by the three main functional logic: burn, transfer and mint. User CAN decide whether the token is burnable or not depends on the implementation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 7.027777777777779
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/HonorLabs",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "20/11/2022-04:33:04",
+                    "content": "    CHANCE:  In this case, all EIP-1155 functions of the contract that transfer the token from one account to another MUST throw, except for mint and burn that CAN throw depending on implementation details.   Very precise description, thank you!   ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 8.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tinom9",
+                    "index": "15",
+                    "likes": "2",
+                    "time": "16/12/2022-12:23:43",
+                    "content": "What are your thoughts in explicitly making it EIP-721 compatible as well? I don\u2019t love the idea of two separate standards for EIP-721 and EIP-1155 when it can serve both. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yuki-js",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "17/12/2022-16:07:06",
+                    "content": "I think so too. I posted the proposal that is strongly inspired by EIP-5192 and have a similar interfaces. Please take a look.    SBT implemented in ERC1155 Primordial Soup       I\u2019m going to submit an EIP so I want to discuss my idea. Here is my draft EIP.   Simple Summary UNTransferability Indicator for ERC-1155, an extension of ERC-1155 for indicating the transferability of the token   Abstract The following standard is an extension of EIP-1155. It introduces the interface for indicating whether the token is transferable or not, without regard to non-fungibility, using the feature detection functionality of EIP-165.   Motivation We propose the introduction of the UNTr\u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.433333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/donnoh",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "20/12/2022-22:19:41",
+                    "content": "Since EIP5192 is already final it doesn\u2019t make much sense to have both a locked and a isSoulbound  function that do the same thing. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/donnoh",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "21/12/2022-20:24:00",
+                    "content": " If all tokens in a contract are soulbound by default, isSoulbound(uint256 id) should return true by default during implementation.  I think the function should throw if the id does not exist using the same pattern as other standards. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "11/01/2023-01:37:52",
+                    "content": "The problem with this proposal, as well as with EIP5192, is that they assume that the status of the token switches from transferable to non-transferable and vice versa following a transaction that emits an event. However, this may not always be the case. In the gaming industry, for example, an NFT\u2019s status can change many times a day without any transactions, simply due to changes in context. As a result, the most reliable way to determine whether an NFT is transferable or not is to call a view function. It is not feasible to implement an interface that requires an event in such scenarios. So, I believe that events should be removed from this interface. Additionally, I think that the name of the function should be more direct, such as isTransferable, however I could survive to different name  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.819444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "20",
+                    "likes": "3",
+                    "time": "11/01/2023-10:37:17",
+                    "content": "@HonorLabs I\u2019d be happy to adjust EIP-5633 to use the same nomenclature as EIP-5192 (function locked and Locked and Unlocked events and send a PR on GitHub. Is that interesting to you? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party offering to collaborate on proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stoicdev0",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "01/02/2023-11:59:06",
+                    "content": "I have the same problem as @sullof. Is removing the event an option for you? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "02/02/2023-00:56:52",
+                    "content": "It would make a lot of sense if EIP5633 extends EIP5192. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "108"
+}

@@ -1,0 +1,772 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/stkmkr-maker-staking-and-tokenomics-revision/13890",
+            "title": "stkMKR: Maker Staking and Tokenomics Revision ",
+            "index": 13890,
+            "category": [
+                "Governance",
+                "Proposal Ideas"
+            ],
+            "tags": [
+                "tokenomics"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#1",
+                    "likes": "33",
+                    "time": "14/03/2022-15:42:15",
+                    "content": " Introduction Maker faces frequent criticism of having weak token economics. This document lays out an alternative token economic mechanism that could supplement the current buyback value accrual system. The existing buy and burn mechanism has some key benefits, which stkMKR will try to preserve as much as possible:  Gas efficient - no transactions required to claim and reinvest dividends or other payouts Tax efficient - buybacks may have more favorable tax treatment vs cash dividends  At the same time, this staking system will try to address drawbacks of the existing system:  Lack of targeted incentives - token economics can incentivize positive behavior within a protocol, but buyback and burn returns capital to all MKR holders equally and doesn\u2019t target incentives towards those token holders providing excess value Weak crypto narrative - buy and burn is out of favor and an update could stoke greater interest in the Maker protocol; while in my opinion tokenomics should not be focused on price impacts, positive narrative shifts benefit the protocol by making MKR issuance for hiring, capital raising, and user incentivization more efficient Limited deterrence against governance attacks - Currently it is possible for MKR owners to vote on a malicious proposal and then immediately withdraw funds and interact with defi protocols, which makes it nearly impossible to burn an attacker\u2019s stake (they could be commingled with lending or AMM exchange pools and contaminate funds held by other users)   stkMKR Overview stkMKR token economics mechanism is primarily inspired by Cosmos style governance, with additional influence from stkAAVE and xSUSHI token economics. A new token, stkMKR, will replace MKR as the core governance token of MakerDAO. stkMKR will be non-transferable, and represents MKR staked in governance. Staked tokenholders will receive a share of MKR tokens purchased through surplus auctions, so stkMKR will be backed by an increasing amount of MKR over time (automatically compounding like xSUSHI). Withdrawing from stkMKR requires waiting through a pre-set unbonding period, which improves protocol resilience and governance security (similar to Cosmos and stkAAVE). The figures below offer a high level overview of the stkMKR mechanism.  1600\u00d7836 109 KB  Users can stake MKR in governance to receive stkMKR, representing their voting power and right to redeem a share of underlying MKR. stkMKR is held within voting contracts, and can be freely delegated/redelegated across registered voting contracts with no delay or unbonding period.  1600\u00d71413 197 KB  A portion of MKR received through surplus auctions is diverted from burning to stkMKR holders. This could also be topped up manually by governance from the treasury or from new minting. MKR is drip fed into the pool over time to smooth out yield volatility and support countercyclical yield increases if a large share of staked MKR is withdrawn. Rewards gradually increase the ratio of MKR per stkMKR.  1600\u00d7830 113 KB  To withdraw funds, users must initiate withdrawal and then wait through a fixed unbonding period. During this time, stkMKR is burned and corresponding MKR is transferred to an escrow, where it will no longer earn yield or have voting rights. After the unbonding period elapses, users can claim liquid MKR tokens from the escrow. Any additional withdrawal requests from the same address will overwrite the escrow unlock date, prolonging the unbonding period for any partially unbonded MKR. Alternatively, users can immediately re-stake their MKR back into stkMKR at any point during the unbonding period (for example if they want to vote on an important proposal).  Motivation This token economic change is targeting the following improvements:  Incentivize governance participation: while the mechanism doesn\u2019t directly incentivize voting or other actions, staking rewards may help improve participation and delegation rates. Improve value accrual narrative for MKR token: concrete APR figures and supply restriction may help improve market sentiment. Increase governance security: staking yield makes token lending less attractive, while unbonding periods may help deter governance attacks and make them more costly to execute. Unbonding also disincentivizes participation through centralized exchanges or other pooled staking services which could compromise MakerDAO decentralization. Increase resilience to credit losses: unbonding periods keeps a share of MKR tokens off the market during market crashes and recapitalization events. This prevents staked MKR holders from front-running debt auctions.   Components stkMKR Token stkMKR is a mintable token representing a share of MKR staked in governance. It is not generally transferable; it can only be minted into or transferred between voting or delegate contracts. This allows for full participation within governance, while ensuring that staked MKR cannot be traded on liquid markets. Surplus Auction Changes After surplus auctions purchase MKR, tokens are now sent to a splitter contract that routes a governance defined percent of tokens for burn, staking rewards, and any other approved uses. MKR allocated to staking rewards is deposited in a dripper contract. All MKR held within the contract vests to stakers linearly over a governance defined period. Whenever a new MKR deposit is made either through surplus auctions or governance action, this resets the vesting end date, reallocating remaining unvested MKR over the new vesting period. This will lead to relatively smooth changes in MKR staking yield. Governance System Changes Migration: Core governance, voting, and delegation contracts would be updated to support the stkMKR token. This likely requires a governance migration, which could cause user inconvenience and expense, and temporarily reduce governance security. Conditional delegation: Additionally, I propose to adjust the mechanism for evaluating governance poll (but not executive) vote outcomes to conform with the Cosmos framework of \u201cconditional delegation\u201d. When tallying poll results, delegates\u2019 voting choices will be subordinated to any contrary votes submitted by delegators. So for example if I have 8,000 stkMKR voting power as a delegate and vote yes on a poll, but one of my delegators votes no and contributed 3,000 stkMKR voting power, the net result would be 5,000 yes and 3,000 no votes. This mechanism encourages continued governance engagement from delegators and may make owners more willing to delegate votes (as they retain greater sovereignty over their voting power if needed). Vote owners would still need to redelegate votes and/or vote on a cancellation if they strongly disagree with a delegate\u2019s executive voting choice. Disaster recovery: In the event of a malicious governance attack or emergency shutdown, it is important to bifurcate staked (voting) vs unstaked (non voting) MKR to allow for a clean and orderly recovery of the Maker protocol. Otherwise, funds deposited in lending or AMM pools could be contaminated by MKR withdrawn by the attacker, and it will not be possible to cleanly burn an attacker\u2019s stake. To accomplish this, I propose an additional governance controlled power to permanently lock all MKR currently staked in or unbonding from governance. If this is triggered via an executive vote, unbonding and withdrawal transactions will be permanently disabled (locking all staked or unbonding MKR in governance) - deposit/staking transactions will still be permitted to allow additional MKR owners to lock their tokens and participate in further governance votes. The protocol can then coordinate to redeploy a new MKR token. A migration contract will be provided for MKR tokens that are unstaked (ensuring funds held in defi protocols or centralized exchanges continue to hold value based on their ability to be converted to the new MKR token), and a merkle claim contract will be provided for staked MKR tokens (excluding tokens held by malicious parties). This enables MakerDAO to cleanly and verifiably burn attackers\u2019 stake in the protocol without disruptive snapshot based migrations that risk total loss of funds held in AMM exchanges (owners of old MKR could dump into AMM after snapshot) or collateral damage to lending protocols (owners of old MKR could deposit to lending protocols and borrow funds after snapshot). If the permanent lock mechanism is triggered maliciously, it would cause some disruption but minimal long term damage to the protocol - MakerDAO would simply carry out the above recovery migration process and remove the attacker\u2019s stake. Example Parameters stkMKR unbonding period: 21 days stkMKR surplus auction share: 30% (remaining 70% burned) Dripper linear vesting period: 90 days  Impact on MKR Token Payouts These changes will reduce the overall buyback yield attributable to all circulating MKR, while offering a new yield source specific to staked MKR. This should increase stkMKR effective yield at the expense of unstaked MKR. Demonstration with Example Values MKR market cap = $2 billion Maker annual profit = $100 million Annual MKR buyback = $50 million (remaining $50 million added to surplus buffer) Currently all MKR buybacks are burned, yielding a buyback yield of 2.5% in this example. Assuming 30% stkMKR surplus auction share from above, the new mechanism would distribute this as: Annual stkMKR rewards = $15 million Annual MKR burn = $35 million In this case, annual buyback yield is reduced to 1.75%, while staked MKR receives an additional yield source depending on the portion of MKR staked. At 100% of tokens staked, reward yield is 0.75%, and all MKR/stkMKR holders are earning the same 2.5% total yield. At 50% staked, reward yield is 1.5% for a total stkMKR yield of 3.25% (an increase of 0.75%). At 20% staked, reward yield is 3.75% for a total stkMKR yield of 5.5% (an increase of 3%). This is roughly equivalent to current participation rates within governance. From the example above we see that this payout distribution mechanism significantly increases returns for committed holders at any given rate of underlying profits.  Further Discussion I welcome any and all feedback on this proposed governance framework (mechanism design, technical implementation, etc)! Depending on community reception, I\u2019ll continue to steward this through the governance process towards a full MIP and implementation. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/risk-core-unit-month-in-review-march-2022/14424",
+                        "https://forum.makerdao.com/t/relay-semanal-22-28-de-marzo-de-2022/14333",
+                        "https://forum.makerdao.com/t/weekly-relay-march-22-28-2022/14300",
+                        "https://forum.makerdao.com/t/focus-on-8-stkmkr-staking-tokenomics-revision/14001/2",
+                        "https://forum.makerdao.com/t/sourcecred-bi-weekly-happenings-2/14201",
+                        "https://forum.makerdao.com/t/the-risk-core-unit-2022-year-in-review/19372",
+                        "https://forum.makerdao.com/t/a16z-makerdao-tokenomics-proposal-one-adding-utility-functionality-to-the-mkr-token/14135",
+                        "https://forum.makerdao.com/t/weekly-relay-march-15-21-2022/14119",
+                        "https://forum.makerdao.com/t/focus-on-8-stkmkr-staking-tokenomics-revision/14001",
+                        "https://forum.makerdao.com/t/relay-semanal-8-14-de-marzo/13987",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-march-10-16-2022/13977",
+                        "https://forum.makerdao.com/t/weekly-relay-march-8-14-2022/13906",
+                        "https://forum.makerdao.com/t/relay-semanal-15-21-de-marzo-de-2022/14181",
+                        "https://forum.makerdao.com/t/dao-resilience-improvement-initiative-status-update/16413",
+                        "https://forum.makerdao.com/t/a-large-complex-dao-reducing-the-human-footprint/16073/18",
+                        "https://forum.makerdao.com/t/embedding-legal-analysis-on-new-governance-proposals/15581",
+                        "https://forum.makerdao.com/t/mhonkasalo-teemulau-delegate-platform/15473",
+                        "https://forum.makerdao.com/t/monthly-governance-review-march-2022/14428"
+                    ],
+                    "GPT-summary": "The author proposes a new token economic mechanism called stkMKR to supplement the current buyback value accrual system of MakerDAO. The proposal aims to incentivize governance participation, improve value accrual narrative for MKR token, increase governance security, and increase resilience to credit losses. The proposal includes a new token, stkMKR, which will replace MKR as the core governance token of MakerDAO. The post also discusses the components of stkMKR, surplus auction changes, governance system changes, and example parameters. The author welcomes feedback on the proposed governance framework.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.595599237718803
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#2",
+                    "likes": "8",
+                    "time": "14/03/2022-15:47:26",
+                    "content": "Why is my brain like this  image888\u00d7500 79.7 KB  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Doo_StableLab",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "14/03/2022-17:11:09",
+                    "content": "Thanks for this proposal. A lot to read on\u2026 Just curious, there have been discussions regarding having MKR inflation mechanism in the staking on top of fee (similar to Curve model). I believe this model is deflationary model and what\u2019s your thought on why it\u2019s better than the inflationary model? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.1
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/PhiMarHal",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "14/03/2022-17:16:00",
+                    "content": "\u201cstkMKR is a mintable token representing a share of MKR staked in governance. It is not generally transferable; it can only be minted into or transferred between voting or delegate contracts. This allows for full participation within governance, while ensuring that staked MKR cannot be traded on liquid markets.\u201d Correct me if I\u2019m wrong: wouldn\u2019t it be possible to bypass this no transfer lock by wrapping the stkMKR token? i.e. with a custom contract you could transfer ownership of. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.825
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/nikolai",
+                    "index": "#5",
+                    "likes": "6",
+                    "time": "14/03/2022-17:56:43",
+                    "content": "MKR tokenomics is already \u201cfully reduced\u201d and any distortion on top implies the existence of \u201cexploit\u201d which in this case manifests as MKR tokens reallocated away from people who have not done the appropriate machinations to sustain an effective negative tax rate on staking to those that have (besides the automatic one of reallocation away from people who stake to those who don\u2019t). I have an effective negative tax strategy like this, do you? Note that this is highly jurisdiction-dependent whereas unrealized gains are almost universally not taxed taxed at a nominal rate like 1% which provides a cross jurisdictional foundation for incentive compatible systems. Your points about governance are valid, even if I don\u2019t agree with the conclusions (you know I would prefer to delete all governance). Takeaway: Please split this into 2 proposals. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.977777777777778
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#6",
+                    "likes": "4",
+                    "time": "14/03/2022-17:57:39",
+                    "content": "    Doo_StableLab:  I believe this model is deflationary model and what\u2019s your thought on why it\u2019s better than the inflationary model?   Mechanism should ideally be able to support both deflationary (funded through buyback) and inflationary (funded through governance token minting) staking rewards. Politically I think minting for staking rewards might be a tougher sell? But the staking rewards would be non-dilutive (at least for active participants) so maybe MKR holders would support inflationary staking rewards.     PhiMarHal:  Correct me if I\u2019m wrong: wouldn\u2019t it be possible to bypass this no transfer lock by wrapping the stkMKR token? i.e. with a custom contract you could transfer ownership of.   So one way to address this is via smart contract allowlisting (similar to Curve). I think this would be sub-optimal because (1) it interferes with owners who use contract wallets (argent, generic proxies, etc) or multisigs for personal or security reasons, and (2) it will soon be possible to bypass contract allowlists using MPC and other extra protocol mechanisms - eg. something like Sommelier, or even custodial solutions. I think a better approach is forming strong social consensus against tokenization of locked stkMKR. Then, if someone chooses to disregard this community standard, we can partially or fully burn their stake through the disaster recovery / migration mechanism outlined above (lock all stkMKR, issue new token with deposit based migration for unstaked MKR and merkle claim for staked MKR, and partially or fully remove offending tokens from merkle claim). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.240677882723337
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#7",
+                    "likes": "2",
+                    "time": "14/03/2022-18:03:16",
+                    "content": "    nikolai:  Takeaway: Please split this into 2 proposals.   Please clarify what parts of the proposal you see as necessarily separate  I\u2019m having a little trouble understanding your comment. Did you mean the revisions to buy/burn towards staking rewards should be separate from other elements of the proposal? I wanted to raise this whole concept in a single discussion (similar to previous Sagittarius Engine and gbMKR discussions), but certainly open to separating any elements that are not necessarily linked if/when this proceeds to a formal proposal / MIPs  / implementation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.607683982683983
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/nikolai",
+                    "index": "#8",
+                    "likes": "2",
+                    "time": "14/03/2022-18:04:06",
+                    "content": "I have a follow up point that might make this make more sense. Moving value flow away from MKR tokens to \u201cstaked MKR tokens\u201d is a theft from MKR holders. The reason other protocols are justified in creating staked tokens is because those protocols never directed any value to the original token at all!!! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.88427734375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/nikolai",
+                    "index": "#9",
+                    "likes": "1",
+                    "time": "14/03/2022-18:05:02",
+                    "content": "I will follow up with some examples, roughly we have \u201cwhere\u201d, \u201chow\u201d, and \u201cfor what\u201d of value flow ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#10",
+                    "likes": "7",
+                    "time": "14/03/2022-18:06:16",
+                    "content": "    nikolai:  Moving value flow away from MKR tokens to \u201cstaked MKR tokens\u201d is a theft from MKR holders. The reason other protocols are justified in creating staked tokens is because those protocols never directed any value to the original token at all!!!   I completely disagree with the characterization as \u201ctheft\u201d. MKR holders have sovereignty over the protocol on a collective, NOT individual basis. If MKR holders support this change through governance, it has prima facie legitimacy. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.107421875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/nikolai",
+                    "index": "#11",
+                    "likes": "3",
+                    "time": "14/03/2022-18:08:44",
+                    "content": "The characterizing game theoretic feature of blockchain systems is that they extend the concept of \u201cminority stakeholder rights\u201d, not revert to winner take all hierarchal power structure. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#12",
+                    "likes": "5",
+                    "time": "14/03/2022-18:12:55",
+                    "content": "I believe minority investors continue to be protected as they always have under this framework - principally though the global settlement mechanism, with additional game theoretical incentives based on large owners wanting to maintain the value of their stake on the open market. Notably, Maker has far greater protections for minority than any other protocol I can think of\u2026 Also want to point out that many other protocols including Reflexer make use of inflationary staking rewards as part of their protocol, justified not only by community consent but also the benefits such incentives bring to the overall protocol. I don\u2019t see why Maker using a similar staking reward mechanism is theft while Reflexer\u2019s stkFLX is not. (saying this as a fan of reflexer and stkFLX holder) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.488839285714286
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/sambacha",
+                    "index": "#13",
+                    "likes": "1",
+                    "time": "14/03/2022-19:03:18",
+                    "content": "implement stkMKR as fee-on-transfer token, if you truly want to cause developer pain ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/sambacha",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "14/03/2022-19:09:23",
+                    "content": "your disaster recovery scheme seems to put in place a new risk to MakerDAO as a whole. Why should MakerDAO as a whole subsidize this new risk for the benefit of stkMKR? This token migration fiction will be exceedingly hard to coordinate, and is by far the most tenuous portion of this proposal. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.700757575757576
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#15",
+                    "likes": "5",
+                    "time": "14/03/2022-19:20:23",
+                    "content": "    sambacha:  Why should MakerDAO as a whole subsidize this new risk for the benefit of stkMKR?   The way I see it, beneficiaries are the Maker protocol and DAI system users (who benefit from greater protection from and deterrence against government attacks), and the party(s) at risk are stkMKR holders (who may have their tokens unexpectedly locked within governance if the recovery mechanism is triggered). So it is more like stkMKR holders subsidizing governance risk on behalf of protocol and users. This is compensated for by diverting a portion of Maker protocol profits from burn to staking rewards.     sambacha:  This token migration fiction will be exceedingly hard to coordinate, and is bar far the most tenuous portion of this proposal.   I think you\u2019re right that the recovery process would be disruptive, but we can help reduce negative impacts by (1) making a thorough process MIP explaining why the mechanism would typically be triggered, what sort of actions would qualify for burning/slashing stake and how much, sequential steps involved in carrying out migration/recovery process, and (2) pre-built technical components for the new MKR token, deposit migration contract for unstaked MKR, and merkle claim contract for staked MKR tokens. If we have a playbook for these situations, it will make our deterrence more credible and will also reduce coordination costs of recovery. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.875033820346321
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/sambacha",
+                    "index": "#16",
+                    "likes": "1",
+                    "time": "14/03/2022-19:48:22",
+                    "content": "The ultimate deterrence against governance attacks is reducing the surface area applicable to governance (i.e. reduction in what is controlled directly by governance). This proposal increases the surface area, so I can\u2019t necessarily agree with the point that \u201c(sic)\u2026party(s) at risk are stkMKR holders\u201d. Why stake when you can lend? Why not offer some DAI in exchange for MKR deposits? Some portion can be consumed in the process (being deposited back to Treasury for example). DAI on-lend would be minted by Maker itself. Total lent out would be capped globally by a set %. The consumed MKR would have to be greater than the cost of minting DAI via CDP (the transactional costs). Or make this an option of new CDPs, as a way for people to farm governance votes. People interested in Maker Governance would have a market in which they could capture peoples MKR votes. You would also then have the ability to compare performance of said delegated MKR voters over time. IDK YMMV, would like to see more info on the rewards payout etc. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.743181818181818
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#17",
+                    "likes": "2",
+                    "time": "14/03/2022-20:20:09",
+                    "content": "    sambacha:  The ultimate deterrence against governance attacks is reducing the surface area applicable to governance (i.e. reduction in what is controlled directly by governance). This proposal increases the surface area, so I can\u2019t necessarily agree with the point that \u201c(sic)\u2026party(s) at risk are stkMKR holders\u201d.   I agree with this goal (minimizing governance over time), but imo this proposal doesn\u2019t really expand the effective scope of governance from where it stands today. It just makes voters have more accountability for their choices (they can\u2019t atomically withdraw and dump their tokens after passing a proposal).     sambacha:  Why stake when you can lend? Why not offer some DAI in exchange for MKR deposits? Some portion can be consumed in the process (being deposited back to Treasury for example). DAI on-lend would be minted by Maker itself. Total lent out would be capped globally by a set %. The consumed MKR would have to be greater than the cost of minting DAI via CDP (the transactional costs).   I think this proposal benefits the protocol by reducing lending/collateralization activity for MKR. My reasoning:   Reducing the amount of borrowable MKR tokens: This is good because MKR borrowers have no price exposure to MKR so can\u2019t be relied upon to have incentive alignment with respect to their votes/actions in governance.  Reducing the amount of money lent against MKR collateral: This is also good because (1) leverage against MKR tokens can lead to forced selling during recapitalization events, which exhausts limited liquidity resources we rely upon to cover bad debt with flop auctions, and (2) these users who collateralize loans with MKR have arguably lower incentive alignment with MakerDAO (they have basically bought a sort of conditional put option on MKR, with strike price at their liquidation price and premium equal to their liquidation penalty, so their max losses are capped vs regular MKR holders). If MKR is used as primary DAI collateral (first line of defense), this reduces effectiveness of MKR as a recapitalization resources (last line of defense).  I also tend to think ability to borrow protocol minted DAI against MKR is a very weak incentive to hold MKR (even if we charge 0%, there is little excess value vs just using Compound or Aave). And this mechanism has really high returns to scale - for someone like myself with 5 figure MKR exposure, I just don\u2019t have enough scale to make collateralized borrowing worthwhile on L1, and I assume many other engaged governance participants are in the same boat. Only whales would be able to benefit from a \u201csupply MKR borrow DAI\u201d mechanism.     sambacha:  Or make this an option of new CDPs, as a way for people to farm governance votes. People interested in Maker Governance would have a market in which they could capture peoples MKR votes.   Generally don\u2019t think vote renting/buying is incentive aligned. So I think this sort of activity is something to be discouraged rather than encouraged. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.632565918929555
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#18",
+                    "likes": "1",
+                    "time": "14/03/2022-20:30:07",
+                    "content": "If the conversion from stkMKR to MKR is continuously changing then how will vote counting work? We might want to make the Rewards Dripper act at discrete intervals (i.e. once a week) so that a particular vote can use a fixed stkMKR to MKR conversion factor? Or maybe each vote can store the current stkMKR:MKR ratio and keep the conversion factor fixed during the vote? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.458333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/sambacha",
+                    "index": "#19",
+                    "likes": "0",
+                    "time": "14/03/2022-21:23:38",
+                    "content": "having Rewards Dripper act at discrete intervals is i.e.  creating a discretizing inflation curve for rewards. it would i.e.  make them halvening-like events instead of continuous decay @monet-supply this is an interesting point you bring up, vis-a-vie scale. Having read some other posts on the forums, e.g. the onboarding rETH as collateral, it seems MakerDAO viability is predicated upon serving whales/bulge bracket/large positions almost exclusively. Great points on reducing MKR exposure as collateral/borrowable asset Question: Would any of the existing funds earmarked for staking payouts be used for LP incentives, etc? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.958333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#20",
+                    "likes": "2",
+                    "time": "14/03/2022-21:56:36",
+                    "content": "I think the simplest way to handle this is to denominate voting power in stkMKR instead of MKR - this way voting power of each owner/delegate stays fixed unless they deposit or withdraw. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#21",
+                    "likes": "0",
+                    "time": "15/03/2022-01:27:30",
+                    "content": "Oh, of course. Hm, if we have to redeploy all the contracts anyway then we should take advantage of this opportunity and architect the system such that you can only vote via delegation. You can always delegate to yourself, but you cannot vote without delegating. The idea is to make delegation the easiest way of voting. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/joey",
+                    "index": "#22",
+                    "likes": "2",
+                    "time": "15/03/2022-01:59:03",
+                    "content": "Interesting proposal! If this does get implemented, stkMKR should be transferrable and compatible with ERC-4626 if possible. What is the logic for non-transferrable? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.5625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Sandwalker",
+                    "index": "#23",
+                    "likes": "1",
+                    "time": "15/03/2022-02:26:04",
+                    "content": "    monet-supply:  Dripper linear vesting period: 90 days   Does the staking have a time weighted and decaying features? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/jurajpetrik",
+                    "index": "#24",
+                    "likes": "10",
+                    "time": "15/03/2022-02:46:37",
+                    "content": "Long time smallish MKR holder here, I fully support this proposal. It removes the non voting MKR holders\u2019 free lunch. It maintains MKR\u2019s direct claim to the protocol profit (unlike Rune\u2019s SE proposal that only benefited levered MKR holders) It is conceptually simple, which I hope translates into ease of implementation compared to SE It also maintains the flexibility to redesign/turn off flap auctions if desired. From the perspective of someone who treats MKR as a stock and just wants to hold it forever Jack Bogle style you\u2019ve maintained all the benefits and removed a systemic weakness. Hope this passes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.541666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/makercaesar",
+                    "index": "#25",
+                    "likes": "0",
+                    "time": "15/03/2022-12:43:35",
+                    "content": "This model unfolds all the benefits, when it comes to dividends or yields, when the SB needs to be replenished like now there is little incentive to stake MKR, free your MKR and throw it on the market with just the cooldwon time. You may then have to guarantee that there will be this specific distribution for year X, this would lead to further undesirable side effects, the behaviour of the voters would then tend to pay out more and more, guarantees for profit distribution are difficult to implement and it is also another risk. For me, the question is where is the advantage compared to now when there is no distribution? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.508928571428572
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#26",
+                    "likes": "0",
+                    "time": "15/03/2022-15:24:15",
+                    "content": "Governance would have the option of manually topping up rewards in these circumstances with mkr from the treasury or from new minting, so shouldn\u2019t be a big issue I think. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#27",
+                    "likes": "7",
+                    "time": "15/03/2022-16:13:04",
+                    "content": "Thanks for this post @monet-supply  brings me back to my earlier days of contributing with MIP49: Staking Rewards. Think there\u2019s a lot of good discussion points here and don\u2019t wanna derail the conversation, but one concern I haven\u2019t seen expressed yet is the implications of this idea on Emergency Shutdown. You mention ES related to a governance attack, but one concern I have from this proposed structure is that activating the ESM would become very difficult due to the unlock delay. In theory the ESM is our big red button that we could push during an attack if it seems we\u2019re unable to pass a canceling motion through governance within the 48 hour delay. I suspect stakers would be primarily active DAO contributors/MKR investors, or the exact group of people we\u2019d want to contact if the need for an Emergency Shutdown arose. Since (if successful) it would be rational to stake your MKR and you would miss out on profits by not doing so, anyone paying close enough attention would be time delayed from assisting with an ESM activation. All that is to say I think if implemented we\u2019d need to seriously reconsider the feasibility of the ESM. This is not a non-starter as some have already been questioning the functionality of the mechanism, but should probably be considered as an additional technical labor requirement for this proposal idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.049479166666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/makercaesar",
+                    "index": "#28",
+                    "likes": "2",
+                    "time": "15/03/2022-19:00:32",
+                    "content": "Don\u2019t get me wrong i think it\u2019s much better than the current system, I\u2019m just trying to find points that don\u2019t quite seem coherent and I know it\u2019s a Proposal Idea. I just would like to have no distribution if there is nothing to distribute, by this I mean that MKR should be distributed with added value generated by the protocol itself, and not simply mint to increase the supply, if the protocol is not net profit. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.133928571428571
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#29",
+                    "likes": "5",
+                    "time": "15/03/2022-19:50:17",
+                    "content": "This proposal reminds me of the personal bet Osmosis co-founder and former Cosmos Dev Sunny Aggarwal told me he made versus a friend. That one day Maker will need to build its own Blockchain. That bet is still \u201clive\u201d and Sunny is still willing to bet it\u2019s going to happen. With that mind\u2013as someone who lurks across a lot of Staking Platforms, the Yield that you\u2019re proposing above is not as competitive as other Staking platforms offer, but it might be enough to attract people to participate in governance. I also wonder as posted above about the ESM, and the theory that Staked assets like ATOM don\u2019t bring much value to token holders. Anyhow, thank you for putting this together\u2013i\u2019ll mull it over. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.513888888888889
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MFeinberg",
+                    "index": "#30",
+                    "likes": "0",
+                    "time": "15/03/2022-20:14:59",
+                    "content": "Very interesting ! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 9.0625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ACREinvest",
+                    "index": "#31",
+                    "likes": "0",
+                    "time": "16/03/2022-00:02:42",
+                    "content": "I see you @monet-supply! Thanks for this proposal idea. I have been thinking we need a mechanism that pays token holders to delegate. What\u2019s a simple incentive that doesn\u2019t require interest in and understanding of complex tokenomics, active engagement and hands-on administration? I\u2019m interested in a model where at a high level, retail and institutional MKR holders can scan for Delegates they feel align with their policy views and earn some compensation (DAI, MKR, stMKR?) just for making and keeping tokens delegated that they do not intend to vote with themselves. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.147222222222222
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Spidomo",
+                    "index": "#32",
+                    "likes": "2",
+                    "time": "16/03/2022-00:15:06",
+                    "content": "    ACREinvest:  I\u2019m interested in a model where at a high level, retail and institutional MKR holders can scan for Delegates they feel align with their policy views and earn some compensation   This proposal does it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving entirely positive feedback on proposal"
+                    ],
+                    "Sentiment": 6.025
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/McGanja",
+                    "index": "#33",
+                    "likes": "2",
+                    "time": "16/03/2022-07:01:28",
+                    "content": "This is all a bit over my head. I have gathered and held a small amount of maker and kept  it in my private wallet for a few years now. I dont have the time or confidence to vote on things but I wanted to work towards knowing more. Is there a way you can summarize how this will affect a MKR holder like me in the next 12 months? Thanks  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.208333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/krzkaczor",
+                    "index": "#34",
+                    "likes": "18",
+                    "time": "16/03/2022-10:31:10",
+                    "content": "Generally, I like the proposal. It should do a much better job at increasing MKR price (turning MKR into a productive asset, taking MKR off the market). Finally, it fixes serious governance attack vectors (voting on a proposal and dumping MKR later). I really like that stkMKR appreciates in value rather than \u201cgrows in amount\u201d b/c that should be simpler in terms of tax (cTokens vs aTokens). Have you thought about \u201creward tiers\u201d ie. lock MKR for longer, receive more rewards? That being said, I am strongly against fixing tokeneconomics now. MakerDAO faces a serious problem of DAI supply crisis. A lot of DAI is created via USDC, we are having issues with finding good ways of extending our credit line. As I wrote multiple times before, I believe we should stop burn entirely and refocus on growth by growing surplus buffer. This proposal touches multiple parts of the system and will require serious engineering efforts. We can spend months working on this, only not to realize that we have no revenue to funnel it to. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/against-the-burn/13412"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.461111111111111
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#35",
+                    "likes": "5",
+                    "time": "16/03/2022-15:51:05",
+                    "content": "I think this proposal contains all of the elements that we\u2019d like to see as part of a tokenomics rework from a governance facilitation point of view. We\u2019ve mentioned before that we consider the key elements to any on-chain governance incentives be:  Rewards are available for both delegation and direct voting. Rewards are linked to the performance of the protocol. Rewards encourage longer-term thinking.  This proposal hits #1, #2 and to a limited extent #3, and I think it does it in a way that preserves the benefits of the current MKR tokenomics. There is an argument for preventing MKR being manually added to rewards, on the grounds that MKR Holders can vote themselves more tokens regardless of how well the protocol is doing\u2026 But in practice if governance gets to that stage, there is not much we can do to prevent looting of value from the protocol. On balance it probably makes sense to have the option available. Conditional delegation is a nice touch that hasn\u2019t been high on our list, but does provide some benefit. I\u2019m not 100% sure that we need to wholesale replace MKR as the governance token, I suspect much or possibly all of this is doable using the current IOU token that the governance contract emits. (ie stkMKR is actually stkIOU under the hood.) Is this something you\u2019d considered and dismissed? Payton makes a good point about Emergency Shutdown as well. I think in some proposal I\u2019d read, there was an idea of allowing faster-unlock, but applying a semi-significant fee. This might let users exit to trigger shutdown in an emergency, while still binding voters to the consequences of their vote. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.062857142857143
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Spidomo",
+                    "index": "#36",
+                    "likes": "2",
+                    "time": "16/03/2022-23:58:15",
+                    "content": "    prose11:  You mention ES related to a governance attack, but one concern I have from this proposed structure is that activating the ESM would become very difficult due to the unlock delay.   Add a function which withdraws stkMKR with no unlock delay directly into the Emergency Shutdown Module? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.15625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ber10",
+                    "index": "#37",
+                    "likes": "1",
+                    "time": "17/03/2022-02:23:24",
+                    "content": "Is this going to cause new MKR to be issued for the people involved in governance ? So MKR would become inflationary ? If that is the case I dont see how we wont lose on the Eth-MKR ratio in the long term. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.215909090909091
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#38",
+                    "likes": "3",
+                    "time": "17/03/2022-03:20:17",
+                    "content": "From a technical perspective, given the massive changes this already entails, it would not be hard to change the ESM to be triggerable with staked MKR, so that going through the withdrawal delay is unnecessary. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.135416666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#39",
+                    "likes": "11",
+                    "time": "17/03/2022-03:34:55",
+                    "content": "I was excited about changing the tokenomics of Maker a year and a half ago. At this point, I view them as  a tertiary concern at best. Finding a way to pay delegates well and link their pay to their performance, while much harder, might be more effective in improving governance than just rewarding those who stake/delegate a bit better than others. One worry I have with a sweeping proposal like this is that after going to an enormous amount of effort to implement it, we\u2019ll end up \u201clocked in\u201d even if it proves sub-optimal. So, I favor the current, more minimal structure. I like the \u201cconditional delegation\u201d idea and think it would be interesting to implement regardless of the fate of this overall proposal. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.469444444444444
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/twblack88",
+                    "index": "#40",
+                    "likes": "3",
+                    "time": "17/03/2022-06:21:51",
+                    "content": "I\u2019ll just say, this has dominated my open tabs for the past few days thank you for posting this proposal Monet. It\u2019s definitely the most robust evaluation on the returns for MKR holders and thinking through the incentives we want into the future. Great work.     monet-supply:  splitter contract that routes a governance defined percent of tokens for burn, staking rewards, and any other approved uses.   can i add more than one  ? We\u2019ve been needing to diversify profits from expenses so this is a massive step in the right direction. If we are ever going to get to a point where we have something like the flapper distributor, it will probably be by proposals like this moving through governance. One group of incentives at a time though.     sambacha:  earmarked for staking payouts be used for LP incentives, etc?   LP positions is one detail I think needs inclusion (or conscious exclusion). It might fit in parallel to tokenholder at Figure 1. We\u2019d ideally want to have stMKR suck-up MKR in any form we can right? The other side of minting stMKR from LP shares could be on the buyback distributor, you could repurchase your LP shares back maybe? Or as @krzkaczor pointed out give junior reward distribution to LP token deposits. If we end up with enough protocol liquidity that might turn out to be an innate backup flywheel that supports MKR markets instead of thinning them out too. Would love to hash this detail out a little bit further. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.769074675324674
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#41",
+                    "likes": "8",
+                    "time": "17/03/2022-07:19:12",
+                    "content": "I want to see a higher MKR price, as everyone else here. But I agree with:     Kurt_Barry:  I was excited about changing the tokenomics of Maker a year and a half ago. At this point, I view them as a tertiary concern at best. Finding a way to pay delegates well and link their pay to their performance, while much harder, might be more effective in improving governance than just rewarding those who stake/delegate a bit better than others.   The current MKR is simple. And simplicity is of great value. KISS principle. Sure, the proposal has many interesting points, but it is complicated, it will take months of SC-developing, and will probably not be optimal anyway (some \u2018cooler\u2019 tokenomics will emerge in the meanwhile, etc). I think it\u2019s better to invest resources and time on what really matters: (e.g., the thread on aggressive growth). More people (especially devs), more hackatons, more RWAs, more bandwidth in general.     LongForWisdom:  We\u2019ve mentioned before that we consider the key elements to any on-chain governance incentives be:  Rewards are available for both delegation and direct voting. Rewards are linked to the performance of the protocol. Rewards encourage longer-term thinking.    These are principles that can be implemented on top of the current tokenomics. There are 1000s of ways to reward 1-2-3 without having to do new SC-code and change the tokenomics. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.353983382209188
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#42",
+                    "likes": "2",
+                    "time": "17/03/2022-14:41:50",
+                    "content": "    iammeeoh:  I think it\u2019s better to invest resources and time on what really matters: (e.g., the thread on aggressive growth). More people (especially devs), more hackatons, more RWAs, more bandwidth in general.   Just a quick note to say, Thank you for pointing this out Meeoh! I often wonder how other protocols like Solana and others run hackathons on what seems like a weekly basis and get a lot of participants\u2014packed houses. They surely are 100% focused on growth and the same should be done here.     Kurt_Barry:  Finding a way to pay delegates well and link their pay to their performance, while much harder, might be more effective in improving governance than just rewarding those who stake/delegate a bit better than others.   Fully support the idea of Delegate pay link to performance. I am proponent of making sure Delegates do not just hit the YES button (or NO) without properly studying and de-compounding each elective thoroughly. However, in order for this to work efficiently Core Units need to aligned their vision and communicate such to Delegates and MKR token owners, IMO. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.259920634920634
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/CYJFC",
+                    "index": "#43",
+                    "likes": "0",
+                    "time": "17/03/2022-15:15:25",
+                    "content": "Question for us people who aren\u2019t following closely until now. Is this an active proposal or just a draft? If so, when will it be up for a vote? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.666666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#44",
+                    "likes": "2",
+                    "time": "17/03/2022-15:33:51",
+                    "content": "This is currently just a discussion post on the forum (albeit one formatted and aimed to eventually be a formal proposal.) We can\u2019t tell you at this stage when it\u2019ll be up for vote. That depends on when the author writes it up as a formal proposal under the MIPs framework and posts it for RFC (Request For Comments). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#45",
+                    "likes": "5",
+                    "time": "17/03/2022-16:52:42",
+                    "content": "    joey:  Interesting proposal! If this does get implemented, stkMKR should be transferrable and compatible with ERC-4626 if possible. What is the logic for non-transferrable?   Making the token transferable and compatible with yield strategy interfaces can potentially introduce unintended economic incentives - eg. borrowing against governance tokens provides a similar payoff to buying a put option.  It also removes the safety benefits of unbonding period - as stkMKR is integrated across defi, it would no longer be possible to hold malicious owners accountable for their actions as they could commingle funds with lending or AMM pools. So from my perspective I think it\u2019s better to maintain non-transferability. (I am very hyped about the potential of ERC-4626 in other domains though!)     Sandwalker:  Does the staking have a time weighted and decaying features?   Staking wouldn\u2019t have time weighting or decaying features (eg. all stakers would accrue rewards at the same APY, and would remain fully bonded until they request withdrawal/unbonding). I think this is an important difference to veToken type mechanism, where the need to frequently submit transactions to re-lock your decaying gov token stake makes it prohibitively expensive to participate for small token holders. The linear vesting above refers to issuance of rewards to the staking pool, and is intended to smooth out yield volatility (MKR buybacks from surplus auctions can be very volatile, particularly if Maker earns revenue from liquidation auctions, and it seems preferable to have staking returns be less volatile and event driven).     jurajpetrik:  From the perspective of someone who treats MKR as a stock and just wants to hold it forever Jack Bogle style you\u2019ve maintained all the benefits and removed a systemic weakness.   Thanks for your comment, this was 100% what I was shooting for! I hope this token economics mechanism is suitable for people with small to medium size positions who want to hold and accumulate MKR over the long term while supporting sound governance through delegation.     makercaesar:  You may then have to guarantee that there will be this specific distribution for year X, this would lead to further undesirable side effects, the behaviour of the voters would then tend to pay out more and more, guarantees for profit distribution are difficult to implement and it is also another risk.       makercaesar:  I just would like to have no distribution if there is nothing to distribute, by this I mean that MKR should be distributed with added value generated by the protocol itself, and not simply mint to increase the supply, if the protocol is not net profit.   I understand the concern, but don\u2019t really think this would cause problems in practice. Staking rewards would be non-dilutive (at least for those MKR holders who are staking). While there may be some incentives for staked voters to increase rewards rates arbitrarily, I trust the DAO would be able to find the right balance - issuing too high of inflationary staking rewards would penalize liquidity provision and likely lead to reduced price support, so it wouldn\u2019t be in anyone\u2019s interest to pursue this beyond a certain point. I get the sense that most MKR holders are not actively trading their positions or expecting immediate liquidity, so would be willing to accept a 2-3 week unbonding period even without any staking payouts (during periods when the protocol is not net profitable or when the surplus buffer has not been filled). And a very small inflationary reward (1-2% apy) would probably be enough to incentivize deposits if we find that governance has insufficient tokens staked to maintain adequate security.     McGanja:  This is all a bit over my head. I have gathered and held a small amount of maker and kept it in my private wallet for a few years now. I dont have the time or confidence to vote on things but I wanted to work towards knowing more. Is there a way you can summarize how this will affect a MKR holder like me in the next 12 months?   I think this sort of token economics should serve owners like yourself well. You could earn a slightly higher rate of return when the protocol is profitable (a portion of MKR buybacks would be granted to locked stakers rather than distributed to all MKR holders through burn) as long as you don\u2019t mind waiting for a few weeks to withdraw your tokens when you wish to sell (but if you\u2019ve already been holding for years this is probably not a big concern for you). Like the current voting system, you can also choose a delegate to vote on your behalf, so your tokens will be engaged in governance without requiring you to participate on each vote directly. And the \u201cconditional delegation\u201d feature for polls would still give you the option to overwrite your delegate\u2019s poll votes if there\u2019s something you feel strongly about, so you can increase your direct engagement with governance over time. Also think this will improve governance security, so there is less \u201cblack swan\u201d risk of someone staging a governance attack that negatively impacts the protocol.     krzkaczor:  Have you thought about \u201creward tiers\u201d ie. lock MKR for longer, receive more rewards?   This could be interesting (eg lock for 3 weeks for 1x reward, 3 months for 2x reward), but also seems like it would significantly increase complexity and I\u2019m not certain how much benefit this would bring to incentive alignment or price support.     krzkaczor:  That being said, I am strongly against fixing tokeneconomics now. MakerDAO faces a serious problem of DAI supply crisis. A lot of DAI is created via USDC, we are having issues with finding good ways of extending our credit line. As I wrote  multiple times before , I believe we should stop burn entirely and refocus on growth by growing surplus buffer. This proposal touches multiple parts of the system and will require serious engineering efforts. We can spend months working on this, only not to realize that we have no revenue to funnel it to.   I completely understand this perspective, and agree that tokenomics should never be the top priority unless it clearly helps achieve more tangible goals. As a counterpoint, if we pursue the aggressive growth strategy by raising large amounts of capital through MKR sales, creating a supply sink/locking mechanism for MKR might provide price support and help us get more bang for our buck (build up more DAI surplus per issued MKR).     LongForWisdom:  There is an argument for preventing MKR being manually added to rewards, on the grounds that MKR Holders can vote themselves more tokens regardless of how well the protocol is doing\u2026 But in practice if governance gets to that stage, there is not much we can do to prevent looting of value from the protocol. On balance it probably makes sense to have the option available.   Rewards are non-dillutive and would accrue to all engaged owners equally, so other than potential negative impacts on MKR liquidity on centralized or decentralized exchanges (which would not be earning these rewards), narrative violation (many MKR investors are very aligned with deflationary supply meme), and a few corner cases (eg. if we inflate supply a really huge amount we might need to reduce opening price for debt/flop auctions), I don\u2019t see this as a problem. Engaged owners who stake would see their share of ownership stay the same or increase, but never decline due to staking rewards. I trust voters to not shoot themselves in the foot by nuking MKR liquidity and rekting our primary value accrual narrative      Spidomo:  Add a function which withdraws stkMKR with no unlock delay directly into the Emergency Shutdown Module?   I think we should preserve emergency shutdown mechanism, and something like this would probably be the most suitable option.     Ber10:  Is this going to cause new MKR to be issued for the people involved in governance ? So MKR would become inflationary ? If that is the case I dont see how we wont lose on the Eth-MKR ratio in the long term.   IMO doesn\u2019t really matter, ownership interest would be more correlated with stkMKR/ETH ratio (value of MKR you can withdraw from staking, which would increase in tandem with any inflationary rewards governance chooses to issue). ",
+                    "links": [
+                        "https://forum.makerdao.com/t/against-the-burn/13412",
+                        "https://forum.makerdao.com/t/aggressive-growth-strategy/13958"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.63646650126603
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/nikolai",
+                    "index": "#46",
+                    "likes": "2",
+                    "time": "17/03/2022-17:44:51",
+                    "content": "If you guys still don\u2019t get why this is an attack, you are the bad guys. You will get it eventually. You might successfully eliminate all stakeholders who don\u2019t fall in line but the system will lose to one that is not corruptible by design. That was the point. We will get it right eventually and it will be crystal clear through the lens of history. Whether it is this system or another one, the winning system will be the one that doesn\u2019t favor rent seekers. Nobody can seem to make one of these without giving the governance power to steal. Literally one person has to do it and they will win. https://archive.is/tLBzs ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.454081632653061
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/nikolai",
+                    "index": "#47",
+                    "likes": "1",
+                    "time": "17/03/2022-17:48:08",
+                    "content": "Also I think you misunderstood my relation to FLX. I think FLX made a big mistake by adding staking after, just like you, and I told them so. I stopped working with them when they stopped following my advice (not to make changes). Edit: And YES it is THEFT when they did it too, because there exists at least one person who was not aware of the CHANGE that they made, as evident by the fact that there are many seemingly profit-seeking addresses that have not started staking. Don\u2019t rationalize this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.270833333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#48",
+                    "likes": "12",
+                    "time": "17/03/2022-18:20:10",
+                    "content": "    nikolai:  And YES it is THEFT when they did it too, because there exists at least one person who was not aware of the CHANGE that they made, as evident by the fact that there are many seemingly profit-seeking addresses that have not started staking. Don\u2019t rationalize this.   I think you have a rigid and fairly radical view of ownership that I simply don\u2019t subscribe to. In my view (and I believe this is borne out by even a cursory study of history) ownership is a social construct, built upon collective acceptance and senses of legitimacy but rarely with 100% consensus.     nikolai:  If you guys still don\u2019t get why this is an attack, you are the bad guys.    image800\u00d7450 54.9 KB  Thanks for archiving the page I guess  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.429166666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/joey",
+                    "index": "#49",
+                    "likes": "2",
+                    "time": "18/03/2022-04:08:06",
+                    "content": "    monet-supply:  It also removes the safety benefits of unbonding period - as stkMKR is integrated across defi, it would no longer be possible to hold malicious owners accountable for their actions as they could commingle funds with lending or AMM pools. So from my perspective I think it\u2019s better to maintain non-transferability. (I am very hyped about the potential of ERC-4626 in other domains though!)   Totally valid points, I do recommend maintaining partial compatibility to benefit from the router and other tooling built around 4626! The deposit/withdraw interface particular would be useful. The ERC-20 inheritance while technically a requirement (for approvals), the transferability functions can be removed or made to revert only. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.314236111111112
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jesus_Perez",
+                    "index": "#50",
+                    "likes": "0",
+                    "time": "19/03/2022-16:57:17",
+                    "content": "Congratulations on the proposal. I think it can create a lot of value for the project in the long term. I understand that it is critical to be able to block this capital for governance without giving it an additional return for all the reasons that are exposed due to the risks involved. However, I believe that the use of this capital should be studied in order to provide liquidity to the token itself and allow LP to be minted for the governance. This would also allow them to act as buyers of last resort at the cost of losing some return on the upside. It would also allow to ensure a certain liquidity for the protocol in case of crisis where the position of the governance group would increase due the increase in MKR tokens in the LP. The potential loss on a project upside is in some cases offset by the fees of offering that liquidity. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.258928571428571
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/superTricycle",
+                    "index": "#51",
+                    "likes": "2",
+                    "time": "22/03/2022-03:19:30",
+                    "content": "    krzkaczor:  I am strongly against fixing tokeneconomics now. MakerDAO faces a serious problem of DAI supply crisis. A lot of DAI is created via USDC, we are having issues with finding good ways of extending our credit line.   Have to agree with this whole post. stkMKR sounds good and should stay on the docket, but we need to focus on growth right now. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party giving entirely negative feedback on proposal"
+                    ],
+                    "Sentiment": 6.654761904761904
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#52",
+                    "likes": "1",
+                    "time": "02/04/2022-05:54:55",
+                    "content": "We should try to avoid the cultural deterioration that seemed to occur at Boeing,    IMDb    Downfall: The Case Against Boeing (2022) - IMDb Downfall: The Case Against Boeing: Directed by Rory Kennedy. With Donald Trump, Ted Cruz, Lester Holt, Maria Bartiromo. Examining the months since the tragedies, which caused global panic in March 2019 after two new aircrafts crashed within five...      After the merger with rival McDonnell Douglas in 1997, an engineering led focus on quality was gradually replaced by a focus on number-go-up. The two 737 MAX crashes were likely due to cutting corners on training and attacking whistleblowers. ",
+                    "links": [
+                        "https://www.imdb.com/title/tt11893274/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 4.59280303030303
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Hasu",
+                    "index": "#53",
+                    "likes": "16",
+                    "time": "02/04/2022-17:32:43",
+                    "content": "Strongly agree with this. Monet\u2019s tokenomics proposal hits many of the right notes, I believe it is the best we have seen to date. But tokenomics, in general, just shouldn\u2019t be a priority right now. Maker is in a crucial period where we need to spend all available resources on growth. The opportunity cost of doing anything else has never been higher, and MKR tokenomics, while they can be improved, are not broken enough to justify this large cost. For that reason, I propose to suspend all discussion on this topic for the next 12 months and then we can evaluate again. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.391941391941391
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ACREinvest",
+                    "index": "#54",
+                    "likes": "3",
+                    "time": "02/04/2022-21:11:47",
+                    "content": "I\u2019m concerned as well about the cost of diverting attention and focus from executing what\u2019s already on our plate. With focus and excellent execution, we are on a path to address many of the perceived weaknesses that new tokenomics hope to fix. In the meantime, taking a page from \u201csocial\u201d tokens and tokenized communities can infuse MKR with new life and bull investment thesis without changing a darn thing. I see MKR as much more than a governance token. This has been a social token before anyone even thought of such a thing! I love this community - you all have impressive heart, conviction and depth of purpose. It\u2019s enviable and not something any other team in the space can copy. I tweeted the other day that DAI is the Bitcoin of stable coins. Get my meaning? This \u2026   twitter.com    MakerDAO Growth @MakerGrowth  gm \u2600\ufe0f  The OG DeFi protocol. The OG DAO. The OG decentralized stablecoin.  lfg \ud83d\ude80   1:20 PM - 30 Mar 2022           27            Can be leveraged into this\u2026 LFG \u201cThe combined market cap of the proposed index is just over $3 billion. This was a mere $170 million 6 months prior. The social token sector is growing fast and it\u2019s not unreasonable to expect a sector market cap north of $5 billion in 2022.\u201d   The Index Coop \u2013 30 Mar 22    IIP-120: DG - Launch Forefront Social Token Index ($SOCIAL) IIP: 120  Title: Launch Forefront Social Token Index ($SOCIAL)  Status: Proposed  Author(s): Forefront DAO , 1kx, Carlos Gomes, @JosephKnecht, @DocHabanero, @alerex, @overanalyser  Gov Review: @sixtykeys  Created: 11/08/2021      1.0 Abstract To...  Reading time: 5 mins \ud83d\udd51 Likes: 9 \u2764       ",
+                    "links": [
+                        "https://twitter.com/MakerGrowth/status/1509158501980860417?s=20&t=D3fK8L3laxBd_5gSABPJ3w",
+                        "https://twitter.com/MakerGrowth/status/1509158501980860417?s=20&t=D3fK8L3laxBd_5gSABPJ3w",
+                        "https://twitter.com/MakerGrowth/status/1509158501980860417?s=20&t=D3fK8L3laxBd_5gSABPJ3w",
+                        "https://gov.indexcoop.com/t/iip-120-dg-launch-forefront-social-token-index-social/4076",
+                        "https://gov.indexcoop.com/t/iip-120-dg-launch-forefront-social-token-index-social/4076",
+                        "https://forum.makerdao.com/t/a-letter-to-the-cus-on-community-impatience-and-trust/14560/24"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.900717703349282
+                }
+            ]
+        }
+    ]
+}

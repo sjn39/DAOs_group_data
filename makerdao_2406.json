@@ -1,0 +1,117 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/centrifuge-onboarding-rwa-backed-collateral-to-mcd/2721",
+            "title": "Centrifuge: Onboarding RWA Backed Collateral to MCD ",
+            "index": 2721,
+            "category": [
+                "Collateral Onboarding"
+            ],
+            "tags": [
+                "centrifuge"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/spin",
+                    "index": "#1",
+                    "likes": "7",
+                    "time": "02/06/2020-22:51:31",
+                    "content": "Over the last couple of weeks we have started conversations around how to think of illiquid assets in MCD. We started asking questions and engaging in a dialog on MIP6 proposals, in the Collateral Onboarding Calls and in the Risk & Governance calls. SAI has been live for over two years now and the community has built tools and frameworks for how to manage ETH as a collateral type. With the launch of MCD we only minimally had to change these to extend the process to include one more ERC20 token. So far we\u2019ve could apply more or less the same rules to most collateral types (governance, risk, oracles etc.). Centrifuge is working on not just a single asset but a whole asset class that can be used as collateral in DeFi and specifically in MCD. I think it\u2019s a good idea to start a forum thread that discusses how \u201cilliquid real world asset backed loans\u201d can be onboarded as collateral to MCD. As we discuss these issues and work out some processes for these new assets, perhaps the result will be the introduction of a new MIP with suggestions on how to treat these assets.  What is a illiquid RWA backed loan pool? Let\u2019s define this category as broadly as possible: Any loan secured by some asset that legally can be used as collateral. Think of a mortgage backed by a house, a loan to a business secured by an invoice or commodities. Centrifuge has two MIP6 proposals for assets on the forum. Most of what we will discuss in this thread will be specific to Centrifuge\u2019s set of collateral but there are likely other tokens in DeFi that could fit the bill (RealT comes to mind but likely also DMM though I am not too familiar with their structure). I think one common trait among these assets are:  they are secured by a legal claim on property, future revenue or something comparable they have a value in USD or other currency (the amount that a borrower promises to repay). one ERC20 token represents a basket of collateral of the same type (onboarding individual non-fungible assets such as a single mortgage is possible but doesn\u2019t scale well). the loan portfolio yields a fixed interest independent of the DSR/base rate (Real estate, factoring and a large part of traditional finance is fixed interest or tied to the overnight risk free rate).  In a recent Risk & Governance call (summary here) I gave a brief introduction on how our assets work and how governance for these assets might look like. If you\u2019re not familiar, this might be a good starting point. In our recent collateral onboarding calls (recordings and schedule) we started going through how Centrifuge\u2019s assets work. Please also check out the technical documentation on the Tinlake contracts.  TIN & DROP: Junior & Senior Tranches One particular thing about Centrifuge is that we are creating two tokens that represent a claim on the cash flows from the pool. The TIN token is similar to equity or the junior tranche in a traditional debt fund and the DROP token is the senior tranche. The DROP token offers a fixed yield secured by the TIN tranche that has a higher yield but takes first loss. Look at a some examples on how the tranches work. Having two tranches greatly reduces the risk for DROP token holders making the DROP an interesting collateral type for MCD. By requiring the asset originators to hold some of their own TIN we can align incentives of the asset originators and give them some skin in the game.  TIN-Adjusted Collateralization Ratio One interesting way to look at these two tranches its from MCD\u2019s perspective:  Base Case1168\u00d7657 40.7 KB  In this example the DROP tokens are worth 800k yielding 5%. The DROP token is a claim on that money from the borrowers. But because the TIN token always takes first losses, any loss occurring in the portfolio isn\u2019t proportionally applied to all investors but to TIN investors first. There are a total of $1M worth of loans backing these $800k in debt. The loan portfolio must depreciate 20% in value to be fall below the value of the DROP. You could say that there is a 125% collateralization ratio of the DROP. When talking about the DROP token there are two important numbers:  The face value of the token: the value of the token that is accumulating interest on an ongoing basis. This is the amount of DAI that you will get back when redeeming the token with Tinlake. The value of the loan portfolio which if higher than the DROP token face value acts as \u201cover-collateralization\u201d. This could be called the TIN-adjusted collateralization of DROP.   On chain cashflow of loans An important part in adding DROP to MCD is to make sure that they can be redeemed for DAI as soon as possible. We achieve this by requiring all loan repayments to happen on chain. The Tinlake contracts are used to manage repayments on individual loans. If there are DROP investors that want to redeem their tokens, they get a claim on those revenues first, then TIN and only after can new loans be originated.  Tinlake Cashflows Rebalance Order1054\u00d71082 35.9 KB  Prioritizing the different transactions in this way in Tinlake results in the DROP token holders wanting to redeem always get the best chance at getting their DAI from any loans that are repaid.  Deciding how to add these assets: Primary Issuance or Secondary Lending Let\u2019s assume there is a hypothetical pool of loans. The loans are secured by a lien on a property and overcollateralized by 120%. Loans pay on average 8%. An interest bearing ERC20 token represents a share in the pool of loans, it\u2019s yield and in the case of default a claim on the underlying collateral. This is a very simplistic description of how Centrifuge\u2019s DROP token works but I believe also fits a lot of other projects. I\u2019m trying to make this as generic as possible. There are two ways to value this ERC20 token:  based on the value of the collateral used to secure these loans valuing it at the current outstanding debt of these loans  A rough description of how this could look:  Tinlake Maker Integration(1)1473\u00d72616 186 KB  Summarizing this illustration, in the secondary lender scenario Maker has an additional over-collateralization beyond what Tinlake requires with the TIN tranche which brings the effective collateralization ratio when looking at the Tin-adjusted portfolio value up to 139% in this fictional example.  Comparing the two scenarios 1) Primary Issuance [+] Directly matching the DROP terms: higher yield [+] Does not need an additional liquidity provider, easier for the Asset Originator (AO) [+] Directly taking DROP from the AO leads to more stable/predictable borrowing demand [-] Removes the capability of Maker to control DAI supply with the stability fee, but it could be manipulated by lowering/raising the debt ceiling requiring the Tinlake contracts to remove DROP the vault. 2) Secondary Lender [+] Adds a \u201csecond level\u201d of security/overcollateralization [+] Can use stability fee to manipulate borrowing demand [+] More similar to how ETH & other collateral types work in MCD today. [-] Large part of DROP yield would likely go to the 3rd party providing capital for leverage (because third party would need to manage backup sources of liquidity in case Maker increases stability fee) [-] A 3rd party arbitraging on the DROP would mean that the second MCD is not the cheapest borrowing market for these assets it would be replaced by something else. Our current thesis is that going with the second scenario (Secondary Lender Approach) while a bit more complicated for the asset originator will be easier to add to MCD as it matches closer to the risk & gov process for assets we have today. What are the community\u2019s thoughts on this? We will be posting more in this thread as we work through these topics together.  Changelog  2020-06-05: Replaced Graphics with more consistent numbers that serve as an example.  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/collateral-onboarding-call-mips-6-12-discussion-and-review-of-collateral-onboarding-process/2008/",
+                        "https://developer.centrifuge.io/tinlake/overview/introduction/",
+                        "https://developer.centrifuge.io/tinlake/overview/tranches/",
+                        "https://forum.makerdao.com/t/ns-drop-mip6-application-new-silver-drop-real-estate-backed-loans/3477",
+                        "https://forum.makerdao.com/t/vault-liquidation-mechanism-for-centrifuge-trade-finance-assets-a-pre-mip-discussion/3737",
+                        "https://forum.makerdao.com/t/collateral-onboarding-call-mips-6-12-discussion-and-review-of-collateral-onboarding-process/2008/19",
+                        "https://forum.makerdao.com/t/htc-drop-mip6-application-harbor-trade-credit-drop-short-term-trade-receivables/3502",
+                        "https://forum.makerdao.com/t/week-1-dai-distributions-sourcecred-trial/2770",
+                        "https://forum.makerdao.com/t/vault-liquidation-mechanism-for-centrifuge-trade-finance-assets-a-pre-mip-discussion/3737/13",
+                        "https://forum.makerdao.com/t/kf-drop-mip6-application-kickfurther-drop-consignment-inventory-finance-for-ecommerce-retail-brands/4064",
+                        "https://forum.makerdao.com/t/collateral-onboarding-call-21-rwa-2020-wrap-up-rwa-2021-3-asset-originators-wednesday-december-16-18-00-utc/5588/3",
+                        "https://forum.makerdao.com/t/pc-drop-mip6-application-paperchain-drop-tokenized-music-streaming-invoices/2215/26"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.626309614754993
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#2",
+                    "likes": "3",
+                    "time": "03/06/2020-00:18:43",
+                    "content": "Great post, thank you @spin! I think the main challenge is establishing valuations for the collateral assets (e.g. DROP) without a liquid trading market. Using the face value of the DROP tokens assumes the fair risk premium for the asset exactly matches the token\u2019s interest rate. Maker would benefit from an oracle or data source independent of the asset originator or origination platform to judge asset quality, like a credit rating or an auditor/accountant attestation of collateral value. Another possibility would be Maker contracting with an elected paid contributor to handle underwriting, or onboarding additional risk team members specifically for illiquid real world assets. The drawback is that verification costs money on a per-pool basis, so it would make it less economical to finance smaller pools of loans. But the alternative of taking unverified data from the originator seems risky. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.361111111111111
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/_LS",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "04/06/2020-16:42:58",
+                    "content": "We discussed this thread in the Collateral Onboarding Call yesterday. Here\u2019s the recording for those who couldn\u2019t participate: https://youtu.be/x44aQJEWpEQ ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Akiva",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "04/06/2020-18:08:36",
+                    "content": "I think the primary issuance scenario is much better. It should allow Maker to expand much more. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hongbiao_li",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "04/06/2020-23:17:59",
+                    "content": "I think the two options can be used together. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/spin",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "05/06/2020-15:25:53",
+                    "content": "I\u2019ve just updated the first thread in this post to add improve the description as well as the numbers used in the example to be more consistent based on feedback by @equivrel in our on Wednesday. I would love to get input on this as well from a few more voices in the community. @cyrus, what are your two cents on this topic? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/spin",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "10/09/2020-11:26:24",
+                    "content": "I\u2019d like to post a quick update on this thread of where are generally at Centrifuge. The key hold-up for onboarding Centrifuge based assets to Maker has been the question of how Maker can liquidate the collateral. A lot of work has been done on this front and we now have a resulting MIP that outlines the Flipper contract that can be used for liquidating RWA Vaults. With this last major technical hurdle out of the way, Centrifuge would like to proceed with the collateral onboarding process. I\u2019d like to provide on overview of the ongoing work that Centrifuge is doing together with the Maker community and outline a roadmap for the way forward. Centrifuge was one of the first projects to submit MIP6 proposals for new assets and have had 4 of them greenlit by the community. Wherever possible we follow the MIP6-12 process but will deviate from it if necessary. To discuss and develop the unique solutions and challenges when onboarding real world assets, we\u2019ve hosted open community calls and posted different forum threads presenting the challenges and our proposed solutions. An example of that is MIP22 outlining how RWAs can be liquidated in the Maker system. Centrifuge is committed to do the technical work required for the integration and will work together with auditors who\u2019ve audited the MakerDAO codebase before to audit the adapters and spells written and submitted for vote. Adding diversity in collateral and DAI supply is still one of the most pressing issues for Maker to stabilize the peg. Centrifuge has worked on bringing new assets to DeFi and Maker for over a year and supported four asset origintors to submit their individual MIP6 proposals. These asset originators already live in our system today have capital needs suprassing DAI 25M and we estimate to be adding a few more every month. We submitted two MIP proposal to the current governance cycle: MIP13c3-SP5 outlining the onboarding process and MIP22 proposing a liquidation module for real world asset collateral. Both MIP proposal are currently in \u201cRFC\u201d for the next month and we\u2019d encourage the community to comment and discuss. A key solution to the long term issues of the DAI peg will be adding uncorrelated collateral. Collateral that isn\u2019t affected by ETH-rallies or yield farming games. To allow our asset originators the access to DeFi and Maker but also achieve Maker\u2019s goal to diversify the collateral to improve the long term stability of DAI, Centrifuge is committed to work closely with the MakerDAO community on onboarding these assets in the coming months. We propose following timeline and have taken the first step with submitting MIP13c3-SP5 and MIP22: 796\u00d7514 31.6 KB As a next step, we will be putting out a call for participation in this process to community members, both officially elected domain team members as well as active community members to join this effort. We are going to present the plan and next steps in next weeks collateral onboarding call. If there is demand from the community we are considering hosting more Centrifuge specific calls to talk through the ongoing work and decisions we\u2019ve made. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip22-centrifuge-direct-liquidation-module/3930/6",
+                        "https://forum.makerdao.com/t/agenda-discussion-collateral-onboarding-call-8-wednesday-september-16-17-00-utc/4062",
+                        "https://forum.makerdao.com/t/mip13c3-sp5-declaration-of-intent-maker-to-commence-onboarding-work-of-centrifuge-based-collateral/4059/4"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.431971744471744
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ejbarraza",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "24/10/2020-17:40:07",
+                    "content": "I think a paid underwriter for RWA might be the best way to go since more and more assets are going to be tokenized in the near futre. I think mortgages, trade finance, insurance, etc. is coming and it will require a more permanent position to underwrite this risk independent of the asset originator. I have brought up a proposal on whole life policies and would love to hear your feedback on the matter.     New Collateral: Whole Life Insurance Collateral Discussion       As a life insurance agent, I am well-versed in the virtues of dividend-paying whole life insurance policies issued by mutual insurance companies. This is in stark contrast to stock companies like AIG which are at the mercy of shareholders rather than policyowners. Whole life insurance is the only asset that is guaranteed to never decrease in value. In fact, the death benefit and cash value grow over time. This is beneficial to MakerDAO because a life insurance policy does not require an oracle t\u2026      ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.370129870129871
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,993 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-1884-repricing-for-trie-size-dependent-opcodes/3024",
+            "title": "EIP 1884: Repricing for trie-size-dependent opcodes ",
+            "index": 3024,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "evm",
+                "opcodes",
+                "core-eips",
+                "gas",
+                "eip-1884"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "29/03/2019-08:36:19",
+                    "content": "This is the discussion for an EIP to reprice certain opcodes (BALANCE, SLOAD) and introduce a new opcode {SELFBALANCE) for the next hardfork.  EIP 1884  Link to the PR   ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/1884",
+                        "https://ethereum-magicians.org/t/eip-2045-particle-gas-costs/3311/15"
+                    ],
+                    "GPT-summary": "The post is a discussion about EIP 1884, which proposes to reprice certain opcodes and introduce a new opcode for the next hardfork. The author is explaining the proposal, while third parties are giving constructive criticism, asking questions, and auditing/reviewing the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.584415584415584
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tawaren",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "29/03/2019-10:34:14",
+                    "content": "I assume the reason for these opcodes getting more expensive is that the state tree grows and thus they have to traverse more nodes to find the value. If this assumption is correct would it mean that the opcodes gas cost has to be increased on a periodical basis or do you suggest to overprice it to ensure that their is a big enough buffer to account for future increases? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.133928571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "29/03/2019-11:00:39",
+                    "content": "Outdated, skip.  Some trivial fixes: https://github.com/holiman/EIPs/pull/1 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.999999999999999
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "29/03/2019-11:05:33",
+                    "content": "    tawaren:  that the opcodes gas cost has to be increased on a periodical basis or do you suggest to overprice it to ensure that their is a big enough buffer to account for future increases?   Yes, very likely. However, the rate of that repricing is difficult to tell, since there are other initiatives aimed at slowing down or reversing the state growth for the 1.x. The suggested number should last for a while, but I can\u2019t really say how long. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.684722222222223
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "5",
+                    "likes": "3",
+                    "time": "10/05/2019-02:17:15",
+                    "content": "I don\u2019t see why the new opcode for SELFBALANCE should be introduced. This also seems unfair to me. Contracts using the (solidity) code address(this).balance have compiled to (of course) getting the BALANCE of the current ADDRESS. It seems unfair to me that this will get a higher price (400 -> 700) while if they would use SELFBALANCE it would only cost 5 gas. Per another EIP proposed for Istanbul, EIP 1380 (reprice gas cost of calls to self) I think it is much more in line to check that if the BALANCE opcode is invoked on the current ADDRESS it should burn the proposed 5 gas instead of the 700 gas. (Unless I have missed something here that the balance is not loaded when you call a contract and should be read from the trie - but then still, if SELFBALANCE can cost 5 gas and it is unknown beforehand if this opcode is going to be used it does not make sense if the balance is not loaded at the moment the contract is invoked). The second thing I am worried about is the 4x gas increase of SLOAD. I agree that it should increase once the trie increases (it would be nice to see some actual numbers on it - a graph for trie size VS avg. SLOAD time would be great!), but I can imagine this will lead to problems with existing contracts on the chain. For example (in solidity) when people loop over a storage array they often write: uint[] test;  function doSomething() public {   for(uint i = 0; i < test.length; i++) {     // do something   } }  This compiles to a for loop which SLOADs test.length every time the check expression is invoked. I am pretty sure there will be contracts which have hardcoded call.gas(x)(calldata). With this 4x increase in gas this might hence, maximally, cost 4x more gas. This might lead to problems. Of course we have to check the chain if these situations exist, although it will be hard to detect those. This also leads to the question if we should explicitly let developers know that they cannot rely on gas costs. I don\u2019t think this is something even an experienced developer would think of. It should be explicitly stated so that developers can create a built-in function which can change this constant gas in their contracts. If a contract is found which is susceptible to above situation I am not sure how this should be handled. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.657885674931129
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "10/05/2019-13:37:38",
+                    "content": "Great observation! When EIP-1380 was proposed and discussed initially on ACD#46 (notes here) it was noted that it could be generalized so that any state access to \u201chot data\u201d (aka. something which was accessed in the current transaction context) should/could be reduced. If this were the case, SEFLBALANCE may have less of a point. However it was not pursued further due to the potential of wide ranging implications. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.380208333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "10/05/2019-13:49:29",
+                    "content": "I think the generalized discussion about this is really interesting (I think this is what V (Vitalik?) meant with   Going as far as saying, gas cost for accessing an account already accessed in same block goes down from 700 to 40, potential to do this in the long term   in the core call 46) I mean, this sits, if you think about it in a slightly abstract way in the same category as EIP 1283 (Net gas metering for SSTORE without dirty maps, which caused the Constantinople delay) and of course the \u201ccalls to self\u201d EIP. The generalized version of this all would be that any slot which is already dirty is cheaper in gas (of course taking into account a fix for the re-entrancy bug) to write to - but it should also be cheaper to read from if it is already read from / written to (cause you can cache this value). Same goes for calling contracts which have been called in the entire transaction (code is already loaded) and other variables like the balance. Of course all this is too much to fit inside a single EIP but I think a generalized discussion about this would be great, especially with node implementers, since they can tell exactly in what (general) situations the \u201cconstant\u201d gas price is overpriced. This would also give developers a great incentive to optimize things which would use these caches and would increase the amount of computational operations we can do in a single block. ",
+                    "links": [
+                        "http://eips.ethereum.org/EIPS/eip-1283"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.162482746721877
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "13/05/2019-15:17:23",
+                    "content": "Somewhat tangent: this recent paper analyses aleth's performance, and finds a possible mispricing for BLOCKHASH, SLOAD, BALANCE, EXTCODESIZE; and also SDIV, SGT and SLT (maybe due to aleth using 512-bit numbers to implement these?..). If anything, it\u2019s interesting to compare these numbers to geth. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.46875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "14/05/2019-12:47:54",
+                    "content": "I also saw that paper, but it seems a bit strange. Although the paper is pretty recent, the data seems to be old. The statement about BLOCKHASH being implemented as a smart contract is not true \u2013 it was like that in a PR which was never activated. That same PR also contained a mis-pricing of blockhash: https://github.com/ethereum/aleth/issues/5313 @jochem-brouwer I agree it might be \u2018unfair\u2019. But I think it\u2019s more correct. Also, the opcodes that are priced low are statically charged. What you are proposing would make it dynamically charged, since we\u2019d have to inspect the topmost stack element and compare with the context in order to determine the cost. That means (I think) that it couldn\u2019t be priced at 5, but would have to go up a bit more. I\u2019m not dead set on this, however. In the general sense, I don\u2019t particularly like it when evm gas pricing assume certain caching behaviour, since caches are unreliable. If we price something based on the assumption that a cache exists, then someone will try to make an attack that exhausts that cache, and once the cache is exhausted, we\u2019re in trouble. Regarding assumptions made on gas costs, I agree there aswell. This may break things, but it has IMO long been considered bad practice to hard code gas limits like that. I don\u2019t think we can maintain current gas limits for the sake of badly written contracts, that will make the evm unusable. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-2045-particle-gas-costs/3311/13"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.887755102040817
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "20/05/2019-20:20:16",
+                    "content": "I afraid increasing SLOAD opcode gas cost may break some existing deployed smart contracts. They can perform implicit limited gas external calls, which will stop being succed after this change. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.428571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "21/06/2019-18:25:27",
+                    "content": "@holiman can you include \u201cEIP-1884\u201d in the title as well as link to https://eips.ethereum.org/EIPS/eip-1884 in the intro? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "23/06/2019-09:44:19",
+                    "content": "I just tried to, but I don\u2019t seem to be able to edit the first post, for some reason  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "24/06/2019-18:23:40",
+                    "content": "@holiman, I have modified the topic to be a \u201cwiki\u201d, this should allow you to modify the first post\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "28/06/2019-12:13:19",
+                    "content": "@holiman was there any progress in this EIP? What is left to do? What are the blockers/needs? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "28/06/2019-12:27:26",
+                    "content": "Well, it\u2019s finished from my perspective. There are two PRs for it, original one is https://github.com/ethereum/go-ethereum/pull/19572 and then I made a second one here: https://github.com/ethereum/go-ethereum/pull/19743 . The second one is based on a refactor that would allow geth to execute statetests with the networks set as e.g. CONSTANTINOPLE+1884. Apart from that, it conflicts a bit with one EIP from @AlexeyAkhunov, so I think that\u2019s the main reason it has not been accepted for Istanbul. As far as I can tell, it\u2019s not sustainable to not increase SLOAD for istanbul \u2013 other than that, I don\u2019t particularly care if it\u2019s done within his eip or mine. ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum/pull/19743"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.488095238095239
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "28/06/2019-12:36:37",
+                    "content": "Which EIP from @AlexeyAkhunov is this conflicting with? Would it make sense to introduce SELFBALANCE independently of this? Without the repricing that still gives a 400 -> 5 gas reduction for users of the new opcode. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "28/06/2019-12:41:02",
+                    "content": "Looking at the gas table in your second PR: \t\tExtcodeSize:     700, \t\tExtcodeCopy:     700, \t\tExtcodeHash:     400, \t\tBalance:         700, // Increase from 400 to 700  Why wouldn\u2019t the increase apply to EXTCODEHASH? It should have the same cost as EXTCODESIZE and (EXT)BALANCE. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "04/07/2019-08:58:35",
+                    "content": "So the EIP does not touch upon EXTCODEHASH. I guess it was not used sufficiently (it\u2019s a new opcode) to show up on my metrics. I wonder why it was introduced at 400 and not 700. It totally makes sense to me to increase it to 700 aswell\u2026 Do you think we should add it aswell? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "04/07/2019-11:46:23",
+                    "content": "According to EIP-1052:  The gas cost is the same as the gas cost for the BALANCE opcode because the execution of the EXTCODEHASH requires the same account lookup as in BALANCE .  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "05/07/2019-07:53:18",
+                    "content": "Totally makes sense. Here\u2019s a PR to update 1884: https://github.com/ethereum/EIPs/pull/2175 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "07/07/2019-12:02:35",
+                    "content": "I\u2019ve made another update now, to move the opcode for SELFBALANCE to not collide with CHAINID, in case both gets accepted ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "24/07/2019-14:46:41",
+                    "content": "@holiman why is the SELFBALANCE instruction at 0x47 and not 0x46 (which is the next free slot)? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "24/07/2019-14:47:33",
+                    "content": "    axic:  why is the SELFBALANCE instruction at 0x47 and not 0x46 (which is the next free slot)?   Answer: EIP-1334 CHAINID opcode is proposed to use 0x46. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "27/07/2019-13:07:15",
+                    "content": "Yeah, as I wrote in the comment just above your question:     holiman:  I\u2019ve made another update now, to move the opcode for SELFBALANCE to not collide with CHAINID , in case both gets accepted   I must get better at expressing myself more clearly  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "28/07/2019-13:41:41",
+                    "content": "I think it\u2019s clear, I was probably in write-only mode  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fulldecent",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "01/08/2019-20:57:00",
+                    "content": "Specification looks great. Requesting to add a reference please to EIP-165 and any other EIPs which are based on fixed gas costs. This could go under the backwards compatibility section. This proposal affects 165, but does not kill it. Just hoping to have this note there to set a precedent for future EIPs to perform a similar analysis. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.775
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "01/08/2019-22:49:05",
+                    "content": "Can you explain the effect and what exactly should be added to 1884? Perhaps even: could you open a PR adding it? @fulldecent this message was mean to you but, FEM isn\u2019t displaying the \u201creplying to\u201d header for some reason. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.895833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ilanDoron",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "22/08/2019-11:06:52",
+                    "content": "Hello Group thanks for the chance to participate I am currently a leading smart contracts developer for Kyber. Kyberswap dapp is up and running a while now serving large number of users. This change will create substantial additional gas costs for a trade on Kyber. (30%) And thus affects the quality of service we give to our users. It seems unreasonable to me an infra change will create a price raise in this magnitude to applications relying on it (dapps). It makes the infra layers practically dangerous to rely on. Just imagine an infra change introducing changes of this magnitude to credit card services. Saying all that, I saw the concrete data that supports introducing the change. I claim infra changes of this magnitude, must take into consideration the dapps point of view. The Dapps running over Etheruem are the first \u201cbusiness partners\u201d and their perspective should be considered. Since this is a shared path. Let me suggest that in spite the math behind the numbers being very solid. Raising gas costs must be done more gradual. Thank you Ilan ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.264285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/KyleJKistner",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "22/08/2019-14:30:15",
+                    "content": "I have to agree with Ilan. I\u2019m with bZx and our dApp is the third largest on Kyber. We rely heavily on Kyber and perform multiple swaps. This would explosively increase the gas cost of running our contracts and the adverse effects could be severe. Such a rapid increase is extremely alarming. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.699999999999999
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "30",
+                    "likes": "3",
+                    "time": "22/08/2019-16:54:43",
+                    "content": "I have stated this before but I want to note it again. In general in the design of EVM I do not understand why we have things as EXTCODESIZE and CODESIZE. I can\u2019t imagine that a simple check in one of the blocks regarding EXTCODESIZE to check if we are calling on the current address adds any significant overhead. Hence I do not see why these opcodes are not merged together in a single opcode where the gas price depends on the address you are calling on (an external address costs more gas). I do understand that an extra opcode SELFBALANCE is consistent with the other opcodes CODESIZE and CODECOPY so adding this seems reasonable. However on all existing contracts which call their own balances (which are by no doubt a significant amount of contracts) a developer would like to change the BALANCE opcode to the new SELFBALANCE opcode regarding this EIP - but of course this is not possible in most if not all cases. Why can\u2019t we add an extra clause to the BALANCE opcode where \"if BALANCE is called on the current ADDRESS the gas cost will be the same as SELFBALANCE\" gas cost. I would like to propose this on EXTCODESIZE and EXTCODECOPY regarding CODESIZE and CODECOPY respectively too - so maybe this would be better in another EIP. It just does not seem reasonable to me that in the current EIP the gas cost of an opcode is increased (BALANCE), but a new opcode is added (SELFBALANCE) where in some situations the \u201cold\u201d (BALANCE) opcode performs the exact same operation - but with more gas. What is confusing is that in test cases it says \"Test that  balance(this)  costs as before, \" - this implies that reading the current account balance gas cost is the same - but it does not state which opcode is used for this? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.679383116883116
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maurelian",
+                    "index": "31",
+                    "likes": "1",
+                    "time": "23/08/2019-19:02:13",
+                    "content": "Welcome @ilanDoron. In my opinion, repricing is a necessary evil in order to reflect the actual cost of particular operations. Although it may not be the exact rationale for the opcodes in the original post, mispricing has led to DOS attacks in the past. Underpaying miners for their computation (thus losing security) is also a risk if pricing is not adjusted to reflect reality. edit: To be clear, I do think it\u2019s important that dapps be affordable to users, but I think the way to do that is by reducing the overall gas price, not underpricing ops. I also think that not breaking functionality which depends on outdated gas pricing assumptions is an important consideration. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.323717948717949
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fulldecent",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "27/08/2019-02:46:39",
+                    "content": "@axic thank you for the ping Proposed fix for backwards compatibility:   github.com/ethereum/EIPs       Add reference to affected EIP     by fulldecent   on 02:46AM - 27 Aug 19 UTC   1 commits   changed 1 files   with 1 additions   and 0 deletions.       ",
+                    "links": [
+                        "https://github.com/fulldecent",
+                        "https://github.com/ethereum/EIPs/pull/2251",
+                        "https://github.com/fulldecent",
+                        "https://github.com/ethereum/EIPs/pull/2251"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ilanDoron",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "27/08/2019-11:52:35",
+                    "content": "Thank you for Your reply I Agree opcodes should be correctly priced. In this case we have two issues. price change is very big and also it breaks one or our contracts. I suggest the opcode repricing be done in a gradual fashion. Looking forward, Etheruem being an infra layer, is dictated to have stable costs, as much as possible. Which makes it more reliable to develop dapps using it. This opcode repricing is an example which makes this layer less reliable as development infra. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "30/08/2019-16:05:51",
+                    "content": "    Suggested 1884 issue solution (stipend context)       EIP-1884  Solution 1) (stipend fix only)  The idea is to use the fact that when calling with a non-zero value, 9000 gas is used instead of 700.  Moreover this 9000 is calculated as a cost of the caller and callee account balance updates (two state updates).  Since these accounts will be cached by the clients, an attacker would have to keep calling a different predeployed contract each time to take advantage of the discounts proposed below in a loop and (in order to cause clients to load and upda\u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "35",
+                    "likes": "3",
+                    "time": "04/09/2019-10:27:31",
+                    "content": "Hey guys. I just realized something when I was thinking about using contracts in combination with CREATE2 to store large amounts of data (reading them from external contracts gets cheaper if you read a lot of data - see this article (not mine)  about someone who researched this exact approach). The problem relies on the fact that the proposed increase of SLOAD is from 200 -> 800. This is more than EXTCODECOPY (700 gas + 3 gas per word). This means that  it is cheaper even reading a full slot (32 bytes / 8 words) using EXTCODECOPY. Correct me if I am wrong but this would cost 700 + 32/4 * 3 = 724 gas to read 32 bytes from an external contract. This does not seem rational to me and if this happens this might have the unintended side effects of people going to SSTORE data in other contracts (FYI: SSTORE equivalent: deploy a contract where the code is the storage, the actual storage of this contract would be empty) especially if those things are going to be read a lot (as opposed to writing it a lot which is pretty expensive). This might get some effects which were unintended like, for example, the GasToken which \u201cabuses\u201d the gas refund counter. We might hence see people deploying read-only contracts if this EIP gets deployed as-is because reading it is cheaper (and it will get much more cheaper if you start reading for example 2 slots - 748 gas as opposed to 1600 gas!). Proposed solution would be to either bump EXTCODECOPY or to lower the proposed 800 gas for SLOAD. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.344387755102042
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "36",
+                    "likes": "1",
+                    "time": "04/09/2019-14:27:41",
+                    "content": "Strange indeed. Maybe not a desired behaviour but loading contract bytecode is indeed much cheaper becase code is not stored in the Patricia tree. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "04/09/2019-17:47:56",
+                    "content": "I was not aware that this was in fact cheaper so it is good that this is cleared up (note: not exactly aware about the storage location of the contract code / storage slots and the cost of looking these up - I assumed those were about the same). I do wonder if the EIP proposers are aware of this semi-weird gas pricing though, as this might bring these unintended (?) side effects (a la GasToken) at the Istanbul fork. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.699999999999999
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "04/09/2019-18:07:44",
+                    "content": "@holiman? I believe this is safe (although a bit awkward if it becomes a common practice and it may lead to the following EIPs having to deal with even stranger legacy contracts). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MatthiasEgli",
+                    "index": "39",
+                    "likes": "1",
+                    "time": "11/09/2019-13:07:53",
+                    "content": "Is there a fundamental need for geth to lookup data in a SLOAD operation in a patricia merkle tree? It\u2019s obvious that it is necessary to create the tree to calculate the storage tree root, but why can\u2019t there be a constant-time lookup cache layer for reading these values? According to a recent analysis by P\u00e9ter (here: https://twitter.com/peter_szilagyi/status/1166633058348556288) the raw uncompressed size of storage data is 15.32 GB, potentially allowing a reduction to below 9GB, which should enable a quite efficient cache. If this is the case, then the increase in SLOAD time is more due to the implementation decisions taken by the client which can be fixed without a network upgrade. Given the current (relatively high due to recent client optimizations) gas cost for SSTORE, adding a slight cost with additional caching here while gaining considerable lookup speed for SLOAD should increase the performance overall significantly. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.183613782051282
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MatthiasEgli",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "17/09/2019-11:08:29",
+                    "content": "After collecting more feedback on this from many involved like P\u00e9ter Szilagyi, @holiman and @AlexeyAkhunov (turbo-geth) it is clear that actually a lot of work is currently going into getting constant-time lookup into geth, either as a side-effect of a new sync protocol or in the form of a new database layout. I know that it is pretty late in the process, but knowing that this will be fixed client-side in the foreseeable future which might even require to make it a lot cheaper again, combined with the concerns from major projects and from new projects we are in contact with (which are afraid to choose Ethereum due to being less able to rely on it still working for them in the future - I know there are a lot of arguments for and against this, but it is a fact that EIP-1884 is being used as an argument against Ethereum), why not focus on the client implementations and drop this quite contested EIP? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.341645622895623
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "41",
+                    "likes": "3",
+                    "time": "17/09/2019-12:15:21",
+                    "content": "To clarify a bit on that (and sorry I didn\u2019t answer earlier). So keeping a db on the side is very nice, on paper. In reality, the problem is reorgs. So if you have a flat db, you are incapable of reverting a few blocks. So what you wind up with is multiple layers of flat databases, where the bottom layer might be a couple of hundred blocks back. That one is on disk, and there are overlays in memory. To actually lookup a value, you need to investigate the in-memory layers first, in case the value has been changed in the  last N blocks. Then eventually you hit disk and obtain the last stored value. This is a promising approach, and somewhat of a necessity for the future new sync protocol which @karalabe is working on, but it\u2019s still work in progress, and will probably not be a magic bullet so solve the lookup problem. It\u2019s basically research at this point ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.348863636363637
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "42",
+                    "likes": "1",
+                    "time": "19/09/2019-06:38:55",
+                    "content": "For consistency, can we rename BALANCE to EXTBALANCE to comply with the other EXT* opcodes and their non-EXT equivalents? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "43",
+                    "likes": "1",
+                    "time": "19/09/2019-07:49:14",
+                    "content": " For consistency, can we rename BALANCE to EXTBALANCE to comply with the other EXT* opcodes and their non- EXT equivalents?  I\u2019d love for that to happen\u2026 I didn\u2019t want to do that right away in 1884, though, since it might give the impression of being a new opcode, whereas it in fact is just a UI thing, not related to the consensus rules. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.797077922077922
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "44",
+                    "likes": "1",
+                    "time": "19/09/2019-12:53:53",
+                    "content": "EIP-1803: Rename opcodes for clarity tries to do all this renaming, but it doesn\u2019t seem to be tied to hard forks. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.020833333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/epheph",
+                    "index": "45",
+                    "likes": "2",
+                    "time": "19/09/2019-18:57:38",
+                    "content": "It seems this conversation has stalled, but it still seems extremely important. There is a strange, small incentive to use contracts for storage of even single word and an enormous benefit for 2 or more words. The gas savings becomes tremendous; loading (4) 32-byte words would cost 3,200 via SLOAD and 712 gas via EXTCODECOPY, ~80% gas savings. If this is storage data shared with other contracts, retrieving this data will be even MORE cost-effective, since their CALL and EXTCODECOPY will cost basically same, but the CALL still has to SLOAD. If these incentives remain out of alignment, I do expect another GasToken-like project to emerge (as @jochem-brouwer implies). These savings are even greater than GasToken: they save up around 80% (for 4 storage variables, reasonable number of state variables for many contracts) while GasToken is limited to 50%, they don\u2019t require holding and minting balances for yourself or on behalf of users and don\u2019t require you to provide an oversized GasLimit with each transaction ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.844812925170068
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "30/09/2019-20:17:14",
+                    "content": "EIP1884 should allow EXTBALANCE to cost the same as SELFBALANCE in the case the parameter is the call address, but this is not mentioned in the spec. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "48",
+                    "likes": "2",
+                    "time": "30/09/2019-20:54:50",
+                    "content": "Hello, I am an engineer who has been exploiting irregularities in the fee structure to save my customers gas. My project is TrueUSD, which has a market cap of $190m. Our tokens have wasted tons of EVM space (>30 MB so far) because of poor design decisions in the past. This looks like another. I plan to exploit the following issues at scale if 1884 goes through as-is. As others have pointed out, with this change is cheaper to read data from EXTCODECOPY than to read it from local state with SLOAD. Reading a word from data costs 800 per word while reading a word from code costs 700, plus 3 per word. It is not only cheaper to read data from code, but also to write it. After the 32000 fixed cost of CREATE, writing a word costs 6400 in code but 20000 for state. So, under this scheme, if a contract wants to update a group of fields about a user, and that group is larger than 2, they should use external code. If updating is sufficiently less-common than reading, then all data should be externalized into code. Unlike the GasToken exploit, there is no incentive to clean up contract code used in this way, and there is no easy way to assess fees to the polluters. Punishing good behavior (SLOAD) could result in an explosion of the state space much sooner than expected, and without enough time to plan intelligent mitigation. The fix for this while keeping the proposed cost increases is to also increase EXTCODECOPY cost per word to something reasonable like 800. A better fix would be to find a way to make the SLOAD costs constant and not logarithmic. It is not good that this increase predicts future increases as the network grows. If SLOAD is not scalable then surely Ethereum is not either. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.447916666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adlerjohn",
+                    "index": "49",
+                    "likes": "1",
+                    "time": "01/10/2019-16:32:45",
+                    "content": "    wjmelements:  Unlike the GasToken exploit, there is no incentive to clean up contract code used in this way   Could you clarify why this is? Selfdestructing a contract (a la GST2) results in a gas refund, just as clearing a word with SSTORE does. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "50",
+                    "likes": "4",
+                    "time": "01/10/2019-22:15:12",
+                    "content": " The fix for this while keeping the proposed cost increases is to also increase EXTCODECOPY cost per word to something reasonable like 800.  This would solve the unbalance when reading using EXTCODECOPY, but the exploit is still possible, when a contract is called the contract bytecode is loaded without incurring into any gas costs, this can be used to store and read data using bytecode (PUSH32 + MSTORE + RETURN see: https://medium.com/@agusx1211/evm-istambul-storage-pricing-5befaac32403)  A better fix would be to find a way to make the SLOAD costs constant and not logarithmic.  I agree, the SLOAD execution cost can\u2019t be determined by the trie size while ignoring all the other cases where the EVM has to perform exactly the same operation will lead to devs exploiting the system. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.589285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MatthiasEgli",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "01/10/2019-22:52:06",
+                    "content": "Related to the repricing, how much time should a node at most spend on computing a block? Asked differently, if it takes more than X seconds to compute a block, for which X would this cause issues for the network? Initially, 1 GAS represented around 1\u2019000ns on an unknown machine which was used to determine the initial gas cost, and the block gas limit was at 3.1415m (that number looks familiar\u2026). So this seems to indicate that ~3 seconds were deemed acceptable to compute a block, but of course this might all be coincidence. Today, we are often achieving 20m GAS/second on recent hardware using new versions of geth, and 10m GAS/second on the \u201cordinary\u201d (ssd-powered) cloud instance out there, so ~1 second to compute todays 10m gas limit blocks. Obviously, any X above or close to the target block time of 13 seconds is a certain show-stopper. But what about blocks which require 5 seconds on recent powerful hardware today? In the end it is about when the network starts to either slow down due to longer block times created by the miners or when nodes used by applications (e.g. Infura, but of course there are many other ones out there) can\u2019t keep up anymore. Does anyone have experience or suggestions regarding the \u201cminimum supported throughput on the minimum supported hardware\u201d? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.367879475022333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "02/10/2019-05:54:26",
+                    "content": "You\u2019re right here: if updates happen often enough it would make sense to selfdestruct data contracts when you replace them, but in other contexts it would be worse. Adding in the code to ensure that only you can self-destruct your data is more expensive than prefixing it with the invalid opcode. In the case where you never update the data, there is no benefit to cleanup. In the case where reads happen sufficiently more often than updates, the differential read cost could overtake the write savings. As with GST2, expected gasPrice should play a role in your calculation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0892857142857135
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "53",
+                    "likes": "0",
+                    "time": "02/10/2019-05:55:55",
+                    "content": "Ooh, I hadn\u2019t considered that. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "54",
+                    "likes": "0",
+                    "time": "02/10/2019-06:04:42",
+                    "content": "Besides the block time, you also have to consider the block propagation time. A node will not pass along a block unless it is valid, and the network is not fully-connected, so a block must be validated by many nodes before all of the miners will adopt it. Block validation time is a key component of uncle rate. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PaoloRebuffo",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "02/10/2019-09:24:53",
+                    "content": "Given the success of ethereum it is likely that more \u201crepricing\u201d operations will be needed in the future. I therefore wonder if it is more productive to focus on giving a price to states, ( to complete the work of Alexey Ahkunov) and drop this EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "56",
+                    "likes": "0",
+                    "time": "02/10/2019-13:39:23",
+                    "content": "This is not part of the spec. Balance gas will get bumped to the new gas amount even if it is called on the current address. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adlerjohn",
+                    "index": "57",
+                    "likes": "2",
+                    "time": "02/10/2019-15:12:38",
+                    "content": "    wjmelements:  A node will not pass along a block unless it is valid   A common misconception, but a false one nonetheless. Clients only verify that sufficient PoW was done (i.e., they only validate the header) before propagating the block.   github.com/paritytech/parity-ethereum      Issue: Propagate new blocks after verifying PoW but without waiting for them to be imported  \t \topened by AlexeyAkhunov \ton 2018-09-17 \t \t \tclosed by 5chdn \ton 2018-11-28 \t  Parity Ethereum version: all versions Operating system: all operating systems Network: ethereum / ropsten Go-etherum currently propagates new blocks straight after it checks that...   \tF7-optimisation \ud83d\udc8a  \tM4-core \u26d3       ",
+                    "links": [
+                        "https://github.com/AlexeyAkhunov",
+                        "https://github.com/paritytech/parity-ethereum/issues/9576",
+                        "https://github.com/AlexeyAkhunov",
+                        "https://github.com/paritytech/parity-ethereum/issues/9576",
+                        "https://github.com/5chdn",
+                        "https://github.com/paritytech/parity-ethereum/issues/9576"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.857954545454545
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "58",
+                    "likes": "0",
+                    "time": "03/10/2019-08:14:19",
+                    "content": "That seems unfair to existing contracts. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "59",
+                    "likes": "0",
+                    "time": "03/10/2019-09:38:01",
+                    "content": "I have submitted a proposed adjustment to EIP 1884 that would solve the EXTCODECOPY issue and the SELFBALANCE discrepancy.   github.com/ethereum/EIPs       EIP1884: EXTCODECOPY Increase and EXTBALANCE Conditional Pricing     by wjmelements   on 09:35AM - 03 Oct 19 UTC   3 commits   changed 1 files   with 11 additions   and 7 deletions.        ",
+                    "links": [
+                        "https://github.com/wjmelements",
+                        "https://github.com/ethereum/EIPs/pull/2306",
+                        "https://github.com/wjmelements",
+                        "https://github.com/ethereum/EIPs/pull/2306"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dominic",
+                    "index": "60",
+                    "likes": "0",
+                    "time": "12/10/2019-04:08:40",
+                    "content": "I find the argument to increase the gas pricing because of how one concrete implementation performs in syncing time highly questionable. I suggest to completely drop this EIP and define a new strategy for gas pricing / gas pricing changes.   Both operations SLOAD and BALANCE are key value lookups whose complexity solely depend on the data structure chosen by the client implementing it. There is no reason why geth couldn\u2019t adopt a backing data store or just an index with O(1) lookup times for these key value pairs. Does anyone know why geth is not considering an O(1) hash table for SLOAD and BALANCE?   While operating a full sync is an important operation I do not see why it should be the measure for EVM pricing. IMHO normal day-to-day operation of a node should be there reference and not the syncing time. During normal day-to-day operation EVM execution and PoW happen back to back with PoW being probably 99% of the CPU resources burnt and EVM 1% (Sorry this is just a guess have not found reference values on this). The strategy to price EVM operations thus should be the long term effect on the total size of the state tree and only to a lesser degree the CPU time associated with executing the EVM \u2013 at least as long as the PoW CPU time is so much bigger.   Making changes to the EVM gas pricing should only be considered if there is a consensus between the client implementations. If we\u2019re seeing that all client implementations have the same performance disparity on a certain operation it would make sense to start the process to change the operation cost - under the same hardware setup at least the big clients aleth, parity, geth (others?) should be checked before drawing any conclusions.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.99050949050949
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "61",
+                    "likes": "1",
+                    "time": "12/10/2019-04:20:10",
+                    "content": "    dominic:  . There is no reason why geth couldn\u2019t adopt a backing data store or just an index with O(1) lookup times for these key value pairs. Does anyone know why geth is not considering an O(1) hash table for SLOAD and BALANCE ?   Geth is considering it, and working on it. Parity doesn\u2019t have it either, and none of the other clients do, to my knowledge. It\u2019s not a trivial problem to solve. If it indeed becomes solved (or at least improved) in future iterations, and it\u2019s deemed possible to lower the limits again, that would be wonderful.     dominic:  During normal day-to-day operation EVM execution and PoW happen back to back with PoW being probably 99% of the CPU resources burnt and EVM 1%   Actually, verifyign the PoW on a block takes somwhere between 5-15ms (depending on machine, of course), and verifying the full block (verifying all txs, running all executions) take up somewhere around 200-300ms. It\u2019s mainly disk io that\u2019s the bound \u2013 again, depending on machine. Sometime in the future, when we have Optane DC ram, it might be a different case.     dominic:  Making changes to the EVM gas pricing should only be considered if there is a consensus between the client implementations. If we\u2019re seeing that all client implementations have the same performance disparity on a certain operation it would make sense to start the process to change the operation cost   My benchmarks have been published for over half a year, nobody has challenged it with drastically different measurements made on another client. I made these on geth, because I\u2019m a geth-developer. Nobody from parity/trinity/nethermind/besu at any time offered the opinion that \u201cNo, that\u2019s just geth performing badly, we don\u2019t see this as an issue\u201d. This is most definitely a cross-client concern. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.247564935064935
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dominic",
+                    "index": "62",
+                    "likes": "0",
+                    "time": "15/10/2019-03:58:10",
+                    "content": "    holiman:  Geth is considering it, and working on it.   Hey, this is great! Then if solving the problem within geth is within reach, this EIP should definitely be dropped. A not yet done fix in a client should not be the cause for temporary EVM repricing. Changing EVM rules breaks the immutability of smart contracts and the blockchain and can only be be the last resort.     holiman:  Actually, verifyign the PoW on a block takes somwhere between 5-15ms (depending on machine, of course), and verifying the full block (verifying all txs, running all executions) take up somewhere around 200-300ms . It\u2019s mainly disk io that\u2019s the bound \u2013 again, depending on machine. Sometime in the future, when we have Optane DC ram, it might be a different case.   200-300ms for the validation, and then given you accept that block another 200-300ms for executing transactions of a new candidate and then 14400-14600ms for solving that new PoW (assuming avg. 15sec block time). So EVM calculation seem to reach 2-4% according to that 200-300ms numbers on day to day work for miners. Questions regarding these tests:  What is the reference hardware for this? (RAM and CPU frequency/cores, storage) there general agreement on the reference You mentioned disk io, does the most recent state data set fit in memory?  How big is that data set  in your measurements? Should it fit memory? Should it not fit? Are the tools to re-execute this test and get the same numbers somewhere in git for others to reproduce? If not can you make them available and point us there? Would love to try.    At 2-4% it makes sense to look at options to make geth execution faster but these seem to be specific to geth and shouldn\u2019t cause EVM repricing. Just regarding disk IO there are multiple options each of which would solve this. At least:  Data prefetching and Optimistic parallel transaction execution and of course Use a hash table for O(1) access  These would alleviate all io read concerns at this time and probably also reduce from that 2-4%. Do you know what the progress has been on this on geth over the last half year or so?     holiman:  My benchmarks have been published for over half a year, nobody has challenged it with drastically different measurements made on another client. I made these on geth, because I\u2019m a geth-developer. Nobody from parity/trinity/nethermind/besu at any time offered the opinion that \u201cNo, that\u2019s just geth performing badly, we don\u2019t see this as an issue\u201d.   Absence of evidence is not evidence. As an outsider I have no indication that this assumption for the other clients is right or wrong. I think I\u2019m just asking for proper process. There should be a minimum quorum of the other clients to positively confirm or reject that this must be fixed in the EVM and is not a client implementation detail before the EVM is modified. I guess this is an Ethereum governance question. You have done excellent work with these measurements, and I wish more client teams would take an example and do similar bench-marking to come to best practices on how to implement an efficient client and find consensus on EVM pricing/mispricing. And these measurements show an issue that needs to be addressed, an O(1) operation such as SLOAD should not regress in such a way and needs to be fixed - but IMHO this is a bug with the client and needs to be fixed there. Cheers! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.563386524822695
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "63",
+                    "likes": "1",
+                    "time": "16/10/2019-07:34:22",
+                    "content": "    dominic:    There is no reason why geth couldn\u2019t adopt a backing data store or just an index with O(1) lookup times for these key value pairs. Does anyone know why geth is not considering an O(1) hash table for SLOAD and BALANCE ?    Geth is considering it, and working on it.  Hey, this is great! Then if solving the problem within geth is within reach, this EIP should definitely be dropped. A not yet done fix in a client should not be the cause for temporary EVM repricing.   Let\u2019s take a step back again, I think my comment was misinterpreted. The SLOAD/BALANCE and other opcodes like EXTCODEHASH are not inherently O(1), due to the fact that the ethereum state is represented in a trie. Lookup of any key in the trie is inherently dependent on the number of lookups that needs to be made. Thus, 1884 uses the term trie-size-dependent opcodes. Now, when I said Geth is considering it, I was referring to this PR: https://github.com/ethereum/go-ethereum/pull/20152 . That PR introduces an additional acceleration data structure, which adds an extra 11-12 Gb of disk requirements for a flat-database of the trie leaves. During runtime, it maintains an in-memory tree of diffs that from time to time get \u2018flattened\u2019 towards the disk layer. This difflayer is needed to handle reorgs. This lookup structure is an optimization, and we\u2019re not certain how good we can make it and how soon we can have it done. The issue that EIP-1884 tries to handle is valid now \u2013 or even, if you look at the numbers, it was measured up to around blocks 6.5M - and we\u2019re approaching 9M now. So 1884 is sorely needed, and might even be too conservative.     dominic:  Just regarding disk IO there are multiple options each of which would solve this. At least:  Data prefetching and Optimistic parallel transaction execution and of course Use a hash table for O(1) access    Data prefetching already is done here, by executing the following block as we\u2019re executing the current.     dominic:  These would alleviate all io read concerns at this time   Interesting. Could you please share your evidence for that (imo pretty bold) claim?     dominic:  There should be a minimum quorum of the other clients to positively confirm or reject that this must be fixed in the EVM   That\u2019s why we discuss EIPs within the AllCoreDevs forum, and decide on what to include on publically broadcasted ACD meetings, where all client developers are present. Within that forum, there has been consensus reached that this is real problem that needs to be addressed on the platform layer.     dominic:  an O(1) operation such as SLOAD should not regress in such a way and needs to be fixed   SLOAD is also a lookup into a trie (although an individual per-account trie), inherently not O(1). Regarding my benchmarks, it\u2019s available here. The datapoints for three differents runs are there, all executed on a m5d.2xlarge aws instance. The benchmarkers were done on a couple of separate branches, but the relevant commit that makes geth dump out stats is here. ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum/blob/master/core/blockchain.go#L1618",
+                        "https://github.com/holiman/vmstats",
+                        "https://github.com/holiman/go-ethereum/commit/195b0e5b39a9a213051cc3a40ce8d04e274795ac"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.536848903784389
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dominic",
+                    "index": "64",
+                    "likes": "0",
+                    "time": "16/10/2019-14:20:42",
+                    "content": "Hi, thanks for taking the time to go through this, I honestly feel a bit bad for taking so much of your time away from developing eth code. Also I\u2019m bit worried that this is now a conversation of two individuals, not sure how this can bloom into Ethereum governance consensus.     holiman:  Now, when I said Geth is considering it, I was referring to this PR: https://github.com/ethereum/go-ethereum/pull/20152 . That PR introduces an additional acceleration data structure, which adds an extra 11-12 Gb of disk requirements for a flat-database of the trie leaves.   This looks like some really good work. That it adds storage and is additional acceleration data makes sense. In general database terms you could probably call it an index that you are adding. The additional amount of 12 Gb data though makes me curious what is that % of the total state data for adding this index? Is that 100%? Is one full world state (excluding history) currently 12 Gb heavy?     holiman:  The issue that EIP-1884 tries to handle is valid now \u2013 or even, if you look at the numbers, it was measured up to around blocks 6.5M - and we\u2019re approaching 9M now. So 1884 is sorely needed, and might even be too conservative.   This sounds like the index for geth is still a couple of month out. It this also true for the other clients?     holiman:  Data prefetching already is done here, by executing the following block as we\u2019re executing the current.   Thanks for the link, this is great! From looking at it I think the prefetcher can not be very effective, as it is just running one block ahead. If it has to do real disk io the prefetch will not be faster than the \u201creal\u201d loop after it and the \u201creal\u201d loop will catch up to the prefetcher because apart from IO they are both doing the same work. I think you will end up in a case where the \u201cprefetcher\u201d is usually overrun by the \u201creal\u201d runner and then they work in parallel. So in terms of IO throughput increase it is max 2x. A simple alternative could be to prefetch all the transaction destinations - In fact you could do this even for the current block. E.g. before executing the block, loop the transactions and send the IO scheduler a message to prefetch each transaction destinations data. Then run the block. The key is that we must make use of the high parallelism of SSDs and execute 8 - 16 reads commands at the same time all the time if we want to use the hardware efficiently. An additive alternative approach would be the optimistic parallel transaction execution \u2013 but also much more complex. In this scenario you execute all transactions in the block at the same time, but in isolated states. After the transactions finish one would need to compare the reads and writes each transaction has done and decide whether they are mergeable in any order \u2013 Those that were not mergeable (e.g. because two transactions modified the same balance or the same storage location), would need to be executed in a second parallel step. This would probably a bigger rewrite but would not only use IO more efficiently but would allow effective use of multiple CPUs when processing transactions.     holiman:  Interesting. Could you please share your evidence for that (imo pretty bold) claim?   The evidence is the hardware capacity here vs. the theoretic work we ask it to do. I have yet to understand how big all contract storage of a recent block is in Gb, so here without that knowledge just disk io based: Let\u2019s assume the ideal worst case: You got 8M gas and all of that goes into SLOAD. At SLOAD=200 gas you would get a maximum 40,000 SLOAD calls in a block. Each SLOAD call wants to read 32 bytes of data. In total that is 40,000 x 32 bytes => 1.2mb of data that need to be read from the disk \u2013 worst case. The SSD (nvme in case of m5d.2xlarge) on the other hand gives >100,000 IOPS or ~400mb random reads per second if we can send it read commands asynchronously. So from a hardware perspective we are able to randomly read the required 1.2mb within ~3 milliseconds. So we have plenty of runway in terms of raw IO power here, but might be limited by the sequential access patterns, data fragmentation or other things. It would be interesting indeed to see the actual amount of disk IO going on during these tests and what part of the 200-300ms you mentioned before are disk wait \u2013 and what part are in-memory tree traversals and others.     holiman:  That\u2019s why we discuss EIPs within the AllCoreDevs forum, and decide on what to include on publically broadcasted ACD meetings, where all client developers are present. Within that forum, there has been consensus reached that this is real problem that needs to be addressed on the platform layer.   The call notes state \u201cGeneral concensus that there are no objections from any of the clients\u201d \u2013 This seems to be inline with what you\u2019re saying, but is also  with what I\u2019m afraid of here \u2013 This EIP is going to break tons of contracts, just because nobody had the time or motivation to closely analyze & evaluate it\u2019s impact or necessity. My question is primarily a Ethereum Governance question. Is it intentional that EIPs that break smart contract immutability are passed through because it is the path of least resistance for the client teams? E.g. in this case changing some hard-coded gas values is easier than implementing and index seems to be the reason for this EIP to be accepted.     holiman:  Regarding my benchmarks, it\u2019s available here. The datapoints for three differents runs are there, all executed on a m5d.2xlarge aws instance. The benchmarkers were done on a couple of separate branches, but the relevant commit that makes geth dump out stats is here.   Sweet! Did you sync over the network or did you have the chain data local? Do you have the rough setup / command line history to reproduce this? Best ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum/blob/master/core/blockchain.go#L1618",
+                        "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/general-purpose-instances.html",
+                        "https://github.com/ethereum/pm/blob/master/All%20Core%20Devs%20Meetings/Meeting%2068.md",
+                        "https://github.com/holiman/vmstats",
+                        "https://github.com/holiman/go-ethereum/commit/195b0e5b39a9a213051cc3a40ce8d04e274795ac"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.40319474969475
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "65",
+                    "likes": "0",
+                    "time": "02/11/2019-16:57:01",
+                    "content": "    dominic:  Both operations SLOAD and BALANCE are key value lookups whose complexity solely depend on the data structure chosen by the client implementing it. There is no reason why geth couldn\u2019t adopt a backing data store or just an index with O(1) lookup times for these key value pairs. Does anyone know why geth is not considering an O(1) hash table for SLOAD and BALANCE ?   Although this has been answered extensively, I\u2019d like to highlight one more reason why the above bold highlights are not exactly correct.  Block headers require the recording of a state root. This state root is calculated from the trie of account storage roots. Every account\u2019s storage root is itself calculated from a trie of stored data.  The backing data store can be whatever a node implementation chooses, but if the impl-n is to verify (or propose!) block headers and state changes, then it must be able to compute this. I suppose this is what @holiman meant to convey when writing:     holiman:  The SLOAD / BALANCE and other opcodes like EXTCODEHASH are not inherently O(1), due to the fact that the ethereum state is represented in a trie.   \u201cEthereum state is represented in a trie\u201d is not geth's choice, it\u2019s a protocol-level choice (made years ago). This is described in the yellowpaper section 4.1 in a tad more detail, although there\u2019s not much more information than the bullet points above. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4527243589743595
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dominic",
+                    "index": "66",
+                    "likes": "0",
+                    "time": "04/11/2019-11:01:20",
+                    "content": "    veox:  The backing data store can be whatever a node implementation chooses, but if the impl-n is to verify (or propose!) block headers and state changes, then it must be able to compute this.   You have to differentiate here between modifying operations and non-modifying operations. For a modifying operations such as SSTORE you indeed have to have a trie in order to update the merkle nodes correctly. But read operations like SLOAD and BALANCE do not need to to update trie nodes after the operation, hence you can shortcut the trie for read and just use hashmap. SSTORE though - because of the need to recalculate the merkle tree will stay more expensive.     veox:  \u201cEthereum state is represented in a trie\u201d is not geth 's choice, it\u2019s a protocol-level choice (made years ago).   I know that there have been efforts to introduce constant-time storage reads (SLOAD) in geth. I\u2019m curious as to why these efforts failed. There was for example Turbogeth with this interesting quote:   State reads to require only 1 database lookup. With the change (3), and a small addition, where for each short node, we also write out the value node separately, with the full path, we can read values from the state without expanding the trie at all. I have implemented this change in this commit, but it is a bit messy. Subsequent profiling sessions showed that state reading is now negligible and does not even appear in the report.   Long term constant-time SLOAD and BALANCE calls should be achievable in all implementations. I would just hope for it to arrive quicker then it might actually take. Once it arrives though we should be able to drop the EVM gas prices for SLOAD back down again. Making the testing more repeatable would be good, also I\u2019m still confused as to whether the reference to gas price adjustment should be the cold-sync times or the live block processing. They are different challenges.  ",
+                    "links": [
+                        "https://github.com/AlexeyAkhunov/go-ethereum/commit/471916a7ac9789de710ae5e7c30f75a6c35b7de9"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.332784365393061
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fulldecent",
+                    "index": "67",
+                    "likes": "0",
+                    "time": "02/12/2019-23:53:29",
+                    "content": "I have reviewed this EIP everything looks great but I have one note. EIP-150 is listed as a requirement. But when reading the text I see that EIP-150 affected the analysis of EIP-1884 (DRAFT) but it does not affect the prescription of EIP-1884 (DRAFT). Therefore I think it is appropriate to demote EIP-150 from a prerequisite to a reference. Quick fix --> https://github.com/ethereum/EIPs/pull/2421 ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/hardfork-meta-eip-1679-istanbul-discussion/3207/55"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.722222222222221
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/timbeiko",
+                    "index": "68",
+                    "likes": "0",
+                    "time": "09/12/2019-15:09:29",
+                    "content": "Antoine Le Calvez (@khannib) has been tweeting about the impacts of this change on the network. It seems like the Gemini deposit contract as well as some Uniswap contracts are affected:  https://twitter.com/khannib/status/1204032831435026433 https://twitter.com/khannib/status/1204055942431682560  Update: it seems like the Uniswap errors are from an arbitrage bot: https://twitter.com/UniswapExchange/status/1204065068498989056 ",
+                    "links": [
+                        "https://twitter.com/khannib/status/1204032831435026433",
+                        "https://twitter.com/khannib/status/1204055942431682560",
+                        "https://twitter.com/UniswapExchange/status/1204065068498989056"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "69",
+                    "likes": "0",
+                    "time": "28/01/2021-14:26:30",
+                    "content": "Is there a requirement that opcode price will be fixed, and not dependent on its arguments? I mean, instead of adding SELFBALANCE opcode, we can price BALANCE(selfaddr) cheaper than BALANCE(some-other-addr) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.46875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/timbeiko",
+                    "index": "70",
+                    "likes": "0",
+                    "time": "28/01/2021-21:41:35",
+                    "content": "@dror this EIP is already live on mainnet, as part of the Istanbul hard fork: https://eips.ethereum.org/EIPS/eip-1679 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.611742424242424
+                }
+            ]
+        }
+    ],
+    "group_index": "776"
+}

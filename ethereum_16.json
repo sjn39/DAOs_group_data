@@ -1,0 +1,78 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-0000-erc-721-merkle-provable-ownership-extension/10154",
+            "title": "EIP-0000 ERC-721 Merkle-Provable Ownership Extension ",
+            "index": 10154,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Nerolation",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "28/07/2022-12:59:08",
+                    "content": "EDIT: Based on received feedback, I altered the design: Find the new repo here: https://github.com/Nerolation/EIP-ERC721-zk-SNARK-Extension and the related disussion (before submitting a pull request): https://ethresear.ch/t/erc721-extension-for-zk-snarks/13237 The following is deprecated: This is an ERC721 extension to store ownership information in a merkle tree.   GitHub    GitHub - Nerolation/EIP0000: This specification defines an extension to the... This specification defines an extension to the ERC-721 standard. - GitHub - Nerolation/EIP0000: This specification defines an extension to the ERC-721 standard.      It enables the use of private merkle-proofs (zk-SNARKs) for ownership verification. The idea was inspired by the Souldbound token article of Vitalik. How it works When minting and transfering tokens, there is a commitment c created for the recipient that consists of a users address and the respective tokenID. This c  is then written to a leaf in the merkle tree. For prooving ownership, a user must demonstrate the ability to reproduce any c in the merkle tree. For that, the user must have access to an address a, which, when being hashed together with a tokenId tid (c = h(a, tid)), is present in the merkle tree. Prooving access to an address can be done by signing a message. Using zk-SNARKs, the owner can verify to be included in the merkle tree without pointing to the exact location in the tree. This allows for private ownership proofs. When a user transfers, the respective entry in the merkle tree is nullified ( c ==> True ). Same happens when tokens are burned. Pros:  Private Ownership proofs Logic handled by underlying ERC721 (no Stealth addresses)  Cons:  Comes with fixed and limited nr of owners/transfers (depending on size of merkle tree) Inceasing gas costs for all users Once owner, always owner (see note below)  I initially thought about implementing it for ERC-4973 (Account-bound Tokens) or ERC-5114 (Soulbound Badge), but came to the conclusion that it would only make sense for ERC-721, at the time. NOTE: Since there is no nullifier (some secret noise to the commitment) incorporated in the commitment hash, users who once had the token can always proof ownership. I consider this a bug, not a feature, but might also depend on the usecase. By using a nullifier, leafs can be marked as \u201cspent\u201d, however, it eventually requires users to transfer nullifiers off-chain, for doing transfers.  So, as you can see, still some thoughts required on this. Check out the Tornado Cash docs for some background. You\u2019ll find some really good explanations there. I really appreciate receiving feedback! ",
+                    "links": [
+                        "https://ethresear.ch/t/erc721-extension-for-zk-snarks/13237",
+                        "https://github.com/Nerolation/EIP0000",
+                        "https://github.com/Nerolation/EIP0000",
+                        "https://vitalik.ca/general/2022/01/26/soulbound.html",
+                        "https://docs.tornado.cash/general/how-does-tornado.cash-work",
+                        "https://ethereum-magicians.org/t/eip-idea-extension-for-erc721-zk-snark-compatible-poaps/10064",
+                        "https://ethereum-magicians.org/t/eip-idea-extension-for-erc721-zk-snark-compatible-poaps/10064/3"
+                    ],
+                    "GPT-summary": "The author of the post is presenting an ERC721 extension to store ownership information in a merkle tree. The post explains how the extension works, its pros and cons, and the author's thought process behind implementing it for ERC721. The author is also asking for feedback and suggestions on the proposal, and is open to collaboration. A third party is giving constructive criticism and asking questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Privacy, Security and risk management",
+                        "Token economics",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.2858554488989276
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/themandalore",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "02/08/2022-13:35:40",
+                    "content": "super cool stuff.  I think the question is what are some use cases? Proving you own an ape when you\u2019re embarrassed about which one?  And you use the nova contracts from tornado cash to make it transferrable too right? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 6.961309523809524
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Nerolation",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "02/08/2022-17:14:37",
+                    "content": "Thanks for your feedback! I\u2019m currently pivoting from the proposed implementation, because I think that including a merkle tree on-chain adds computation loads that are not needed. Instead, I try to implement something like barryWhiteHat implemented here. Have a look at this, it\u2019s a great resource. Basically, I now strictly implement what Vitalik sketched in a short section on zk-SNARKable SoulBound Tokens. What I got from \u201cSoul-bound\u201d token discussions (as of now), transferability will still exists, therefore, I\u2019m now thinking of a transfer function that also takes a commitment, that can be used for the zk ownership proof. It would look somethin like this: function _transfer(         address to,          uint256 tokenId,         bytes calldata proof,         bytes calldata input,         bytes32 commitment     ) internal virtual   I think the question is what are some use cases?  Usecase could be to proof (privately) that you visited ETHAmsterdam and get an additional sticker at ETHBogota. More industrial usecases are proving vaccination status without revealing identity. As I interpreted from Vitalik\u2019s explanation, stealth addresses are required for the final implementation. I\u2019m currently working on finishing the implementation and will then update this thread (a few more days required). ",
+                    "links": [
+                        "https://vitalik.ca/general/2022/01/26/soulbound.html"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.840909090909091
+                }
+            ]
+        }
+    ],
+    "group_index": "16"
+}

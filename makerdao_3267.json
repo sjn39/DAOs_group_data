@@ -1,0 +1,80 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mipxx-fix-price-flipper-stable-coin-liquidation/6487",
+            "title": "MIPXX: Fix Price Flipper / Stable Coin liquidation ",
+            "index": 6487,
+            "category": [
+                "Miscellaneous"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#1",
+                    "likes": "0",
+                    "time": "10/02/2021-21:15:19",
+                    "content": " MIPXX: Fix Price Flipper  Introduction Following the issue with stablecoin, and a lot of discussion we need to introduce a simple and gas efficient flipper/ clipper with no price slippage. MIP#: XX Title: Fix Price Flipper Author(s):  Alexis Type: Technical Status:  Date Proposed: 2021-02-08 Dependencies: None Replaces: Nothing   Sentence Summary MIPXX will allow a simple way to flip fix priced assert by one bid auction.  Paragraph Summary MIPXX is a simple flipper/clipper specific for stablecoin, that reduce the amount of effort for the bidder. The flipper/clipper will start the auction as a normal flipper/clipper. But the auction system (dutch or English) is removed and instead we introduce a buy(id) function that allow anyone to get the auction.  Component Summary MIPXXa1: Parameter Definitions MIPXXa2: Function MIPXXa3: Authorisation MIPXXa4: Static Reserve For Governance MIPXXa5: Proposed Code MIPXXa6: Test Cases MIPXXa7: Spell MIPXXa8: Security Considerations MIPXXa9: Licensing  Motivation We currently have a major issue with all stable coins inside the vaults, this flipper/clipper will allow an ordering liquidation by fixing the price. The price can be set to 1 dai for 1 TUSD/PAX/USDC. Clearly, setting the TUSD DC at 0 had a limited impact. The main issue with the auction system either dutch or english is that we can\u2019t predict the price at 0.1% which is our margin. The idea is to fix the price at 1.00 or even higher/lower - slightly higher than the psm price for example - and allow anyone to bid on any vault in liquidation state. As soon as you bid on it you won. By calling buy(id) we transfer from your vault the amount and transfer back the gem.  Specification  MIPXXa1 Parameter Definitions   price : auction price   MIPXXa2: Functions there is only two functions depending of this system used:   kick(usr, gal, tab, lot, bid) auth for the liq1.2   take(id, amt, max, who, data)  for liq2.0   buy(id)   It also has three admin methods   file(bytes32 what, data) : To change parameters  rely(address contract) : To add authorized address  deny(address contract) : To remove authorized address  depending on the system :  MIPXXa3: kick(usr, gal, tab, lot, bid)  Increase the number of auctions Move the token position from the sender to the flipper Start the auction   MIPXXa3: take(id, amt, max, who, data)  add id to active Increase the number of auctions Move the token from the sender to the flipper start the sale   MIPXXa3: buy(uint id)  Take lot from the flipper and give it to the bidder. Move lot*price from the bidder to vow delete the bid   MIPXXa5: Proposed Code Not yet implemented  MIPXXa6: Test Cases Not yet implemented  MIPXXa7: Spell Not yet implemented  MIPXXa8: Security Considerations Not yet evaluated  MIPXXa9: Licensing AGPL3+ ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.269580200501252
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "10/02/2021-22:02:40",
+                    "content": "I am a bit confused by this. SIngle bid winner sounds more like a dex ask.   Why not just put these vaults up on oasis at 1 or slightly below the PSM offer if you are going to propose this?   In fact you could take all the vaults you want to clear with such an offer and just group them into one single lump of \u2018offer\u2019 and allow people to take as much as they want at the price? This would massively save on gas than doing the above imo. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.045238095238095
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "10/02/2021-22:08:38",
+                    "content": "The question is how do you do that? Here we just need to reactivate the liquidation and put the flipper in place. Most of the problem is code and how do you reduce risk. Here I know exactly how to do that. - at some hegde case. Also it is generic works for cropjoin, uniswap lp usdc/dai, PSM ( not sure if it is needed tho) and might fix the security issue with the MoM. ( I am not sure tho). It can be let in place in case we reactivate the vault. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "10/02/2021-22:25:47",
+                    "content": "    MakerMan:  slightly below the PSM offer if you are going to propose this?   I am not sure what you meant here.     MakerMan:  In fact you could take all the vaults you want to clear with such an offer and just group them into one single lump of \u2018offer\u2019 and allow people to take as much as they want at the price?   I would like to do that but I can\u2019t see an easy, simple way to do it. I am open to proposition to be honest, I started this because it seems no one take it as action. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.42965367965368
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "10/02/2021-22:32:07",
+                    "content": "    alexis:  I am not sure what we meant here.   The PSM basically will sell DAI for USDC, and buy USDC for DAI.   What I am saying is if one is going to clear the vaults do it inside the PSM spread vs. just setting the price to 1.     alexis:  I would like to do that but I can\u2019t see an easy, simple way to do it.   Not that I have an idea about system mechanics spellwise but I am guessing that Maker itself could put up DAI for stablecoins and basically be the single bidder on all the vaults we want to clear.   Do this in one shot via a governance spell then take the stable coins and put up an offer on oasis with another spell.  Honestly I don\u2019t know the mechanics required here but once a vault CR is under the LR Maker has free reign to liquidate however and whenever it wants. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.83994708994709
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "10/02/2021-22:57:52",
+                    "content": "Yes the price can be set so it can be inside the PSM spread or out side. For example tusd can be put at 1 as we want to get rid off them. We can also by governance buy big usdc vault and put them into the PSM. or put a price below the PSM.     MakerMan:  Do this in one shot via a governance spell then take the stable coins and put up an offer on oasis with another spell   You need multi action there, I believe it is not that simple. You need to find all vaults need to be liquidated accumulated and make sure oasis return the money to the vow decrease the sin etc. All those stuff are done by the liquidation process. Here we are at the end of the process. So all stuff are done. We just remove the auction process and go straight to the deal. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.8
+                }
+            ]
+        }
+    ]
+}

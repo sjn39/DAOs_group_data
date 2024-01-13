@@ -1,0 +1,746 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/hardfork-meta-eip-1679-istanbul-discussion/3207",
+            "title": "Hardfork Meta EIP-1679: Istanbul discussion ",
+            "index": 3207,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "hardfork"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "1",
+                    "likes": "3",
+                    "time": "26/04/2019-15:10:58",
+                    "content": "I am adding this as the discussion URL for the Istanbul hardfork meta and propose this thread to be dedicated for discussing proposed EIPs and to judge the sentiment when to move them between the stages.   Ethereum Improvement Proposals   Hardfork Meta: Istanbul Ethereum Improvement Proposals (EIPs) describe standards for the Ethereum platform, including core protocol specifications, client APIs, and contract standards.      ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-1679"
+                    ],
+                    "GPT-summary": "The author of the post is proposing a discussion thread for the Istanbul hardfork meta and inviting feedback on the proposed Ethereum Improvement Proposals (EIPs) for the platform. The post also provides a brief description of what EIPs are and their importance for the Ethereum platform. The post invites constructive criticism and questions about the proposals and suggests that the thread can be used to review and audit the proposals.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Token economics",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "26/04/2019-16:48:40",
+                    "content": "Make PRs against 1679 to propose your EIPs https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1679.md ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "06/05/2019-18:07:05",
+                    "content": "I\u2019d like here to bring my objection to EIP-1344 being included in the Istanbul hard-fork. The concerns behind the objections have already be mentioned on the EIP-1344 discussion thread but since this EIP is being finalized and discussion on each EIP are meant to be about technical soundness, the best place to raise my concerns seemed to be here in this discussion thread. My concerns are as follow :   EIP-1344 opcode can be easily misused as can be shown in the discussion thread and explained partially in the rationale of EIP-1344. Simply doing an equality check is indeed not enough since after a contentious hard fork (that change the chainID), messages signed before hand (with an older chainID) will fail to be valid, breaking signer\u2019s expectation. EIP-1344 rationale propose thus a contract based caching solution to remedy the problem.   EIP-1344 requires thus a contract based solution to be used properly in most use-case. This is due to the design of the solution EIP-1344 proposes (namely only letting access the tip of the chainID history). This increase complexity and gas cost for no benefit.   In case of minority-led hardfork as described here in details, the contract based caching is insufficient as there will be a gap where a message signed with a past chainID will not be protected from replay.   Note that while I agree with the importance to have a replay protection mechanism for off-chain messages included in the next hardfork, it should not be EIP-1344. All the concerns mentioned above are non-existent with EIP-1965 which achieve full replay protection without requiring added complexity from the users. EIP-1965 should be thus chosen for off-chain message replay-protection instead of EIP-1344 in the next hardfork. Why not have both ? Because EIP-1344 has no useful purpose of its own if EIP-1965 was included. As PR 1965 is not merged in yet though, I can\u2019t add it to proposed list yet. If anyone reading here could help on that, that would be great. Thanks ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/1965"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.507575757575758
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "10/05/2019-04:25:36",
+                    "content": "I proposed EIP-1344 for Istanbul because I think it\u2019s the most straightforward and flexible proposal for managing chain ID-based domain separation in the application layer. I don\u2019t believe EIP-1965 has to be Accepted to be proposed for Istanbul, so that should not be an issue in proposing it. It does however have several unresolved technical issues concerning how it might be implemented which are being worked through as we speak. There are many potential use cases for chain ID in the application layer, many of which may yet to be discovered. Some of them require consideration of a change to the value of chain ID in a contentious fork scenario, which is easily implemented in application code per the requirements the developer has for those scenarios (if such a feature is required). EIP-1344 does not wish to be prescriptive of how these scenarios are resolved, instead providing the rationale that developers should consider this scenario when implementing it in their application. Being too prescriptive could potentially be burdensome to the application developer in some circumstances. That being said, there are scenarios where having access to a list of prior chain IDs would be helpful, namely the use of \u201ccounterfactual\u201d settlement contracts where transaction history needs to be processed (in scenarios where the results are not simply aggregated in a final message). I will also state for the record that EIP-1959 was proposed alongside EIP-1344, and may be complementary to it. An oracle contract could be developed to satisfy the intention of EIP-1959 or EIP-1965 if EIP-1344 were made available, with only a marginal increase in complexity of the mechanism required for it to work correctly (the block heights might end up a few off of the true height where the contentious split happened). There are many options here, and I believe EIP-1344 to be the simplest and most straightforward since the information is already accessible in the VM execution context due to EIP-155, as well as the fact that we haven\u2019t seen a contentious split with EIP-155 implemented at the present time (and that we have no actual process in place for changing it in light of a contentious fork).  Edit: I added a link to an example implementation of such a trustless chain ID oracle contract leveraging EIP-1344 to the forum for that proposal here:     EIP-1344: Add chain id opcode EIPs       I decided to draft an example of a \u201cTrustless Oracle Contract\u201d for historical chain IDs, which is something that could very easily be implemented, audited, and leveraged as a standard for any potential use case requiring access to historical chain IDs, without the complexity of alternative proposals.  Check it out here:      ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.866666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "10/05/2019-14:42:21",
+                    "content": "One on-topic discussion point. As an example, both EIP-1344 and EIP-1959 (as well as EIP-1965) all use the same opcode number, which seems like putting the cart before the horse. Should EIPs specify opcode numbers? If instead of the EIPs specifying the opcode number, the Meta Hardfork EIP where the given proposal becomes \u201cmerged\u201d into the network where \u201cin charge\u201d of specifying these numbers (as it is arguably a very important implementation detail), then we could avoid this scenario of colliding opcode numbers. After the Hardfork Meta is merged, we can go back and update the individual proposals for the finalized opcode number at the point the hardfork is completed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.6499999999999995
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "10/05/2019-15:28:29",
+                    "content": "    fubuloubu:  If instead of the EIPs specifying the opcode number, the Meta Hardfork EIP where the given proposal becomes \u201cmerged\u201d into the network where \u201cin charge\u201d of specifying these numbers (as it is arguably a very important implementation detail), then we could avoid this scenario of colliding opcode numbers. After the Hardfork Meta is merged, we can go back and update the individual proposals for the finalized opcode number at the point the hardfork is completed.   I think this is a reasonable proposal, albeit there must be some placeholders in the EIPs for clients to be able to implement it and create tests. The testing implication is the problem, because a lot coordination is required to assign and sync these opcodes during the implementation and testing phase. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.22
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "14/05/2019-12:53:57",
+                    "content": "In Constantinople we initially had that EIP 210 was going to be a feature of this fork - but it was removed later. Is there any reason why it is not considered to be added to Istanbul? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "14/05/2019-14:09:45",
+                    "content": "Because no one has proposed it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "15/05/2019-08:43:29",
+                    "content": "    axic:  The testing implication is the problem, because a lot coordination is required to assign and sync these opcodes during the implementation and testing phase   One way to solve it is to parameterise opcode numbers in the tests, we will take it into account ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "15/05/2019-08:58:10",
+                    "content": "    AlexeyAkhunov:  One way to solve it is to parameterise opcode numbers in the tests, we will take it into account   The point is that you do need to agree on an opcode in order to genereate tests and run those tests on multiple clients. Otherwise one would need to require that:  the \u201ctest generation team\u201d generates multiple sets for different clients using different opcodes the client teams need to generate tests themselves (which might lead to inconsistencies in tests, defying the purpose of tests)  ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.9
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "15/05/2019-14:46:38",
+                    "content": "Sorry for my ignorance, but what is the protocol in place to propose an EIP for Istanbul? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "15/05/2019-15:23:17",
+                    "content": "Make an EIP that is at least draft status (is merged in, formatting correct) and then file a PR to add a link to the EIP in proposed section for 1679 which is the meta-EIP for Istanbul. No sorry required! This is an updated process just starting with Istanbul. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.020833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "15/05/2019-15:48:23",
+                    "content": "Yeah, I definitely agree with Alex here that for testing and implementation we\u2019d need to choose some opcode number, or else it won\u2019t work (it wouldn\u2019t even make sense). But I think the hardfork EIP should have final say on what the numbers should be since that coordinates what goes into production. It\u2019s fairly easy to change that number if required, I just would like to see this decision purposely documented and enforced by the hardfork meta EIP as a point of process to ensure it goes smoothest. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.722222222222221
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "17/05/2019-09:03:30",
+                    "content": "    jochem-brouwer:  Sorry for my ignorance, but what is the protocol in place to propose an EIP for Istanbul?   Do you know who is going to be working on that change? If there is no one who wants to do that, the change will definitely not happen, and in that case there is no point of putting the EIP in. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "18/05/2019-01:02:49",
+                    "content": "There is no one. A bit stupid of me to assume I could just propose an EIP when no one is available to work on it. As a sidenote - the EIP states that \u201ctoday\u201d (Friday 17 May) is the \u201chard deadline\u201d to propose EIPs for Istanbul. A timezone is not mentioned, so it is not clear when this hard deadline actually is. I think it should be more clear what the actual time is regarding timezones? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.911458333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "18/05/2019-02:10:43",
+                    "content": "We don\u2019t need to be that strict about it to specify time zones. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "17",
+                    "likes": "2",
+                    "time": "18/05/2019-10:44:48",
+                    "content": "    jochem-brouwer:  A bit stupid of me to assume I could just propose an EIP when no one is available to work on it.   No, it is not stupid at all. It has been the modus operandi before, but now I am trying to get the process participants accept the obvious (that if noone wants to do an EIP, it won\u2019t be done), and also to remove the bottleneck of relying on go-ethereum or parity or Aleth developers to implement EIPs, as described here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.2
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "18",
+                    "likes": "2",
+                    "time": "19/05/2019-09:20:55",
+                    "content": "I am in the processing of being hired for testing coordination and helping dimitry. Would be great to sync up on good ways to approach this so I can start opening lines of communitcations with everyone needed. At least we will have one person able to focus on this as 25 EIPs is a lot to sift through. Also, I imagine testing requirements will be a good sifting point. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 7.4
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "19",
+                    "likes": "2",
+                    "time": "19/05/2019-15:56:44",
+                    "content": "You should connect with the testing working group     Ethereum 1.x Testing Working Group Ethereum 1.x Ring       The Ethereum 1.x Testing Working Group is dedicated to setting the standards for testing Ethereum 1.x.  This working group is not unlike the testing working group in existence within the Enterprise Ethereum Alliance, where members are attempting to define standards and tests for various enterprise client implementations on the Ethereum network. Simiarly, discussions here will include but are not limited to pre/post fork testing, testnets, identifying key metrics within Ethereum 1.x, conformance \u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.059523809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "19/05/2019-21:38:00",
+                    "content": "Yeah I am talking with them. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "20/05/2019-15:44:52",
+                    "content": "EIP-1702 and EIP-1803 has no discussions-to ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "22/05/2019-00:16:14",
+                    "content": "Here\u2019s a spreadheet summarizing the scope of the proposed EIPs.  - https://docs.google.com/spreadsheets/d/1evVKtEwEQwy4Gr84RjOpuf4CnjoISuB3865mvrXl-oc/edit?usp=sharing ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "22/05/2019-00:25:30",
+                    "content": "Thanks, this look great! I think the proper list of pending proposals is the following though: https://github.com/ethereum/EIPs/pulls?q=is%3Apr+is%3Aopen+label%3Aistanbul Your spreadsheet seems to miss some of them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "22/05/2019-10:19:57",
+                    "content": "I went through both and made a Readiness Checklist.   docs.google.com    EIP Readiness Checklist Sheet1  =importxml(CONCATENATE(\"https://eips.ethereum.org/EIPS/eip-\",A4),\"(//table/tr/td)[3]\") 35,35,PR,Formated,Reviewed,Merged,Draft Spec,Solid Spec,Reference 1,Reference 2,Test Cases,Ready for Testnet,Deployed on...      Steps for Checkpoint 1  Submit PR Formatted Correctly Received Review Merged as Draft   Chart Link I will go through and update more. Would love feedback on milestones to add to the checklist? ",
+                    "links": [
+                        "https://docs.google.com/spreadsheets/d/1Mgo7mJ6b6wimUwafsMo1l-b44uec28E_Hq8EQ7YdeEM/edit#gid=0",
+                        "https://docs.google.com/spreadsheets/d/1Mgo7mJ6b6wimUwafsMo1l-b44uec28E_Hq8EQ7YdeEM/edit#gid=0",
+                        "https://docs.google.com/spreadsheets/d/1Mgo7mJ6b6wimUwafsMo1l-b44uec28E_Hq8EQ7YdeEM/edit#gid=287248385"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "22/05/2019-10:25:01",
+                    "content": "    MadeofTin:  Formatted   What does this stage means? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "22/05/2019-10:28:55",
+                    "content": "Basically means it builds and passes the formatting checks the bots do. Also, resolved any formatting requests on the PR. After I go through and update the rest of the EIPs I think it will tease this out a little more. I know you have been putting a ton of work into this @axic  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.78125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "22/05/2019-12:58:01",
+                    "content": "I managed to pull the mergeable_status from the GitHub API Directly.  image.png987\u00d7248 23.3 KB  So at least checking if it builds and is mergable can be automated ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "22/05/2019-15:29:40",
+                    "content": "This is fantastic James! Nice work! I\u2019ve added this link to the wiki page https://en.ethereum.wiki/roadmap/istanbul Re: milestones \u2013 I think if we can use this as the progress tracker that would be interesting. Less about the EIP spec and more about \u201cimplemented in\u201d and then links to PRs / issues / commits in the clients. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.083333333333332
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "23/05/2019-02:57:59",
+                    "content": "Since the \u201chard deadline\u201d for proposals came and went, what\u2019s next for us champions? How do we know what is required of us moving forwards? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "30",
+                    "likes": "1",
+                    "time": "23/05/2019-03:19:00",
+                    "content": "The short version: code reference implementations and schedule yourself into an ACD to get to Accepted. Tests would be nice. I think that\u2019s about it? I mean, the other part I can think of is connecting with client teams on if they want to code their own implementation or if they want you to submit a PR. What am I missing? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.46875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "23/05/2019-03:54:19",
+                    "content": "Perhaps there is a special case for mine, since 1344 and 1965 might conflict. More than willing to work on implementations in geth and parity for it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party offering to collaborate on proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.845238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "32",
+                    "likes": "1",
+                    "time": "23/05/2019-04:12:36",
+                    "content": "For me the biggest indicator that an EIP should be accepted would be for someone to \u201cChampion\u201d it on this weeks or the next, 7 Jun, AllCoreDevs call.  There are so many EIPs (especially EIPs submitted at the buzzer) that if a champion doesn\u2019t step up on the call and gets immediate consensus I think the EIP should be bumped to \u201cAsiago.\u201d ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "33",
+                    "likes": "1",
+                    "time": "23/05/2019-04:18:15",
+                    "content": "If that is the expectation we need to reach out and contact all the champions. I\u2019ve sort of been thinking about this and @tvanepps helped put names to a number of them on the wiki. Those that are officially under a working group should ideally be grouped and labelled as well. Let\u2019s use @MadeofTin\u2019s spreadsheet to add some extra data like this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "23/05/2019-04:57:34",
+                    "content": "Well, I have already attended a Core Dev call and publicly advocated being a Champion for my EIP. From my perspective, I have no idea what else I should do. I understand that helping to implement my EIP is helpful, but unsure if this is strictly required ahead of the next milestone (client implementations complete). Anything else that is required of me hasn\u2019t really been well communicated, if there is anything. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "23/05/2019-09:59:37",
+                    "content": "It would be a little easier if we had a list of champions somewhere. Perhaps a list that doesn\u2019t require the author\u2019s permission to edit. (i.e. not a new field in the submitted EIP) I could then pull that list into the spreadsheet as well. A meta EIP like 1679, but for tracking Champions/Shepards. I could also look at pulling information from the wiki into the spreadsheet. It feels a bit like a meta-EIP may be better than the wiki, but I would want to think about it more. What are your thoughts here @boris ? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.930397727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "23/05/2019-10:16:58",
+                    "content": "    MadeofTin:  It would be a little easier if we had a list of champions somewhere.   I\u2019m confused. The list of champions is the authors of the EIPs. If none of them actually champion it, then there\u2019s no point having it listed. I don\u2019t see how can a champion be separate from an author, because championing it through the process likely requires a lot of updates (clarifications) made to the EIP draft. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.265625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "23/05/2019-11:25:45",
+                    "content": "    axic:  If none of them actually champion it, then there\u2019s no point having it listed.   Yes, I am thinking of this case.  You can\u2019t be a champion without being an Author But, You can have an EIP with Authors but no active champion  If the only list is in the EIP itself, then only the authors can update this information. Which if it is inactive, then the authors aren\u2019t even there to update it. That is a catch-22. Having a separate list somewhere of who is the current champion means other editors are able to update this information. If it is updated in error it will be pretty simple to bump someone to be the active champion again which is also a good signal of the EIPs real activity. Perhaps there is a better way of handling this, but leaving it up to the authors to self-report inactivity seems a bit fruitless. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.753205128205128
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "23/05/2019-11:30:35",
+                    "content": "    MadeofTin:  If the only list is in the EIP itself, then only the authors can update this information. Which if it is inactive, then the authors aren\u2019t even there to update it.   That is actually not true, the EIP Editors can extend that (at least it happened in the past), especially for those EIPs which have an open source license (all of them do, with the exception of this list).     MadeofTin:  Having a separate list somewhere of who is the current champion means other editors are able to update this information.   The \u201cchampion\u201d needs to submit a PR adding themselves to the draft and editors can merge that. My solution to the problem where someone doesn\u2019t want to step up as an author, but merely editing the EIP for stylistic changes is this: https://github.com/ethereum/EIPs/issues/797 However I would argue even such changes give you authorship, perhaps not a technical contribution, but authorship nonetheless. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/issues/797"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.673076923076923
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "39",
+                    "likes": "1",
+                    "time": "23/05/2019-11:40:58",
+                    "content": "    fubuloubu:  EIP-1702 and EIP-1803 has no discussions-to   EIP-1702 seems to have one (https://github.com/sorpaas/EIPs/issues/2) EIP-1803 doesn\u2019t have any, but the discussions-to field is still marked as optional in EIP-1. Should I add one for 1803? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "40",
+                    "likes": "1",
+                    "time": "23/05/2019-12:17:33",
+                    "content": "    axic:  That is actually not true, the EIP Editors can extend that (at least it happened in the past), especially for those EIPs which have an open source license (all of them do, with the exception of this list).   There would still need to be added an \u201cactive champion\u201d field somewhere on the EIP for editors to update this information.  Currently, looking at an EIP I have no way of knowing  If there is an active author (Is the EIP active?)  Who is the active author (Who is the Current Champion?)   For some background. I am running into these problems since I signed up to help Dimitry with testing coordination. I made the spreadsheet so I can track the progress of testing among EIPs and I am also compiling a list of Point of Contacts (Active-Champion) so I can update the progress of testing. It didn\u2019t make sense to keep this information to myself as I am already going to need to maintain it and would rather share it. Also, I don\u2019t want to be an EIP editor, so some way to maintain and share the lists without becoming an EIP-Editor would be preferable.     axic:  My solution to the problem where someone doesn\u2019t want to step up as an author, but merely editing the EIP for stylistic changes is this: https://github.com/ethereum/EIPs/issues/797   I would love to see this go through. I have 20 hours a week I can spend and I want those to be where they are most helpful. I would appreciate some guidance as it is really difficult to get a sense what helps verses what adds work for others in a permissionless leaderless group. So instead I have been bumbling around trying my best to do what I see. Maybe it would be good to have a call @axic? ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/issues/797"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.301470588235294
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "41",
+                    "likes": "1",
+                    "time": "23/05/2019-13:24:00",
+                    "content": "Uh. Or just add a column to the spreadsheet with a name  For the fee change EIP, Vitalik was the original author, Eric helped out, now Rick is the working group lead. So, champion / point of contact is Rick. A working group column would be good too. Also, code centric dudes, the point of contact doesn\u2019t need to be an engineer \u2014 just someone who is helping with coordination and project management. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.791666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "23/05/2019-13:40:30",
+                    "content": "    boris:  Uh. Or just add a column to the spreadsheet with a name    That is fine too  It solves the problem for me     MadeofTin:  Currently, looking at an EIP I have no way of knowing  If there is an active author (Is the EIP active?)  Who is the active author (Who is the Current Champion?)     But not sure it solves ^ I am confident I am not the only person who runs into this issue.     boris:  A working group column would be good too.   Also      boris:  Also, code centric dudes, the point of contact doesn\u2019t need to be an engineer \u2014 just someone who is helping with coordination and project management.   Yes ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4393939393939394
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "23/05/2019-13:56:56",
+                    "content": "    boris:  Also, code centric dudes, the point of contact doesn\u2019t need to be an engineer \u2014 just someone who is helping with coordination and project management.   Can you please explain why should it be possible that there\u2019s no technical person as a point of contact for a protocol changing Core EIP? I can understand that could be the case for ERCs or non-Core EIPs. Core EIPs should be serious specifications and there should be an obvious way to reach someone capable of answering specific technical questions about a specification. If there are multiple hops someone has to go through to reach a technical person, then I do not think such a Core EIPs should have a chance to be accepted. If there is no technical person willing to champion it, that signals to me there is no technical need for it. At the specification stage (e.g. Draft mode) there must be a technical champion. When the specification is clear and coordination focuses around implementing the change in second and subsequent clients, there I could see non-technical coordinators to play a big role. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.057017543859649
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "44",
+                    "likes": "1",
+                    "time": "23/05/2019-14:12:22",
+                    "content": "Yes technical people need to be involved. To pick on @MadeofTin, he\u2019s not going to be able to defend a Blake2b precompile. But he could coordinate whatever is happening in the GitHub / Gitcoin thread. EIPs with multiple authors needs to have one POC, a team (eg Parity or a Working Group) having a single point of contact for multiple EIPs, etc This is all theoretical so let\u2019s just do the work of filling out the spreadsheet. I\u2019d like to capture the name not just GitHub handle. @MadeofTin there are lots of things we can\u2019t see by looking at an EIP, which is why we\u2019re going to need to track things outside of a Markdown file  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.306122448979592
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MadeofTin",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "23/05/2019-17:11:14",
+                    "content": "    axic:  If there are multiple hops someone has to go through to reach a technical person, then I do not think such a Core EIPs should have a chance to be accepted. If there is no technical person willing to champion it, that signals to me there is no technical need for it. At the specification stage (e.g. Draft mode) there must be a technical champion.   Accepted as a Draft? Maybe the EIP-1 requirements need to be updated because that wasn\u2019t on the list when I submitted blake2b nor 2025.  Your role as the champion is to write the EIP using the style and format described below, shepherd the discussions in the appropriate forums, and build community consensus around the idea.  As far as I can tell, that is exactly what I am doing. Of course, anything beyond being accepted as a Draft I understand. Why \u201caccepted as draft\u201d is the gatekeeper for this I don\u2019t understand. I will respect it, I just don\u2019t understand it. What is the issue in labeling an EIP as Draft? Being draft doesn\u2019t mean you are going to be accepted. Being draft doesn\u2019t mean the core-devs need to bring it up on calls. After it is accepted by an editor it could never be brought up again. It is the first stage in the rest of the process. My previous understanding was that the requirements to be made a draft is that it was correctly formatted.     Draft \u2013 If agreeable, EIP editor will assign the EIP a number (generally the issue or PR number related to the EIP) and merge your pull request. The EIP editor will not unreasonably deny an EIP.   Draft \u2013 Reasons for denying draft status include being too unfocused, too broad, duplication of effort, being technically unsound, not providing proper motivation or addressing backward compatibility, or not in keeping with the Ethereum philosophy.  Draft  \u2013 Once the first draft has been merged, you may submit follow-up pull requests with further changes to your draft until such point as you believe the EIP to be mature and ready to proceed to the next status. An EIP in draft status must be implemented to be considered for promotion to the next status (ignore this requirement for core EIPs).  What is the resistance to marking things as Draft? I am not upset, I just want to understand where I am wrong on this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.057291666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "46",
+                    "likes": "4",
+                    "time": "23/05/2019-18:36:42",
+                    "content": "This is our first time through the EIP driven network upgrade process, so I don\u2019t think any of these rules are hard and fast but are taken more of a measure of what EIPs are viable for this specific network upgrade.  The fact there is a document that can be pointed to and a person willing to attend calls and advocate on FEM I think are the two strongest indicators, aside from the next checkpoint which is actual implementation in clients. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.567708333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "24/05/2019-10:34:43",
+                    "content": "I know the deadline have passed but I would like to add a last minute proposal (EIP-2075) since it relates to 2 proposals already part of 1679 (EIP-1706 and EIP-1930). See PR for hardfork : https://github.com/ethereum/EIPs/pull/2077 Hope that is fine, thanks. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-1706",
+                        "https://eips.ethereum.org/EIPS/eip-1930",
+                        "https://github.com/ethereum/EIPs/pull/2077"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.027777777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "48",
+                    "likes": "3",
+                    "time": "24/05/2019-11:20:23",
+                    "content": "EIP-1 currently requires a \u201ctechnically sound\u201d specification.     MadeofTin:   Draft \u2013 Reasons for denying draft status include being too unfocused, too broad, duplication of effort, being technically unsound, not providing proper motivation or addressing backward compatibility, or not in keeping with the Ethereum philosophy.   Also from EIP-1:   Specification - The technical specification should describe the syntax and semantics of any new feature. The specification should be detailed enough to allow competing, interoperable implementations for any of the current Ethereum platforms (cpp-ethereum, go-ethereum, parity, ethereumJ, ethereumjs-lib, and others.   The main point of being Draft and having a somewhat comprehensible Specification is to allow actually useful discussions to happen around it. If a Draft doesn\u2019t have any specification, then how will it be discussed? I actually like @timbeiko\u2019s proposal clarifying the EIP-1 text:   It will be your role as the champion to socialize your EIP and build community consensus around it. Before you begin writing a formal EIP, you should vet your idea. Ask the Ethereum community first if an idea is original to avoid wasting time on something that will be be rejected based on prior research.   My understanding based on this is that EIPs without specification should not be drafts, but rather discussions in appropriate forums, such as FEM. ",
+                    "links": [
+                        "https://github.com/ethereum/wiki/wiki/Clients",
+                        "https://github.com/ethereum/EIPs/pull/1991/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.576455342902711
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "26/07/2019-17:17:11",
+                    "content": "Updated http://eips.ethereum.org/EIPS/eip-1679 to reflect the current status as per today\u2019s ACD call. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "15/08/2019-20:24:42",
+                    "content": "It was updated again by @timbeiko to reflect ACD#67. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "19/08/2019-15:17:20",
+                    "content": "As discussed on ACD#68, \u201cIstanbul part 2\u201d is named: Hardfork Meta EIP-2070: Berlin discussion ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/hardfork-meta-eip-2070-berlin-discussion/3561"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ilanDoron",
+                    "index": "53",
+                    "likes": "0",
+                    "time": "27/08/2019-11:43:31",
+                    "content": "S Ilan from Kyber we would like to test and prepare our code for Istanbul fork. anyone can share a working ganache version. Or any other working client? Thanks Ilan Doron Solidity developer Kyber Network ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.1875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "54",
+                    "likes": "0",
+                    "time": "29/08/2019-20:21:32",
+                    "content": "Pantheon 1.2.2 release has a full implementation - https://pegasys.tech/solutions/pantheon/#installation-links Geth\u2019s git head also has a full implementation, and is fairly straightforward to build - https://github.com/ethereum/go-ethereum ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving information about implementation"
+                    ],
+                    "Sentiment": 6.791666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fulldecent",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "03/12/2019-00:29:36",
+                    "content": "I have reviewed this EIP and all its dependencies. My complete list of outstanding review comments follows:  https://github.com/ethereum/EIPs/issues/152#issuecomment-560926710 Opcode repricing EIP-2028: Transaction data gas cost reduction https://github.com/sorpaas/EIPs/issues/1#issuecomment-560941990  ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/opcode-repricing/3024/67",
+                        "https://ethereum-magicians.org/t/eip-2028-transaction-data-gas-cost-reduction/3280/34",
+                        "https://github.com/sorpaas/EIPs/issues/1#issuecomment-560941990"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.5
+                }
+            ]
+        }
+    ],
+    "group_index": "816"
+}

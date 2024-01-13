@@ -1,0 +1,306 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/makerdao-accounting-and-implications/5346",
+            "title": "MakerDAO accounting and implications ",
+            "index": 5346,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "accounting"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#1",
+                    "likes": "11",
+                    "time": "25/11/2020-23:15:31",
+                    "content": "I recently solved one issue I had with the accounting for MakerDAO. I will try to discuss that in this post. This might have a lot of important implications (in my view):  Unify crypto vaults and RWA vaults Unify demand driven investments (people creating vaults) and direct investments (Maker making the investment, for instance using Strategic Reserves) Unify Maker with a real world bank  I\u2019m not 100% sure it\u2019s fully correct, but I hope it does make sense. What is a balance sheet I will use a balance sheet representation a lot in this post so let\u2019s discuss that a bit. In accounting, a balance sheet represents what assets you own (the assets side on the left) and how you finance them (the liability side on the right). You can finance an asset using a loan for instance. Whatever is left is your equity. Equity is your net worth. There is one rule, at all time, sum(assets) = sum(liabilities). Below, you will find how we can describe a wallet containing 10 ETH (the ETH Bull Wallet). Let\u2019s assume that a wallet can\u2019t make a loan. So if I have 10 ETH and 1 ETH = $600, the equity of the wallet is $6,000.  Adding a vault ETH Bull is bullish on ETH so he will leverage his position with Maker. In this representation, I assume a vault is a separated entity (you can transfer the vault ownership so it make sense to present that as a separated entity). Therefore, ETH Bull create vault #1 and transfert the 10 ETH in this vault. Those 10 ETH are no longer in the wallet but in the vault. Nevertheless, the wallet has ownership of the vault. The equity value of the vault is 10 ETH so almost nothing has changed. ETH Bull still has 10 ETH but through the vault (there is one indirection).  Taking a loan Thanks to the loan smart contract, it is possible for ETH Bull to take a loan from Maker for Vault #1. ETH Bull get some DAI but the equity value of the vault is now decreased by the loan amount. Therefore, the net worth (equity) of the ETH Bull Wallet remains constant as it should be. On the MakerDAO side (or more precisely, the DAI Credit System), we can see that the balance sheet was expanded by two items. On the asset side, we now have a loan from vault #1. It\u2019s a promise to repay DAI at some point in the future with some stability fees. On the liability side, we have issued some DAI which are quite similar to a bank note. All DAI are fungible bearer assets and are a promise to repay a value of $1 at emergency shutdown. image812\u00d7210 5.97 KB Here is something interesting. It is not Maker that created a loan on the Vault #1. It was ETH Bull decision. Maker bought the loan (or lent the money, which is the same). How did Maker buy the loan? By minting DAI. If we zoom on the process, we start with 1. no asset and no liabilities on Maker balance sheet. Then in 2. we mint some DAI (creating the liability and having the same on the asset side). Finally, in 3., we use the DAI asset to buy the loan issued by Vault #1. image843\u00d7155 4.79 KB What we have done is what is called issuing unbacked DAI in many forum posts (but it is never unbacked as it\u2019s not possible in accounting). This is called expanding the balance sheet of the bank in the real world. PS: By definition it doesn\u2019t make much sense to have DAI on both side of the balance sheet. Only Maker can have DAI on it\u2019s liability side, and the net position will always be a liability for Maker. But let\u2019s go back to our story of the ETH Bull wallet. Leveraging the position So far, ETH Bull hasn\u2019t achieved much. If we merge the vault and the wallet (as the vault is owned by the wallet), we can see that its balance sheet is bigger but the the DAI asset is fully equal to the DAI/ETH loan (except the loan will accrue interest). None are exposed to ETH variation. The exposure to the ETH price is still 100% of its net worth, there is no leverage.  We will need to introduce a new player in our little world: ETH Short Wallet. ETH Short has some ETH but think the price will fall and want to sell them for a stablecoin. Maybe he can make a deal with ETH Bull. They can swap DAI and ETH to end up in the following situation: image1079\u00d7228 7.84 KB The transaction hasn\u2019t changed the balance sheet of both Maker and the Vault. What happen if ETH price increase? If ETH increase its value by 50%, all ETH rectangles see their height increased by 50%. Using the rule of sum(assets) = sum(liabilities) and the fact that equity is what remains, we can see that the value of the Vault #1 increases by 100% (Vault #1 equity was 50% of ETH Bull net worth therefore a +50% increase on ETH Bull net worth). ETH Bull wallet has also 50% of ETH that has increased by 50% (meaning a 25% increase of ETH Bull net worth). ETH Bull Wallet net worth is now increased by +75% (1.5x leverage). The DAI/ETH loan hasn\u2019t changed as we assume no time has passed. ETH Bull is happy. image1061\u00d7308 8.57 KB What happens after 1 year if ETH is stable? Let\u2019s see the impact of stability fees. They are increasing the DAI/ETH Loan value. Again with the same basics rules, the equity portion of Vault #1 decreases, impacting ETH Bull Wallet equity. On the Maker side, the loan is on the assets. That increases the equity. This is currently our surplus buffer. It represents the accounting value of the MKR tokens. image1098\u00d7246 9.3 KB Why does it matter? The Surplus Buffer != DAI As you can see the Surplus Buffer is collateralized by a loan (if someone repays a loan it decreases the DAI liabilities we have). A loan is a promise to pay DAI. It\u2019s not DAI. They may pay \u2026 or not. That\u2019s why @primoz want to increase the Surplus Buffer when we have higher risk of bad debt (USDC-A). Using DAI to buyback and burn MKR is only a financial strategy. Crypto Vault and RWA SPV are the same For RWA we use Special Purpose Vehicles (SPV). The only difference is that the RWA \u201cSPV/Vault\u201d contains many assets that are expected to be uncorrelated but are also less liquid than crypto assets. There is almost no differences from an accounting perspective between the crypto world and the real world.  Buying any asset would work Nothing prevents us to increase our balance sheet and buy something with DAI because we are doing it every time a vault issue a loan. Let\u2019s say the Yield Protocol issue a DAI bond of 1 year maturity and there is demand (I took the Yield Protocol because it\u2019s based on DAI and after maturity it become a ETH-A vault). Isn\u2019t it better for us to invest in a 5% yielding bond than a ETH-A vault yielding 2% (assuming risk is similar)? Especially if there is a lot of DAI demand but not much ETH-A loan supply? If the price is above $1, we have to expand our DAI supply. We can sell the loans On the other side, if the price of DAI is too low, we can sell the loans (that would mean changing a lot of stuff on the Smart Contract side I guess, I\u2019m not saying we should work on that). That would reduce the DAI supply and most likely some people will want to buy that (the yield will be better than in Compound/Aave as there is no spread between the lending rate and the borrow rate). It will be at a discount if DAI is below $1. This can also be a risk management. If there is a lot of demand for YFI vault, we can sell some DAI/YFI loans to reduce the risk (but probably take an origination fee). Optimizing the equity section As said, the amount of equity we want to have is a financial decision. Currently, we are limiting ourselves by the amount of loan people want to take from us. And we have only limited diversification benefit. But there is more and more opportunity to invest in DeFi. Would you agree to increase the Surplus Buffer to 10M if that would mean having twice the revenues (meaning burning twice the MKR amount after the first 6M used for increasing the Surplus Buffer) and the same risk? Conclusion This might be a lot to digest, especially if you don\u2019t live in the accounting world. I think it offers a new perspective on what Maker is. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/discussion-investing-the-surplus-buffer/5945/9",
+                        "https://forum.makerdao.com/t/mip41c4-sp1-facilitator-onboarding-real-world-finance/6226",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-jan-27-feb-3-2022/13019",
+                        "https://forum.makerdao.com/t/relay-semanal-25-al-31-de-enero-de-2022/13007",
+                        "https://forum.makerdao.com/t/weekly-relay-january-25-31-2022/12953",
+                        "https://forum.makerdao.com/t/mip39c2-sp27-adding-financial-strategy-core-unit/11938/8",
+                        "https://forum.makerdao.com/t/rwf-ask-me-anything-september-2021/10234",
+                        "https://forum.makerdao.com/t/rwf-ask-me-anything-september-2021/10234/5",
+                        "https://forum.makerdao.com/t/informal-poll-increasing-the-surplus-buffer/9734/17",
+                        "https://forum.makerdao.com/t/maker-trilemma-peg-decentralization-dai-1-1-collateral-backing-usdc-discussion/9064/13",
+                        "https://forum.makerdao.com/t/discussion-maker-is-not-a-lender-does-not-take-deposits/8520/4",
+                        "https://forum.makerdao.com/t/could-dai-be-short-squeezed-like-gamestop/6746/11",
+                        "https://forum.makerdao.com/t/pre-mip-discussion-psm-flapper/6378",
+                        "https://forum.makerdao.com/t/mip35-peg-stability-module-compound-mixed-exposure-with-farming/6024/13",
+                        "https://forum.makerdao.com/t/mip43-term-lending-module-tlm/6153",
+                        "https://forum.makerdao.com/t/signal-request-adjust-the-surplus-buffer/5767/56",
+                        "https://forum.makerdao.com/t/team-funding-experiment-rwa-objectives-and-cost-structure/5954",
+                        "https://forum.makerdao.com/t/signal-request-adjust-the-surplus-buffer/5767/46",
+                        "https://forum.makerdao.com/t/balance-sheet-manipulation-how-to-yield-farm-safely-on-uniswap/5722",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-120-thursday-december-3-16-00-utc/5357/4",
+                        "https://forum.makerdao.com/t/mip7c3-sp5-domain-team-onboarding-risk-domain-team/5476",
+                        "https://forum.makerdao.com/t/informal-discussion-automatic-surplus-buffer-increase-cadence/5431/8",
+                        "https://forum.makerdao.com/t/contabilidad-e-implicaciones-de-makerdao/5386",
+                        "https://forum.makerdao.com/t/would-rwa-have-helped-dai-avoid-going-to-1-25-1-30-versus-usdc/5351/3"
+                    ],
+                    "GPT-summary": "The author of the post explains how accounting works for MakerDAO and how it can be used to unify crypto and real-world assets. They also discuss the implications of expanding the balance sheet and investing in DeFi. The post provides a new perspective on what Maker is and how it operates. A 3rd party could provide constructive criticism or audit the proposal.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.560050230566534
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "26/11/2020-00:16:27",
+                    "content": "Interesting post @SebVentures, nicely shows asset/liability relationship between Maker and vault users.     SebVentures:  On the other side, if the price of DAI is too low, we can sell the loans (that would mean changing a lot of stuff on the Smart Contract side I guess, I\u2019m not saying we should work on that). That would reduce the DAI supply and most likely some people will want to buy that (the yield will be better than in Compound/Aave as there is no spread between the lending rate and the borrow rate). It will be at a discount if DAI is below $1.   This would have been a nice feature to have, but I think it isn\u2019t doable since vault owners specifically borrowed from Maker protocol, which includes liquidation process, custody of collateral etc. If Maker would have sold such loans, counterparty for claiming remaining collateral would have been another entity which vault users may not prefer or in their mind haven\u2019t signed for.     SebVentures:  Would you agree to increase the Surplus Buffer to 10M if that would mean having twice the revenues (meaning burning twice the MKR amount after the first 6M used for increasing the Surplus Buffer) and the same risk?   So if I understand you correctly, you are questioning yourself if it wouldn\u2019t make more sense to increase surplus buffer because Maker could enhance investors returns in the long run? If we are talking about extra surplus above minimum needed for loss coverage, I think the answer really lies in MKR holders preferences towards keeping capital accrue in Maker, where Maker makes yielding investments versus claiming it indirectly through buy and burn and invest it on its own. For instance, if I am a MKR holder and I know that Maker is investing extra surplus into cUSDC yield farming, it would be the same as if I sell part of my MKR exposure during Flap auctions and invest in cUSDC farming on my own. Yield would be the same, but I get more flexibility although being time consuming. So when investors decide whether to keep money in the company the main question becomes: \u201cis company able to make more yielding return on this money than me for the risk I am willing to bear?\u201d. Therefore Maker would need to convince MKR holders that Maker can make more yielding investments than MKR investor alone, either directly through special investing strategies or indirectly by enhancing core business that brings more yield in the future. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.123249299719888
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mario",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "26/11/2020-00:48:14",
+                    "content": "Nice presentation, I will pass by the prior examples & just focus on the maker side, just a couple of comments   MKR equity is not precisely the surplus buffer rather the gap between the interest rate we are charging & the rate determined by risk. Risk related fees should be accrued and do not constitute in themselves an income, another way to see it is to book the profits and accrue the contingent liabilites related to another potential black friday. That does not imply that if sufficient time passes and there is turnover of the vaults that fee that was related to \u201crisk\u201d could eventually constitute an income. Also, of course the idle money that is deposited could be used to invest and that in itself would constitute a non operational income that could, for example fund domain teams & other expenses.   Ref Buying any asset, basically under the assumption that it is the vault owner who executes the loan we could basically print dai, buy an asset and keep the yield, that would in itself not constitute unbacked dai, did I understand that correctly? Basically operating like a sort of FED, not that I disagree but at the end it\u00b4s a matter of trust, could see potential issues there   Ref optimizing equity, kind of lost you with the relation between having twice the SB and doubling revenues. If we increase the SB basically we have higher reserves that could be used to invest, but from there to doubling our revenue I kind of lost track   In summary most of the real income from maker will come from the self generated good will which will be mainly boosted through mkr buy backs. Not that maker can book it (because it can\u2019t) but it will be reflected in the books of token holders   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.840277777777779
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "26/11/2020-10:09:44",
+                    "content": "On selling the loans Selling the loans would not change anything for the borrower. It\u2019s still Maker technology, Maker stability fee and Maker Keepers. Just like when New Silver sell a fix&flip loan from their balance sheet to the Centrifuge SPV, the borrower doesn\u2019t see much difference. The contract (the vault in our case) stays the same. The key realization I had is that Maker Vaults have nothing to do with MakerDAO balance sheet. On using our balance sheet for investment     Primoz:  if I am a MKR holder and I know that Maker is investing extra surplus into cUSDC yield farming, it would be the same as if I sell part of my MKR exposure during Flap auctions and invest in cUSDC farming on my own. Yield would be the same, but I get more flexibility although being time consuming.   That\u2019s correct if you finance the cUSDC investment with equity. By separating the assets and liabilities, it opens new possibilities. Maker can issue DAI liabilities, you can\u2019t. And it\u2019s not doing something new conceptually, we are doing it every days already.     mario:  optimizing equity, kind of lost you with the relation between having twice the SB and doubling revenues.   Let\u2019s assume demand for DAI is infinite (but the peg stays at $1). There is only ETH-A with $400M DC that generates 8M DAI a year. We want a probability to lose our equity buffer of 10% per year (meaning a black thursday/issuing MKR once every decade) and the model (which we don\u2019t have) says that we need a 5M DAI surplus buffer to have that (a 1M DAI surplus buffer might lead to a MKR issuance every year and a 10M surplus buffer lead to a MKR issuance every 20 years). Using the same risk appetite (a MKR dilution every decade), we can have either:  ETH-A DC at 400M, a 5M surplus buffer => 8M income per year ETH-A DC at 800M, a 10M surplus buffer => 16M income per year  I want the second version. Something that yield 16M of income per year is more valuable that something that yield only 8M (the number of MKR tokens is the same, but the value should double). I don\u2019t really care if we spend 7 months building the increased surplus buffer. There is also diversification benefits. If we assume cDAI is yielding 2% (as ETH-A and same risk as ETH-A) but having a diversification benefit, we might have the following results (again for the same risk appetite):  ETH-A DC at 400M, investing 400M in cDAI, a 8M surplus buffer => 16M income per year ETH-A DC at 400M, investing 600M in cDAI, a 10M surplus buffer => 20M income per year  Therefore, for the same 10M surplus buffer and same risk appetite, we can generate 4M DAI more per year. Quite an improvement. Currently, we expect that each vault is really low risk and we don\u2019t really monitor risk at the MakerDAO level. ETH-B is a first step to say \u201clet\u2019s take a bigger risk to have more reward\u201d.     mario:  MKR equity is not precisely the surplus buffer rather the gap between the interest rate we are charging & the rate determined by risk.   I\u2019m not sure about that. We can make a provision if we have a non performing loan (for instance if the equity of a vault is negative like it will be for USDC-A vaults soon). but unsure we can make a provision because we expect ETH to drop sharply in the future, at some point \u2026 or maybe not. It\u2019s an accounting convention (you can read more with IAS37). We can decide otherwise, but I would argue it\u2019s better to use the same convention as everyone else.     mario:  Buying any asset, basically under the assumption that it is the vault owner who executes the loan we could basically print dai, buy an asset and keep the yield, that would in itself not constitute unbacked dai, did I understand that correctly?   Yes. We currently only buy vaults loans, but there is no reason for that. Obviously, I\u2019m not saying we should buy YFI tokens. The bread and butter of Maker should be sound loans. I\u2019m also not saying that currently there is a lot of stuff to buy beside Maker Vaults loans (aDAI and cDAI? maybe the USDC versions as well). But that will change soon.     mario:  Basically operating like a sort of FED, not that I disagree but at the end it\u00b4s a matter of trust, could see potential issues there   We are a bank. It\u2019s a mix between a Free Bank and a Central Bank. ",
+                    "links": [
+                        "https://en.wikipedia.org/wiki/Free_banking",
+                        "https://forum.makerdao.com/t/team-funding-experiment-rwa-objectives-and-cost-structure/5954",
+                        "https://forum.makerdao.com/t/informal-discussion-automatic-surplus-buffer-increase-cadence/5431/3"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.543481691919192
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mario",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "26/11/2020-20:09:56",
+                    "content": "Thanks for the reply! Ref IAS37 there is a difference, in our case we are estimating the probability of default based on statistical data and also we have a prior event that did happen and insumed aprox 20k MKR, that\u00b4s why imo risk related fee should also be booked as an accrual, even though it is contigent it\u00b4s not generic. It\u00b4s a very thin line but if we are charging in base of risk of default/liquidation inefficiencies we are presuming the risk is already there in the portfolio, it does not constitute a net income since we should factor in the future cost of the current collateral liquidation. I understand my interpretation is perhaps the more extreme one, and I also understand it could have different very valid interpretations but the fact that we already had to issue 20k MKR makes me use strict caution when considering current income revenue. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.823214285714286
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "27/11/2020-22:27:30",
+                    "content": "@mario I agree with you but you can\u2019t book future loss due to a model. You can have a model to estimate loss that are already here (a lawsuit, doubtful loans) but for a crypto loan \u2026 Again, we can decide to recreate accounting standard but I don\u2019t think it\u2019s a good idea to recreate the wheel that is worked for 6 centuries. Taken from Stigum\u2019 Money Market, the citation below describes well what is our job: image904\u00d7181 32.8 KB ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.7749999999999995
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mario",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "27/11/2020-22:58:03",
+                    "content": "    SebVentures:  You can have a model to estimate loss that are already here (a lawsuit, doubtful loans) but for a crypto loan \u2026   Exactly, you already have empirical data to back it up. Anyway I get your point, we can agree to disagree. IMO if you have empirical data, you make a risk assessment in order to cover yourself from that and you do not accrue the cost rather only book the income it\u2019s a misleading representation of the reality (to my view) of the company, but it\u2019s a dao and all this must be fine tuned and of course I could definitely be wrong, perhaps I could check out how do banks accrue bad debt to take as a benchmark but liquidation risks are inherent to crypto although we could assimilate it somehow. Appreciate your responses and will look in the weekend your presentation! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.273148148148148
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mario",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "27/11/2020-23:20:11",
+                    "content": "Well, I stand corrected, went through some insurance companies financial statements and later here:   III \u2013 12 Jan 14    Background on: Insurance Accounting Overview Accounting is a system of recording, analyzing and reporting an organization\u2019s financial status. In the United States, all corporate accounting and reporting is governed by a common set of standards, known as generally accepted accounting...      Basically the criteria would be to accrue unresolved claims, however with sufficient track record that\u2019s all right since there always are claims in every period and you can have a relatively accurate estimation. What made noice to me was to just have the SB but since those unresolved claims won\u2019t be in our case and the loss will be deducted from the SB it\u2019s basically the same thing. The only issue not included would be the maker minting that exceded the determined SB if there were any ",
+                    "links": [
+                        "https://www.iii.org/publications/insurance-handbook/regulatory-and-financial-environment/background-on-insurance-accounting"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.217857142857143
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mario",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "27/11/2020-23:31:20",
+                    "content": "The additional issue I see (and this is were management accounting comes in and not statutory) is that you don\u2019t get to have a \u201csmooth\u201d monthly P&L, you may have a 30% ROE one month and -50% the next if there is a major event since for the time being basically the risks are shared among collateralized assets. Anyhow we will get there eventually through a diverse set of collaterals. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.15625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#10",
+                    "likes": "5",
+                    "time": "28/11/2020-07:56:14",
+                    "content": "Here is how I see it. The risk premium per vault is expected loss per vaults, which of course is realized only on average and in long term. It is very hard to estimate it. If risk premium for ETH-A is 2% we should expect 8m loss on average per year. This is something that ideally should be included in the surplus buffer. Every cashflow above that is considered net interest margin and creates yield for MKR holders, again in the long run and on average. On the other hand you could also measure 99% VaR loss for ETH-A which might be 30m for instance. Here MKR holders need to decide whether this should be part of Surplus Buffer or not. If they are extra conservative, they will choose 30m to be part of surplus buffer and will know that they are protected against 99% tail events. This means MKR holders would want to accrue more than 8m to he surplus that risk premium predicts as expected yearly loss. In such case 30m value in surplus buffer represents net equity value of 22m. Now, in this case, 22m is only equity value on the books of MKR. The real equity of MKR is something like PV = (SF + penalty fees + oracle fees - DSR - risk premium/expected loss - fixed costs) * discount rate + surplus buffer. I think what Sebastian is implying in this post is that MKR could use its flexibility to not only become active treasurer of assets that are part of surplus, but it could also enhance the yield by interfering directly on markets, where it wouldn\u2019t only mint DAI to buy pre agreed loans from vault users but instead buy assets where it has direct control of them. Which means MKR becomes more active portfolio manager on its assets. The difference in doing that is that Maker then starts backing DAI 1:1 with the assets it holds. For instance MKR could mint 300m DAI and put it into Curve pool, fix the peg and reach up to 15% yield. Sounds nice. But if anything breaks inside that Curve pool, Maker suffers direct loss in same amount, because there is no overcollateralization and assets backing the newly minted DAI are in custody elsewhere. This means risk profile of Maker changes a bit plus Maker then starts relying on itself to manage the asset side of portfolio. Currently Maker only sets parameters which help it manage risk reward. In case of active management, Maker needs to get involved in markets more directly. Which means another layer of complex governance. I am not against it, but the name of the game becomes a bit different. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.016121581670362
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#11",
+                    "likes": "3",
+                    "time": "28/11/2020-11:25:47",
+                    "content": "@mario  We can have a reserve line inside the equity section to illustrate the needed capital to stay afloat  (annual VaR 90% on all the assets for instance). But anything above that would be excess capital to be returned to MKR holder by any means.     Primoz:  to not only become active treasurer of assets that are part of surplus   I\u2019m questioning the existence of something called a surplus buffer that looks like a chest filled with DAI. The suck() function is issuing DAI and not transferring DAI. I believe the surplus buffer is the difference between the loan values and the DAI issued (as illustrated in the balance sheet). image688\u00d7695 104 KB WIth the PSM we will start to have some USDC on the asset side of the balance sheet (the USDC-A is only creating loan to third party USDC vaults). Maybe the ownership will be through a vault, but it\u2019s the same (as it\u2019s a vault we own the equity, we can consolidate it).     Primoz:  there is no overcollateralization and assets backing the newly minted DAI are in custody elsewhere.   We are heading there anyway, so I\u2019m just jumping to the conclusion directly. Currently, all we do is providing loans to a third party contract (the Maker Vault) that we have designed and respond to some parameters we can set on our side (stability fees). It\u2019s a wonderful on-chain contract. I already discussed how the PSM is different and put not a loan but USDC on our balance sheet. Having ownership of this USDC, I don\u2019t know why we couldn\u2019t lent them to Compound and/or Aave. For 6S, the vault and the overcollateralization is a real world construct (the overcollateralization is done at the LendCo level and the rest of the vault smart contract is done at the Trust level. The use of a vault on our side is just an implementation solution but it\u2019s meaningless (the token in it will not mean anything and have no value). Centrifuge is also providing a vault equivalent. Buying DROP or having a vault accepting them with a 100% CR is mostly the same. In the former we have ownership of the asset (and can liquidate it), while in the latter we don\u2019t have the ownership and should first create the condition of the liquidation (and hope Keepers will do the work). I\u2019m not saying we need to have a treasurer buying and selling stuff. Currently we have a ETH-A clerk that buy any loan issued from ETH-A vault until the DC is reached. We will have a PSM-USDC clerk that will buy any USDC above 1.001 until the DC is reached (and rely on the market to provide the selling to him, this PSM-USDC is quite lazy). We will have a clerk that will provide loan to 6S, this one will be a human from Wilmington Trust. What are the implications? It\u2019s that we have could have done a better job this summer. Our liabilities (DAI) were in demand but we decided that we can\u2019t issue DAI and need to wait for vault customers like we don\u2019t have control on our balance sheet. The PSM discussion was heated (and the PSM was rejected), setting USDC-A at 110% then 105%, then 103% then 101% was heated as well. Now we are quite fine to no longer have overcollateralization. The work on accounting shed a different light on those topics. I hope it can help to have a better understanding of what we are doing. Personally, I was thinking we were making repurchase agreements and not loan so I was really wrong. @alexis had a good idea for cDAI PSM but the fact that we think of being in term of vault and being passive always make stuff more complicated. For cDAI we are going to make vaults setting SF meaning that people will use the facility to extract the spread between the SF and the Compound lending rate. But we can also define a bot/clerk that buy when the Compound lending rate is high enough and the peg is above 1.0 (post-PSM when we have USDC on our balance sheet). I already somewhat discussed the subject 5 months ago. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/rwa-001-erc20-token-smart-contract-domain-community-assessment/5363",
+                        "https://forum.makerdao.com/t/a-word-on-the-psm-concept-and-next-steps-for-the-foundation/3293",
+                        "https://www.investopedia.com/terms/r/repurchaseagreement.asp#:~:text=A%20repurchase%20agreement%20(repo)%20is,at%20a%20slightly%20higher%20price.",
+                        "https://forum.makerdao.com/t/psm-based-on-cdai-different-than-the-actual-psm-logic/5257/8",
+                        "https://forum.makerdao.com/t/discussion-cdai-adai-ydai-collaterals-as-a-peg-enabler-tool/3470"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.558971465526343
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "28/11/2020-13:03:14",
+                    "content": "    SebVentures:      Primoz:  there is no overcollateralization and assets backing the newly minted DAI are in custody elsewhere.   We are heading there anyway, so I\u2019m just jumping to the conclusion directly.   Agree, with low LR on stablecoins and PSM, we are already there (the overcollateralization part). Still, I am not sure if this would be preferred unless we had issues with the peg, since risk compensation is really small?     SebVentures:  I already discussed how the PSM is different and put not a loan but USDC on our balance sheet. Having ownership of this USDC, I don\u2019t know why we couldn\u2019t lent them to Compound and/or Aave.   Putting assets into Aave or Compound for extra yield is ok, if the yield outweights the platform risks there. Looking at recent events at Compound, some might feel it is too risky and some might think it is still ok. Really depends on risk tolerance. I general I think risking surplus buffer with such strategies is more preferred than risking newly minted unbacked DAI, since loosing surplus money doesn\u2019t create issues with DAI backing. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.540909090909091
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#13",
+                    "likes": "1",
+                    "time": "29/11/2020-12:15:49",
+                    "content": "    Primoz:  Really depends on risk tolerance.   I prefer cDAI/aDAI than USDC from a risk perspective (I trust the SC/risk team to understand the risk of Compound, but I\u2019m quite sure no one made a serious due diligence on USDC). And I would say that a ETH-B loan is higher risk (not to speak of YFI-A and USDT-A). Obviously it\u2019s just a feeling that need to be objectivized. But as you say, we need to focus on risk, not the form of the asset. I also agree that currently, there is no good asset to dump DAI on. The PSM will have almost no reward for a USDC token that is quite risky if US goes negative interest rates. Compound/Aave are still young. But I\u2019m quite sure that will change quickly and we need to have our mindset ready.     Primoz:  I general I think risking surplus buffer with such strategies is more preferred than risking newly minted unbacked DAI, since loosing surplus money doesn\u2019t create issues with DAI backing.   You can\u2019t link assets to liabilities inside a balance sheet. There is a set of assets financed by a set of liabilities. And our equity buffer should sustain losses we can expect from the assets side. With a bigger surplus buffer, we can increase the risk taking. Looking at the code, debt is really our balance sheet size (loan issued) and not the amount of DAI issued. uint256 public debt;  // Total Dai Issued    [rad] uint256 public vice;  // Total Unbacked Dai  [rad]  I guess the issue come from the backed/unbacked concept. In the system dai represent both loans and DAI and try to keep track of the matching. That\u2019s not possible and unbacked dai are introduce but unbacked means untracked more than unbacked (stability fees generate debt, but not DAI). Which is why double entry bookkeeping exists. When you have one variable representing 2 differents things (the loan and the corresponding DAI issued) that evolve independently, things get a bit messy. Currently the difference between DAI in the system and the debt variable is the surplus buffer (4M). Not a big difference, but we are only at the start of the journey. And I\u2019m not really sure that\u2019s the good number. Things will get more complex in the future so we need to have strong foundations. I\u2019m not saying we should change anything in the code, but we can\u2019t think correctly if we base our thinking on wrong concepts. I can be wrong obviously and happy to be corrected. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.26722582972583
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#14",
+                    "likes": "0",
+                    "time": "29/11/2020-17:31:22",
+                    "content": "I really like the idea this leads us to of re-lending out assets held in vaults. For example having a dai vault that allows a user to lock up dai and borrow eth. This becomes complicated and maybe too risky when the locked asset and the borrowed asset are both volatile cryptocurrencies, but allowing ourselves to explore this space opens up a whole web of new revenue sources. We would have a unique advantage over Aave and Compound in this asset lending space because we are able to issue dai directly. It is unlikely that compound and Aave could then outcompete us on rates. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.2938311688311686
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#15",
+                    "likes": "6",
+                    "time": "21/12/2020-23:51:37",
+                    "content": "Hey @SebVentures, great post (as usual), I think it\u2019s very useful to think of the system in these terms and in the process you\u2019ve discovered/formalised a few interesting ideas like direct purchase of assets (instead of only issuing DAI for CDPs) and selling CDPs (which is a very interesting idea that deserves its own thread eventually). I wanted to comment on some technicalities in your last reply above. debt is actually both the balance sheet size and the total DAI issued, since when stability fees are accrued, the system \u201csymbolically\u201d mints DAI to place in the Vow in order to keep track of how much of its DAI liability is \u201cto itself\u201d, of course this surplus buffer represents the equity (though hypothetically, if the system had other assets on its balance sheet that did not \u201cmatch\u201d with a DAI liability, then this would no longer be the case, i.e. the surplus buffer would no longer be equal to the equity). I would say that debt is the left hand (asset) side of the MakerDAO balance sheet. I\u2019m also not sure why you mention unbacked DAI (vice): the surplus buffer does not involve unbacked DAI. Unbacked DAI appears transiently to stand in on the assets side for Maker when a loan has gone into liquidation but has not yet been recovered, and when a loan has been liquidated with a shortfall, but those were not the cases you were discussing. Note that in the system\u2019s accounting, vice is a subset of debt. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.670833333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "22/12/2020-10:03:50",
+                    "content": "Thanks @equivrel. I\u2019ve only spent one evening in Maker code so my understanding is quite limited.     equivrel:  I\u2019m also not sure why you mention unbacked DAI (vice): the surplus buffer does not involve unbacked DAI.   The sin  of the Vow (vice of the surplus buffer) is 4M while the dai of the Vow is 8M (with the difference you end up with the value of the SB). This is most likely due to the interest paid on the DSR. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.095982142857142
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#17",
+                    "likes": "2",
+                    "time": "22/12/2020-11:49:45",
+                    "content": "Ah, actually that is not related to DSR: when liquidations happen they \u201ctemporarily\u201d create this sin, and then when they recover DAI that DAI is also sent to the Vow to be cancelled against the sin. However, in order to do this someone has to actually enumerate the timestamps when the sin was accrued (if you remember, after Black Thursday this also needed to happen before MKR auctions could start), and I guess no one has done it yet for around 4MM of loans. So basically until someone does this, the loans that have already been liquidated in practice are still accounted as \u201cin liquidation\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None"
+                    ],
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#18",
+                    "likes": "0",
+                    "time": "23/03/2021-17:49:46",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

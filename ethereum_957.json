@@ -1,0 +1,401 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/social-recovery-using-address-book-merkle-proofs/3790",
+            "title": "Social recovery using address book merkle proofs ",
+            "index": 3790,
+            "category": [
+                "Wallets"
+            ],
+            "tags": [
+                "recovery",
+                "cba"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/miguelmota",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "21/11/2019-08:14:22",
+                    "content": "Not sure if this has been discussed before but the idea is that the contract-based account owner (Alice) can generate a merkle root based on her address book list so when Alice loses her management keys to the account contract, she can have n of m address book peer signatures submitted to set a new management key owned by Alice. The merkle root is stored in the account contract and no other information about the address book list is required or stored on-chain. Alice selects a subset of trusted peers from her address book, generates the merkle root with the addresses as tree leaves, and sets the root on-chain. The address list used can be encrypted and emailed to her since she\u2019ll need it when it\u2019s time to recover the account. Let\u2019s say the address book list she used has the addresses of Bob, Charlie, Dave, Eve, and Frank, and requirs 2 of n signatures to set a new management key.  Alice loses her management keys and asks Eve to help her recover her account. Alice gives Eve a newly generated address she controls and Eve takes a hash of the public address and signs the hash with her private key corresponding to the public address that Alice has stored for Eve in Alice\u2019s address book. Alice takes Eve\u2019s signature and generates a merkle proof using her trusted peer address book list and Eve\u2019s address as the leaf. Alice submits the signature, data, and proof to her contract. The contract verifies that Eve is indeed part of the stored merkle proof and the submission is recorded in a mapping. Alice then asks Bob to help her recover the account. Bob signs the hash of the new address and Alice submits the same pieces of data to the contract. The contract verifies that Bob is part of the stored merkle proof, and then checks if the threshold has been met. If the signatures required threshold has been met, then it verifies that all the signers agreed on the same new management key address. If that succeeds, then the new management key is set and Alice can access her contract-based account again.  To demonstrate, here\u2019s a rough proof-of-concept contract in Solidity: pragma solidity ^0.5.2;  import './ECDSA.sol'; import './MerkleProof.sol';  contract Account {   using ECDSA for *;   using MerkleProof for *;    address public owner;   bytes32 public recoveryRoot;   uint256 public sigsRequired;   uint256 public seq;   mapping (uint256 => address) sigs;    modifier isOwner {     require(msg.sender == owner, \"Invalid sender\");     _;   }    constructor() public {     owner = msg.sender;     sigsRequired = 1;   }    function setOwner(address newOwner) external isOwner {     owner = newOwner;   }    function setRecoveryRoot(bytes32 root) external isOwner {     recoveryRoot = root;   }    function setSigsRequired(uint256 num) external isOwner {     sigsRequired = num;   }    function recover(bytes32[] memory proof, bytes memory signature, address newOwner) public {     bytes32 hash = keccak256(abi.encodePacked(newOwner));      address recoveryKey = hash.toEthSignedMessageHash().recover(signature);     bytes32 leaf = keccak256(abi.encodePacked(recoveryKey));     require(proof.verify(recoveryRoot, leaf), \"Invalid proof\");     sigs[seq] = newOwner;     seq++;      if (seq == sigsRequired) {       address proposedOwner;       for (uint8 i = 0; i < seq; i++) {         if (i > 0 && proposedOwner != sigs[i]) {           revert(\"Invalid new owner\");         }          proposedOwner = sigs[i];       }        owner = proposedOwner;       seq = 0;     }   } }  The test would go as follows (pseudocode): const addressBook = [Bob, Charlie, Dave, Eve, Frank]  const leaves = addressBook.map(x => keccak256(x)).sort() const tree = new MerkleTree(leaves, keccak256)  const root = tree.getRoot() await contract.setRecoveryRoot(root) await contract.setSigsRequired(2)  const hash = keccak256(AliceNewKey)  const EveSig = web3.eth.sign(hash, Eve) const EveProof = tree.getProof(keccak256(Eve)) await contract.recover(EveProof, EveSig, AliceNewKey)  const BobSig = web3.eth.sign(hash, Bob) const BobProof = tree.getProof(keccak256(Bob)) await contract.recover(BobProof, BobSig, AliceNewKey)  assert.equal(await contract.owner.call(), AliceNewKey)  Working example code is on github. Things to note:  A benefit of this method is that it doesn\u2019t require pre-approval of your address list beforehand, so there is no awkward UX issues, and recovery is as simple as asking the peers to sign a hash of a public address, which then you or a relayer can submit onchain. Address book list is never exposed until it\u2019s time for recovery, then the senders will of course be exposed. Verifying merkle proof on-chain is expensive but recovery is something that should happen infrequently so this is fine. To make it more secure, a timelock period can be initiated after the threshold is met to allow the owner to cancel the recovery and set a new merkle root in the case the peers collude which prevents them from immediately setting the new management. A recommended number would be to require at least 2 peers and 1 hardware device so in the case the peers collude they still need the hardware device signature, and in the case the hardware device is compromised then the peer signatures are still required. The contract can maintain two merkle roots, one consisting of friends and family and one consisting of hardware device keys, both with their own thresholds. The address book can be maintained in decentralized fashion, such as using 3Box\u2019s private storage, making the user\u2019s address book be portable. Instead of addreses, using ENS names can also work by resolving the name onchain when checking the recovered signer.  Would like to open up the discussion and hear what you guys think about all this. Thanks! ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.296125315656566
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/johba",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "22/11/2019-09:40:35",
+                    "content": "great summary. how would you make sure that the address that you used to create the merkle tree does not become outdated? (my friend lost his wallet, or got hacked) little remark:  Verifying merkle proof on-chain is expensive but recovery is something that should happen infrequently so this is fine.  actually very cheap, and will become very cheap with latest gas schedule changes in Ethereum. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.205092592592592
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/miguelmota",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "22/11/2019-22:36:31",
+                    "content": " how would you make sure that the address that you used to create the merkle tree does not become outdated? (my friend lost his wallet, or got hacked)  Great question. If you know your friends wallet got compromised, you can remove him from the address book list and recompute the merkle root and store the new root in the account contract to prevent the attacker from starting the recovery process with the compromised account. To prevent outdated addresses from being utilized, you can periodically recompute and submit an updated merkle root using up-to-date addresses or use ENS names instead of hard coded address as the merkle leaves and resolve ENS to addresses in the recovery method.  actually very cheap, and will become very cheap with latest gas schedule changes in Ethereum.  Nice, that\u2019s very cool ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.224873737373738
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/johba",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "24/11/2019-18:17:24",
+                    "content": "    miguelmota:  To prevent outdated addresses from being utilized, you can periodically recompute and submit an updated merkle root using up-to-date addresses or use ENS names instead of hard coded address as the merkle leaves and resolve ENS to addresses in the recovery method.   if the ENS can be resolved on chain, maybe encoding the ENS name into the tree would suffice. There is a follow-on problem using ENS thought: what if the address is not an key, but a contract? like an identity contract? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.847222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/miguelmota",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "24/11/2019-22:45:12",
+                    "content": " what if the address is not an key, but a contract? like an identity contract?  Since contracts can\u2019t generate signatures therefore ecrecover won\u2019t work if the address is a contract, then the contract-based account needs to use the EIP1271 standard to verify contract signatures. During the recovery process, the account contract checks if there\u2019s bytecode stored at the leaf address. If there is, then it is a contract and not an externally owned account so it verifies the signature using isValidSignature( data, signature) on the friend\u2019s contract. Authereum, Dapper wallet, 0x, and a few others are already using EIP1271 to verify signatures where the \"recovered addres\"s is a contract address. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "26/11/2019-11:15:05",
+                    "content": "Hey @miguelmota, very nice. I have also a working solution with the same concept, but I also introduced user data hash and other important (but optional) security features. It\u2019s fully documented here in the sol:   github.com   status-im/account-contracts/blob/develop/contracts/account/MultisigRecovery.sol pragma solidity >=0.5.0 <0.6.0;  import \"../cryptography/MerkleProof.sol\"; import \"../cryptography/ECDSA.sol\"; import \"../token/ERC20Token.sol\";  /**  * @notice Select privately other accounts that will allow the execution of actions  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)  */ contract MultisigRecovery {      /**      * Controller of Recovery      */     address private identity;      /** # User Secret Data Hash      * Hash of Semi-private information, such as a \"randomly ordered personal information + secret answer\", or a hash of user biometric data.      * The secret should only be revaled together with `execute`, which requires changing the secret at every execution.     This file has been truncated. show original       This is a WIP/Research repository, which I am working to build account contracts for Status.im, and for future interoperability between I am writing an ERC to standardize the social recovery feature. The contract features a Secret Multisig system, which is self contained and should be used as a recovery actor in a account contract, instead of extending this into user account contract, so it\u2019s behavior would be always consistent. After merkle tree (or part of it) is revealed, a new merkle root needs to be defined, so every recovery requires a new recovery setup. The user datahash is a hash of hash of user private data, which could be bio-metrics or derived from user profile data, and will be used to secure the recovery process and obfuscate the threshold. ",
+                    "links": [
+                        "https://github.com/status-im/account-contracts/blob/develop/contracts/account/MultisigRecovery.sol",
+                        "https://github.com/status-im/account-contracts/blob/develop/contracts/account/MultisigRecovery.sol"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.948056653491436
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "29/11/2019-11:38:47",
+                    "content": "Hi @3esmit,     3esmit:  After merkle tree (or part of it) is revealed, a new merkle root needs to be defined, so every recovery requires a new recovery setup.   There is another reason for this beside privacy? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.681818181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "29/11/2019-12:41:50",
+                    "content": "Yes, the point of using a merkle tree was initially privacy, and when a recovery is done some of this privacy is lost, so it should change the list. However I see that I should instead disable recovery after user successfully recovered, and after that suggest a new recovery in the wallet UI. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.477272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "29/11/2019-14:28:22",
+                    "content": "I think suggesting is a good option, but changing the Merkle tree should not be mandatory. Thanks ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "29/11/2019-14:42:26",
+                    "content": "I think that security should be mandatory, especially if possible. It\u2019s possible to reuse the same exact list of friends as before, but it would change the merkle root because the way I designed it is that the userDataHash is used also in the merkle tree to obfuscate the leafs. The semi secret stores the friend list and the user private secret, and the same seeds can be reused as many times as wanted by salting the user private secret, thats why its hashed multiple times. Therefore the UI can do all this on behind without the user even have to know. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.673076923076923
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/miguelmota",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "02/12/2019-02:35:47",
+                    "content": "This is great! Yes a bare-bones simple standard around this social recovery method would be very beneficial to anyone implementing contract-based accounts. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.2333333333333325
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/miguelmota",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "02/12/2019-02:44:55",
+                    "content": "Do agree that it should be optional, though I could see a scenario where a malicious person might be less incentivized to attempt to steal a known peer\u2019s device if it\u2019s not certain that they are part of the same recovery merkle root again, so setting up a new root would be advantageous. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.828192640692641
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "02/12/2019-11:55:02",
+                    "content": "Thanks for the context. I don\u2019t think that changing the addresses that allow recovery will improve directly the security. The userDataHash computed in the Merkle Tree will bring some obfuscation but fundamentally the security will have to be the security of the base addresses. From what i saw in the code, you are defining the userDataHash as some kind of question / answer, and this will make it more transparent to UX, but can have a great utility for recovery. If is strong enough, as an seed phrase, maybe the addresses can be discarded. But in this setting there is no social recovery, just a personal one. I\u2019m talking about not change the addresses in the tree just for the potential functionality of a smart wallet (not a EOA) to help recovery a account. As is, a user smart wallet cannot be another user backup. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.863553113553114
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "14",
+                    "likes": "1",
+                    "time": "02/12/2019-11:59:13",
+                    "content": "I see that is better for privacy, but i fear that making mandatory is too opinionated, maybe this decision should be left to the wallet implementation. But as @3esmit said, the wallet only have to change the userDataHash to get the same privacy in merkle tree. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "03/12/2019-09:59:06",
+                    "content": "    axe:  If is strong enough, as an seed phrase, maybe the addresses can be discarded.   Using the secret alone is unsafe - as it should be easy to guess then its also easy to discover, and a totally different approach using a special commit-reveal scheme would be essential for protecting overruns, or if you suggest a seed phrase, then ECDSA should be used, in this case the recovery address can simply be hashed once, however this does not solve the problem of dealing with seed phrases or a single trusted party. My main concerns in interoperability would be in the messaging of the recovery requests, I think that most wallets could have their own service/protocol for that, but that would break interoperability and decentralization, so it would be important for a common ground between wallets to exchange these requests. We could leave this bridge open for now (everyone uses its own), and standardize as sub ERC-681  arecovery request URI and a recovery authorization URI, so if user is not reachable (using different bridge) within same wallet software, a recovery request URI could be sent by email (or whatever) and understood by other wallet, and produce a recovery authorization URI. We can improve the common bridge later or seek for integration with other solutions such as wallet connect or universal logins, that are also solving the \u201cdevice bridge problem\u201d, which could be used for this purpose as well. I am writing a detailed specification on this concept, including UX and interoperability mentioned above, and once I get all thats in my mind sorted out I\u2019ll share here and we can have a call and start a EIP process. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.555996472663139
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "07/12/2019-08:11:18",
+                    "content": "Submitted the EIP 2429: Secret Multisig Recovery First draft is here: https://github.com/ethereum/EIPs/pull/2429 There is still a lot to do, and my own solidity file is not compatible with this standard, as while I was specifying it, I matured it. I used this thread as discussion because we were already discussing this problem-solution here, or maybe what I specified dont fits here, if thats the case let me know and I create a dedicated topic to discussing the solution of using merkle trees + user secret and here would be other thing. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "26/12/2019-21:29:35",
+                    "content": "Im reading the draft and looks good, just a couple of questions: Should the recovery be limited to only setting a new Owner address? Only letting one operation could make the system more simple and easy to implement. If the only operation is setting a new Owner, then when the user start the recovery process, the user_secret_data should be sign with a new address that will take ownership of the wallet. And also be passed as a parameter. The contract validade this step in the recovery logic. The user in the configuration step should also define a secret_to_peer hash, that he reveal to the peers list (address_list) to avoid some types of social engineering attacks. This new variable should be also change when the recovery process is completed. I don\u2019t see the utility of applying a nonce in this context. Cheers ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.823343323343323
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "27/12/2019-05:25:16",
+                    "content": "    axe:  Should the recovery be limited to only setting a new Owner address? Only letting one operation could make the system more simple and easy to implement.   In order to this recovery option work with any contract, is useful that any call can be made. It\u2019s more simple for us to don\u2019t define how recovery is called, and instead just say that recovery can call anything, then it\u2019s role of the recoverable contract to provide a special access to recover the contract. In order for a recovery to work, the wallet/UI must know how to perform it, and this includes the call the recovery contract needs to make.     axe:  I don\u2019t see the utility of applying a nonce in this context.   Nonces are used to aid reuse of same secret answer, but are not required in the public reveals, and should be in recovery contract. If not, the secret answer cannot be reused. Nonces are simply the count of recoveries, and this cannot be hidden (all full nodes/etherscan can count it), and its useful to have it handy.     axe:  The user in the configuration step should also define a secret_to_peer hash, that he reveal to the peers list (address_list) to avoid some types of social engineering attacks.   The proposal does that, and uses the same secret to all to simplify things, but the user_data_hash is the hash of hash_to_peer (used to be called in standard proofpub_hash), which is the hash of the hash_to_execute (used to be called seedpub_hash), which is the hash of private_hash (never revealed) with recovery contract address and nonce, and private hash is the hash of the user secret answer. Based on your feedback I renamed the variables and added details to why the nonces are there. See https://github.com/ethereum/EIPs/pull/2429/commits/ea6efea6ae51cd4185bf2b795f56920e91a76dca If you think that using double hash for the purpose of \u201csecret_to_peer\u201d is bad, please explain, and if there is problems with it, we can use something else, like what you suggested (an additional secret). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0986341244961935
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "28/12/2019-01:12:36",
+                    "content": "I started one implementation based on the proposal:  github.com   shinra-corp/ERC2429/blob/master/contracts/RecoveryContract.sol pragma solidity >=0.6.0 <0.7.0;  /*     Implementation of Secret Multisig Recovery - ERC 2429.     See: https://github.com/ethereum/EIPs/pull/2429     Discussion: https://ethereum-magicians.org/t/social-recovery-using-address-book-merkle-proofs/3790/18     Based: https://github.com/status-im/account-contracts/blob/develop/contracts/account/MultisigRecovery.sol     Autor: 3esmit (status-im)     Implementor: Axe (Shinra-corp) */  import \"./IMultiRecovery.sol\"; import \"./Controller.sol\"; import \"./ECDSA.sol\"; import \"./MerkleProof.sol\";  contract AccountContract is IMultiRecovery, Controlled {      bytes32 public publicHash; //Secret that user MUST know to recovery process.     uint256 public setupDelay; //A reconfiguration SHOULD be possible after a delay period.     This file has been truncated. show original      Is heavy based on your code.  but is still incomplete.     3esmit:  The proposal does that, and uses the same secret to all to simplify things   Yes, is better maintain the same tree of hash, with one change. The peers should sign the operation to execute also with chainID so there is no funny stuff as replay the signatures in other networks. (bumping solidity to version 0.5.13). I only compile the code and didn\u2019t tests in anyway. Cheers ",
+                    "links": [
+                        "https://github.com/shinra-corp/ERC2429/blob/master/contracts/RecoveryContract.sol",
+                        "https://github.com/shinra-corp/ERC2429/blob/master/contracts/RecoveryContract.sol"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.855769230769231
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "20",
+                    "likes": "1",
+                    "time": "28/12/2019-14:41:01",
+                    "content": "Hey, thanks for the suggestion and implementation. Regarding signatures replay protection, I am using the contract address in the hash composition to prevent this kind of problems, it\u2019s very unlikely (and not recommended) to reuse smart contract addresses in different chains. However, the problem may occur in case of a chain split. I see that EIP712 also contains a chain ID, but it needs to be initialized by the contract, so it wont prevent the problem at all. EIP-1344 gives access to chain id from EVM, which I\u2019m unsure how it would behave in a chain split, but seems the way to solve this problem. I didnt used EIP-1344 because it wasn\u2019t available at the time Secret Multisig Recovery was designed, but it seems an good protection to include\u2026 I will see where is the best place to put the chainID in the hashing schema, but probably it should be in all signatures. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.146825396825397
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "21",
+                    "likes": "1",
+                    "time": "28/12/2019-17:52:06",
+                    "content": "@axe You got it right using chainID around peerHash, but it dont needs to be verified in a leaf basis, it could be incorporated in the hash path of publicHash. We could make that, as publicHash depends on peerHash, the peerHash could depend on chainID and executeHash, which would tie all to only sign for the correct chain, because the peerHash will \u201cnever\u201d match if the chainID returns incorrect. However this might lead to an problem, because in case of a chain split, the recovery contract would only work in the chain that didn\u2019t changed the id - this is also true for how you implemented chainID. So, chainID only should be checked against signatures, so perhaps we could start using EIP-712 with the new chainID from EVM, I will check that. For now we are using EIP-191 with validator address as the recovery_contract and now also using chain ID inside of the application parameters. I also noticed that, due the lack of information on the EIP, you implemented signature checking in your own way. So I also added this missing part of the specification on how the messages to be signed should be constructed. I updated the account-contracts to match current version of ERC-2429\u2026 Some changes I am considering:  Reorder parameters of the signature to order them by their context, Enable bigger thresholds by counting secretCall authorizations on advance, or by enabling multiple interations on execute  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.436282467532467
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "28/12/2019-22:58:03",
+                    "content": "    3esmit:  However this might lead to an problem, because in case of a chain split, the recovery contract would only work in the chain that didn\u2019t changed the id - this is also true for how you implemented chainID.   I didn\u2019t consider the case of a chain split. This could be a problem if there is a recovery process running, to all other cases the user could simply set a new configuration following the proposal definition. For this case, probably we need to make some tradeoff between protection for a replay attack (I think there is a small opportunity for this type of attacks given that of each recovery the proposal mandates a new \u201crecovery tree\u201d and all hash are bind initially with the contract address + nonce). I feel that people using this proposal without full notion about the internal mechanism in a split event, could lose the ability of recovery in the \u201cright\u201d chain. (or in all chains for that matter) After reading more careful the EIP1344, I did not came to a conclusion about the solution. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.458371985157699
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "23",
+                    "likes": "1",
+                    "time": "28/12/2019-23:08:52",
+                    "content": "The solution is not use chainID in the hashing path or in the leaf check. They are not needed in the hashing, what we want to prevent is a single execution to be replayed in other chain. This problem only occurs in presigned messages using EIP-191 v0, for direct transactions the EIP-155 already secures that. I included the protection there, just like you suggested, so I can confirm with confidence that this specification is not vulnerable to replay attacks on presigned messages or transactions. Your implmentatation also used chain id in the signature check, but it was also using in the leafs. I will still see if is possible using EIP-712 (which is EIP-191 v1) with EIP-1344, because it already have the chainID incorporated in the standard, meaning that wallets would seamlessly sign messages just like transctions, passing the correct chainID, and it would not be stuck in case of chain splits. Ah BTW, I changed bytes ensName to bytes32 ensNode as I noticed it was nonsense to reveal the plain text ens name, instead the merkle tree should contain the ensNode in the leaf composition. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.021825396825397
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "28/12/2019-23:49:43",
+                    "content": "    3esmit:  The solution is not use chainID in the hashing path or in the leaf check.   Agreed.     3esmit:  I will still see if is possible using EIP-712 (which is EIP-191 v1)   This will be good addition.     3esmit:  Ah BTW, I changed bytes ensName to bytes32 ensNode as I noticed it was nonsense to reveal the plain text ens name, instead the merkle tree should contain the ensNode in the leaf composition.   I did not noted when implementing, I was ignoring the ENS part for simplicity. But yes, there no reason for the plaintext  For clarity i drew the hash tree used in the proposal  Secret%20Hash%20Tree1869\u00d71323 66.6 KB  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.809523809523808
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "31/12/2019-02:47:37",
+                    "content": "Thanks for the diagram, I dont want to include images attachments because they are horrible to edit. But I liked the idea of diagrams anyway, so I added it as \u201cmermaid\u201d, see here: https://hackmd.io/@3esmit/rJ4YBV_JI#User-secret-data-hashing ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.666666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "02/01/2020-18:33:18",
+                    "content": "After reviewing the doc in the link, i think it should made clear that as a peer in the recovery process a user can eventual have there\u2019s address associated with the recovery account. So it\u2019s good practices to select a \u201cfresh\u201d address to be a peer. I will reimplement the proposal, but will probably be very similar to yours. Cheers ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "03/01/2020-02:51:01",
+                    "content": "Great suggestion, @axe. I will add this to the doc, and also try to standerize the recovery help request message. Regarding your old suggestion on using the user private data secret as a private key, I am reconsidering it, but still keeping the merkle tree of friends. Therefore, the system will be exactly how it is now, but the smart contract will get rid off the commit-reveal scheme, replaced by the semi-private key. See discussion happening in https://github.com/ethereum/EIPs/pull/2429 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5357142857142865
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "28",
+                    "likes": "1",
+                    "time": "04/01/2020-13:33:31",
+                    "content": "I added weight to the addresses to approve, so it can be used for trustless recovery with KYC services, where the KYC operator would have a bigger weight (or total) from threshold, but the user also dont want to fully trust only a KYC operator, but also a large set of their friends. Also, I changed the execute ABI, now it must count the approvals at moment the calls are approved, not during execution. At execution it only reveals the threshold. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.214285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "04/01/2020-14:49:26",
+                    "content": "Do you want to migrate the discussion to GitHub so we can all be in the same system? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "30",
+                    "likes": "1",
+                    "time": "04/01/2020-14:53:28",
+                    "content": "I am tracking the discussion in both places, so you can post here or there as you want, but I will reply at the same place. After the PR is merged the discussion would remain only here. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "18/01/2020-05:40:11",
+                    "content": "@jpitts can you mark this into identity ring? also there is ERC 2429 built after the discussion here Or maybe its correct to wallet ring. Not sure, you decide what fits better. Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/catenocrypt",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "02/04/2020-09:45:34",
+                    "content": "Could someone give me an example, what the account contract (the target of recovery) would be in ERC 2429 recovery? The account contract can be any contract, but how does it gets input parameters, how does it return output parameters? Could recovery used to recover a secret like the mnemonic of an HD wallet? thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "03/04/2020-10:32:38",
+                    "content": "The target of recovery can be any smart contract that accept a call from the recovery system. You can define the form and content of that call so that\u2019s can suit you recovery context. Think as a proxy that will execute some code and call your smart contract. I don\u2019t follow your question about the HD wallet, but from what I understand you want to recovery a wallet that have no code on chain? In that case only the Private Key can help and you should not save in any form the private key related information on chain. I can work in a set of examples to make this part of recovery more clear. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.514285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/catenocrypt",
+                    "index": "34",
+                    "likes": "1",
+                    "time": "07/04/2020-14:44:04",
+                    "content": "Thanks!  What I cannot really see without a concrete example, how one call to a recovery contract, made during recovery, can be used in a \u2018sticky\u2019 way, that is, it restores access to some service/account that will stay for longer.  The only way I can imagine that is that contract call returns some secret which your wallet stores, but I feel that is not the intended use. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.2
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axe",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "08/04/2020-00:18:49",
+                    "content": "I did not have the time to make examples in the implementation. Hopping to make something by the end of this week. You are not bound to one recovery style like changing the owner of a smart contract wallet. It really depends one your requirements. The system is very agonist about that, you can for example imagine a recovery that transfer all the found to a new account. When you are setting a recovery, you are setting a group of signatures, let call then people, that eventual will approve a transaction. If you see more careful that tx can be any method call. So your example is valid. You can have a contract that waits for a call from the recovery system. The arguments of such call is up to you. A secret is valid as any other value. You can for example pass the root node of the Merkle tree so you can react different. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.312824675324675
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "36",
+                    "likes": "1",
+                    "time": "20/10/2020-13:04:43",
+                    "content": "The contract will be refactored to use create2 as suggested by VB.  Screenshot_20201020-1100411080\u00d72160 683 KB Screenshot_20201020-1100471080\u00d72160 858 KB  Screenshot_20201020-1100541080\u00d72160 763 KB This don\u2019t changes the overall behavior, but it reduces net gas cost, and makes things a more private (as for the world someone set as guardian just an address without code, could be UTXO, could be anything)  ",
+                    "links": [
+                        "https://ethereum-magicians.org/uploads/default/original/2X/d/d197e2aaaa1d8dededd85d04439c904dff86ebd4.jpeg",
+                        "https://ethereum-magicians.org/uploads/default/original/2X/d/d8d3472bac608cb6566266c39f7a03ece79268bf.jpeg"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "37",
+                    "likes": "2",
+                    "time": "19/07/2022-17:47:12",
+                    "content": "Some updates on this topic. I\u2019ll open a group to build this for ethereum network users, agnostic of any app, like a CC-0 PoC dapp, which later can be properly built into the wallets willing to implement it. Anyone willing to contribute is welcome, you can join by answering here or sending me an e-mail at 3esmit at gmail dot com with title Ethereum Social Recovery, and telling how you would like to contribute. I\u2019ll inform here about a call to discuss the topic. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.9523809523809526
+                }
+            ]
+        }
+    ],
+    "group_index": "957"
+}

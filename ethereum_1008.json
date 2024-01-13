@@ -1,0 +1,147 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/implementing-account-abstraction-as-part-of-eth1-x/4020",
+            "title": "Implementing account abstraction as part of eth1.x ",
+            "index": 4020,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "eth1x",
+                "account-abstraction"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "1",
+                    "likes": "13",
+                    "time": "21/02/2020-21:41:28",
+                    "content": "Historical work on account abstraction   https://github.com/ethereum/EIPs/issues/86 (includes some use cases) https://ethresear.ch/t/a-recap-of-where-we-are-at-on-account-abstraction/1721 https://ethresear.ch/t/tradeoffs-in-account-abstraction-proposals/263 https://ethresear.ch/t/maximally-simple-account-abstraction-without-gas-refunds/5007  What is account abstraction, and what are the motivating use cases? In short, account abstraction means that not only the execution of a transaction can be arbitrarily complex computation logic as specified by the EVM, but also the authorization logic of a transaction would be opened up so that users could create accounts with whatever authorization logic they want. Currently, a transaction can only \u201cstart from\u201d an externally owned account (EOA), which has one specific authorization policy: an ECDSA signature. With account abstraction, a transaction could start from accounts that have other kinds of authorization policies, including multisigs, other cryptographic algorithms, and more complex constructions such as ZK-SNARK verification. Use cases   Multisig wallets and other uses of smart contract wallets (eg. social recovery). Currently, such wallets require an awkward construction where there is a separate account that stores a small amount of ETH to pay for transaction fees, and that account gets refilled over time.  Cryptography other than ECDSA. Schnorr signatures, BLS signatures, other curves and quantum-proof algorithms such as Lamport/Winternitz could all be implemented.  Privacy solutions would no longer require \u201crelayers\u201d, as the verification of the proof would be moved into authorization logic and so would be a condition of fee payment.  On-chain DEXes and similar systems where there\u2019s often multiple transactions from many users trying to claim the same arbitrage opportunity; currently, this leads to inefficiency because many failed transactions are nevertheless published on chain, but with abstraction, it\u2019s theoretically possible to make sure failed transactions do not get included on chain at all, improving gas efficiency.  How would account abstraction work? It\u2019s easiest to describe account abstraction by walking through a series of \u201cstrawman\u201d schemes and understanding where their flaws are. Note that for terminology we\u2019ll use the word \u201ctarget\u201d as the address that the \u201ctop-level\u201d call in an account-abstracted transaction is directed to. This ensures that we avoid the connotations of existing terminology (\u201cdestination\u201d or \u201cto address\u201d) that imply that this address is the recipient of a transfer; in fact, in all of our use cases the \u201ctarget\u201d address represents the account of the sender. Strawman scheme 1: Naive total abstraction Users can send transactions from a new special address, that we call ENTRY_POINT (eg. set it to 2**160 - 1), to any account, without paying for gas using the usual mechanisms. The implication is that the target of these transactions is the account of the sender, and the account code would be processing the transaction with its data and perform the desired operations. Miners would use a simple filter to determine which transactions to accept: they check their account balance before fully processing the transaction, check their account balance after fully processing the transaction, and see if the difference is a sufficient fee. Users would simply include a send(coinbase(), fee) in their transaction, after any needed authoritzation steps, to pay the fee. This approach is simple and maximally flexible. However, there are two huge problems with it.  It means that miners have to fully execute every transaction before they can know whether or not they should accept it. As we saw in the DAO soft fork attempt, this is a bad idea that leads to high levels of DoS vulnerability. Nodes in the network have an even worse time figuring out whether or not they should propagate the transaction, because even if they execute the transaction and it seems like it would pay the miner, one single transaction could invalidate the fee-paying property of every other transaction. Hence, network-level DoS risks are even more huge.  Strawman scheme 2: signature abstraction only We create a third type of account, \u201cwallet accounts\u201d. A wallet account is like a contract, but has two pieces of code: (i) verification code, and (ii) execution code. A call from ENTRY_POINT to a wallet account has two steps: (i) run the verification code, using the whole transaction as input, and verify that the output is nonzero, and then (ii) run the execution code normally. The verification code execution has no access to external calls (except to precompiles), contract storage, or any ability to \u201cwrite\u201d to anything; it must be a pure function. Additionally, verification code execution has a flat gas limit of 400,000. This scheme has basically no security risks, as everything that miners and network nodes need to do is the same as before; the only difference is that instead of ECDSA verification (a pure function), miners need to execute some EVM code inside of a restricted environment (another pure function). However, the scheme only offers a portion of the benefits of abstraction, and we can do better. Proposed scheme \u00a0  Here is a concrete scheme that provides many of the benefits of full abstraction, without most of the risks. First, the EVM-level changes:  We retain the property that there are two types of accounts, EOAs and contract accounts, the latter having only one piece of code. If desired, a subsequent fork could forcibly convert EOAs into contract accounts that have equivalent functionality, but this is not strictly needed. A transaction with a (0, 0) signature is treated as a transaction whose tx.origin (and hence top-level sender) is the ENTRY_POINT address (= 2**160 - 1) We add an opcode, PAYGAS, which takes one argument (gasprice) off the stack, deducts tx.startgas * gasprice from the balance, records that remaining_gas * gasprice should be refunded at the end of transaction execution, and records that if the transaction fails after that point, it should only revert back to the point of calling the opcode. Does nothing if not used in the top-level call frame (ie. msg.sender == ENTRY_POINT) and does nothing if used when the opcode has already been activated. Pushes 1 to the stack if successful and 0 if failed.  Now, the miner, and network node, policy:  When a miner or network node receives a transaction, they verify that the code of the top-level contract starts with require(msg.sender == ENTRY_POINT) (exact EVM byte sequence pending). If this is not true, they reject the transaction. They then run the code until they reach one of three situations:  A call (except to a precompile) has been made, or an external state reading opcode (BALANCE, EXTCODE*) or an environment opcode (TIMESTAMP, DIFFICULTY, NUMBER, BLOCKHASH, COINBASE, GASLIMIT) has been used. In this case, they reject the transaction. 400000 gas has been spent. In this case, they reject the transaction. The PAYGAS opcode has been used. In this case, they accept or reject the transaction based on whether the gasprice given to the opcode is sufficient.   Miners and network nodes do not relay more than one transaction for each account. The impact on usability from this is low because account abstraction will as a side effect enable accounts that support performing multiple operations inside of one transaction.  Rationale The PAYGAS opcode creates a \u201cbreakpoint\u201d that separates transaction execution into (1) a \u201cverification\u201d step, which executes code that can only read the transaction and on contract storage (which might contain public keys, anti-replay nonces, Merkle roots and other info) and cannot write anything and (2) an \u201cexecution\u201d step which is not constrained, except that nothing that takes place during the execution step is capable of reverting the gas payment determined in PAYGAS. The only-storage-dependent and non-writing rules are there to ensure that a transaction with some target T is guaranteed to continue being valid and having the same gasprice until either (i) that transaction is included, or (ii) another transaction with target T is included. This ensures that transactions have similar technical properties to what they have today. The \u201cENTRY_POINT only\u201d guard requirement is there to ensure that this rule cannot be violated by transactions with other targets calling into the account. Transaction hash uniqueness There are two possible strategies to go regarding the transaction hash uniqueness invariant. The first strategy is to accept that this form of abstraction will remove this invariant, because nothing now strictly prevents the same transaction from being included twice (though allowing that would be inadvisable for most applications). This would require rearchitecting of some client code. The second strategy is to maintain the requirement that transactions have nonces, add nonces to contracts, and keep the tx.nonce == contract.nonce check (and add contract.nonce += 1 to the post-execution step). This preserves uniqueness, but harms some use cases (eg. Tornado Cash) because multiple users may send transactions at the same time, and so there may be race conditions for transactions with the same nonce. That said, note that such applications would already be limited by the network-layer \u201conly propagate one transaction per account\u201d rule. One simple fix for TC and similar applications would be to shard the uniqueness-nonce space. In TC, every withdrawal must provide a \u201cnullifier\u201d that is cryptographically connected to their withdrawal note. The system could maintain eg. 16 contracts, each of which stores a map of used nullifiers only for a range  0\u2026, 1\u2026, 2\u2026 up to f\u2026 Note particularly that the execution phase of the transaction could call out to these other contracts and update all of them. Applications other than TC (eg. UTXO-based subsystems) could use similar principles. ",
+                    "links": [
+                        "https://ethresear.ch/t/a-recap-of-where-we-are-at-on-account-abstraction/1721",
+                        "https://ethresear.ch/t/tradeoffs-in-account-abstraction-proposals/263",
+                        "https://ethresear.ch/t/maximally-simple-account-abstraction-without-gas-refunds/5007",
+                        "https://hackingdistributed.com/2016/06/28/ethereum-soft-fork-dos-vector/",
+                        "https://ethereum-magicians.org/t/eip-2938-account-abstraction/4630",
+                        "https://ethereum-magicians.org/t/scaling-concept/4552/3"
+                    ],
+                    "GPT-summary": "The post explains the concept of account abstraction and its benefits, including the ability to use different authorization policies and improve gas efficiency. The post also proposes a concrete scheme for implementing account abstraction and discusses the potential impact on transaction hash uniqueness. The post is primarily an explanation of the proposal, but also includes constructive criticism, extensions, and questions from third parties, as well as a review of the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Privacy, Security and risk management",
+                        "Interoperability and Scaleability",
+                        "Token economics",
+                        "Law and regulations"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.1192014126224645
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "28/02/2020-11:42:30",
+                    "content": "Hi, great summary of the state of the art. I think I lean towards removing the hash invariant, since nonces introduce a real choke point, but I\u2019d love to enumerate the drawbacks more (hard to look up a tx with shared hashes). Just curious how you came up with the 400k gas limit suggestion for the verification stage. Since the current ECRECOVER cost is only 3k, this does seem to increase the cost of verifying a transaction significantly, which in theory could create a DDoS vector if too high. One way that could further lower this limit/vector could be to allow the verification step to be paid for in tranches. For example, a very multi-sig may pay for verification cost after every 5 signatures verified. This could also allow for accounts exceeding the 400k complexity. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.976388888888888
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "28/02/2020-12:03:30",
+                    "content": "    danfinlay:  Just curious how you came up with the 400k gas limit suggestion for the verification stage. Since the current ECRECOVER cost is only 3k, this does seem to increase the cost of verifying a transaction significantly, which in theory could create a DDoS vector if too high.   Good question! I was setting that to be high enough to be able to verify a SNARK in the verification step (I\u2019ve heard numbers around 200-300k gas). Unfortunately SNARK-verification isn\u2019t really trancheable in the way that you describe  so just running up to 400k gas pre-inclusion-guarantee may be the only approach\u2026  I think I lean towards removing the hash invariant, since nonces introduce a real choke point, but I\u2019d love to enumerate the drawbacks more (hard to look up a tx with shared hashes).  Makes sense! Though it\u2019s client devs that would have to do a bunch of hard work if the hash invariant gets removed, so would be good to hear from them on this point. I\u2019d also note that another way to get around the issue is to have separate \u201cpublication-time identifiers\u201d (hash(tx)) and \u201cinclusion-time identifiers\u201d (hash(target, nonce, tx)), where the former are not guaranteed to be unique but the latter are. Then in the normal case, you can predict the inclusion-time identifier at publication time, but in special cases where that\u2019s not true application devs could come up with other techniques. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.699178571428572
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "29/02/2020-01:48:37",
+                    "content": "    vbuterin:  Unfortunately SNARK-verification isn\u2019t really trancheable in the way that you describe  so just running up to 400k gas pre-inclusion-guarantee may be the only approach\u2026   And just to help me mentally model the use case of SNARK-based authorization (I don\u2019t think in fluent SNARK), this would enable tx verification from accounts whose keys are completely unidentifiable? My na\u00efve approach makes me want to ask if there could be a pre-snark tranche that increases the verification gas limit for the SNARK phase. This would require the pre-verification to use a non-snark method, so I guess it would mean the account would not be fully abstracted, and somewhat resembles metatx relays today. Maybe that\u2019s a compromise worth considering. Since signature verification is effectively a free service that every miner is exposing to the web, if verification was expensive enough, and attackers decided to abuse it, I\u2019d think miners might need to start layering selective logic about whose transactions they\u2019d try verifying, and that becomes a less open network. The \u201cbarrier to entry\u201d in some ways is the cost of authorizing a message from an unknown sender. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.738782051282051
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "29/02/2020-16:36:59",
+                    "content": "The simplest example of SNARK-based authorization is Tornado Cash running without relayers. The transactions would just appear to be \u201csent by\u201d the Tornado Cash contract, and would verify the SNARK and that the nullifier is unspent (the latter is a storage lookup). Agree that we\u2019d need other measures if it turns out that allowing SNARK verification in pre-processing is too much. However, the existence of Zcash (which of course has to preprocess in some cases many SNARKs before accepting a transaction) suggests that it may not be that bad. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rumkin",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "03/03/2020-11:33:59",
+                    "content": "The contract could return some ID (address, uint256 or bytes32) as a result of the verification phase. This ID identifies the sender and is used to get the nonce from a contract\u2019s nonce storage. Then this nonce compares with the transaction\u2019s nonce. For SNARKs this ID will be always the same. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "06/03/2020-17:43:06",
+                    "content": "That is interesting too! Though in this case, you still get the property that for applications that are \u201cincorrectly constructed\u201d, a tx indentifier could repeat for multiple transactions, and so code would still need to be written to handle that case. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cdili",
+                    "index": "8",
+                    "likes": "2",
+                    "time": "14/05/2020-19:46:09",
+                    "content": "From the Account Abstraction discord channel https://discord.com/channels/595666850260713488/700028534114222171 Account Abstraction, Stateless Mining Eth1.x/Eth 2 Implementation, Rationale Document https://hackmd.io/y7uhNbeuSziYn1bbSXt4ww?view AA Open Questions    HackMD    AA Open Questions - HackMD # AA Open Questions  This is a collection of some of the open questions around account abstraction f      ",
+                    "links": [
+                        "https://hackmd.io/y7uhNbeuSziYn1bbSXt4ww?view",
+                        "https://hackmd.io/@KuiKHwIPT4e8_VWfnKLHvw/Byd91DvKI",
+                        "https://hackmd.io/@KuiKHwIPT4e8_VWfnKLHvw/Byd91DvKI"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1008"
+}

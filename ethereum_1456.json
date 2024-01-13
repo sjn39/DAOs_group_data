@@ -1,0 +1,879 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-4337-account-abstraction-via-entry-point-contract-specification/7160",
+            "title": "ERC 4337: Account Abstraction via Entry Point Contract specification ",
+            "index": 7160,
+            "category": [
+                "Interfaces"
+            ],
+            "tags": [
+                "account-abstraction"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "1",
+                    "likes": "33",
+                    "time": "29/09/2021-08:59:03",
+                    "content": "An account abstraction proposal which completely avoids the need for consensus-layer protocol changes, instead relying on a separate mempool of UserOperation objects and miners running either custom code or a bundle marketplace.   github.com/ethereum/EIPs         ERC: Account Abstraction via Entry Point Contract specification   ethereum:master \u2190 ethereum:vbuterin-patch-1            opened 08:57AM - 29 Sep 21 UTC               vbuterin             +313 -0       An account abstraction proposal which completely avoids the need for consensus-l\u2026ayer protocol changes, instead relying on a separate mempool of `UserOperation` objects and miners either running custom code or connecting to a bundle marketplace.       ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/4337",
+                        "https://github.com/vbuterin",
+                        "https://github.com/ethereum/EIPs/pull/4337/files",
+                        "https://github.com/ethereum/EIPs/pull/4337",
+                        "https://ethereum-magicians.org/t/eip-5630-encryption-and-decryption/10761/48"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "2",
+                    "likes": "4",
+                    "time": "29/09/2021-15:13:08",
+                    "content": "The proposal looks awesome! We worked on a very similar set of contracts under the name of \u201cSequence\u201d, in short is pretty much the same system, with the key difference that handleOp and verifyUserOp are bundled together on the same execute function. The relayer has to simulate this execute function with a fixed amount of gas and see if it\u2019s going to get paid or not before sending the transaction. The contracts are here: https://github.com/0xsequence/wallet-contracts The cool thing is that our system could be upgraded to support this new standard, after all wallets are upgradable, and we could split our execute function into verifyUserOp and handleOp. The only roadblock I see is that we already have our own \u201cWallet factory\u201d, it uses CREATE2 in pretty much the exact same way ERC4337 does (https://github.com/0xsequence/wallet-contracts/blob/master/src/contracts/Factory.sol) and wallets are indeed counter-factual, but afaik ERC4337 wallets must be created using the EntryPoint contract as factory. Thus our wallet addresses couldn\u2019t benefit from the initCode property on the relayer network, because the resulting addresses would be different. I wonder if this is an implementation detail or something by design, because by allowing contracts as wallet factories we could allow existing smart contract wallet implementations to be retrofitted without having to re-deploy all counter-factual accounts. I imagine this issue affects not only Sequence but also Gnosis, Argent, etc. A possible solution could be to split initCode into two fields: initCode and initAddress, the creation of the wallet involves calling initAddress with initCode as data, after that EntryPoint could validate if the account address now contains code. The trusts assumptions are the more or less the same, and any restrictions put on initCode (call external contracts, use timestamp, etc) could also be applied to initAddress. ",
+                    "links": [
+                        "https://github.com/0xsequence/wallet-contracts/blob/master/src/contracts/Factory.sol"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.7469197469197475
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "3",
+                    "likes": "6",
+                    "time": "29/09/2021-20:41:33",
+                    "content": "    Agusx1211:  ERC4337 wallets must be created using the EntryPoint contract as factory   I don\u2019t think this is technically true; you can use ERC 4337 with wallets created in other ways, you just would not be able to create the wallet without a paymaster.  A possible solution could be to split initCode into two fields: initCode and initAddress, the creation of the wallet involves calling initAddress with initCode as data, after that EntryPoint could validate if the account address now contains code.  Interesting! Need to think about whether or not it\u2019s safe to call into arbitrary addresses as contract creators\u2026 or if it\u2019s a useful idea. Perhaps instead we should just agree on a chain-wide generic factory contract that everything gets created through (this would have other use cases, eg. if users using account-abstracted wallets want to create new contracts, they could do it through the factory instead of the wallet supporting a separate creation mechanism). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.963068181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/JamesZaki",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "30/09/2021-00:01:55",
+                    "content": "Great write-up  FYI, another implementation in progress (with a previous version tested on Optimism and Arbitrum testnets) can be found here, it\u2019s focus is on using BLS signature aggregation. \u201cEntryPoint\u201d is VerificationGateway (cleanup in progress), the wallet contract is BLSWallet, and \u201cBundler\u201d is bls-wallet-aggregator repo. Which will go beyond just contract wallets, introducing significant savings on L1 by reducing L2 calldata (1 instead of n BLS sigs in a \u201cbundle\u201d).  Perhaps instead we should just agree on a chain-wide generic factory contract that everything gets created through  This is the current design for VerificationGateway, but the indirection through aggregators and user bls keys I think rules out deterministic wallet addresses. ",
+                    "links": [
+                        "https://github.com/jzaki/bls-wallet-contracts/blob/main/contracts/VerificationGateway.sol#L89",
+                        "https://github.com/jzaki/bls-wallet-aggregator"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.008333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "30/09/2021-04:34:06",
+                    "content": "Happy to hear there\u2019s work being done on this! Does your BLS wallet aggregate transactions across operations? That\u2019s a feature that, while not especially useful for regular wallets because calldata costs are not that high relative to ECPAIRING costs, is a lifesaver for optimistic rollups. Would be interesting to see how it could be incorporated into the same standard. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.9906250000000005
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/JamesZaki",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "30/09/2021-05:10:58",
+                    "content": " Happy to hear there\u2019s work being done on this!  Thanks EF   across operations  I have a card in the github project: \u201cConsider design of single signature for multiple txs (eg exchanges frequent need of approve then transfer)\u201d, if that is what you mean? Currently an aggregator (server) would put together bls-signed tx data for an arbitrary set of txs (from any blswallet) that fit in an L2 tx, they could be txs from the same address with consecutive nonces, each individually signed-for though (before aggregation). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.552759740259741
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "30/09/2021-05:41:16",
+                    "content": "The bundler should be able to take all the BLS signatures in the user operations, and combine them together into a single BLS aggregate signature that goes on chain. When verifying the ops, the contract would extract the entire list of (pubkey, msghash) pairs that wallet verification execution expects, and check the aggregate signature against that whole list. Is that what you have in mind? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.785714285714285
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/JamesZaki",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "30/09/2021-05:43:42",
+                    "content": "Yes, that\u2019s what it does \u2192 bls-wallet-contracts/VerificationGateway.sol at main \u00b7 jzaki/bls-wallet-contracts \u00b7 GitHub EDIT: bundling here ",
+                    "links": [
+                        "https://github.com/jzaki/bls-wallet-aggregator/blob/main/src/app/WalletService.ts#L130"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "9",
+                    "likes": "2",
+                    "time": "30/09/2021-07:37:55",
+                    "content": "This sounds very similar to https://docs.opengsn.org/ Did you look into this and where there are parallels and differences? Also something like this has been attempted in the past with EIP-1077: Gas relay for contract calls. I would love to see what is different from then to now. I also think that pushing EIP-2937: SET_INDESTRUCTIBLE opcode with that would be super helpful as it would enable more wallet to comply to this. For example the current Gnosis Safe setup would not be usable with the current proposal as it supports delegatecalls. I would also be interested in what relation the Bundlers stand to the Miners/Validators. It sounds like these would be a complete different service. Or would you expect this to be part of a default Miner/Validator setup. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-1077",
+                        "https://eips.ethereum.org/EIPS/eip-2937"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.805555555555556
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "03/10/2021-12:10:50",
+                    "content": " I would also be interested in what relation the Bundlers stand to the Miners/Validators. It sounds like these would be a complete different service. Or would you expect this to be part of a default Miner/Validator setup.  Bundlers would either be miners/validators, or they would be actors publishing bundle txs through Flashbots. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.583333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/StanislavBreadless",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "02/02/2022-08:43:54",
+                    "content": "Excuse me if I misunderstood something, but I could not find how the preVerificationGas field is handled. Or is it the responsibility of the account abstraction account to handle and use these fields correctly? Especially what\u2019s interesting is at what step the preVerificationGas is paid. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "02/02/2022-19:06:01",
+                    "content": "preVerificationGas covers all the gas that can\u2019t be checked on-chain using gasleft() deltas, but is known to be paid by both the calling user and the miner. It covers static gas cost (e.g 21000 stipend, and little more used by handleOps other), and dynamic cost which depends on actual UserOp structure (e.g calldata cost, and memory usage/copy into the inner methods of handleOps. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.491071428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/StanislavBreadless",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "03/02/2022-09:16:48",
+                    "content": "But how is it charged from the user? Do I get it right that it is the responsibility of the user account to pay for it? The same as for the actual fee? In the specification, preVerificationGas is a part of UserOperation. That means that there is no way to enforce that the miner (or the one who submits this bundle of UserOperations) will get paid. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.476190476190476
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "14",
+                    "likes": "1",
+                    "time": "05/02/2022-11:31:06",
+                    "content": "To summarize the complete transaction payment:  The EntryPoint calculate the total cost of the UserOp, and charges the wallet (or paymaster) for that and transfer that amount to the bundler/miner. the payment is split into 2 parts: those we can calculate on-chain (using gasleft() wrappers), and those we can\u2019t. the paymaster calculates the cost of verification, target call gas (and postOp, in case a paymaster is used to pay instead of the wallet itself.) to this value it adds the preVerificationGas, which should be set to the excess (calldata cost, and some static cost we can\u2019t calculate on-chain) The preVerificationGas is calculated by the user who creates and signs the request. The bundler/miner - verifies this value before putting it on-chain, to make sure it makes profit on this transaction.  Notes:  The UserOp contains 2 other gas values, the verificationGas and callGas. The user/paymaster must have balance to pay these values, but eventually pay only for the actual used gas. The preVerificationGas is paid in full.  preVerificationGas name is misleading a little: most of its value indeed comes before the verification, but it covers also some static overhead that comes later.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.890625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jacekv",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "09/02/2022-05:56:33",
+                    "content": "The ERC looks pretty good, yet I was wondering about adding a chainId field into the UserOperation. Since transactions have it (EIP-155) to prevent replay attacks, I believe the same attack vector comes in play in regards the UserOperations. Or am I wrong? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "09/02/2022-11:39:19",
+                    "content": "Thanks, you are right, and the implementation actually covers chainId as part of the signature.  The UserOperation struct doesn\u2019t include a chain ID field, but it is appended before signing/verifying.  The EIP should reflect that as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.80952380952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jacekv",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "09/02/2022-14:54:51",
+                    "content": "@yoavw Thanks for linking it to the contract. I am not sure how this is going to prevent replay attacks. The chainId is taken from the block and hashed with the UserOperation. As an attacker, I still could take the UserOperation and use it on a different chain, or not? Is there something I am overlooking? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.916666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "09/02/2022-15:35:31",
+                    "content": "The user signed userOp.hash(), address(this), block.chainid and taht\u2019s what the wallet will verify. This signature is a part of the the UserOperation.  If someone relays the same UserOperation on another chain with a different chainid, the wallet will revert during its validateUserOp because the signature won\u2019t match  the requestId it receives from EntryPoint. Do you see a way to bypass that, and successfully replay the UserOperation on a chain with a different chainId? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jacekv",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "09/02/2022-16:02:12",
+                    "content": "Alright, I get the flow know and was able to follow the steps in the code  Thanks for the explanation @yoavw ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjade273",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "22/03/2022-19:07:11",
+                    "content": " Note that balance cannot be read in any case because of the forbidden opcode restriction. Writing balance (via value-bearing calls) to any address is not restricted.  Doesn\u2019t allowing value-bearing called essentially allow reading the balance of an account? For example, if the wallet includes this in validateUserOp bool success = this.send(500);  success will contain 1 iff the contract contains at least 500 wei. If we want the exact balance, we can just binary search. Also, what happens if the wallet has all funds removed between simulation time and run time? Is the idea that this shouldn\u2019t be possible because the handleOps call will always be the first transaction in a block?. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.571428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "22",
+                    "likes": "2",
+                    "time": "23/03/2022-02:20:31",
+                    "content": "    tjade273:  Doesn\u2019t allowing value-bearing called essentially allow reading the balance of an account?   Yes, the wallet could check its own balance this way, much like it could check its own storage. The user would be able to invalidate an op that is already in the mempool by using a non-op transaction to change the wallet\u2019s balance. However, the wallet can only check its own value this way, so it can only be used to invalidate the op of a single wallet at a time.  The wallet could similarly use a separate transaction to update its nonce and invalidate the op. Your question does highlight an important point - that the client should treat the value as part of the account state, and not just the storage.  I.e. if a wallet calls a function in a 3rd party contract, which doesn\u2019t access storage but does attempt to send value, the clients shouldn\u2019t accept it.  Otherwise this could be used to invalidate ops of multiple wallets. The EIP specifies this condition: The first call does not access mutable state of any contract except the wallet itself and its deposit in the entry point contract. I now edited it to clarify that mutable state includes both value and storage. Thanks for bringing it up.     tjade273:  Also, what happens if the wallet has all funds removed between simulation time and run time? Is the idea that this shouldn\u2019t be possible because the handleOps call will always be the first transaction in a block?.   The simulation is performed against the latest state while building the block. It is the block proposer\u2019s responsibility to ensure that an earlier transaction in the block doesn\u2019t invalidate an op.  The simplest way to do it is what you suggested - make the handleOps call in the first transaction in the block.  A client could simulate it against a mid-block state or use access lists to prevent conflicts, but making it first is easier.  The current client implementations already do this, but I now added a comment to the EIP to make this requirement clearer. Thanks for highlighting these points!  Client developers need to take them into account. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.038819875776397
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "24/03/2022-00:17:15",
+                    "content": "@tjade273 thinking some more about value-bearing calls, I realized that our current protection (dropping validations that change any account balance except the wallet and the entry point) is not good enough.  The value-bearing call you suggested could be a self-call by some 3rd party account, so there\u2019s no balance change.  So the current protection won\u2019t stop this DoS:  Wallets call EvilContract.func() during validation. EvilContract.func() attempts to call its own receive function with 1 wei, reverting if it fails. When it has 1 wei it is not caught by the current protection because the balance remains 1 wei. Attacker sends ops from 1000 wallets with this validation function while EvilContract has 1 wei. Validations succeed and the ops are accepted to the mempool. Attacker tells EvilContract to send the 1 wei elsewhere. All ops fail validation in the 2nd simulation.  We\u2019ll update the EIP to also ban value-bearing calls during validation, except from the wallet to the entry point. Thanks again for your valuable comments. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.979166666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjade273",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "24/03/2022-01:36:03",
+                    "content": "@yoavw yes, this is essentially the attack I had in mind. I assumed that executing a value-bearing call in some sense triggered the  does not access mutable state of any contract except the wallet itself  in your last post but yes it bears being specific that this applies also to implicit reads via value-bearing calls. Another interesting corner case I\u2019ve been thinking about is: Wallet calls C1, passing it say 500 gas. C1 attempts to call C2 (which just returns immediately). Since gas cost for first accesses is metered at a higher rate, the call to C1 succeeds exactly when C2 has been accessed before. So in simulation if the calls are simulated separately as they arrive at the mempool, they will behave differently from when they are all run together. It seems like this can be used to form a large scale DoS, unless all the userOps are simulated together in a batch (is this the case?). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.082142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "24/03/2022-02:02:46",
+                    "content": "The ops are also simulated together as eth_estimateGas of the entire handleOps transaction, but we do try to avoid cases where this simulation fails, because it creates more work.  If it does fail, the simulation returns the index of the op in the bundle as an arg of the FailedOp error, and the bundler removes this op. The method you described would indeed pass the single-op simulation and then fail the eth_estimateGas, which will cause it to revert with a FailedOp and specify that op and retry. It\u2019s not as effective as the previous attack (value-bearing self calls) since it only invalidates ops in the current bundle rather than the entire mempool, and the attacker ends up paying for the first op in every bundle because this one is valid and not removed.  But it is still a nuisance to the bundler which has to eth_estimateGas multiple times and only gets paid for one valid op. I wonder if we should mitigate.  We could require all calls during validation to provide max gas, which would prevent this vector and hopefully shouldn\u2019t break any valid use case.  On the other hand, the attack doesn\u2019t scale well for the attacker because it only causes some off-chain work while paying on-chain costs in each bundle.  What do you think? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.852777777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjade273",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "24/03/2022-02:19:51",
+                    "content": "The attacker may be able to get away with less than 1 successful op per batch if they test for previous accesses to an account that is likely to be called regardless of the attacker\u2019s userVerify activity. For example, a common paymaster that is likely to be used early in the batch, or even the externally owned account of the bundler themselves. I\u2019m trying to reason through the expected burden on a bundler due to this: is there any rate-limiting we can do to prevent users from filling up the mempool with a huge number of these invalid userOps? If the attacker sends 100k requests with the same wallet but different nonces, do these all get added to the mempool and crowd out real transactions? If so, maybe some sort of wallet blacklisting is warranted. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.363888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "24/03/2022-02:31:50",
+                    "content": "No, each wallet can only have one op in mempool at a time. The attacker needs to use 100k contract wallets in order to send 100k concurrent ops. But\u2026 it may be possible to implement your attack without actually paying for these deployments.  When a new wallet is deployed via EntryPoint, its validation is immediately called and the deployment is reverted if validation fails.  You could craft a wallet that almost always reverts its own deployment op, costing the attacker nothing. So you convinced me, we should add a max-gas rule during validation.  We already require the use of fixed gas since we ban the GAS opcode, so we might as well require it to be max. Thanks & keep them coming!   ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.3664772727272725
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjade273",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "24/03/2022-04:02:45",
+                    "content": "I think even with the max gas limitation there\u2019s a similar issue. The attacker just needs to calculate and set the verificationGas such that C1 runs out of gas only when address C2 is not primed. Then if the call to C1 fails, pay the EntryPoint and if it succeeds, revert. There should be enough gas left over for this due to the 63/64ths rule (we can make the leftover gas as large as necessary by burning a bunch in C1). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.144642857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjade273",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "24/03/2022-04:10:55",
+                    "content": "One potential mitigation is to simulate the operation, then resimulate it with all of the called addresses primed, and make sure the contract pays in both cases. Alternatively you could disallow all reverted calls, or just OOG calls, in the stack. This should work since the \u201creal life\u201d calls will always take at most as much gas as the simulated calls, so if no calls run out of gas in the simulation then they shouldn\u2019t in \u201creal life\u201d either. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "24/03/2022-16:05:16",
+                    "content": "    tjade273:  There should be enough gas left over for this due to the 63/64ths rule   I\u2019m not sure the 63/64 rule leaves enough gas to do anything in this case, since nodes won\u2019t accept a high verificationGas op due to the risk of unpaid work. But you\u2019re right, there\u2019s a risk that this could be exploited, and the max gas change doesn\u2019t mitigate it.     tjade273:  resimulate it with all of the called addresses primed   That won\u2019t solve the problem either, because the contract could use a combination, expecting some addresses to be primed and others not.  E.g. succeed if no addresses are primed or all addresses are primed, but fail if 2 are and 3 aren\u2019t.     tjade273:  you could disallow all reverted calls, or just OOG calls, in the stack.   I think this is the way to go.  The client should drop the op if there\u2019s an OOG revert in any context.  Thanks for suggesting that. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.92987012987013
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poojaranjan",
+                    "index": "31",
+                    "likes": "5",
+                    "time": "28/03/2022-17:26:54",
+                    "content": "PEEPanEIP-4337: Account Abstraction via Entry Point Contract specs. with @yoavw @kristofgazso      ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tfalencar",
+                    "index": "32",
+                    "likes": "5",
+                    "time": "27/04/2022-19:04:35",
+                    "content": "Reference to another great presentation about this proposal:      Slides: ETHAmsterdam ERC 4337 - Google Slides Main links from the slides: Contract code: account-abstraction/contracts at main \u00b7 eth-infinitism/account-abstraction \u00b7 GitHub Audit blog post: EIP-4337 - Ethereum Account Abstraction Audit - OpenZeppelin blog ",
+                    "links": [
+                        "https://docs.google.com/presentation/d/e/2PACX-1vSlCUZQgrDOlgqTa_ys9LxTZ2tXIITbFH4muFsBgyO6VCtXV5KFFUkIh6jZly9L7Lb69fTbvMHuRFEF/pub?start=false&loop=false&delayms=3000&slide=id.p",
+                        "https://github.com/eth-infinitism/account-abstraction/tree/main/contracts",
+                        "https://blog.openzeppelin.com/eth-foundation-account-abstraction-audit/"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.888888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/StanislavBreadless",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "06/07/2022-08:34:53",
+                    "content": "Do I get it right from the implementation here that:  The user is required to have a prefund of callGas + verificationGas + preVerificationGas. Link. (Let\u2019s discuss only the case when without the paymaster). At the same time, verification is allowed to consume the entire verification gas. Link. Also, the execution is allowed to consume the entire callGas. Link. The preVerificationGas is always paid entirely as it takes into account gas needed for posting calldata etc. Link.  These parameters do not take into account additional overhead for creating auxiliary variables on the stack, etc. The preGas variables carry this overhead and is taken into account when paying fees for the beneficiary. It seems like it is possible that the user\u2019s operation consumes the entire verificationGas and executionGas, and so the user does not pay for the overhead mentioned above (e.g. these operations are done at the expense of the EntryPoint contract). The code is taken from the OpenZeppelin\u2019s report. ",
+                    "links": [
+                        "https://github.com/eth-infinitism/account-abstraction/blob/a2f4b7be4d9996095e08d7102bacc9f13ea99ff6/contracts/UserOperation.sol#L57",
+                        "https://github.com/eth-infinitism/account-abstraction/blob/a2f4b7be4d9996095e08d7102bacc9f13ea99ff6/contracts/EntryPoint.sol#L254",
+                        "https://github.com/eth-infinitism/account-abstraction/blob/a2f4b7be4d9996095e08d7102bacc9f13ea99ff6/contracts/EntryPoint.sol#L154",
+                        "https://github.com/eth-infinitism/account-abstraction/blob/a2f4b7be4d9996095e08d7102bacc9f13ea99ff6/contracts/EntryPoint.sol#L109",
+                        "https://github.com/eth-infinitism/account-abstraction/blob/a2f4b7be4d9996095e08d7102bacc9f13ea99ff6/contracts/EntryPoint.sol#L94",
+                        "https://blog.openzeppelin.com/eth-foundation-account-abstraction-audit/"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.158730158730158
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "08/07/2022-01:25:25",
+                    "content": "    StanislavBreadless:  These parameters do not take into account additional overhead for creating auxiliary variables on the stack, etc. The preGas variables carry this overhead and is taken into account when paying fees for the beneficiary.   The preVerificationGas is supposed to cover this (yes, its name is a bit misleading) We assume that all the variable costs are calculated using the \u201cgas diffs\u201d and that the overheads you describe are constants, and thus can be calculated by the bundler, to verify the preVerificationGas pays for them. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/StanislavBreadless",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "08/07/2022-08:53:52",
+                    "content": "Thank you @dror for your response. Could you please help me with what step of reasoning am I wrong here (let\u2019s assume that the tx was successful and there is no paymaster):   Here we create UserOpInfo with preOpGas being equal to op.preVerificationGas + preGas - gasleft(). Let\u2019s call say that preGas - gasleft() = op.verificationGas + k , where k is some constant. That means that preOpGas = op.preVerificationGas + op.verificationGas + k.  Here when actually execute the tx, the actual cost is returned. The preOpGas is added to it, and so, in the worst case, the returned actual gas is equal to at least op.callGas + preOpGas = op.callGas + op.preVerificationGas + op.verificationGas + k.  The refund that the user was required to have at the start of the transaction is op.callGas + op.preVerificationGas + op.verificationGas, but the actual gas spent was op.callGas + op.preVerificationGas + op.verificationGas + k. The question is, who pays for k? From here we subtract the actualGasCost from prefund, so if the prefund is smaller than the actual gas cost, then the transaction will revert. Indeed, the EntryPoint will not lose any money, but the operator should always remember that the operation is never guaranteed to succeed unless the verification step took so little amount of gas that the difference is enough to compensate for the k ",
+                    "links": [
+                        "https://github.com/eth-infinitism/account-abstraction/blob/a2f4b7be4d9996095e08d7102bacc9f13ea99ff6/contracts/EntryPoint.sol#L123",
+                        "https://github.com/eth-infinitism/account-abstraction/blob/a2f4b7be4d9996095e08d7102bacc9f13ea99ff6/contracts/EntryPoint.sol#L164",
+                        "https://github.com/eth-infinitism/account-abstraction/blob/a2f4b7be4d9996095e08d7102bacc9f13ea99ff6/contracts/EntryPoint.sol#L381"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.58203125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/blmalone",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "03/08/2022-19:26:53",
+                    "content": "The EIP states that: To prevent replay attacks (both cross-chain and multiple EntryPoint implementations), the signature should depend on chainid and the EntryPoint address.  This makes sense given EIP-155. Just so it\u2019s clear for me, the reason the EIP doesn\u2019t define how this signature is calculated over the data is because any signing and hashing algorithm (within reason) can be used? For example, to calculate the hash of a message before creating a signature in Ethereum it is common to do the following: Keccak256(\"\u0019Ethereum Signed Message:\\ 32\" + Keccak256(message))  So is the reason this ERC isn\u2019t prescriptive like the example above due to the flexibility it offers with respect to crypto algorithms? Therein, the validateUserOp on the wallet contract must make sure that it\u2019s accounting for the chainId and the EntryPoint (as well as the UserOperation) when checking the signatures validity. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.171875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "37",
+                    "likes": "4",
+                    "time": "04/08/2022-08:29:30",
+                    "content": "Minor comment: I think a more descriptive term for \u201cpaymaster\u201d can be \u201csponsor\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "22/08/2022-19:51:10",
+                    "content": "    blmalone:  So is the reason this ERC isn\u2019t prescriptive like the example above due to the flexibility it offers with respect to crypto algorithms?   Exactly. The wallet is the flexibility (and responsibility) to use whatever signature scheme. The \u201cSampleWallet\u201d we provide use this EIP191 \u201cEthereum Signed Message\u201d signature. We also add reference implementation that uses BLS signatures ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.28125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "23/09/2022-10:46:32",
+                    "content": "Is the current draft (EIP-4337: Account Abstraction via Entry Point Contract specification) up to date? I\u2019m working on implementing 4337, but I see some inconsistencies between the EIP and the EntryPoint implementation. For example, the EIP states the following rule: Any GAS opcode is followed immediately by one of { CALL, DELEGATECALL, CALLCODE, STATICCALL }.  however, in the implementation repository, the example contains the following code:   //pay required prefund. make sure NOT to use the \"gas\" opcode, which is banned during validateUserOp   // (and used by default by the \"call\")   (bool success,) = payable(msg.sender).call{value : requiredPrefund, gas : type(uint).max}(\"\");   (success);   //ignore failure (its EntryPoint's job to verify, not wallet.)  So is not clear if GAS is allowed or not (when used before CALL, DELECATECALL, etc.). This is an important detail because proxy contracts (see EIP-1167) use the GAS opcode when forwarding the call. If this exception to the rule doesn\u2019t exist, then wallets that use these proxies wouldn\u2019t be compatible.  An unrelated thing: Also while simulating the op there are a list of rules the client must enforce, but I see CALL to external contracts is allowed as long as value = 0, I think this is not enough to stop a 3rd contract from invalidating a large set of user operations:  During validation CALL address X with value = 0 and any data, address X is a non-deployed contract so it doesn\u2019t have code, the call doesn\u2019t fail. Deploy a contract at address X, the contract calls address Y and it reverts if the call doesn\u2019t fail. Deploy a contract at address Y, the contract calls address Z and it reverts if the call doesn\u2019t fail. This enables toggling an arbitrary number of operations between valid and invalid.  This can be built as an ever expanding chain of NOT gates, I think a way to mitigate this issue is adding a rule that during validation the wallet is not allowed to call addresses with empty code. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-1167"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.874404761904762
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "40",
+                    "likes": "1",
+                    "time": "23/09/2022-14:15:43",
+                    "content": "    Agusx1211:  Is the current draft (EIP-4337: Account Abstraction via Entry Point Contract specification) up to date?   The latest changes haven\u2019t been merged to the official repo yet.  They\u2019re mainly related to signature aggregation but contain a few other minor changes.  It\u2019ll be merged very soon.  The place to see the latest pending changes is https://github.com/eth-infinitism/account-abstraction/blob/develop/eip/EIPS/eip-4337.md     Agusx1211:  So is not clear if GAS is allowed or not (when used before CALL, DELECATECALL, etc.).   It is allowed.  GAS is a forbidden opcode but there\u2019s an exception to allow it just before *CALL which immediately consume it from the stack.  The rationale is that the code should not be able to access this information and change the flow based on it, but calls are fine.  Since the GAS value is not available to the code, the only way it could affect the flow is if a function runs out of gas.  But rule 7 precludes that, by banning out-of-gas calls:  No CALL, DELEGATECALL, CALLCODE, STATICCALL results in an out-of-gas revert.  So the exception described in the EIP is the correct one.  The EntryPoint code also doesn\u2019t enforce it since it\u2019s handled by the bundler.  What\u2019s wrong is the comment in the code, which doesn\u2019t mention the *CALL exception.     Agusx1211:  2 Deploy a contract at address X, the contract calls address Y and it reverts if the call doesn\u2019t fail.   At that point rule 9 kicks in:   EXTCODEHASH of every address accessed (by any opcode) does not change between first and second simulations of the op.  Any op that accesses address X gets dropped from mempool without simulation.  What the EIP tries to avoid is having to resimulate a large number of ops in order to drop them.  During the first simulation, the bundler saves a list of accessed addresses.  Since any code change would trigger rule 9, these ops would be invalidated without additional work.     Agusx1211:  I think a way to mitigate this issue is adding a rule that during validation the wallet is not allowed to call addresses with empty code.   That actually wouldn\u2019t mitigate the issue, since the contract at address X can be selfdestructed and redeployed differently each time by using some well known constructor tricks.  The attack would start with a contract that doesn\u2019t revert at address X, then toggle it by selfdestructing and recreating (in a single transaction) in order to invalidate a large number of ops.  But I think rule 9 above does offer sufficient mitigation.  Do you see a way around it? ",
+                    "links": [
+                        "https://github.com/eth-infinitism/account-abstraction/blob/develop/eip/EIPS/eip-4337.md"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.220924908424909
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "23/09/2022-15:14:05",
+                    "content": "    yoavw:  Do you see a way around it?   What\u2019s stopping the wallet from re-broadcasting the transaction? you could mutate the transaction a bit, and re-broadcast, thus spamming the mempool without any additional costs. I assume the the client can block the wallet, but then a sort of \u201cper-wallet reputation\u201d starts to play out too.     yoavw:  That actually wouldn\u2019t mitigate the issue, since the contract at address X can be selfdestructed and redeployed differently each time by using some well known constructor tricks.   Yes, but I\u2019m assuming that SELFDESTRUCT will get deactivated soon enough. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "42",
+                    "likes": "1",
+                    "time": "23/09/2022-15:52:40",
+                    "content": "    Agusx1211:  What\u2019s stopping the wallet from re-broadcasting the transaction? you could mutate the transaction a bit, and re-broadcast, thus spamming the mempool without any additional costs. I assume the the client can block the wallet, but then a sort of \u201cper-wallet reputation\u201d starts to play out too.   We\u2019d rather avoid per-wallet reputation.  We only have that for paymasters.  But this attack does have a cost to the attacker, probably higher than the damage it causes.  In order to propagate through the mempool, the op must be valid at the time of propagation.  The attacker has to invalidate it after it has been propagated, by deploying a contract.  The attacker also has to deploy a large number of wallets in order to fill the mempool, because each wallet can have only one op in the mempool at any given time. So the attacker has a one-time setup cost of O(concurrent_ops) for setting up the wallets, and then O(iterations) for deploying a new contract on each iteration. And the damage is a single off-chain simulation for each iteration of the attack, since the 2nd simulation never happens due to rule 9. I agree it would be better to mitigate it entirely, rather than relying on the cost and unprofitability of the attack.  But how would you block it without breaking too much functionality?  Preventing calls to accounts without code is a good idea and shouldn\u2019t break anything, but doesn\u2019t block the attack due to selfdestruct and recreate.     Agusx1211:  Yes, but I\u2019m assuming that SELFDESTRUCT will get deactivated soon enough.   It\u2019ll be deactivated, but I don\u2019t know about \u201csoon enough\u201d.  We did consider having a rule where contracts touched during validation must not have the selfdestruct opcode, but it wasn\u2019t good enough because the contract could delegatecall to an unknown address (specified in the op rather than in the code), and that address could selfdestruct.  Preventing delegatecall to unknown addresses seems too harsh. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.494805194805195
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "29/09/2022-11:53:17",
+                    "content": "    Agusx1211:  I think a way to mitigate this issue is adding a rule that during validation the wallet is not allowed to call addresses with empty code.     github.com/eth-infinitism/account-abstraction         No calls to codeless addresses            committed 11:24PM - 28 Sep 22 UTC               yoavw             +4 -3       Mitigation suggested by @Agusx1211       Thanks      Agusx1211:  Yes, but I\u2019m assuming that SELFDESTRUCT will get deactivated soon enough.       Shanghai Core EIP Consideration Process Improvement       I would like to propose EIP-4758 for inclusion into Shanghai.  It changes the semantics of the SELFDESTRUCT opcode and turns it into a SENDALL which sends the balance of the contract to a receiver. This EIP is a prerequisite to Verkle (and a bunch of other changes). It\u2019s very easy to implement and not hard to test, so I would love to see it in Shanghai.     Cautiously optimistic. ",
+                    "links": [
+                        "https://github.com/eth-infinitism/account-abstraction/commit/699ecca1770f7e561bbc01e4e15e30ce2a50ebcb",
+                        "https://github.com/yoavw",
+                        "https://github.com/eth-infinitism/account-abstraction/commit/699ecca1770f7e561bbc01e4e15e30ce2a50ebcb",
+                        "https://ethereum-magicians.org/t/shanghai-core-eip-consideration/10777/32"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.845833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/randomishwalk",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "12/10/2022-13:30:49",
+                    "content": "    vbuterin:  Bundlers would either be miners/validators, or they would be actors publishing bundle txs through Flashbots.   How would this EIP in your mind fit into the context of MEV-boost and current builder market dynamics? Could this also potentially be used to implement/augment some form of \u201cre-staking\u201d? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fjun99",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "22/10/2022-16:45:00",
+                    "content": "Can the graph in the EIP be simplified to this?  image810\u00d7662 55.5 KB  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "46",
+                    "likes": "2",
+                    "time": "25/10/2022-07:24:06",
+                    "content": "It can, but then you\u2019d miss the fact these are separate calls to separate wallets ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/StanislavBreadless",
+                    "index": "47",
+                    "likes": "1",
+                    "time": "18/11/2022-09:06:35",
+                    "content": "Is there any room for adding the transaction types in this proposal? For instance, each transaction will be described as a blob of bytes, where the first byte denotes the type of the transaction. This way it will be easier to keep backward compatibility in case some new types will be added. The question is risen mostly because L2s have different fee model: the price for L1 pubdata is dynamic. Thus, for instance, zkSync has a separate field ergs_price_per_pubdata. Arbitrum has similar plans as well. And the base L1 itself is far from being fully finalized. Thus, new transaction types/execution variables may still be introduced. This way it would make the protocol more future-proof. ",
+                    "links": [
+                        "https://medium.com/offchainlabs/understanding-arbitrum-2-dimensional-fees-fd1d582596c9",
+                        "https://ethresear.ch/t/multidimensional-eip-1559/11651"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.411363636363636
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Shchepetov",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "24/11/2022-23:05:47",
+                    "content": "Hello there! I\u2019m trying to understand the motivation of the bundler to do his job. An I correct in assuming the preVerificationGas is always paid entirely so it can be arbitrarily large and used as a tip for the bundler? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5357142857142865
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "49",
+                    "likes": "1",
+                    "time": "25/11/2022-09:18:14",
+                    "content": "    Shchepetov:  I\u2019m trying to understand the motivation of the bundler to do his job.   The motivation is equivalent for a block builder to include any transactions: gas fees premiums. The builder pays the \u201couter transaction\u201d fee (probably to itself, if it is the build), and receives from each UserOp a fee based on userOp.priorityFee (and userOp.maxFeePerGas) preVerificationGas can be used to tip the bundler a fixed amount, but its original purpose was to cover the gas cost that can\u2019t be computed on-chain - the calldata cost, the fixed overhead (21000) and some EntryPoint contract overhead. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.958333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "25/11/2022-09:23:48",
+                    "content": "The whole idea of the protocol is to check as much as possible from the UserOp in the EntryPoint contract, including the actual gas calculation. Introducing a byte blobs defeats that purpose. There is one \u201cplaceholder\u201d for external gas calculation per network, namely preVerificationGas. It is assumed to be a function on the data in the UserOp and some network-specific parameters (like the 21000 stipend and the zero/nonzero byte costs) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Shchepetov",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "25/11/2022-22:11:43",
+                    "content": "Thanks you for the answer. It turns out that in order to benefit from the execution of UserOp, the value of UserOpGasPrice must exceed the gas price was used when sending the transaction (except of expenses that can\u2019t be computed on-chain), am I understanding correctly? Is there any calculations of the potential benefits of bundlers? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alexbakers",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "06/12/2022-22:35:22",
+                    "content": "Hello friends. Can you tell me what is my proof of ownership of this or that abstraction account? Isn\u2019t my EOA private key? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mudgen",
+                    "index": "53",
+                    "likes": "2",
+                    "time": "15/12/2022-14:41:01",
+                    "content": "I suggest using EIP-2535 Diamonds to implement the smart contract wallet for EIP-4337. EIP-2535 is a proxy contract standard that can use more than one implementation contract (facet). This makes it relatively easy for uses to add additional contract functionality. For example you could have a smart contract wallet implemented as an EIP-2535 Diamond that implements all the basic functionality needed and required by ERC-4337. Now if a user wants their smart contract wallet to have additional functionality the user can approve an upgrade on their diamond to add functions from another facet or facets to their diamond that has the functionality they want. Developers can develop different facets with different functionality for smart contract wallets. Users can then pick and choose and approve which facets and functionality they want to add to their smart contract wallet. The facets of diamonds can be deployed one time and and then reused on-chain. So for example it is possible to create a registry of safe and compatible ERC 4337 account abstraction smart contract wallet facets that are deployed once. Each user can then deploy a diamond that uses a facet that provides the standard/required smart contract wallet functionality. From there each user can then choose what other functionality he or she wants their smart contract wallet to have and add the appropriate facets from the registry to their smart contract wallet diamond. The facets are reused-on chain, not deployed over and over again. A diamond provides unlimited smart contract functionality at a single Ethereum address. Smart contract wallets can leverage this to provide functionality needed/desired by users without hitting the max contract size limit. EIP-2535 provides other benefits such as tooling, interoperability, multi-contract transparency, gas-efficiency, and code organization, which can be utilized. What I am describing here is not just theory. Diamonds are being used by more than 70 projects. A user interface that uses the standard to show deployed diamonds is here: https://louper.dev/ An introduction to EIP-2535 is here: Introduction to the Diamond Standard, EIP-2535 Diamonds More resources and information about EIP-2535 are here: Awesome Diamonds. ",
+                    "links": [
+                        "https://louper.dev/",
+                        "https://eip2535diamonds.substack.com/p/introduction-to-the-diamond-standard",
+                        "https://github.com/mudgen/awesome-diamonds"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.02726574500768
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "54",
+                    "likes": "2",
+                    "time": "16/12/2022-01:21:04",
+                    "content": "    alexbakers:  Can you tell me what is my proof of ownership of this or that abstraction account? Isn\u2019t my EOA private key?   There is no EOA involved.  Your proof of ownership is whatever you set up in the account\u2019s validateUserOp() function.  If you implement this function to ecrecover the signature (from UserOp.signature), then it works similarly to an EOA (except that you can rotate the key without changing your address.  If you use a different signature scheme, then your proof of ownership is the key of whatever signature scheme you used.  If you implement a multisig or any other complex \u201csignature\u201d, then your proof of ownership is whatever the logic requires. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.734375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "55",
+                    "likes": "5",
+                    "time": "16/12/2022-01:31:51",
+                    "content": "    mudgen:  I suggest using EIP-2535 Diamonds to implement the smart contract wallet for EIP-4337.   Yes.  ERC-4337 wallets could greatly benefit from using DiamodStorage and I hope to see wallet developers use it. The benefit goes beyond just adding functionality via new facets.  It also keeps accounts safe when switching them to a new implementation.  Wallets are likely to use proxies, and the users may want to switch implementations.  For example, a user might start with a simple wallet, and later decide to switch it to a multisig or a wallet with social recovery.  There\u2019s a risk that the previous implementation\u2019s storage will break the security of the new implementation by leaving unexpected storage behind.  I demonstrated it by leaving shadow signers in Gnosis Safe. If both implementations were EIP-2535 facets that use DiamondStorage with different base positions, switching between implementations becomes safe. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/almost-self-destructing-selfdestruct-deactivate/11886/23"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.497071555895086
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cliffhall",
+                    "index": "56",
+                    "likes": "0",
+                    "time": "19/12/2022-18:40:16",
+                    "content": "The main concern I have is that facets used as extensions should use their own storage slot, and if using the common functionality\u2019s slot, that it not modify the slot\u2019s storage structure, even in a way that should be safe. It could play badly with another available facet that makes its own \u2018safe\u2019 changes to the structure. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.104166666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mudgen",
+                    "index": "57",
+                    "likes": "0",
+                    "time": "21/12/2022-03:44:33",
+                    "content": "Yes, I agree. As @yoavw said, it makes sense for different facets to use their own Diamond Storage with their own separate slot positions. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "58",
+                    "likes": "4",
+                    "time": "30/12/2022-02:08:56",
+                    "content": "I wrote a new post about the ERC-4337 unified mempool: Unified ERC-4337 mempool - HackMD ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc-5453-endorsement-standard/10355/9"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.681818181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "59",
+                    "likes": "1",
+                    "time": "10/01/2023-23:57:50",
+                    "content": "Was late to the conversation but here is a EIP i like to bring to awareness at this community of EIP-4337 contributors: EIP-5453 Endorsement which takes a slightly different approach for solving signature / approval functionality than the current version of UserOps but might be interopreable with UserOps. Feedback are greatly appreciated at ERC-5453 Endorsement Standard ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc-5453-endorsement-standard/10355"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.9
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "60",
+                    "likes": "1",
+                    "time": "11/01/2023-20:57:06",
+                    "content": "    xinbenlv:  EIP-5453 Endorsement  which takes a slightly different approach for solving signature / approval   This 5453 solves a different problem. Namely, approval of specific method calls. This saves round trips for separate transactions so it close to batching. But batching is only one feature of 4337 . With 5453, You must sign with your account, so it \u201censhrines\u201d eoa accounts. EIP 4337 is about accounts, and about abstracting them, so that any account can have it\u2019s own execution model, signing model, recovery model, replay mechanism and also different gas model. In addition, we define the rpc and protocol used by users and nodes to communicate, and make sure UserOperations are as decentralized as normal Ethereum transactions. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc-5453-endorsement-standard/10355/9"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.583333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "61",
+                    "likes": "0",
+                    "time": "12/01/2023-01:50:02",
+                    "content": "    dror:  This 5453 solves a different problem. Namely, approval of specific method calls. This saves round trips for separate transactions so it close to batching. But batching is only one feature of 4337 . With 5453, You must sign with your account, so it \u201censhrines\u201d eoa accounts. EIP 4337 is about accounts, and about abstracting them, so that any account can have it\u2019s own execution model, signing model, recovery model, replay mechanism and also different gas model. In addition, we define the rpc and protocol used by users and nodes to communicate, and make sure UserOperations are as decentralized as normal Ethereum transactions.   Yeah, I totally understand that ERC-4337 took a systemic approach that covers a lot of other aspects thank just about signing. That\u2019s why I was asking about feedback for using ERC-5453 in the context of ERC-4337 in one of its aspect: the approval model. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.4625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "62",
+                    "likes": "0",
+                    "time": "12/01/2023-10:35:37",
+                    "content": "As I understand it, the purpose of the approval model is to be able to submit a single transaction which does multiple actions at once, in an atomic transaction. While it solves the on-chain problem (atomic transaction) it is still a nuisance for the user (which has to manually approve all operations) This is a \u201cbest practice\u201d when using an EOA, which has no other way to approve transactions. When working with a wallet contract, the solution is different: A wallet contract can have an \u201cexecuteBatch\u201d , which trigger a sequence operations from the contract to external entities. The contract owner approve once this batch, and the contract execute it all. This way, we solve both the on-chain (single-transaction) and off-chain (single approval). Yes, it comes with a cost (using contract account). I don\u2019t think that batching by itself is a reason for using wallet contract, but it comes with all other benefits of account-abstraction (authorization, security, gas abstraction etc) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.719246031746032
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "63",
+                    "likes": "0",
+                    "time": "12/01/2023-18:20:52",
+                    "content": "    dror:  As I understand it, the purpose of the approval model is to be able to submit a single transaction which does multiple actions at once, in an atomic transaction.   It seems you and I use the term \u201capproval model\u201d to refer to two different things. What I mean when using \u201capproval model\u201d I mean that  Account Alice wants to approve an action, e.g. transfer 1 units of her ERC20 to Account Charlie Account Bob gets Alice\u2019s approval and go ahead to execute the execution on Alice\u2019s behalf.  The modeling of this process is what I refer to as \u201cApproval Model\u201d. Currently, without ERC-4337 and ERC-5453, user would probably need to do something like  Alice: call ERC20.approve(bob, 1);  Bob: then call ERC20.transferFrom(alice, charlie, 1);   The alternative is to use ERC-2612  Alice: sign an approval with ERC-2612 and send digital signature off-chain to Bob Bob: call ERC2612.permit(alice, bob, 1, tomorrow, v, r, s)  Bob: then call ERC20.transferFrom(alice, charlie, 1);    With ERC-5453  Alice: sign an approval with ERC-5453 and send digital signature off-chain to Bob Bob: call ERC20.transferFrom(alice, charlie, 1, endorsement); (ERC20 needs to be extended but ERC721 supports this)   The account approving an action can be different from the account executing an action, is what I am trying to discuss this. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.108418367346939
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/JamesZaki",
+                    "index": "64",
+                    "likes": "1",
+                    "time": "16/01/2023-14:08:24",
+                    "content": "Perhaps related to delegatable from @danfinlay, and this thread with Yoav considering 4337 compatibility. ",
+                    "links": [
+                        "https://twitter.com/danfinlay/status/1576359396807827456"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "65",
+                    "likes": "0",
+                    "time": "16/01/2023-15:33:01",
+                    "content": "Thank you, that seems quite solving the same problem with two different approach, let me take a look. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "66",
+                    "likes": "2",
+                    "time": "16/01/2023-15:40:18",
+                    "content": "Yes. it\u2019s in that space. Took slightly different approach. Will chat with Dan and work out a summary of different and see if we can collaborate to get some solution out. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "67",
+                    "likes": "3",
+                    "time": "21/01/2023-05:18:18",
+                    "content": "Looking forward to chatting, it does look like you\u2019ve started designing the same thing, I love that! There are surely lots of ways to improve it. I recently think I made a breakthrough for how Delegatable-4337 could be simply achieved: I think you could use this branch of Delegatable that adds support for EIP-1271 signatures from contract accounts, and just normalize that all 4337 accounts also implement EIP-1271.   github.com/delegatable/delegatable-sol         Eip1271 Support   delegatable:main \u2190 delegatable:eip1271-support              opened 03:32AM - 21 Nov 22 UTC                 danfinlay               +10518 -10950       Fixes #29  Adds Support for [EIP-1271](https://eips.ethereum.org/EIPS/eip-1271\u2026) for allowing contract accounts to give and receive delegations.  Required one additional bit to the `SignedDelegation` and `SignedInvocation` types: `signerIsContract`. If this bit is `true`, then the first 20 bytes of the `signature` field is treated as the address of a contract to treat as the intended signer, and that contract is sent the remaining `signature: bytes` along with the delegation type hash to determine for itself whether this proof should be treated as valid authorization.  I formerly was somewhat against using EIP-1271 in this way, because I had seen some contract accounts merely allow assigning a single signer as their EIP1271 recovery strategy, which completely undermines the entire point of having a contract account. My position on this has evolved a bit, to  believe that correct usage is possible, and so we shouldn't let the possibility of flawed contract accounts prevent good ones from participating in this.  For example, good usage might look like a multisig might have a custom datastructure for representing which accounts' signatures are included, and including all the signatures combined in the `signature` payload.  Larger controller sets like a token-weighted DAO might involve too many signatures to submit as a delegation/invocation as `calldata`, but I'll leave exploration for how to best support that to those contracts' owners.       At that point, you get half the benefit: Even 4337 accounts (and contract accounts) can use any Delegatable contract. Additionally, if the account contract itself also inherits Delegatable, then it could also delegate its own ability to do anything (and so delegate capabilities from contracts that do not themselves inherit from Delegatable). ",
+                    "links": [
+                        "https://github.com/delegatable/delegatable-sol/pull/34",
+                        "https://github.com/danfinlay",
+                        "https://github.com/delegatable/delegatable-sol/pull/34/files",
+                        "https://github.com/delegatable/delegatable-sol/pull/34"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.973072562358277
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Philogy",
+                    "index": "68",
+                    "likes": "0",
+                    "time": "21/01/2023-16:20:38",
+                    "content": "Surprised the draft does not yet present or discuss adjusted eth_sign and eth_signTypedData RPC endpoints that allow AA wallets to also return the necessary initCode so that \u201csign in with web3\u201d applications can validate the ERC-1271 signatures of undeployed AA wallets, by simulating the creation first based on the initCode data. Without this AA wallet users would not be able to interact with certain applications until their wallets have been deployed on-chain. ERC-4337 already allows undeployed AA wallets to receive funds by requiring factories to use CREATE2 for their creation, would be great if the standard also allowed AA wallets to interact with signature-gated frontends before they\u2019re deployed on-chain. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.165178571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "69",
+                    "likes": "0",
+                    "time": "22/01/2023-12:43:21",
+                    "content": "    Philogy:  Surprised the draft does not yet present or discuss adjusted eth_sign and eth_signTypedData RPC endpoints   The Account is a contract, and thus can\u2019t sign. it can VERIFY signatures, if it supports ERC1271, that is, exports the isValidSignature() method. The eth_sign and eth_signTypedData are not implemented by the node, but by the wallet. This ERC defines the contracts and protocol, and the validation/authorization of the wallets, not anything that is done during execution. Even ERC-2771 itself is not mandated by ERC-4337 (though of course, it is highly recommended) An ERC-4337 wallet should support the above RPC calls. Note that it uses the signer to sign it, not the account itself (again, because the account is a contract, and can\u2019t sign) Note that ERC-4337 doesn\u2019t even require the signer to be an ECDSA signature. In such cases, the meaning of \u201csigning\u201d might be completely different. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.216666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Philogy",
+                    "index": "70",
+                    "likes": "0",
+                    "time": "22/01/2023-19:42:14",
+                    "content": "    dror:  The Account is a contract, and thus can\u2019t sign. it can VERIFY signatures, if it supports ERC1271, that is, exports the isValidSignature() method. The eth_sign and eth_signTypedData are not implemented by the node, but by the wallet. This ERC defines the contracts and protocol, and the validation/authorization of the wallets, not anything that is done during execution. Even ERC-2771 itself is not mandated by ERC-4337 (though of course, it is highly recommended) An ERC-4337 wallet should support the above RPC calls. Note that it uses the signer to sign it, not the account itself (again, because the account is a contract, and can\u2019t sign) Note that ERC-4337 doesn\u2019t even require the signer to be an ECDSA signature. In such cases, the meaning of \u201csigning\u201d might be completely different.   You completely missed my point. I wasn\u2019t implying that smart contract wallets are able to somehow sign in the traditional notion. Furthermore ERC-1271 already allows wallets to implement any signature scheme, providing the necessary abstraction by allowing for a bytes signature parameter with no defined length limit. What I was saying is that I believe the ERC-4337 standard should specify how wallets are to implement the eth_sign and eth_signTypedData RPC endpoints to return the necessary initCode so that applications can VERIFY \u201csignatures\u201d from ERC-4337 without them having to be deployed on-chain yet. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.442857142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cupOJoseph",
+                    "index": "71",
+                    "likes": "2",
+                    "time": "15/02/2023-17:11:02",
+                    "content": "Petition to change the nomenclature from \u201cAccount Abstraction\u201d to \u201cSmart Account\u201d  Fits in with \u201csmart contract\u201d: run code in your contract better description for what it actually is at the end of the day: run code in your account will lead to much less blind men touching an elephant effect  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5442176870748305
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/JoeyFairyproof",
+                    "index": "72",
+                    "likes": "0",
+                    "time": "17/02/2023-06:38:51",
+                    "content": "Hi authors of EIP-4337 This is Joey from Fairyproof. We are a Web3.0 security company. Thank you for this well-written proposal - It is very well-documented and well-covered. The technical team at Fairyproof has analyzed EIP-4337 and raised some security checkpoints that we would like to share with you. You can check out on the details here: Security Checkpoints for EIP-4337 Based Account Abstraction Implementation | Fairyproof Tech | Medium We hope you can take a look at these considerations and share your thoughts with us  Thank you ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poojaranjan",
+                    "index": "73",
+                    "likes": "1",
+                    "time": "20/02/2023-19:30:13",
+                    "content": "PEEPanEIP #100: ERC-4337: Account Abstraction Using Alt Mempool with @yoavw @dror Shahaf & Tom      ",
+                    "links": [
+                        "https://www.youtube.com/watch?v=CgXzDuN5Xqc"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/blooda",
+                    "index": "74",
+                    "likes": "1",
+                    "time": "23/02/2023-10:37:41",
+                    "content": "Greetings friends, We have launched an initiative to promote the integration of EIP1271 into more dApps as it is vital for account abstraction.   eip1271.io    EIP1271 EIP1271 - Everything you need is 0x1626ba7e! Powered by Etherspot & Pillar      ",
+                    "links": [
+                        "https://eip1271.io"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pette1999",
+                    "index": "75",
+                    "likes": "0",
+                    "time": "12/03/2023-02:04:28",
+                    "content": "Hi all, This is Peter from Hexlink, our team is working on an extension of EIP-4337 to the community: EIP-6662: AA Account Metadata for Authentication which stores authentication data on-chain to support a more user-friendly authentication model. Would love to hear feedback from this community of EIP-4337 contributors  Thank you all  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/editorai",
+                    "index": "76",
+                    "likes": "0",
+                    "time": "17/03/2023-02:32:52",
+                    "content": "Hi, this is Pablo from PlanckerDAO. We are recently organizing a joint reading of eip4337. When we got to the part on bundling, we were confused about the sentences \u201cIn practice, restrictions (2) and (3)\u201d and \u201cIf any of the three conditions is violated\u201d because we didn\u2019t find the numbered restrictions and conditions above. One of us sunnyishere (Github) discovered another early draft of eip4337 that provides clearer explains of \u201cIn practice, restrictions (2) and (3)\u201d and \"If any of the three conditions is violated. \" We would like to ask if they are parts of the legacy documentation and should be updated. @yoavw @vbuterin ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/3fd65b1a782912bfc18cb975c62c55f733c7c96e/EIPS/eip-4337.md#simulation"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cejay",
+                    "index": "77",
+                    "likes": "0",
+                    "time": "19/03/2023-16:16:48",
+                    "content": "Yes, we added EIP-2535 at some stage in the implementation of the first pre-alpha version, but then removed EIP-2535 for the following reasons.  If FacetCut is restricted to view/pure only, the resulting lift is limited if arbitrary FacetCut is allowed because of the use of delegatecall, then FacetCut can destroy the institution of storage (e.g. a wrong or malicious FacetCut can modify some storage that he should not be allowed)  We are also thinking about how to securely add dynamic plug-in capabilities to a self-custody wallet, for example:  a centralized auditing institution is required, making it necessary for users to wait more than 2 days to use plugins that are not audited by the institution (to prevent ownerkey theft while the internal storage slot has been modified by FacetCut and can no longer be used for social recovery.) or use segregated storage slot (split by different addresses, but this leads to higher costs)  wait for your advice ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.187301587301587
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mudgen",
+                    "index": "78",
+                    "likes": "1",
+                    "time": "21/03/2023-16:26:26",
+                    "content": "It is really great you are working on this.   If FacetCut is restricted to view/pure only, the resulting lift is limited   FacetCut is a struct defined in the EIP-2535 standard. Saying it is view/pure only does not make sense because it is just a struct definition. Only functions can be view/pure so I don\u2019t really understand what you are saying here. Please clarify.   if arbitrary FacetCut is allowed because of the use of delegatecall, then FacetCut can destroy the institution of storage (e.g. a wrong or malicious FacetCut can modify some storage that he should not be allowed)   I think you are referring to arbitrarily making upgrades \u2013 adding/replacing/removing functions. Is that right? Of course don\u2019t make it completely arbitrary. Only allow the owner of a diamond to upgrade their diamond. This is the same way contracts work now. People decide to trust or not the contracts that exist on ethereum. The facets of diamonds don\u2019t have to be any different.  Of course audited registries of facets can be created to help people decide what to use and trust. You mentioned that the above reasons were why you removed EIP-2535 but it is doubtful to me that those reasons are related to the compliance with the standard. For example diamonds can be non-upgradeable or immutable and still be compliant diamonds.  See this article about compliance: Compliance with EIP-2535 Diamonds Standard ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.860544217687075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cejay",
+                    "index": "80",
+                    "likes": "0",
+                    "time": "21/03/2023-16:51:19",
+                    "content": "Thanks, I should have understood what you meant  I would like to add background information here, our project has social recovery, meaning that even if the private key of the owner within the wallet is stolen, the user can reset the owner through a social recovery process, so we need to make sure that even if the owner is owned by someone else, no one else should destroy any storage structure within the contract for a certain period of time (e.g. 2 days) (This may cause a breakdown in social recovery). If the owner is allowed to add FacetCut at will, it is possible that the user will never be able to use Social Recovery to retrieve his wallet. \u201cIf FacetCut is restricted to view/pure only, the resulting lift is limited\u201d, I originally meant to allow the user to add  FacetCut that not call sstore opcode in any way is relatively safe. Yes, for an audited FacetCut, I think users should be able to add it at any time.And maybe we should set a 2days delay in effect (so that in extreme cases the user can do social recovery) When users want to add unaudited FacetCut  and we still want to add support for the EIP2535, which was previously removed only because we wanted to find a balance between security and ease of use ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.569727891156463
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mudgen",
+                    "index": "81",
+                    "likes": "0",
+                    "time": "23/03/2023-02:29:21",
+                    "content": "Hey, okay.  To clarify for other people seeing this,  \u201cadd FacetCut\u201d just means being able to add/remove/replace external functions in a diamond right?  Yes, for an audited FacetCut, I think users should be able to add it at any time.And maybe we should set a 2days delay in effect (so that in extreme cases the user can do social recovery) When users want to add unaudited FacetCut  Your plan there makes sense to me. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.980654761904763
+                }
+            ]
+        }
+    ],
+    "group_index": "1456"
+}

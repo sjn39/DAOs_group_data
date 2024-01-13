@@ -1,0 +1,181 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4672-nonce-opcode/8171",
+            "title": "EIP-4672: NONCE opcode ",
+            "index": 8171,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "evm",
+                "opcodes",
+                "core-eips"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xfoobar",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "01/02/2022-16:56:57",
+                    "content": "Discussion thread for EIP-4672: NONCE opcode by 0xfoobar \u00b7 Pull Request #4742 \u00b7 ethereum/EIPs \u00b7 GitHub  Abstract We propose an additional EVM opcode, NONCE (0x47), which could provide novel protection against sybil attacks and expand the smart contract design space. This would return 0 for an unused externally-owned address (EOA), 0 for a smart contract address, and, for example, 2 for an EOA which has sent 3 transactions. The account.nonce opcode would exactly track the nonce of the last transaction originating from that address.  Motivation NFT contracts commonly use checks on msg.sender to limit sybil attacks. However, this is easily circumvented by spinning up new addresses, or even nesting address creation within a smart contract. Letting smart contracts check NONCE would add additional costs to this, serving as a \u201cproof of history\u201d. While not bulletproof (as msg.sender is not), it opens up the design space to creative uses.  Specification A new opcode, NONCE, is introduced, with number 0x47. The NONCE opcode takes one argument from the stack, and pushes to the stack the nonce corresponding to that address. The gas cost of the NONCE is 200.  Rationale The EVM makes several global variables available, examples include block.timestamp, block.number, block.difficulty, msg.sender, and gasleft(). It also provides several context-dependent opcodes, such as EXTCODESIZE, BASEFEE, and BALANCE Smart contracts can leverage these info for novel techniques, such as staking pool emissions, limiting flashloan attacks, or NFTs that embed blockchain state into their mint result. It is useful to gather information about interacting addresses. NFT minting is an immediate usecase, and it follows that as much information about the underlying blockchain state should be made available to smart contracts.  Backwards Compatibility There are no backwards compatibility concerns.  Test Cases  The NONCE of an address with no transactions is 0. The NONCE of an externally owned address (EOA) with one originating transaction is 1. The NONCE of a smart contract, deployed after EIP 161, that has not deployed any other smart contracts is 1. The NONCE of a smart contract, deployed before EIP 161, that has not deployed any other smart contracts is 0. The NONCE of a smart contract, deployed after EIP 161, that has deployed one other smart contract is 2. The NONCE of a smart contract, deployed before EIP 161, that has deployed one other smart contract is 1.   Implementation Not provided yet, would need to be integrated into Ethereum clients as this is an EVM modification. However, clients already check the account nonce on each transaction to ensure validity, so exposing this data as an opcode should not add significant processing or development load.  Copyright Copyright and related rights waived via CC0. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/almost-self-destructing-selfdestruct-deactivate/11886/18",
+                        "https://ethereum-magicians.org/t/almost-self-destructing-selfdestruct-deactivate/11886"
+                    ],
+                    "GPT-summary": "The post proposes an additional EVM opcode, NONCE, which could provide novel protection against sybil attacks and expand the smart contract design space. The post explains the motivation, specification, rationale, backwards compatibility, and test cases of the proposal. The post also mentions that the implementation is not provided yet and would need to be integrated into Ethereum clients as this is an EVM modification. The post invites discussion and feedback on the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Privacy, Security and risk management",
+                        "Interoperability and Scaleability",
+                        "Token economics",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.720413595413596
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "01/02/2022-20:17:52",
+                    "content": "It seems like the benefit of using nonce over just burning ETH is that legitimate users likely already have enough transactions on their wallets, so it\u2019s cheap for them; while sockpuppet wallets are empty and would need to spend an additional ~21,000 * N gas to prove their uniqueness? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xfoobar",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "02/02/2022-01:31:19",
+                    "content": "Exactly! Querying an address\u2019 balance seems isomorphic to querying their nonce, it\u2019s already checked in every transaction for signature validity, and opens an interesting smart contract design space for making sybil attacks more expensive. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0267857142857135
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "02/02/2022-06:08:20",
+                    "content": "I think the only other suggestion I have on the technical side is that the gas cost should mirror 0x31: if the account is cold it should cost 2600, otherwise 100. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.09375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "5",
+                    "likes": "2",
+                    "time": "08/02/2022-16:48:24",
+                    "content": "Since this is reading the nonce of any account, it should be called EXTNONCE to be in line with the other instructions. Can you please explain a use case this is needed for? Having a described use case helps in convincing client implementers. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "08/02/2022-17:02:33",
+                    "content": "As an alternative, EIP-2938 proposed an opcode for querying the current account\u2019s nonce:   NONCE (0x48) Opcode A new opcode NONCE (0x48) is introduced, with gas cost G_base, which pushes the nonce of the callee onto the stack.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "09/02/2022-20:54:15",
+                    "content": "This is probably going to lead to some problems in some situations, as clients might internally differ when the nonce is internally updated when running certain transactions.  When an account sends a transaction, is the account nonce increased before running the transaction or after? (So, when a fresh account sends a Tx to a contract which stores NONCE, should 0 or 1 be stored? After the transaction completes it is clear that the nonce is 1, but during the transaction\u2026?) Same question, but now when a contract CREATEs or CREATE2s a new contract. The created contract stores the nonces of the contract which initiated the creation. When is the nonce updated, before or after creating the contract?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.536178107606679
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "10/02/2022-05:24:56",
+                    "content": "My concern with the motivation here is that it essentially is encouraging spamming the network in order to gain sybil access to things.  While legitimate users won\u2019t have to spam the network, this sort of pattern encourages users to spread their activities across many accounts just so they can have multiple primed accounts for access to \u201cone per person\u201d things like airdrops, sales, etc.  Instead of using one account for everything, a clever user will now use multiple accounts to achieve the same goal.  We already see this behavior from users in response to per-account airdrops, where users will intentionally spread their usage pattern out across many accounts just so they get more \u201cshots on goal\u201d for future airdrops. The other thing is that exposing nonce could come back to bite us in the future when we try to move to contract wallets.  Not all account access patterns will require a nonce, and not all of those that do will require a monotonically increasing nonce.  By exposing NONCE to end-users today, we are increasing the lock-in for the nonce-based pattern of access. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party giving entirely negative feedback on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.642361111111112
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/abcoathup",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "11/02/2022-02:48:58",
+                    "content": "@0xfoobar can you update the title to match the EIP number: EIP4742 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xfoobar",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "12/02/2022-02:16:49",
+                    "content": "I can\u2019t edit the original post any more, could you grant me added permissions so I can fix it? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.1875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/abcoathup",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "13/02/2022-20:43:09",
+                    "content": "@jpitts can you update the title to EIP4742 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/zemse",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "28/03/2022-14:56:29",
+                    "content": "A use case of NONCE opcode (nonce of current account/contract) can be useful to calculate CREATE address before the contract deploys the contract. As an example: let\u2019s consider factory contract F and child contracts A and B. The factory contract F wants to pass addresses of B in A\u2019s constructor and address of A in B\u2019s constructor, this is to have the sibling addresses as immutables instead of storage. Currently, that\u2019s not feasible since we just don\u2019t get the F\u2019s nonce in F\u2019s execution context. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.625
+                }
+            ]
+        }
+    ],
+    "group_index": "1589"
+}

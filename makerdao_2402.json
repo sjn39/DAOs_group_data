@@ -1,0 +1,51 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/error-calling-frob-using-own-proxy/2710",
+            "title": "Error Calling frob using own proxy ",
+            "index": 2710,
+            "category": [
+                "Miscellaneous",
+                "Developers"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Paris",
+                    "index": "#1",
+                    "likes": "0",
+                    "time": "02/06/2020-11:13:27",
+                    "content": "Hi, I\u2019ve run into a problem when I tried calling my custom function on my deployed proxy contract. The function is supposed to open, lock ETH, and draw Dai via the Maker contracts. Instead of directly transfering the ETH from the caller to the Maker Contract, my custom function is supposed to use the balance of the proxy contract (which I\u2019ve paid beforehands). function openAndLockETH( address manager, address jug, address ethJoin, address daiJoin, uint256 wadD ) public payable { // Opens ETH-A CDP bytes32 ilk = bytes32(\u201cETH-A\u201d); uint256 cdp = open(manager, ilk, address(this));     address urn = ManagerLike(manager).urns(cdp);     address vat = ManagerLike(manager).vat();     // Receives ETH amount, converts it to WETH and joins it into the vat     ethJoin_join(ethJoin, urn);     // Locks WETH amount into the CDP and generates debt     frob(         manager,         cdp,         toInt(address(this).balance),         _getDrawDart(vat, jug, urn, ilk, wadD)     );  I can see that the code breaks on the frob call. The only thing I changed is its parameter from \u201cmsg.value\u201d to \u201caddress(this).balance\u201d. The error only says \u201crevert: VM error\u201d. I checked that my contract actually has the sufficient balance and that my proxy worked (if I changed the parameter back, and call the function with fund). Can someone help me with this? Thanks! ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.21875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/galabasquer",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "08/06/2020-12:34:13",
+                    "content": "    Paris:  ethJoin_join(ethJoin, urn);   There is where the ETH gets converted to WETH and then joined to the system. In this case if your  msg.value is 0, you are basically adding 0 collateral, then frob fails as you do not have collateral in the system. If you just have ETH or WETH in the proxy address it will not work. The WETH needs to be added to the system via the collateral adapter. So basically you also need to change this function for taking the ETH or WETH from your proxy address. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Paris",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "09/06/2020-14:55:44",
+                    "content": "Thanks for the response! I\u2019ve changed the ethjoin_join function call to take the proxy\u2019s balance:  ethJoin_join(ethJoin, urn, address(this).balance);  and inside the function as well:  function ethJoin_join( address apt, address urn, uint256 amount ) public { // Wraps ETH in WETH GemJoinLike(apt).gem().deposit.value(amount)(); // Approves adapter to take the WETH amount GemJoinLike(apt).gem().approve(address(apt), amount); // Joins WETH collateral into the vat GemJoinLike(apt).join(urn, amount); }  However, I\u2019m still getting the same error from the frob function call. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0625
+                }
+            ]
+        }
+    ]
+}

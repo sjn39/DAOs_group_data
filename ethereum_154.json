@@ -1,0 +1,54 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/proposal-for-adding-blocktimestamp-to-logs-object-returned-by-eth-getlogs-and-related-requests/11183",
+            "title": "Proposal for adding blockTimestamp to logs object returned by eth_getLogs and related requests ",
+            "index": 11183,
+            "category": [
+                "Working Groups",
+                "Provider Ring"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "1",
+                    "likes": "7",
+                    "time": "04/10/2022-21:47:49",
+                    "content": " Motivation Currently, most contract events that act on the notion of time do not add timestamp information as it is already available on the block where the event occurs. This saves them the extra gas cost of adding timestamps to the events. Unfortunately eth_getLogs do not provide the timestamp as part of the log objects returned. And so indexers that fetches these events using eth_getLogs, need to make one extra request for each different block to get the timestamps at which these events happen. This significantly reduces the speed at which such an indexer can compute the state from the events. With an eth_getLogs you can get thousands of events and process them but for events that require timestamp information, you indeed currently need to perform thousands of requests more for it. This is especially difficult for indexers that run in-browsers where each user would have to perform all the extra requests. Also in such an environment, EIP-1193 prevents them from using batch requests, which could have alleviated the issue. Ideally, the log object returned by eth_getLogs would include the block\u2019s timestamp along the block\u2019s hash and number.  Spec Here is the spec for eth_getLogs with the added blockTimestamp field  eth_getLogs {#eth_getlogs} Returns an array of all logs matching a given filter object. Parameters   Object - The filter options:    fromBlock: QUANTITY|TAG - (optional, default: \"latest\") Integer block number, or \"latest\" for the last mined block or \"pending\", \"earliest\" for not yet mined transactions.  toBlock: QUANTITY|TAG - (optional, default: \"latest\") Integer block number, or \"latest\" for the last mined block or \"pending\", \"earliest\" for not yet mined transactions.  address: DATA|Array, 20 Bytes - (optional) Contract address or a list of addresses from which logs should originate.  topics: Array of DATA, - (optional) Array of 32 Bytes DATA topics. Topics are order-dependent. Each topic can also be an array of DATA with \u201cor\u201d options.  blockhash: DATA, 32 Bytes - (optional, future) With the addition of EIP-234, blockHash will be a new filter option which restricts the logs returned to the single block with the 32-byte hash blockHash. Using blockHash is equivalent to fromBlock = toBlock = the block number with hash blockHash. If blockHash is present in in the filter criteria, then neither fromBlock nor toBlock are allowed.  params: [ { topics: [ \u201c0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b\u201d, ], }, ] Returns Array - Array of log objects, with following params:   removed: TAG - true when the log was removed, due to a chain reorganization. false if its a valid log.  logIndex: QUANTITY - integer of the log index position in the block. null when its pending log.  transactionIndex: QUANTITY - integer of the transactions index position log was created from. null when its pending log.  transactionHash: DATA, 32 Bytes - hash of the transactions this log was created from. null when its pending log.  blockHash: DATA, 32 Bytes - hash of the block where this log was in. null when its pending. null when its pending log.  blockNumber: QUANTITY - the block number where this log was in. null when its pending. null when its pending log. - blockTimestamp: QUANTITY - the unix timestamp for when the block where this log was in, was collated. null when its pending. null when its pending log.   address: DATA, 20 Bytes - address from which this log originated.  data: DATA - contains one or more 32 Bytes non-indexed arguments of the log.  topics: Array of DATA - Array of 0 to 4 32 Bytes DATA of indexed log arguments. (In solidity: The first topic is the hash of the signature of the event (e.g. Deposit(address,bytes32,uint256)), except you declared the event with the anonymous specifier.)  Was originally posted  on the ethereum/execution-apis repo ",
+                    "links": [
+                        "https://github.com/ethereum/execution-apis/issues/295"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.469108097784568
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjayrush",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "05/10/2022-11:29:54",
+                    "content": "I absolutely, 100% support this issue. It would speed up our processing when building our index by nearly double. The shortcoming of eth_getLogs came up recently in the Erigon issues (feature request: add field`timestamp` to `eth_getLogs` response \u00b7 Issue #4951 \u00b7 ledgerwatch/erigon \u00b7 GitHub). For a short time, it was in eth_getLogs, but it was moved to erigon_getLogs because they reserve the eth_ namespace for \u201cstandards.\u201d (In other words, there\u2019s already an existing implementation.) This is a simple win for every RPC user who uses logs and needs timestamps on those logs, as it immediately lessens the number of RPC queries by nearly half. Such a change is also backwards compatible, since the timestamp field didn\u2019t exist in the past, adding it shouldn\u2019t break anything (except possibly some test cases, but those can be easily updated). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.371527777777779
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aaaaa",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "05/10/2022-20:13:23",
+                    "content": "adding timestamp to eth_getLogs is a hill i will die on every day of the week not only does it greatly reduce the speed of client building indices, but also reduces server load since you already have the ts in the block header for your getlogs query. beyond indices, it would also allow web3 frontends to much easier display historical events with real timestamp instead of just block, which I think would be super benificial for non native user accessibility ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.277777777777778
+                }
+            ]
+        }
+    ],
+    "group_index": "154"
+}

@@ -1,0 +1,100 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/discussion-about-storage-rent-eviction-archive-nodes-and-incentives/2352",
+            "title": "Discussion about storage rent \"eviction archive\" nodes and incentives ",
+            "index": 2352,
+            "category": [
+                "Working Groups",
+                "Data Ring"
+            ],
+            "tags": [
+                "storage-rent"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "07/01/2019-19:43:09",
+                    "content": "Updated to remove the assumption that the state would be recoverable on Ethereum nodes. This is to begin a discussion about how state will be stored on behalf of ethereum accounts which have not paid their storage rent. While the process of restoration has been proposed, there is a gap in how \u201cthe state that is stored somewhere\u201d is actually stored. In the current thinking around recoverable eviction, it is up to the user to have the removed state data, or perhaps up to a community-run service. How might reliable storage of this data be incentivized? This discussion began with comments in the Ethereum 1.x half baked roadmap thread: Myself, @tjayrush, @5chdn, and many others participating in the \u201cData Ring\u201d could take a look at this and begin a discussion about possible incentivized nodes of this type. [/quote]  Beyond the discussion here in the Forum, I have also proposed a Data Ring session to occur at the Magicians Gathering one day before EthDenver. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/ethereum-1-dot-x-a-half-baked-roadmap-for-mainnet-improvements/1995/20?u=jpitts",
+                        "https://hackmd.io/s/SJDKo6lME#Data-Ring"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "2",
+                    "likes": "3",
+                    "time": "07/01/2019-19:47:03",
+                    "content": "For my two cents, I believe that all types of nodes which are essential to a healthy Ethereum mainnet network should be incentivized, whether light, full, archive, or this possible \u201ceviction archive\u201d. An incentivization scheme for running nodes providing storage could feed information back to decision-makers or other processes in order to compute reasonable storage rent fees. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.828125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "08/01/2019-15:53:36",
+                    "content": "Clarifying about the 1.x \u201crecoverability\u201d, I see that this has been defined in proposals dating back to November. I am getting more info on if any additional data beyond what is normally available on a full node is required to restore. Felix Lange / fiji originally proposed a RESTORETO opcode in his storage rent gist: A key description of the mechanism is from Page 56 of @AlexeyAkhunov\u2019s Ethereum state rent - rough proposal dated Nov 26, 2018:  New opcode PAYRENT is introduced to top up rentbalance by spending ETH, and RENTBALANCE (to read rentbalance). This can help keep existing contracts alive until they are migrated. When rent is not paid, contracts leave a \u201chash stump\u201d, which can be used to restore the contract using opcode RESTORETO. This is different from semantics after Step 3, where linear cross-contract storage would be lost. At this step, linear cross-contract storage can also be recovered with RESTORETO.  @holiman\u2019s TLDR description:  This scheme makes it possible to resurrect arbitrary size contracts, since you can spend infinite time on rebuilding the data-structure. Other types of resurrect, with proofs included in the transaction that does the restoration, has a practical limit on how much data you will be able to supply  ",
+                    "links": [
+                        "https://github.com/ledgerwatch/eth_state/blob/58351eb8b70fa6031da1e23c1a77d982be677078/State_rent.pdf"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.855113636363636
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "08/01/2019-17:50:02",
+                    "content": "Further clarifying if any additional data beyond what is normally available on a full node is required to restore. The TLDR on that and implications:  The restoring user must restore their state in a series of steps, calling the proposed RESTORETO opcode within a contract. RESTORETO accepts 1. addr of the hash stump left on eviction, and 2. addr of a contract from which code is taken. This user needs to have the evicted state data, or needs to get this data from some eviction archive service. This data is used in the contract. RESTORETO is not burdensome on any nodes, but is burdensome on the user depending on the size of state being restored.  From questions asked on the all core devs gitter channel (edited for clarity):  jpitts: Assuming the scenario described in the \u201crent-eip.md\u201d gist, would the work done by RESTORETO be performed on full nodes? Clarifying that this would not require any kind of special storage outside of full nodes. An additional question regarding RESTORETO, how burdensome is this computation on the node? IMO, some of the misunderstanding about restoration may be rooted in misunderstanding that the entire state of the blockchain can be regenerated from a full node. even though it may not be immediately available. holiman: It would execute like any other opcode. Not sure I understand the Q. Whoever is rebuilding the state would need access to the full \u2018preimage\u2019 state at the point where it was removed, in order to put it back. The restoreto opcode is very simple The burden is on the user to restore data properly \u2013 but he can use a custom contract to do that incrementally jpitts: so in this contract, the user would have the data needed? holiman: The user needs to rebuild the same storage, identically, and then he can say \u2018use this data, with that code, and restore that inactive contract over yonder\u2019 For an archived multisig, restore is a one-off. For restoring cryptokitties, it might take months jpitts: So basically the user either needs to have this data, or needs to get this data from some place which would hold it (perhaps at a cost). It takes more time because it has to be done in steps, only so much data can be restored in one txn. Or is it that RESTORETO on a large enough piece of state would take months to complete? AlexeyAkhunov: I think that noone will attempt to RESTORETO for very large contracts, it might be easier to start from scratch. It will probably be used to rescue some multisig wallets or something similar holiman: The RESTORETO in itself is trivial, the preceding build-up of data is the potentially heavy operation Well, \u201ctrivial\u201d, hm, at least pretty simple I also think it wouldn\u2019t be used to restore gigantic contracts, but it\u2019s kind of important that it could if there was a need for it jpitts: This means that any necessary buildup operations could be performed by a community effort or service which could also store the evicted data. holiman: Hm, build-up is sensitive though, dunno if it can be done non-centralized. You wouldn\u2019t want someone putting in bad data But yes, people could coordinate If you make a restore-bazonk contract where anyone can submit data, and you get some wrong value in, the RESTORETO will fail later on, when storage hash is wrong  ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/ethereum-1-dot-x-a-half-baked-roadmap-for-mainnet-improvements/1995/23",
+                        "https://ethereum-magicians.org/t/storage-rent-eip/2357"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.384375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jvluso",
+                    "index": "5",
+                    "likes": "2",
+                    "time": "09/01/2019-06:35:53",
+                    "content": "Not all incentives need to be monetary nor do they need to be tokenized. I think that there are 5 different incentives that can potentially be relied on initially: Holder Incentive Anyone holding a token will lose it if the storage of their balance is forgotten by everyone. With a contract designed with rent in mind, they would only need to store their own personal balance to be able to recover it, and as long as the tools to make it simple exist it would take almost no disc space for an individual holder in their local wallet. Sender Incentive Sending a token only transfers value if is successfully received. Therefore anyone sending tokens will have an incentive to keep track of the balances of the addresses they send tokens to. Much like the holder incentive, the costs will be minimal as long as the tools are available. Project Incentive Anyone running a project with a token will have an incentive to keep track of the states of their contracts to make them more responsive globally to new users. The data will always be able to be recovered as long as one person stores it, but that doesn\u2019t mean it will be able to be restored quickly. Healthy, active projects will distribute copies globally so anyone can have access more quickly, and these will also serve as backups if other methods fail. For-Profit Incentives Several projects are running which profit from providing access to the full Ethereum blockchain, such as Etherscan, Infura, and many major search engines. These projects profit from adds and partnerships and have incentives to continue to run full archival nodes in order to continue profiting from providing these services. Non-Profit Incentives The Ethereum Foundation, the Internet Archive, and potentially other non-profits run and are incentivized to continue running archival nodes in order to execute their mission. These shouldn\u2019t be relied on, but they will ensure that there isn\u2019t a single point of failure. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.621572871572872
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjayrush",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "09/01/2019-12:39:37",
+                    "content": "I really like thinking about the incentives this way. If you look at the first three groups, they each have the same aspect that the individual(s) interested in the use and meaning of the data are responsible to make sure it persists. The fourth one, I think, is the main way the current system works, and the fifth (non-profit) should be more prevalent, but you\u2019re right we can\u2019t really rely on them. To the extent that any solution to the problem increases the likelihood that types 1, 2 and 3 are take advantage of. Perhaps there\u2019s another group which is poorly described as \u2018all the participants in the system because they benefit from the system itself.\u2019  An example: why can\u2019t every light client store some tiny portion of the data? Why can\u2019t full nodes store a tiny (but larger) portion of the data? In other words, try to better capture the incentive everyone has for the whole system to work. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.827947845804989
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "09/01/2019-18:32:19",
+                    "content": "    tjayrush:  An example: why can\u2019t every light client store some tiny portion of the data? Why can\u2019t full nodes store a tiny (but larger) portion of the data? In other words, try to better capture the incentive everyone has for the whole system to work.   This reminds me of the Mustekala project from Metamask Labs:  Features of the Content Routing System ( CRS )  Divide the state into slices (avoiding the word shard ), which will be small, redundant, well spaced and useful to each peer. Each peer of kitsunet , which, by the way can be not only a browser peer, but a Hub , will maintain a number of these slices , consisting on an organized number of ethereum state and storage trie nodes, and will update their elements as the Block Header of the Canonical Chain goes changing. A peer will maintain, ideally, the slice containing relevant data to its operation, plus a couple of discrete slices to ensure redundancy and availability of the whole system.   ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.891666666666666
+                }
+            ]
+        }
+    ],
+    "group_index": "624"
+}

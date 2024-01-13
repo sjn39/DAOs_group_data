@@ -1,0 +1,317 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4750-eof-functions/8195",
+            "title": "EIP-4750: EOF Functions ",
+            "index": 8195,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "evm",
+                "opcodes",
+                "evm-object-format",
+                "shanghai-candidate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "03/02/2022-11:58:57",
+                    "content": "This is the discussion topic for  Ethereum Improvement Proposals   EIP-4750: EOF - Functions Individual sections for functions with `CALLF` and `RETF` instructions      ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4750",
+                        "https://ethereum-magicians.org/t/evm-object-format-eof/5727/28",
+                        "https://ethereum-magicians.org/t/shanghai-core-eip-consideration/10777",
+                        "https://ethereum-magicians.org/t/eip-4200-static-relative-jumps/7108/33",
+                        "https://ethereum-magicians.org/t/eip-4200-static-relative-jumps/7108/25"
+                    ],
+                    "GPT-summary": "The post is an explanation of the Ethereum Improvement Proposal EIP-4750, which introduces new functions with `CALLF` and `RETF` instructions. The post is also a discussion topic for the proposal, and some users are asking questions about it.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "None",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "04/02/2022-11:01:23",
+                    "content": "We have considered alternative formats for representing section types in EOF container, but decided not to overload EIP text with it. Here\u2019re some ideas:  0. Version proposed in EIP: one type section with types for all code sections format, magic, version, type_section_header, (code_section_header)+, [data_section_header], 0, type_section_contents, (code_section_contents)+, [data_section_contents]  type_section_header := 3, number_of_code_sections * 2 # section kind and size type_section_contents := 0, 0, code_section_1_inputs, code_section_1_outputs, code_section_2_inputs, code_section_2_outputs, ..., code_section_n_inputs, code_section_n_outputs   1. Version with multiple type sections, one type section per each code section: format, magic, version, (type_section_header)+, (code_section_header)+, [data_section_header], 0, (type_section_contents)+, (code_section_contents)+, [data_section_contents]  type_section_header := 3, 2 // section kind and size type_section_0_contents := 0, 0 type_section_n_contents := code_section_n_inputs, code_section_n_outputs  This is less compact than proposed version, requiring n bytes just for each type section kind.  2. Version where all types are encoded inline in type section headers, removing the need for type section contents: format, magic, version, (type_section_header)+, (code_section_header)+, [data_section_header], 0, (code_section_contents)+, [data_section_contents]  type_section_n_header := 3, code_section_n_inputs, code_section_n_outputs  This would be most compact and require fewer reads to get each section type, but it violates section definition from EIP-3540 (its definition requires each section header to contain only section size), so we decided against it for consistency.  3. Version where instead of designated type sections we encode inputs and outputs number as two first bytes of each code section. In this case it makes sense to introduce a new kind of code section for this - \u201ctyped code section\u201d - but the first code section would remain regular untyped one: format, magic, version, code_section_header, (typed_code_section_header)+, [data_section_header], 0, code_section_contents, (typed_code_section_contents)+, [data_section_contents]  typed_code_section_header := 3, size type_code_section_contents := inputs, outputs, <executable_bytes>  Downsides of this: having more than one kind of code sections might be confusing, having non-code bytes inside code sections would mean we have to be careful to not consider them executable (i.e. code bounds are [section_start+2, section_end]), PC=0 corresponds to offset section_start+2.  Overall we don\u2019t feel very strongly about picking one version over others, if anyone has good arguments for alternative format, please let us know. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.46261047979798
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "04/02/2022-13:07:17",
+                    "content": "Adding TAILJUMPF or TAILCALLF (with obvious specs, i.e. consumes current stack as arguments, called function has to return the same amount of values as the current one) may be worth a thought as an eventual extension to this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.300000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "04/02/2022-16:25:05",
+                    "content": "What are the advantages of this approach over EIP-2315?  It would seem to be both less efficient and \u2013 by moving each function into its own section \u2013  get in the way of further optimization. The meta question is, What do want to do with additional code sections?  To me they seem most useful as a way of linking in library code as modules with defined interfaces. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.2333333333333325
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "07/02/2022-10:09:21",
+                    "content": "Leaving the meta-question aside\u2026 My biggest concern is that we wind up with new exceptional halting conditions (and new machine state and code to enforce them) when I\u2019m trying to get rid of them. However, I\u2019m pretty sure they can be enforced at validation time instead along the lines of EIP-3779. My second biggest concern is that you can\u2019t do tail call optimization.  But that\u2019s the price we pay for some useful structure.  That\u2019s part of why I\u2019ve come to like having, in Intel\u2019s terminology, both subroutines and procedures.  These are well-defined procedures. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.420995670995671
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "23/02/2022-21:06:34",
+                    "content": "  Version where instead of designated type sections we encode inputs and outputs number as two first bytes of each code section.   I\u2019d prefer something like this.  It could generalize nicely to a more flexible section header.  having non-code bytes inside code sections would mean we have to be careful to not consider them executable  If the first byte is a new opcode the rest can be encoded as the immediate data of that opcode. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.603219696969697
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "10/03/2022-17:18:29",
+                    "content": "    gcolvin:  It would seem to be both less efficient and \u2013 by moving each function into its own section \u2013 get in the way of further optimization.       gcolvin:  My biggest concern is that we wind up with new exceptional halting conditions (and new machine state and code to enforce them) when I\u2019m trying to get rid of them. However, I\u2019m pretty sure they can be enforced at validation time instead along the lines of EIP-3779.   I agree it might be less efficient comparing to 2315 because base pointer is saved additionally in the return stack, and this is a price to pay for more runtime correctness guarantees. I.e. 4750 approach guarantees that callee cannot read caller\u2019s stack, while 2315 allows this. And yes, in the future we should be able to get rid of these runtime underflow checks by using 3779-style validation. Then inefficiency goes away, too.     gcolvin:  My second biggest concern is that you can\u2019t do tail call optimization. But that\u2019s the price we pay for some useful structure. That\u2019s part of why I\u2019ve come to like having, in Intel\u2019s terminology, both subroutines and procedures. These are well-defined procedures.   Tail call optimization should be possible with a special new opcode like TAILCALLF as @ekpyron noted above. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.7762018683071314
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "10/03/2022-17:27:00",
+                    "content": "Overall 2315 approach is less restricted and I guess allowing more funky optimizations. And 4750 is more strict, with more runtime checks, which allows for simpler reasoning about bytecode and its structure, fewer edge cases in protocol rules, possibly easier to audit compilers\u2019 code. I can also see both approaches possibly co-existing (less restricted \u201csubroutines\u201d inside restricted \u201cprocedures\u201d), if compiler authors would find this complexity worthwhile. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.925925925925926
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "10/03/2022-17:28:18",
+                    "content": "    gcolvin:   having non-code bytes inside code sections would mean we have to be careful to not consider them executable  If the first byte is a new opcode the rest can be encoded as the immediate data of that opcode.   I like this idea more than just bytes with a special meaning inside code section. (but this wastes precious opcode space) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.706879058441558
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "10/03/2022-23:21:57",
+                    "content": "I\u2019ve roughly sketched out an extension to this proposal \u2013 EOF - Modules - HackMD \u2013 that allows for multiple entry points to each code section, mainly by having one type section for each code section.  I\u2019ve called these procedures  \u2013 per Procedures for the EVM - HackMD \u2013  to distinguish them from the Simple Subroutines for the EVM - HackMD they are built on, and from the EIP-4750 functions defined here. I\u2019ve made a PR.  github.com/ethereum/EIPs         EIP-4750: EOF Modules   ethereum:master \u2190 gcolvin:patch-6            opened 03:59PM - 15 Mar 22 UTC               gcolvin             +53 -70       Expand code sections from single-entry functions to multiple-entry modules.  W\u2026hen opening a pull request to submit a new EIP, please use the suggested template: https://github.com/ethereum/EIPs/blob/master/eip-template.md  We have a GitHub bot that automatically merges some PRs. It will merge yours immediately if certain criteria are met:   - The PR edits only existing draft PRs.  - The build passes.  - Your GitHub username or email address is listed in the 'author' header of all affected PRs, inside <triangular brackets>.  - If matching on email address, the email address is the one publicly listed on your GitHub profile.       ",
+                    "links": [
+                        "https://hackmd.io/@gcolvin/r1XVbWQVK",
+                        "https://hackmd.io/@gcolvin/HJ5Nv6iXt",
+                        "https://eips.ethereum.org/EIPS/eip-4750",
+                        "https://github.com/ethereum/EIPs/pull/4919",
+                        "https://github.com/ethereum/EIPs/pull/4919",
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/pull/4919/files",
+                        "https://github.com/ethereum/EIPs/pull/4919"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.260822510822511
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "10/09/2022-02:12:51",
+                    "content": "I closed this in favor of EIP-5450: EOF - Stack Validation.  Thanks!     gcolvin:  Update EIP-4750: Static stack use validation for EOF functions. by gcolvin \u00b7 Pull Request #5109 \u00b7 ethereum/EIPs \u00b7 GitHub The only other change I\u2019d beg for is longer names to distinguish them from all of the other CALL opcodes. CALLFN, CALLFUN, CALLFUNC \u2026 ? @gumb0 @chfast @axic   ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/5109"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "10/09/2022-02:45:53",
+                    "content": "I still prefer that EOF code sections represent Modules containing multiple procedures rather than being a single Function.  This allows for low-level optimizations within a module, but no control flow between modules except via defined interfaces.  In my opinion modules provide a more useful level of packaging. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4750",
+                        "https://ethereum-magicians.org/t/eip-2315-simple-subroutines-for-the-evm/3941/136"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.910714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "28/10/2022-12:43:25",
+                    "content": "Multiple entry points can also be added in a future upgrade, so they are not at all a showstopper for me.  Let\u2019s just keep in mind that they do allow for inter-procedural optimizations, which single-entry code sections impede. Modules could also support linking libraries of separately-compiled code sections into programs, which is a traditional purpose of object file formats.  I\u2019ve closed this PR. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "28/10/2022-13:10:58",
+                    "content": " And 4750 is more strict, with more runtime checks, which allows for simpler reasoning about bytecode and its structure, fewer edge cases in protocol rules, possibly easier to audit compilers\u2019 code.  From my point of view leaving checks until runtime makes reasoning more difficult \u2013 you don\u2019t know for sure that a program won\u2019t halt in those ways \u2013  but with  EIP-5450: EOF - Stack Validation the constraints can mostly be checked at validation time.  So I think this proposal should be made to require 5450, and most all of the places that call for an exceptional halt should be changed to use \u201cMUST\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.7592592592592595
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/haltman-at",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "17/12/2022-19:28:20",
+                    "content": "Hey, I notice that this EIP doesn\u2019t include any requirement that when using JUMPF the function being jumped to has the same number of outputs as the current function.  That seems like it could have some pretty odd results.  I suspect there should be such a requirement. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.083333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "19/12/2022-14:13:09",
+                    "content": "It is validated at deploy-time, see Code Validation section of the spec:   Code section is invalid in case an immediate argument of any JUMPF is such that type[callee_section_index].outputs != type[caller_section_index].outputs, i.e. it is allowed to only jump to functions with the same output type.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/haltman-at",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "19/12/2022-19:39:33",
+                    "content": "Oh, I see, I missed that, thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/purplehat",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "05/01/2023-22:55:33",
+                    "content": " Deprecating JUMPDEST analysis  For my understanding, does this refer to deprecating the JUMPDEST op-code itself, or just in reference to a change in how Ethereum client-implementations do JUMPDEST analysis? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "05/01/2023-23:30:43",
+                    "content": "The JUMPDEST analysis is what is deprecated, replaced with code and stack validaiton. JUMPDEST becomes a NOOP code inside of EOF code (zero stack impact and no external changes on invocation). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/purplehat",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "05/01/2023-23:47:12",
+                    "content": "Roger that\u2013makes sense to me, thank you for clarifying!  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1593"
+}

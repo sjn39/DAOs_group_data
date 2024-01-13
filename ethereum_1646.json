@@ -1,0 +1,546 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip4907-erc-721-user-and-expires-extension/8572",
+            "title": "EIP4907: ERC-721 User And Expires Extension ",
+            "index": 8572,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/LanceSnow",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "11/03/2022-13:05:56",
+                    "content": "  eip:  title: ERC-721 User And Expires Extension description: Standard interface extension for ERC-721 user and expires. author: EmojiDAO (dev@emojidao.org) discussions-to:  status: Final type:  category (*only required for Standards Track):  created: 2022-03-11 requires (*optional): <EIP 165 721> This standard proposes an extension to ERC721 Non-Fungible Tokens (NFTs) to separate NFT usage rights.  Abstract This standard is an extension of ERC721. It proposes an additional role user and a valid duration indicator expires. It allows users and developers manage the use right more simple and efficient.  Motivation Some NFTs have certain utilities. In-game NFTs can be used to play, virtual land can be used to build scenes, music NFT can be used to enjoy , etc. But in some cases, the owner and user may not be the same person. People may invest in an NFT with utility, but they may not have time or ability to use it. So separating use right from ownership makes a lot of sense. Nowadays, many NFTs are managed by adding the role of controller/operator . People in  these roles can perform specific usage actions but can\u2019t approve or transfer the NFT like an owner. If owner plans to set someone as controller/operator for a certain period of time, owner needs to submit two on-chain transactions, at the start time and the end time. It is conceivable that with the further expansion of NFT application, the problem of usage rights management will become more common, so it is necessary to establish a unified standard to facilitate collaboration among all applications. By adding user, it enables multiple protocols to integrate and build on top of usage rights, while expires facilitates automatic ending of each usage without second transaction on chain.  Specification This standard proposes two user roles: the Owner, and the User.Their rights are as follows:   An Owner has the right to:  Transfer the Owner role Transfer the User role    A User has the right to:  use NFT     Interface // Logged when the user of a token assigns a new user or updates expires event UpdateUser(uint256 indexed tokenId, address indexed user, uint64 expires);  // set the user role and expires of a token function setUser(uint256 tokenId, address user, uint64 expires) external ;  // get the user of a token function userOf(uint256 tokenId) external view returns(address);  // get the user expires of a token function userExpires(uint256 tokenId) external view returns(uint256);   Rationale Many developers are trying to develop based on the NFT utility, and some of them have added roles already, but there are some key problems need to be solved.  The advantages of this standard are below.  Clear Permissions Management Usage rights are part of ownership, so owner can modify user at any time, while user is only granted some specific permissions, such as user usually does not have permission to make permanent changes to NFT\u2019s Metadata. NFTs may be used in multiple applications, and adding the user role to  NFTs  makes it easier for the application to make special grants of rights.  Simple On-chain Time Management Most NFTs do not take into account the expiration time even though the role of the user is added, resulting in the need for the owner to manually submit on-chain transaction to cancel the user rights, which does not allow accurate on-chain management of the use time and will waste gas. The usage right often corresponds to a specific time, such as deploying scenes on land, renting game props, etc. Therefore, it can reduce the on-chain transactions and save gas with expires.  Easy Third-Party Integration The standard makes it easier for third-party protocols to manage NFT usage rights without permission from the NFT issuer or the NFT application.  Backwards Compatibility As mentioned in the specifications section, this standard can be fully ERC721 compatible by adding an extension function set. In addition, new functions introduced in this standard have many similarities with the existing functions in ERC721. This allows developers to easily adopt the standard quickly.  Test Cases When running the tests, you need to create a test network : truffle develop nft = await ERC_DualRoles.new(\"ERC_DualRoles\",\"ERC_DualRoles\") nft.mint(1,accounts[0]) nft.ownerOf(1) nft.setUser(1,accounts[1],33203038769) nft.userOf(1)  Powered by Truffle and Openzeppelin test helper.  Reference Implementation // SPDX-License-Identifier: MIT pragma solidity ^0.8.0;   import \"@openzeppelin/contracts/token/ERC721/ERC721.sol\"; import \"./IERC_DualRoles.sol\";  contract ERC_DualRoles is ERC721, IERC_DualRoles {     struct UserInfo      {         address user;   // address of user role         uint64 expires; // unix timestamp     }      mapping (uint256  => UserInfo) internal _users;      constructor(string memory name_, string memory symbol_)      ERC721(name_,symbol_)      {               }          function setUser(uint256 tokenId, address user, uint64 expires) public virtual{         require(_isApprovedOrOwner(msg.sender, tokenId),\"ERC721: transfer caller is not owner nor approved\");         UserInfo storage info =  _users[tokenId];         info.user = user;         info.expires = expires;         emit UpdateUser(tokenId,user,expires);     }      /**     * get the user expires of a token.          * if there is no user role of a token , it will return 0      */     function userExpires(uint256 tokenId) public view virtual returns(uint256){         return _users[tokenId].expires;     }           /**  get the user role of a token */     function userOf(uint256 tokenId)public view virtual returns(address){         if( uint256(_users[tokenId].expires) >=  block.timestamp){             return  _users[tokenId].user;          }         else{             return address(0);         }     }      function _beforeTokenTransfer(         address from,         address to,         uint256 tokenId     ) internal virtual override{         super._beforeTokenTransfer(from, to, tokenId);          if (from != to) {             _users[tokenId].user = address(0);             _users[tokenId].expires = 0;             emit UpdateUser(tokenId,address(0),0);         }     }      // for test     function mint(uint256 tokenId, address to) public {         _mint(to, tokenId);     } }    Security Considerations This EIP standard can completely protect the rights of the owner, the owner can change the NFT user and use period at any time.  Copyright Copyright and related rights waived via CC0. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc721-extension-to-enable-rental/8472/8",
+                        "https://ethereum-magicians.org/t/erc-4400-erc-721-consumer-extension/7371/24",
+                        "https://ethereum-magicians.org/t/erc721-timed-ownership-rental-without-apps-integration/9257",
+                        "https://ethereum-magicians.org/t/erc721-lease-allowing-owner-to-rent-nft-to-other/9965"
+                    ],
+                    "GPT-summary": "The post introduces EIP4907, which proposes an extension to ERC721 Non-Fungible Tokens (NFTs) to separate NFT usage rights. The proposal suggests adding an additional role, \"user,\" and a valid duration indicator, \"expires,\" to allow users and developers to manage the use right more simply and efficiently. The post explains the motivation behind the proposal, the advantages of the proposed standard, and provides the specification and test cases. The post does not advertise the proposal, and there is no collaboration or auditing mentioned.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.5406828020464385
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "11/03/2022-15:55:01",
+                    "content": " Example for rental The following diagram demonstrates an example for the rental functionality.  eip1239\u00d71671 43.1 KB  Suppose Alice owns NFTs and wants to rent out a NFT, and Bob wants to lease a NFT.   Alice approves rental contract could transfer the NFT Alice owns.   Alice sends a rental listing to the rental contract.   Bob select a lease time, the rent is calculated according to the lease time and rental price. Bob transfer tokens as rent, rental contract transfer NTT from Alice to rental contract and set the user of the NFT to Bob, set the expires by the lease time.   When the lease expires, Alice can redeem the NFT from rental contract.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "16/03/2022-10:45:37",
+                    "content": "Hi @LanceSnow The proposal that you\u2019ve done makes sense, especially the expiration feature. I had a similar idea when working on the EIP-4400: ERC-721 Consumable Extension. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Daniel-K-Ivanov",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "21/03/2022-08:50:27",
+                    "content": "Hi @LanceSnow Since your proposed EIP is very similar to the already approved and in draft state EIP-4400: ERC-721 Consumable Extension, do you want to collaborate and update EIP4400 with your expiry suggestion? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party wants to collaborate on proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ShrugNewton",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "18/04/2022-10:07:27",
+                    "content": "Hey Daniel, glad to buidl the NFT rental market together. Just checked EIP-4400, it doesn\u2019t have expires function, which brings the problem of multi-submitting on-chain transactions and wasting of gas. Would love to collaborate, let\u2019s discuss it! Shrug Double Protocol ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/miltonwg",
+                    "index": "6",
+                    "likes": "2",
+                    "time": "03/05/2022-13:44:29",
+                    "content": "    LanceSnow:  This EIP standard can completely protect the rights of the owner, the owner can change the NFT user and use period at any time.   Hey! Good proposal. One concern I have is related to this Security Consideration. If the owner has the right to change the user at any time, wouldn\u2019t that be a threat for, let\u2019s day, rental contracts? (or similar). Shouldn\u2019t there be the expiration time the one that allows/disallows that right? I understand that if the expiration time is mistakenly set you could never get your NFT user right back. Is that your rationale for this decision? Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.9660714285714285
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ShrugNewton",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "06/05/2022-05:06:41",
+                    "content": "Hey, thx for the question. In fact, the owner can always change the user and expires to prevent the situation you described. When leasing, the owner needs to transfer the NFT to the rental contract, and then the rental contract will become the owner to set the renter and the expires. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/miltonwg",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "06/05/2022-20:56:04",
+                    "content": "Thanks for the answer! Wouldn\u2019t it be better and safer for users to avoid transferring the NFT to the rental contract? And just approving the rental contract to change \u201cuser\u201d role when rented? thx ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ShrugNewton",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "09/05/2022-10:12:35",
+                    "content": "But if so, the owner sets the renter to one of his own addresses and also sets the expiration to 100 years later. At this point the owner sells the NFT to someone else, and the buyer will suffer a loss without paying attention to it. If we do not allow the owner to be transferred in the case of the user is valid, it will be different from the common transfer logic and easy to cause confusion. THX ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.733333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/miltonwg",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "10/05/2022-20:03:53",
+                    "content": "    ShrugNewton:  But if so, the owner sets the renter to one of his own addresses and also sets the expiration to 100 years later. At this point the owner sells the NFT to someone else, and the buyer will suffer a loss without paying attention to it.   I think this is prevented with your implementation here, right?  github.com   ethereum/EIPs/blob/master/assets/eip-4907/contracts/ERC4907.sol#L67                                     return interfaceId == type(IERC4907).interfaceId || super.supportsInterface(interfaceId);                 }                               function _beforeTokenTransfer(                     address from,                     address to,                     uint256 tokenId                 ) internal virtual override{                     super._beforeTokenTransfer(from, to, tokenId);                                   if (from != to) {                         _users[tokenId].user = address(0);                         _users[tokenId].expires = 0;                         emit UpdateUser(tokenId,address(0),0);                     }                 }             }                                              ShrugNewton:  If we do not allow the owner to be transferred in the case of the user is valid, it will be different from the common transfer logic and easy to cause confusion.   Anyway, I get this point. It may be something to work out in another way. Thanks. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/master/assets/eip-4907/contracts/ERC4907.sol#L67"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.761904761904761
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MissieBish",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "17/05/2022-14:21:27",
+                    "content": "Great idea, I had a similar one recently in an effort to develop a rental protocol. There is 2 things I\u2019d like to mention:  Maybe the scope can include erc1155, which would benefit from this proposal just as much as erc721. The security issues regarding the end date until which a user is set can be handled at the lease contract level, which has the added benefit of making a lease more trustless.  Can\u2019t wait to see this standard broadly accepted, it will open a whole new segment of decentralised finance. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.949431818181818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xG",
+                    "index": "13",
+                    "likes": "3",
+                    "time": "11/06/2022-11:16:28",
+                    "content": "Hi there! Early this year I built a proof of concept for a lendable/rentable token and the core idea is close to what is being discussed in this EIP. You can find the source code on etherscan I just wanted to chime in and share some suggestions. I would rename user to holder - it is more self descriptive. I would also rename userExpire to expiresOf for consistency (since they both take a tokenId). expires could be 0 for lending and > 0 for rentals etc - this way you can check against block.timestamp and use that as a way to allow the owner to update the holder. Specifically when expires is 0 they can update the holder at any time. Otherwise block.timestamp must be > expires. It would be great to think of a mechanism that would enable sub-lending etc. (holder lends to another holder within expires timeframe). There are plenty of real life applications for this behavior. Finally it would be great if we could figure out:  A way to have the ownership check in the token contract - transferring the NFT to the marketplace is sub optimal A method to lookup the ownership status of a token i.e. a method that returns (address owner, address holder, uint expires) - this is not super important as you can call holderOf and expiresOf   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.645833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mipicdev",
+                    "index": "14",
+                    "likes": "2",
+                    "time": "13/06/2022-14:02:21",
+                    "content": "Hey, Great EIP! Like 0xG, I have a similar suggestion regarding the user. In my opinion user is too general, because the owner may use an NFT and then he is also the user. Therefore I\u2019d suggest to rename it to possessor. Here\u2019s a good explanation: \u201cFor example, an owner of a car could lend it to someone else to drive. That driver would then possess the car. However, the owner does not give up ownership simply by lending the car to someone else.\u201d (source: Possession versus Ownership legal definition of Possession versus Ownership) ",
+                    "links": [
+                        "https://legal-dictionary.thefreedictionary.com/Possession+versus+Ownership"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CarlosTM",
+                    "index": "15",
+                    "likes": "2",
+                    "time": "28/06/2022-14:04:29",
+                    "content": "Hi Team, I liked the proposal, but I have a suggestion: Add a new function to renew the loan (NewExpiresOf) and keep the ExpiresOf to check how long the first date lasted for the new date, this could be a new condition to allow interest in the future. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.863636363636363
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "09/07/2022-10:58:16",
+                    "content": "This standard caught my attention as separating users and owners could help me make progress on implementing Harberger taxes and self-assessed pricing for NFTs. I\u2019ve started implementing it for libharberger here: Attempt ERC4907 integration by TimDaub \u00b7 Pull Request #38 \u00b7 rugpullindex/libharberger \u00b7 GitHub any help integrating or feedback is welcome! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "17",
+                    "likes": "2",
+                    "time": "09/07/2022-17:12:53",
+                    "content": "It\u2019s a shame that the authors of this standard didn\u2019t wait a bit longer before flagging it as final as I\u2019m noticing slight inconsistencies with the surrounding ecosystem. E.g. EIP-721 which this contract aspires to be compatible with has a similar function to function userOf(uint256 tokenId) but in case the tokenId doesn\u2019t exist, it throws. See OZ\u2019s implementation. So it is inconsistent.  Screenshot 2022-07-09 at 19.10.031988\u00d7378 136 KB  EIP-4907, however, made the odd choice of returning the zero address as a signal, which I judge as a bad decision given that I conceptually see function ownerOf to be very similar to function userOf.  Screenshot 2022-07-09 at 19.12.181942\u00d7560 172 KB  And before someone misunderstands: 4907 mandates returning the zero address in the standard and 721 mandates throwing so these are NOT implementation details, they are interface inconsistencies! eip-721.md     /// @notice Find the owner of an NFT     /// @dev NFTs assigned to zero address are considered invalid, and queries     ///  about them do throw.     /// @param _tokenId The identifier for an NFT     /// @return The address of the owner of the NFT     function ownerOf(uint256 _tokenId) external view returns (address);  eip-4907.md     /// @notice Get the user address of an NFT     /// @dev The zero address indicates that there is no user or the user is expired     /// @param tokenId The NFT to get the user address for     /// @return The user address for this NFT     function userOf(uint256 tokenId) external view returns(address);  ",
+                    "links": [
+                        "https://ethereum-magicians.org/uploads/default/original/2X/3/3e978a2ed037a841bab514fd399df418e23f8963.jpeg",
+                        "https://ethereum-magicians.org/t/pr-5380-eip-721-entitlement-extension/10190/2"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.475694444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "09/07/2022-17:43:35",
+                    "content": "Cleaned up trailing white space, formatting and repackaged ERC4907 as a foundry package here: GitHub - rugpullindex/ERC4907: Reference Implementation of EIP-4907 \"Rental NFT, ERC-721 User And Expires Extension\" ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party or author is advertising proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "11/07/2022-16:30:52",
+                    "content": "    CarlosTM:  Add a new function to renew the loan (NewExpiresOf) and keep the ExpiresOf to check how long the first date lasted for the new date, this could be a new condition to allow interest in the future.   Thanks for your feedback. Because the status of ERC-4907 is Final, you could propose a new EIP as  extension of  ERC-4907 to add this new function. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.540909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "20",
+                    "likes": "3",
+                    "time": "17/07/2022-13:59:48",
+                    "content": "Hi, thanks for your work on this EIP to allow the rental of NFT while keeping ownership flexibility This is something I have been working on in the past and I actually got my own proposal which in my opinion offers significant benefits over the one proposed here. I already have a repo exploring the idea in great detail, see here: GitHub - wighawag/erc721-lease: A contract to manage lease of NFT I do not want to hijack the discussion here and so I also created a topic to discuss the proposal on its own here: ERC721 Lease: allowing owner to rent NFT to other To recapitulate, the main difference with EIP-4907 is that my proposal  work with all ERC721, past, present and future does not need to get implemented in the token contract is completely generic: can implement any kind of contract between the user and owner. 's rental representation is itself an ERC721, so no extra work to get it working with existing infrastructure or tooling puts users (lease owners) and NFT owners on the same footing. EIP-4907 on the other end does not protect the \u201cusers\u201d in any way as the owner can reclaim at any time and thus does not establish a fair ground for owner/user agreement  The main pain point I see for EIP-4907 is that \u201cusership\u201d expiry is not enforced in any way and NFT owner has full power. This takes a political stance on the matter of ownership vs rental rights while such a system should be as fair as possible to allow user and owner to set their own term. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc721-lease-allowing-owner-to-rent-nft-to-other/9965"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.001602564102564
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MaestroKongrio",
+                    "index": "21",
+                    "likes": "2",
+                    "time": "19/07/2022-14:40:46",
+                    "content": "From a business and legal point of view, handling the ownership of any asset is a problem solved by ancient romans lawyers. Basically, you need to handle 3 properties:  Who is the owner of an assets, basically who is able to transfer the ownership of the asset, and by default setting is also the owner of any other rigths. Who can use the asset. For instance, the one who lives on a rented house Who can take the benefits from the asset (romans call this ius fruendi). Using the same rented house example, the landlord of the house is the one who owns this right. This way of modeling this has worked over 2.000 years\u2026 honestly I doubt any one in the crypto world can make something better.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.400510204081633
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/DOBBYl1",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "23/08/2022-10:17:05",
+                    "content": "I will be happy to chat more. Please check this out: \u2192 EIP-tbd Rental & Delegation NFT - ERC-721 Extension ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/DOBBYl1",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "23/08/2022-10:18:02",
+                    "content": "Great, i would like to chat more.  Please, check this out: \u2192 EIP-tbd Rental & Delegation NFT - ERC-721 Extension ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/DOBBYl1",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "23/08/2022-10:19:00",
+                    "content": "Great point, please check this out: \u2192 EIP-tbd Rental & Delegation NFT - ERC-721 Extension And let us know, what you think.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 9.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Pandapip1",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "23/08/2022-13:54:28",
+                    "content": "    MaestroKongrio:  This way of modeling this has worked over 2.000 years\u2026 honestly I doubt any one in the crypto world can make something better.     github.com/ethereum/EIPs         PR-5380: EIP-721 Entitlement Extension   ethereum:master \u2190 Pandapip1:patch-4            opened 01:12AM - 31 Jul 22 UTC               Pandapip1             +99 -0       Like EIP-4907 but completely different.       ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/5380",
+                        "https://github.com/Pandapip1",
+                        "https://github.com/ethereum/EIPs/pull/5380/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "28/09/2022-14:35:12",
+                    "content": "What is the consensus on this EIP? What projects are using it? This seems like a pretty serious issue that I have not seen addressed:     wighawag:  EIP-4907 on the other end does not protect the \u201cusers\u201d in any way as the owner can reclaim at any time and thus does not establish a fair ground for owner/user agreement   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.614583333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sidharth231999",
+                    "index": "28",
+                    "likes": "1",
+                    "time": "02/10/2022-16:44:50",
+                    "content": "When I was testing ERC-4907 contract, I found out something. Let\u2019s say an NFT with token id:1 was minted on user(1) and rented to user(2) for 3 days. Now during these 3 days, whenever user(1) transfers that NFT to let\u2019s assume user(3), user(2) which should have access to rented NFT for 3 days, now no longer have access to that NFT. userOf(1) sets to address(0). This can be overcome by adding modifiers and overriding transfer and safeTransfer functions of ERC-721. // SPDX-License-Identifier: CC0-1.0 pragma solidity ^0.8.0;  import \"@openzeppelin/contracts/token/ERC721/ERC721.sol\"; import \"@openzeppelin/contracts/utils/Counters.sol\"; import \"./IERC4907.sol\";  contract ERC4907 is ERC721, IERC4907 {     using Counters for Counters.Counter;     Counters.Counter private _tokenIdCounter;       struct UserInfo     {         address user;   // address of user role         uint64 expires; // unix timestamp, user expires     }      mapping (uint256  => UserInfo) internal _users;      modifier notRented(uint256 tokenId){         require(userOf(tokenId)==address(0),\"can not transfer rented NFT\");         _;     }      constructor(string memory name_, string memory symbol_)      ERC721(name_,symbol_)      {      }        function safeMint(address to) public {         _tokenIdCounter.increment();         uint256 tokenId = _tokenIdCounter.current();         _safeMint(to, tokenId);     }      /// @notice set the user and expires of a NFT     /// @dev The zero address indicates there is no user     /// Throws if `tokenId` is not valid NFT     /// @param user  The new user of the NFT     /// @param expires  UNIX timestamp, The new user could use the NFT before expires     function setUser(uint256 tokenId, address user, uint64 expires) public virtual{         require(_isApprovedOrOwner(msg.sender, tokenId),\"ERC721: transfer caller is not owner nor approved\");         UserInfo storage info =  _users[tokenId];         info.user = user;         info.expires = expires;         emit UpdateUser(tokenId,user,expires);     }     function getTimestamp()public view returns(uint256){         return block.timestamp +300;     }      /// @notice Get the user1664725514 address of an NFT     /// @dev The zero address indicates that there is no user or the user is expired     /// @param tokenId The NFT to get the user address for     /// @return The user address for this NFT     function userOf(uint256 tokenId)public view virtual returns(address){         if( uint256(_users[tokenId].expires) >=  block.timestamp){             return  _users[tokenId].user;         }         else{             return address(0);         }     }      /// @notice Get the user expires of an NFT     /// @dev The zero value indicates that there is no user     /// @param tokenId The NFT to get the user expires for     /// @return The user expires for this NFT     function userExpires(uint256 tokenId) public view virtual returns(uint256){         return _users[tokenId].expires;     }      /// @dev See {IERC165-supportsInterface}.     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {         return interfaceId == type(IERC4907).interfaceId || super.supportsInterface(interfaceId);     }      function _beforeTokenTransfer(         address from,         address to,         uint256 tokenId     ) internal virtual override{         super._beforeTokenTransfer(from, to, tokenId);          if (from != to && _users[tokenId].user != address(0)) {             delete _users[tokenId];             emit UpdateUser(tokenId, address(0), 0);         }     }      function transferFrom(         address from,         address to,         uint256 tokenId     ) public virtual override notRented(tokenId){         //solhint-disable-next-line max-line-length         require(_isApprovedOrOwner(_msgSender(), tokenId), \"ERC721: caller is not token owner or approved\");          _transfer(from, to, tokenId);     }      /**      * @dev See {IERC721-safeTransferFrom}.      */     function safeTransferFrom(         address from,         address to,         uint256 tokenId     ) public virtual override notRented(tokenId){         safeTransferFrom(from, to, tokenId, \"\");     }      /**      * @dev See {IERC721-safeTransferFrom}.      */     function safeTransferFrom(         address from,         address to,         uint256 tokenId,         bytes memory data     ) public virtual override notRented(tokenId){         require(_isApprovedOrOwner(_msgSender(), tokenId), \"ERC721: caller is not token owner or approved\");         _safeTransfer(from, to, tokenId, data);     }  }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.113636363636363
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mustafaassaad",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "03/10/2022-04:23:09",
+                    "content": "Hey mate, great documentation. Are these features approved and ready to be implemented into any dApp ? or do you need to get it approved first. thank you ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "18/10/2022-12:57:05",
+                    "content": "For rental protocol, to protect the use rights, the ERC-4907 NFT can be staked to a contract. Double Protocol Lending Example: Glossary:  oNFT: original NFT, which is an ERC-4907 NFT doNFT: DOUBLE NFT. doNFT complies with the ERC-721 standard and represents a certificate for the right to use the NFT within a specific time. vNFT: A special doNFT, as a voucher to redeem the original NFT.   WechatIMG1261958\u00d7924 53.1 KB  Steps: 1 Alice calls setApprovalForAll() function of oNFT contract, approves doNFT contract can transfer the oNFT token. 2 Alice calls mintVNft() function of the doNFT contract to mint a vNFT token: 2.1 doNFT contract calls transferFrom() function of oNFT contract. 2.2 doNFT contract transfers the oNFT token to the doNFT contract. After that, the owner of the oNFT will become the doNFT contract. 2.3 doNFT contract mints a vNFT token and transfers it to Alice. 2.4 doNFT contract calls setUser() function of oNFT contract. 2.5 Set user to Alice so that Alice can use the oNFT when the oNFT is not rented. 3 Alice calls createLendOrder() function of the market contract, sets the rental price, period, and creates a lending order in the market. More details: ERC-4907 Model Timing Diagram - Double ",
+                    "links": [
+                        "https://docs.double.one/for-developers/integration-tutorials/erc-4907-model-timing-diagram"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.946428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "18/10/2022-13:14:58",
+                    "content": "Some NFTs can be rented on double.one\uff1a  Warena Nova Creed: Avatars Nova Creed: Ships  Some ERC-4907 contracts:     symbol chain contract address     POP Ethereum 0xe1fb64bcefd7392aa0ec39354618ac48a5ddc501   INF Ethereum 0x8e5324d34ee9ab2ed84ac9ba237ca0433e89130c   OSF Ethereum 0x715cbae9d7fcf899e69221368be587f6cb39e4c6   GAVA Ethereum 0x4302b24ea1010b4cb4f1f056341334ccd2efd3c1   AFP Ethereum 0xa13b8cbd068fe176b3d37c6694173064e17ef563   MDT Ethereum 0x86eea52fd8ed3ee84bc135b284a589e4ed4ebf14   ADCCC Ethereum 0x4711e4ea574c72501be4922224cfa38bc281d16d   eyecon Ethereum 0x8d95a85f5f6dafeffad29dfe08869c1f9dd00802   METAHOME Ethereum 0x3872beeb0edef42f39e3b8e7d5339352f22d319a   XSOLDIERS Ethereum 0x0e559f7771d8fbd2dda30a4eae12c07179907d53   NTR Ethereum 0xbf8f831c9b90038fdfbf034740f624fdc63f3217   MD Ethereum 0xbedee3879a3c5107d8846bf7d91dbaacf8d42544   SHARKZG Ethereum 0x91220b88311dcd521e0d68466ef39514a1baeebc   cocoisland Ethereum 0xd36c2731078d8490bae33ba5e05bf8b99abdc913   VXIN Ethereum 0x2f31f763911a79fccefd3014b1fdb9dd8dbadf7f   wetw Ethereum 0xd446e68714b61acdb2c51076fe16f127b94c9328   LSC Ethereum 0x491f8d040e90a8a9681f6afe9dfb114f2dbb960c   MCAstro Ethereum 0x9df90628d40c72f85137e8cee09dde353a651266   SUSUALPHA Ethereum 0x29e0a58f62a34a29965ac5c64f5f3c792bee7a9a   HMLAP Ethereum 0x0d618537548d769bd30f5c8e19f2b8beb7d83f06   CAHMAP Ethereum 0x512926bc2266db6546f3d3c11a383b3d0bf19a11   ZAHMAP Ethereum 0x44da50f9ce1557cb8b9e04bda0fb9e84172a44b7   T2WEB Ethereum 0x75d0bf98e2dbf8248c2545e4fbbb1c0247ef7508   wWarena BSC 0x6793619c3dd9d545520923da47c6f8824e2cc30f   SKNFT BSC 0x9835b7731017f52adadbb1d9f2e3aaa88c7d5db6   EGNFT BSC 0xe5fea8173f817a758f265c5d8f23790df8a311e0   MECH_HERO BSC 0x959924fcfb62cbd1b2e4ed50fadd1b469f0496b8   BSONE BSC 0x01fccf2b10c0b3d579e98574ef0488f1b05a3824   BBBONE BSC 0xadf74b09c6fead7cbac1c21eb3a583f4b2e10cf1   EGNFT BSC 0x22eb0f44406e7d0631600c5efa3158f648825e95   T2WEB BSC 0x94a3695e8a2e7dca189c3a1ace3b767492fa214d   POSTCARD BSC 0xcfa332e7a7994d41cc52a72bbabd7f04c4f15bb0   wNCSHIP Polygon 0x126519a9070fe4b4e005c86a55edaa0750801fa9   wNC Polygon 0xc30dedd81fe3cd756bffee41199e86b0c3b10218   wZUKINFT Polygon 0x945af2f45290c2a8ef4f651f35ae2413bee8e4b7   E4T Polygon 0x374155a0c6ed23046f4f17a0b58995cace6f5bce   T2WEB Polygon 0x75d0bf98e2dbf8248c2545e4fbbb1c0247ef7508   LCC Polygon 0x491f8d040e90a8a9681f6afe9dfb114f2dbb960c   PDLS Polygon 0xb89d3d7ca23a34ca75f648072ec762c857ee0efd   LGC Polygon 0x84c19001c1c75ef1a869023843d4865f231a3ede   newNft Polygon 0x24fd77efa4e0a7629154dec2d18a82af2ba5126e   LPCP Polygon 0x57dc9bb707c687c056e510a0e7b3a8b98e7bec2a     ",
+                    "links": [
+                        "https://double.one/collection/nova_creed",
+                        "https://double.one/collection/nova_ship"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CPi",
+                    "index": "32",
+                    "likes": "2",
+                    "time": "18/10/2022-18:53:55",
+                    "content": "Hello, i\u2019m new here on ethmagicians I\u2019m actually wondering if the final stage means \u201cthis implementation = standard\u201d or if the just the interface should be considered as such, thus not setting in the stone the implemention given in gitHub Not sure if I should discuss in a different EIP or the discusssion on the implementation goes on even when the EIP is marked as \u201cfinal\u201d. Anyway i\u2019ll make my question here Wouldn\u2019t an implementation like this just fix the usership problem while enabling non-custodial protocol to handle 4907 or you can see major iussues doing like:  When the usership expires returns the ownerOf() instead of address 0.    function userOf(uint256 tokenId) public view virtual override returns(address){         if( userExpires(tokenId) >=  block.timestamp){              return  _users[tokenId].user;          }          else{              return address(ownerOf(tokenId));          }     }   Prevent usership to be set again before the current expires.  By allowing setUser to be changed while user is not expired, it becomes mandatory to have an intermediary contract to own the NFT, to prevent the real owner to call setUser() or transfer triggering the delete info[tokenId] This makes possible for a renter to delegate a contract to setUser instead, thus not requiring custody. In this scenario the user is guaranteed to retain usership from start to end. function setUser(uint256 tokenId, address user, uint256 expires) public virtual override {         require(_isApprovedOrOwner(msg.sender, tokenId), \"ERC4907: transfer caller is not owner nor approved\");         require(userOf(tokenId) != ownerOf(tokenId), \"ERCXXX: user can't be set before expiration\");            UserInfo storage info =  _users[tokenId];         info.user = user;         info.expires = expires;         emit UpdateUser(tokenId, user, expires);     }   Don\u2019t override _beforeTokenTransferanymore  At this point if the user paid his interest for a rental, transfer shoudn\u2019t delete info at all and let third party markets to mark the item as rented using IERC4907. It will then be on buyer to evaluate wheter or not the deal is convienent or not to him. Think it as a bare ownership more or less Even tho I\u2019m not sure if this discussion is over or not, i would like to contribute with my opinion. Nice work so far ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.400523088023088
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/howardpen9",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "24/10/2022-17:24:59",
+                    "content": "    0xG:  It would be great to think of a mechanism that would enable sub-lending etc. (holder lends to another holder within expires timeframe)   Wait, whether it sounds not-fair? I am the owner of this NFT(Azuki), and I rental the ownership to \u201cmany\u201d people. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 9.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/howardpen9",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "24/10/2022-17:26:41",
+                    "content": "    mipicdev:  \u201cFor example, an owner of a car could lend it to someone else to drive. That driver would then possess the car. However, the owner does not give up ownership simply by lending the car to someone else.\u201d   nice nice feedback!!! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 7.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "35",
+                    "likes": "1",
+                    "time": "24/10/2022-18:31:03",
+                    "content": "    CPi:  I\u2019m actually wondering if the final stage means \u201cthis implementation = standard\u201d or if the just the interface should be considered as such   The status field of an EIP only describes the document itself and says nothing about the ecosystem or whether people are actually using the EIP. In short, Final here means: EIP-4907 will not change besides errata and text formatting. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "03/11/2022-16:21:11",
+                    "content": "The implementation of EIP-4907 is a reference implementation, you can do a different implementation. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "04/11/2022-03:55:09",
+                    "content": "We removed _beforeTokenTransfer  in our newest  implementation:  github.com   emojidao/EIP4907/blob/main/contracts/ERC4907.sol // SPDX-License-Identifier: MIT pragma solidity ^0.8.0;   import \"@openzeppelin/contracts/token/ERC721/ERC721.sol\"; import \"./IERC4907.sol\";  contract ERC4907 is ERC721, IERC4907 {     struct UserInfo      {         address user;   // address of user role         uint64 expires; // unix timestamp, user expires     }      mapping (uint256  => UserInfo) internal _users;      constructor(string memory name_, string memory symbol_)      ERC721(name_,symbol_)      {               }            This file has been truncated. show original      override _burn function     function _burn(uint256 tokenId) internal virtual override {         super._burn(tokenId);         delete _users[tokenId];         emit UpdateUser(tokenId, address(0), 0);     }  ",
+                    "links": [
+                        "https://github.com/emojidao/EIP4907/blob/main/contracts/ERC4907.sol",
+                        "https://github.com/emojidao/EIP4907/blob/main/contracts/ERC4907.sol"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/areeba",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "06/11/2022-17:00:59",
+                    "content": "So if we want to make Collateral free Rental marketplace then how this protocol help us. According to description of erc 4907 it  provides user roles not the ownership  but  how renter use this nft in games without ownership. In short my question is how renter use these rented nfts in which games that are not supporting user roles ?.I think this protocol only support the owner roles but not the user roles? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.34375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "10/11/2022-08:02:05",
+                    "content": "If the games use ERC-4907 NFT, they should support the user roles. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1646"
+}

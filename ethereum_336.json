@@ -1,0 +1,262 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-6404-ssz-transactions-root/12783",
+            "title": "EIP-6404: SSZ Transactions Root ",
+            "index": 12783,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "31/01/2023-20:34:45",
+                    "content": "Discussion thread for EIP-6404: SSZ transactions root Vitalik\u2019s notes:  Proposed transaction SSZ refactoring for Cancun - HackMD  Related discussions:  Transactions: This thread here Withdrawals: EIP-6465: SSZ Withdrawals Root  Receipts: EIP-6466: SSZ Receipts Root  SSZ: EIP-6475: SSZ Optional    Background Followup from https://github.com/ethereum/consensus-specs/files/10348043/elroots.pdf Relevant channel: #typed-transactions on ETH R&D Discord  Security (for putting keccak and sha hashes in same namespace)  Avalanche effect - Wikipedia Universal composability - Wikipedia collision resistance - Composition of cryptographic hash functions - Cryptography Stack Exchange provable security - Merkle trees instead of the Sponge or the Merkle-Damg\u00e5rd constructions for the design of cryptorgraphic hash functions - Cryptography Stack Exchange  ",
+                    "links": [
+                        "https://notes.ethereum.org/@vbuterin/transaction_ssz_refactoring",
+                        "https://ethereum-magicians.org/t/eip-6465-ssz-withdrawals-root/12883",
+                        "https://ethereum-magicians.org/t/eip-6466-ssz-receipts-root/12884",
+                        "https://ethereum-magicians.org/t/eip-6475-ssz-optional/12891",
+                        "https://github.com/ethereum/consensus-specs/files/10348043/elroots.pdf",
+                        "https://en.wikipedia.org/wiki/Avalanche_effect",
+                        "https://en.wikipedia.org/wiki/Universal_composability",
+                        "https://crypto.stackexchange.com/a/96474",
+                        "https://crypto.stackexchange.com/questions/50974/merkle-trees-instead-of-the-sponge-or-the-merkle-damg%C3%A5rd-constructions-for-the-d",
+                        "https://ethereum-magicians.org/t/eip-6465-ssz-withdrawals-root/12883",
+                        "https://ethereum-magicians.org/t/eip-6466-ssz-receipts-root/12884"
+                    ],
+                    "GPT-summary": "The post discusses EIP-6404, which proposes a transaction SSZ refactoring for Cancun. The author explains the proposal and provides related discussions and background information. Third parties give constructive criticism, ask questions, and review the proposal. The post also touches on security concerns related to cryptographic hash functions.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Privacy, Security and risk management",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "01/02/2023-14:21:50",
+                    "content": "Hi Etan, thanks a lot for writing this up. Some thoughts from my end:  The single Transaction object seems very clunky as a definition. Although it might be nice to move to a world where there is only 1 type of transaction, we still have 3-4 types that need to be maintained. My belief is that hiding this behind helpers and converters, while it may be marginally more efficient, will cost us more in the long run in terms of reasoning about the abstraction and maintaining it. I strongly encourage we consider something closer to the original document Vitalik wrote. As a comment for the spec, please define all the structures statically. As an implementer it is difficult to parse the dynamically constructed serializers/deserializers. For legacy transactions, I believe using maxBaseFeePerGas as gasPrice is incorrect. It should set both maxBaseFeePerGas and maxPriorityFeePerGas to gasPrice. I don\u2019t like how we are shoehorning the first byte of legacy transactions into a EIP-2718 type. It\u2019s weird that pre-155 txs have many different possible types. I think this is where have separate containers would be much cleaner. It\u2019s unnecessary to define receipt RLP values and hash values. They\u2019re referred to either by i) transaction hash/id or ii) block and transaction index. The RLP is no longer a concern of consensus.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.483395989974937
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "01/02/2023-16:31:43",
+                    "content": "Thanks for the thorough review, appreciate it! I think it\u2019s worth to explore both Vitalik\u2019s approach and the single Transaction object approach. One open issue about Vitalik\u2019s document is that it seems to shift complexity from the node implementation to the client application. EIP-1559 introduces a NormalizedTransaction, suggesting that client implementations internally already convert to a single transaction type before processing them. My proposal moves that concept also into the SSZ merkle tree. For example, a client would like to use a generic SSZ merkle proof API to obtain a proof for the value of a transaction. In the Union case, it seems that multiple round trips are needed (one for each layer of Union). In the Onion case, it is possible to request all potential GeneralizedIndex that may contain a value in one shot, together with the tx_type, and then filter out all the zeroes; however, the set of potential indices grows with each future transaction type. What is gained with the single Transaction object is that the value is always at the same location in the SSZ merkle tree. I agree that marginal efficiency gains are not a core metric to optimize for. I have removed efficiency benefits from the EIP\u2019s rationale to avoid giving them more weight than intended. Regarding the other points:  Indeed, having static structure definitions should make it more readable. Will update the EIP accordingly, possibly after ACDE tomorrow. Good catch about the max_priority_fee_per_gas. Fixed it. About the EIP-2718 type, yes, it is not a good fit. Also, the 0x00 type for EIP-155 is a hack, to distinguish post-EIP155 chain_id = 0 (explicit replayability) from pre-EIP155 chain_id = nil (implicit replayability). Given that EIP-2718 is mostly used on the network to differentiate between payload types, it may make sense to introduce a separate enum for the normalized Transaction, e.g., a TransactionVersion. For Receipt, good to know that this may be simplified even further. For the lookup by Transaction ID, it may be beneficial if the original (perpetual) Transaction ID is also included into the SSZ tree. This would allow serving a proof that provides the Receipt, the index of the Receipt, and the Transaction ID at the same index, so that the caller can cross-check that the Receipt is indeed linked to the requested Transaction ID. Another one for post-ACDE.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.678571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "02/02/2023-11:21:10",
+                    "content": "I have now updated the EIP for clarity, based on your feedback.  The EIP-2718 tx_type is gone. There is no reason to remember the original serialization format. A new hash_version was introduced to SignedTransaction. This hash_version indicates how the transaction was originally hashed for the purpose of signing, and for determining the perpetual transaction ID. Structures are no longer constructed incrementally. Unnecessary parts removed from Receipt section. Removed serialization examples for legacy transactions. There is now only an example for a non-blob transaction, and a with-blob transaction.  Open questions for today\u2019s ACDE call:  Onion/Union vs normalized Transaction discussion Can the block / block header be changed to SSZ as well, or should it be a separate step?  In the outermost layer of a block, there are still RLP lists of SSZ Transaction, could be gone CL ExecutionPayloadHeader == EL block header desirable?   Do we want to keep a tree for tx IDs, next to the tree for tx payloads?  Tx inclusion proof should be possible without sending the entire tx Receipt proof should be possible without sending the entire tx?   Any use cases that don\u2019t have a straight-forward way to query from the new SSZ merkle tree?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.259469696969697
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "02/02/2023-21:17:22",
+                    "content": "Updated EIP-6404 once more:  Removed networking changes. My EIP is solely about the SSZ merkle tree computation for transactions_root, receipts_root, and withdrawals_root. This means, it does not touch EL networking, and there can be as many non-blob and with-blob EIP-4844 types for the mempool as anyone wants, as long as they are normalizable as part of the SSZ merkle tree. Removed sighash and txid changes. The hashes are now compatible with EIP-4844, removing any security discussions about this EIP. The TxHashVersion is now equal to EIP-2718 transaction type, for 0x01, 0x02, and 0x05, to prevent confusion. I have added helpers for Receipt and Withdrawal to aid with receipts_root and withdrawals_root computation based on the pre-existing RLP receipt and withdrawal structures. Added missing max_fee_per_data_gas field to the normalized Transaction type.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.791666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "02/02/2023-21:43:57",
+                    "content": " Also added a transaction_hashes_root that commits to the perpetual transaction hashes. Useful for Receipt proofs. Functionality requested here: add eth_getReceiptProof by ncitron \u00b7 Pull Request #372 \u00b7 ethereum/execution-apis \u00b7 GitHub   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "06/02/2023-07:43:03",
+                    "content": "Why not just put the hash of each transaction into the receipt object? That avoids creating extra trees. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "06/02/2023-07:45:36",
+                    "content": "I personally would favor the transaction-related stuff, and the receipts + withdrawals logic, to be in separate EIPs. Their logic is mostly separate, and one could be implemented without the other. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "06/02/2023-15:48:31",
+                    "content": "Indeed, referencing the transaction hash as part of the individual Transaction / Receipt structures makes this much cleaner. Updated the EIP:  Removed transaction_hashes_root tree Wrap SignedTransaction and Receipt in IndexedTransaction / IndexedReceipt that tag them with tx_hash. Note, this doubles proof response size for obtaining all tx_hashes inside a block (sibling of each hash must be sent as part of the proof), but eliminates the complexity of an extra tree. This also reduces proof size for receipts and individual transaction fields, as all proof items can be fetched from a single SSZ tree.  Also revised transaction types:  Replaced TxHashVersion with EIP-2718 TransactionType  Removed EIP-155 (chain-ID in v) specific transaction type to allow type reuse with EIP-2718 types in Receipt. Add TransactionSubtype to distinguish chain_id = 0 from chain_id = None (instead of the removed EIP-155 type).  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.107142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "06/02/2023-16:00:49",
+                    "content": "Overall, I\u2019m not sure if the distinction between chain_id = 0 and chain_id = nil is even necessary. There was a proposal to ban chain_id = 0 in EIP-3788: Strict enforcement of chainId, but that one was also trying to ban chain_id = 0 outside the scope of LegacyTransaction (where the ambiguity does not arise). For now, EIP-6404 assumes that the distinction is necessary. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "08/02/2023-16:45:13",
+                    "content": "Done:  Withdrawals: EIP-6465: SSZ withdrawals root  Receipts: EIP-6466: SSZ receipts root   For receipts, there is a dependency on EIP-6404 through the TransactionType. Withdrawals are clean. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-6466-ssz-receipts-root/12884"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "08/02/2023-17:10:49",
+                    "content": "Ended up moving the transaction_hash to the top layer of the transactions tree. Rationale for removing from receipts tree is so that devp2p GetReceipts response can still be verified against a block header, without requiring access to historic transactions (and their hashes). Geth syncs receipts and transactions concurrently, so may have such a design. Nethermind syncs transactions before receipts. Erigon does not sync receipts but instead computes them locally from transactions. Rationale for transactions tree is so that eth_getBlockByNumber with includeTransactions = False:  can still be answered in relatively compact format in a verifiable way. Response would include all the perpetual TX hashes, as well as the hash_tree_root\u2019s according to the block\u2019s spec fork. HTR is needed to verify overall transactions_root. can still be answered by a consensus layer (CL does not store receipts, so would otherwise not have the TX hashes available).  The light client wallet use case is still supported, like this:  Wallet prepares TX: any tx type, compute sighash, sign it, broadcast, as usual (no changes) Wallet computes perpetual TX hash according to tx type (no changes) Wallet now queries JSON-RPC for tx inclusion proof by perpetual TX hash Once included in a block, proof contains: (1) sequential TX index within block, (2) proof of TX hash being at said index in transactions tree, (3) status code from receipts tree at same index, (4) proof that status code in receipts tree is correct.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.958333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "09/02/2023-12:25:28",
+                    "content": "Have split SSZ discussion to EIP-6475: SSZ Optional ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "09/02/2023-15:10:31",
+                    "content": "Bumped to remove the tx_subtype and replace it with CHAIN_ID_LEGACY that is not supported in EIP-155. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "15/02/2023-12:58:57",
+                    "content": "Bumped to use an opaque representation for transaction signatures, added rationale and updated comparison picture to union based approach. ",
+                    "links": [
+                        "https://notes.ethereum.org/@vbuterin/transaction_ssz_refactoring"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "19/02/2023-16:59:02",
+                    "content": " Updated to also include commitments to transaction signer, and to the address of newly deployed contracts, in the SSZ tree, to cover remaining JSON-RPC API use cases. Pushed chain_id into the first layer of the transactions_root tree, as it becomes an ExecutionPayload property after transactions have been bundled. Optimized SSZ tree to have shorter proofs for common use cases, added illustration Optimized SSZ tree to have more compact encoding for non-blob transactions Refactored EIP to have clear sections introducing each helper function Updated rationale  I\u2019m still working on benchmarks, as discussed in the last SSZ breakout call. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.571969696969697
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "28/02/2023-13:06:23",
+                    "content": "Updated EIP-6404 with metrics, comparing to the union based approach. Personal conclusion: SSZ Union\u2019s primary advantage is that inside the consensus ExecutionPayload, it needs about ~50 bytes less compared to the normalized transaction. At the typical 200 transactions per block, that\u2019s a difference of about ~10 KB per block. Furthermore, engine_getPayload / engine_newPayload don\u2019t require conversion in case of the SSZ Union, for SSZ transactions. However, this API is used via JSON, so already goes through a double conversion process, and is sometimes used remotely. So the performance argument here is moot. Finally, arguments can be made regarding a different design space for future transaction types. However, note that all transactions are also exposed via JSON-RPC, where they are represented in a normalized way. Therefore, any restrictions that a normalized transaction representation brings, already apply, even if the transactions are represented in an SSZ Union format. The SSZ Union has some noteworthy flaws when representing non-SSZ transactions:   It is impossible to recover a non-SSZ transaction\u2019s from address without downloading the full transaction. In my tests, an incorrect value is recovered to simulate behaviour as if all transactions were SSZ.   It is also impossible to determine the address of a newly deployed contract for a non-SSZ transaction without downloading the full transaction, as that depends on the from address.   The txid of a non-SSZ transaction is computed differently than it originally had. This means that a transaction-in-a-bottle with a precomputed txid can no longer be identified through that txid, and tooling needs to change.   Non-SSZ transaction restrictions also apply, if we ever want to change the hashing algorithm, to, say, Poseidon. The SSZ Union approach closely links the original transaction representation with the way how it is represented in the transactions_root tree. If there is a Poseidon transaction, it has the same issue as RLP transactions if the tree stays SSZ. If the tree changes to Poseidon as well, all existing SSZ transactions will have the same problem.   Besides those flaws, the SSZ Union also is less friendly for consumption by light clients.   Most SSZ union proofs are bigger than their normalized transaction counterpart, despite the union including less information. The exception is a proof that simply looks up the index of a transaction inside a block by its original transaction hash, but that size benefit comes at a cost that the lookup simply doesn\u2019t work for non-SSZ transactions.   The proof complexity is higher for SSZ union proofs, due to each transaction type needing a separate path in the logic and the basic information about the sender of a transaction requiring secp256k1 public key recovery. Adding new transaction types gradually raises verifier complexity. As for execution speed, they are mostly slower to verify, with the exception once more being the lookup of sequential index inside a block by original hash, which is incorrect for non-SSZ transactions in SSZ union case.   JSON-RPC lookups on execution clients might be slower with the SSZ Union, because the JSON-RPC API provides access to a transaction\u2019s from field, which in turn requires secp256k1 public key recovery. All required data to answer a JSON-RPC lookup is readily available in the normalized transaction format without any expensive computation.   Note that, once more, EIP-6404 is only about normalizing the transaction representation after inclusion into the consensus ExecutionPayload. For the mempool representation of transactions, they can continue to use whatever signature scheme, hashing method, combination of fields and blob specific network wrappers, as they currently do. EIP-6493 proposes a signature scheme that SSZ transactions should use as part of the mempool, that is both compatible with the SSZ Union as well as the normalized representation for EIP-6404. ",
+                    "links": [
+                        "https://notes.ethereum.org/@vbuterin/transaction_ssz_refactoring",
+                        "https://eips.ethereum.org/EIPS/eip-6404#ssz-proof-creation",
+                        "https://eips.ethereum.org/EIPS/eip-6404#ssz-proof-creation",
+                        "https://eips.ethereum.org/EIPS/eip-6404#ssz-proof-verification-on-embedded",
+                        "https://eips.ethereum.org/EIPS/eip-6404",
+                        "https://eips.ethereum.org/EIPS/eip-6493"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3969696969696965
+                }
+            ]
+        }
+    ],
+    "group_index": "336"
+}

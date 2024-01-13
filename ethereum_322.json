@@ -1,0 +1,147 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/address-eip-4626-inflation-attacks-with-virtual-shares-and-assets/12677",
+            "title": "Address EIP-4626 inflation attacks with virtual shares and assets ",
+            "index": 12677,
+            "category": [
+                "Tokens"
+            ],
+            "tags": [
+                "erc",
+                "eip-4626"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "24/01/2023-15:26:16",
+                    "content": "Address EIP-4626 infaltion attacks with virtual shares and assets  Introduction As some of you may know, EIP-4626 is vulnerable to the so-called inflation attacks. This attack results from the possibility to manipulate the exchange rate and front run a victim\u2019s deposit when the vault has low liquidity volume. This is made possible by the absence of slipage protection in the deposit function. There exist several approaches to mitigate this risk. This includes using a EIP-4626 router, or using dedicated functions like the ones proposed in EIP-5143. However, this still leaves interaction between EOAs and standard EIP-4626 vaults somehow vulnerable. At OpenZeppelin, we hope to provide an implementation that remains as simple and unopinionated as possible, while also providing the best security possible. As such, we have been working on a solution that would address this issue with minimal impact on the vault. We are currently in the process of adding what we call a \u201cdecimal offset\u201d together with \u201cvirtual assets and shares\u201d. This post documents this addition to the vault. We are hoping to gather feedback by the EIP-4626 community because releasing that.  Reminder: the inflation attack Glossary:   Asset or underlying asset: an ERC-20 token that is used by the vault as collateral  Shares: the ERC-20 token that is used to represent ownership over the vault.  When a vault is not empty, the balance between shares and assets define the vault exchange rate. This rate is usually applied to further operations such as deposits, withdraw, etc. This rate is produced using the totalAssets (which is often the balance of te vault in underlying assets) and the vaults totalSupply (which is the ammount of shares that exist). If any of these values is 0, than the rate is not properly defined, and some operations are problematic. That is why, when a vault is empty, the exchange rate is often defined using a fallback. This fallback corresponds to the \u201cdefault\u201d exchange rate, which is often dictated by the decimals of both contracts. We used to do that in our 4.7 release  Code function _convertToShares(uint256 assets, Math.Rounding rounding) internal view virtual returns (uint256 shares) {     uint256 supply = totalSupply();     return         (assets == 0 || supply == 0)             ? assets.mulDiv(10**decimals(), 10**_asset.decimals(), rounding)             : assets.mulDiv(supply, totalAssets(), rounding); } function _convertToAssets(uint256 shares, Math.Rounding rounding) internal view virtual returns (uint256 assets) {     uint256 supply = totalSupply();     return         (supply == 0)             ? shares.mulDiv(10**_asset.decimals(), 10**decimals(), rounding)             : shares.mulDiv(totalAssets(), supply, rounding); }    The idea of the inflation attack is to tamper with that exchange rate just before a user deposits token to the vaults. Lets say Alice wants to deposit 1 token (with decimal 18, so 1e18 units) to the vault calling deposit. This is how the attack would unfold.  The vault is empty.  The exchange rate is the default 1 share per asset   Bob sees Alice\u2019s transaction in the mempool and decide to sandwitch it. Bob deposits 1 wei to the vault, gets 1 wei of shares in exchange.  The exchange rate is now 1 share per asset   Bob transfers 1 token to the vault (1e18 units) using an ERC-20 transfers. No shares are minted in exchange.  The rate is now 1 share for 1e18+1 asset   Alice deposit is executed. Her 1e18 units of token are not even worth one unit of shares. So the contract takes the assets, but mint no shares. Alice basically donated her tokens.  The rate is now 1 share for 2e18+1 asset   Bob redeem its 1 wei of shares, getting the entire vault assets in exchange. This includes all the token he deposited and transfered plus Alice\u2019s tokens.  The main issue here was that Alice was not able to limit the slippage and make the transaction revert when the shares she got were diluted away. The math here are an extrem example, showing how Alice can lose everything, but other number could leave Alice with an arbitrary small (but not null) amount. So just reverting is the number of shares minted by a deposit is 0 is not solving the attack scenario.  Proposed mitigation I believe this issue would be mitigated if the vault represented the shares with more precision that the assets. If shares were not represented with the same 18 decimals as the asset, but with 36, then Alice\u2019s assets would have been represented properly. In order to dilute Alice\u2019s assets, the attacker would have needed to inflate the exchange rate by ad additional factor of 1e18. The attacker donation would have required 1e18 tokens (1e36 wei). A way to achieve that is to take an additional parameter when constructing the vault, the decimal offset. This parameter is used such that the decimals exposed by the EIP-4626 vault\u2019s are potentially larger than the underlying asset\u2019s. In addition, this offset is used to add virtual shares and assets to the vault. When computing the exchange rate, the ratio is no longer between totalAssets() and totalSupply(). It is the ratio between totalAssets() + 1 and totalSupply()+10**offset. Therefore, even when the vault is empty, the rate is properly definned, and no special treatment is need. If we replay the previous attack scenario with an offset of 9:  The vault is empty.  The exchange rate is the default 1e9 share units for each token unit (consequence of the virtual assets and shares)   Bob sees Alice\u2019s transaction in the mempool and decide to sandwitch it. Bob deposits 1 wei to the vault, gets 1e9 wei of shares in exchange.  The exchange rate is still 1e9 share units for each token unit   Bob transfers 1 token to the vault (1e18 units) using an ERC-20 transfers. No shares are minted in exchange.  The rate is now 2e9 share units (1e9 for Bob + 1e9 virtual) for 1e18+2 token units (1 from bob, 1 virtual and 1e18 from the donation), ie about 5e8 token units per share unit  This action inflated the rate by a factor 5e17, but thanks to the offset, we have some precision left to represent Alice\u2019s upcomming deposit     Alice deposit is executed. Her 1e18 units of token are worth 2e9-1 unites of shares.  The rate is now 4e9-1 share units for 2e18+2 token units. ie about 5e8 token units per share unit   If Alice redeems, she would get almost what she put in, losing only some wei of asset to the rounding. If Bob redeems, we would only get half of what he donated to the vault, the other half being capture by the vault as he owned only 50% of the shares when the donation happens.  Bob could have made a bigger deposit before the donation, so that he was able to recover a larger fraction of that donation\u2026 but that would have increassed the number of shares, requiering an even bigger donation to try to inflate the exchange rate.  Analysis By creating a large number of virtual shares (10**offset) we increase by offset orders of magnitude the size of the donation necessary to inflate the exchange rate. In addition, the virtual assets/shares captures some of the donation, forcing the attacker to do an bigger deposit, and a bigger donation. If the attacker doesn\u2019t want to lost more than .1% to the vault, it must buy in at least 1000 times what the vault\u2019s virtual asset represent, adding to the totalSupply() and increassing the size of its donation by the same factor. Doing so, he decreases the faction lost to the vault, but not the absolute value. The virtual assets and shares effectivelly set a high price that the attacker has to pay to achieve inflation.  Drawback While the offset can be set to 0 to have similar decimals between the vault and the underlying asset, and minimize the amount of virtual assets and shares the vaults account for, the presence of 1 unit of virtual asset and 1 unit of virtual share does slightly modify the behavior of the contract. Any developper that doesn\u2019t like this approach can revert back to the previous one by overiding _convertToShares and _convertToAssets back to the 4.8 or 4.7 implementation.  Where we need you The approach discussed above has been implemented in this PR. We welcome feedback and reviews. If you are a user of EIP-4626 we value your insight. Does this approach make sens to you? Would using it affect you positivelly or negativelly?  Relevant links  EIP-4626 The PR Discussion about the attacks, and possible mitigations, on the OZ github Similar issue open on the Solmat github EIP-5143 Fei\u2019s ERC4626Router  ",
+                    "links": [
+                        "https://github.com/OpenZeppelin/openzeppelin-contracts/pull/3979",
+                        "https://eips.ethereum.org/EIPS/eip-4626",
+                        "https://github.com/OpenZeppelin/openzeppelin-contracts/pull/3979",
+                        "https://github.com/OpenZeppelin/openzeppelin-contracts/issues/3706",
+                        "https://github.com/transmissions11/solmate/issues/178",
+                        "https://eips.ethereum.org/EIPS/eip-5143",
+                        "https://github.com/fei-protocol/ERC4626/blob/main/src/ERC4626Router.sol"
+                    ],
+                    "GPT-summary": "The post explains how EIP-4626 is vulnerable to inflation attacks and proposes a solution to mitigate the risk. The proposed solution involves adding a \"decimal offset\" and \"virtual assets and shares\" to the vault. The post invites feedback and reviews from the EIP-4626 community.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.104707080200502
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "25/01/2023-01:17:40",
+                    "content": "This solution seems simple enough and effective! It could be a bit unintuitive to integrators I imagine, and can potentially lead to overflow issues with very large offsets. One additional option used in ERC4626/xERC4626.sol at main \u00b7 fei-protocol/ERC4626 \u00b7 GitHub is to maintain an internal balance of \u201cassets\u201d rather than using a manipulable instantaneous balance. This would be a slightly larger code lift, and add an additional sstore to each operation from a gas perspective. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.747023809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "25/01/2023-14:11:12",
+                    "content": "+1 to what @joeysantoro said, which is what we do at Yield with all contracts holding tokens and deriving data from them. The gas cost in keeping an internal balance of assets seems a good trade-off to close the attack surface existing in accepting token donations. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "25/01/2023-14:30:24",
+                    "content": "We considered keeping an internal balance but it breaks some very legitimate use-cases for ERC-4626. IMO, being able to donate to all the vault shareholders is a feature, not a bug. It can be combined with things like a vesting contract to create \u201cstaking\u201d incentives. Also, it raises the question of what to do with tokens that are held by the vault but not accounted for. Are they lost? Do we need some governance to recover them? Adding asset tracking on top of our code is decently easy to do by just overriding a few functions. Devs can opt into that (we even considered providing this directly). But if it was integrated by default, and someone wanted to opt out, they would likely still have to pay the gas cost of updating something they don\u2019t use. That is why we did not go for that option. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.958333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/artdgn",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "30/01/2023-09:11:36",
+                    "content": "Would \u201cburning\u201d some small amount of initial shares (as in Uni V2) to address(0) be an insufficient mitigation? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "30/01/2023-15:30:06",
+                    "content": "It depends on the amount, and the amount of shares you create in exchange. Its equivalent to doing a deposit before the first deposit, which makes frontrunning the very first deposit impossible, and thus makes the attack harder (but not impossible). This is not generic though, and causes a few technical chalenges. So while we see it as a possible solution, we did not want to make it the default one. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.967592592592593
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jat9292",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "07/02/2023-01:18:55",
+                    "content": "I like this solution a lot, as it is more flexible and efficient than the previously proposed ones. By the way, I think there is a small typo in your mitigation paragraph, totalAssets() + 10**offset and totalSupply()+1 should be replaced by totalAssets() + 1  and totalSupply()+ 10**offset. This confused me at first. I can see just one undesirable corner cases when the asset has 0 decimal (or very few decimals) and each wei of asset has already substantial value, but this is almost never the case, except for the Cryptopunks contract as far as I know. Also, maybe you should add some reasonable maximum value for the decimal offset to avoid overflows? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.983333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sbacha",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "07/02/2023-13:40:18",
+                    "content": "This is just a variation of the same exploit that can occur when creating a new liquidity pool in uniswap v2. The dapphub audit details this issue, so this is already a known design issue. The solution is to permanently lock the initial deposit in perpetuity. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.227272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "18/02/2023-18:45:34",
+                    "content": "Don\u2019t think this is necessary, the issue with Uniswap that requires burning some initial shares is that the pool is devoid of context, and the first deposit sets the initial exchange rate for pair. Vaults don\u2019t have those issues (the exchange rate is based on internal accounting, not a relationship that needs to be established), and we can use context to establish a better solution. The root cause of the issue is the ability to manipulate the internal accounting more easily with a relatively low share of a token\u2019s total supply. Ultimately, this is very use case-specific since the means of updating the exchange rate is the real cause of large swings in it\u2019s value, but we can add an additional protection by ensuring the first deposit is at least X tokens (some value small enough not to be a bother to most users, but large enough to limit the effectiveness of exchange rate manipulation when the Vault first starts processing deposits). This solution would mean that X could never be fully withdrawn (without some sort of alternative mode like a Shutdown where all shares are pushed to redemption), but for most use cases that\u2019s a decent trade-off since Vaults are intended to be long-lasting and inevitably some amount of shares ends up \u201clost\u201d by it\u2019s owners anyways.  Lastly, will mention the paragraph at the bottom of EIP4626\u2019s Security section:  Although the convertTo functions should eliminate the need for any use of an EIP-4626 Vault\u2019s decimals variable, it is still strongly recommended to mirror the underlying token\u2019s decimals if at all possible, to eliminate possible sources of confusion and simplify integration across front-ends and for other off-chain users.  Which would discourage the OP\u2019s solution for this scenario as it changes the decimal amounts between the Vault and it\u2019s underlying asset. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.534000721500721
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pcaversaccio",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "20/02/2023-12:53:13",
+                    "content": "    fubuloubu:  but we can add an additional protection by ensuring the first deposit is at least X tokens   At first sight, I liked this idea, but this feels economically a suboptimal solution after deeply reflecting on it. I mean, essentially, it\u2019s requiring burning money and we should think about alternative solutions that do not require it (money should be considered a scarce and valuable source). Also, depending on the implementation you could have the following use case (from this audit report):  For example, if an early user put forth the minimum initial deposit and then the rest of the queue held dust amounts, the same user could withdraw far below the minimum initial deposit amount in the next round and the vault would be back in a vulnerable state. Consider taking steps to ensure the supply of vault shares does not go below the minimum initial deposit amount. One way to do this would be for the Pods Finance team to contribute their own initial deposit to the vault that they can guarantee will not be withdrawn.  So it requires first money as well as a certain trust into the first depositor. Generally, as you already have pointed out, I see the use-case specifics, but the initial minimum deposit strategy can also be considered as use-case specific. So I feel the OP\u2019s solution is more use-case agnostic, but the minimum initial token deposit strategy is \u201csimpler\u201d, complies with the EIP4626\u2019s Security section, and can be an optimal implementation for certain projects who are willing to commit the funds and which you trust. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4626#security-considerations"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.421947004608295
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "24/02/2023-04:46:06",
+                    "content": "    pcaversaccio:  essentially, it\u2019s requiring burning mone   In the normal operation this would constitute a minimum balance for the contract. But you could also have a trigger that disallows deposits and unlocks full withdraws so it\u2019s not a problem. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                }
+            ]
+        }
+    ],
+    "group_index": "322"
+}

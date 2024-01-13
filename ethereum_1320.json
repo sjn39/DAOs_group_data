@@ -1,0 +1,140 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-3521-reduce-access-list-cost/6072",
+            "title": "EIP-3521: Reduce access list cost ",
+            "index": 6072,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "gas"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "21/04/2021-20:31:32",
+                    "content": "EIP text here: EIP-3521: Reduce access list cost Inspired by this comment: EIP-2930: Optional access lists - #31 by AusIV ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-2930-optional-access-lists/4561/31"
+                    ],
+                    "GPT-summary": "The post is an EIP proposal (EIP-3521) that aims to reduce the cost of access lists. The author is explaining the proposal and its inspiration from a comment on another EIP (EIP-2930). Additionally, the post invites others to contribute to the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "None",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "22/04/2021-18:37:48",
+                    "content": "Generally lgtm, but since this EIP wants to fix it properly, I do have some nitpicks  Treat the first occurrence of tx.to in an access list as calldata for gas accounting purposes. Do not charge ACCESS_LIST_ADDRESS_COST for it. Storage keys underneath the address are unaffected.  I think it would be good to clarify exactly what \u201cas calldata\u201d means. The address is the full 20 bytes, but should that address also be subject to 0-byte counting? Seems like it would be simpler to not do that, but instead just charge 16x20=320, So instead of paying 2400 for it, you\u2019d pay 320. Or in other words (which avoid the use of \u2018first occurrence\u2019), I would describe it something like this:  If tx.to is part of the 2930-declared access list (i.e. before adding the freebies), deduct 2080 from the tx cost.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 5.729166666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "22/04/2021-21:04:21",
+                    "content": "Thanks for the feedback. The main reason for wording \"as calldata\" was to try and inherit the calldata calculation. Although I generally prefer the way you\u2019ve worded it, introducing a constant 320 cost is just another protocol parameter to keep track of. If the cost of calldata changes, we also have to worry about changing this parameter. This is a relatively minor concession though, so it\u2019s probably fine to move forward with the constant. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.55952380952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "23/04/2021-01:22:49",
+                    "content": "As someone who has many zero-bytes in their addresses, I agree with the inheriting of the calldata calculation. I would also support extending it to the other unbounded-size transaction parameters, and other duplicated entries in the list. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "5",
+                    "likes": "2",
+                    "time": "23/04/2021-09:43:14",
+                    "content": "One more thing I\u2019d like to comment about this EIP in general. This EIP solves one problem, making it easier to decide \u201cshould I include address X\u201d or not. However, it should be pointed out that this problem is a bit more difficult than that, and we can\u2019t really solve it. Say for example that a user calls an eth_getAccesslist, and gets a list of all addresses/slots that are touched during exeution. Let\u2019s say the user knows that the accesslist shaves of 10%, and \u201cby default\u201d always does this and includes the access list. Now, from the time this estimation was done, to the time it was included in a block, things may have changed. It might be some defi bid on some order that was picked up by someone else, or some auction that was just closed. In the \u201cregular tx\u201d case, the tx would fail pretty early. The contract would look up what it needs to look up, find that the order is now invalid, and exit, having touched only a few slots and made no external calls. So in this case, a full \u201caccess list tx\u201d with N addresses and M slots would still pay for all those accesses that never happened. Just throwing it out there, that the decisiion of whether to include an access list in a transaction or not to is not necessarily an easy question to answer. It was required to handle broken flows, but it\u2019s probably not a good default \u2013 it might be later, if the discrepancy between pre-declared and runtime-added costs is enlarged further. With that said, I don\u2019t really see this EIP as particularly important (as in, no urgency in getting it in), since it only solves one already pretty simple part of a more complex problem. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.146666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "23/04/2021-13:58:51",
+                    "content": "Yep, that\u2019s also a good thing to generally keep in mind. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nventuro",
+                    "index": "7",
+                    "likes": "2",
+                    "time": "25/11/2021-18:21:16",
+                    "content": "    holiman:  Just throwing it out there, that the decisiion of whether to include an access list in a transaction or not to is not necessarily an easy question to answer. It was required to handle broken flows, but it\u2019s probably not a good default \u2013 it might be later, if the discrepancy between pre-declared and runtime-added costs is enlarged further.   While this is true in the general case, most applications can reason about expected transaction flow to a great extent, making this problem much less severe. For example, any Uniswap or Balancer transaction will read the balances unconditionally even if the transaction ends up reverting, as the limit checks happen after. And in any case, the app is always free to choose whether to optimize for success or reduce revert cost.     holiman:  With that said, I don\u2019t really see this EIP as particularly important (as in, no urgency in getting it in), since it only solves one already pretty simple part of a more complex problem.   It does solve that problem however, and it is the only way the problem can be solved (meaning this is not something client code can take care of). Access lists being \u2018hard\u2019 to use right does not mean that it is fine to leave them in a quasi-broken state. I see this as an important change as the usefulness of access lists is otherwise greatly reduced in a huge number of cases due to tx.to typically playing a very big role in the overall transaction: losing out on savings on all the storage slots it touches due to what seems like an oversight in the EIP2930 spec feels wrong. Not to mention that 2930 has this big \u2018gotcha\u2019 that is far from obvious, and can easily result in people not realizing the \u201825 slots\u2019 rule and paying extra fees as a result. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.564732142857142
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nventuro",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "25/11/2021-19:43:45",
+                    "content": "    matt:  Although I generally prefer the way you\u2019ve worded it, introducing a constant 320 cost is just another protocol parameter to keep track of. If the cost of calldata changes, we also have to worry about changing this parameter. This is a relatively minor concession though, so it\u2019s probably fine to move forward with the constant   Note that EIPs are being proposed to do exactly this: EIPs/eip-4488.md at a12d2155f51319461b6a18ff9fc924c5d7e29c71 \u00b7 ethereum/EIPs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.555555555555555
+                }
+            ]
+        }
+    ],
+    "group_index": "1320"
+}

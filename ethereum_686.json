@@ -1,0 +1,1243 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/potential-security-implications-of-create2-eip-1014/2614",
+            "title": "Potential security implications of CREATE2? (EIP-1014) ",
+            "index": 2614,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "opcodes",
+                "eip-1014"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "08/02/2019-04:32:47",
+                    "content": "Not sure if this has been discussed elsewhere/before but I came across this topic today on AllCoreDevs gitter and thought it may be useful to start a thread here. Thanks to @carver and @holiman for initiating this discussion. Summary (per my understanding so far): CREATE2 allows contracts to change in-place after being deployed. This is because, although CREATE2 includes the hash of init_code in address generation, the same init_code could intentionally generate arbitrary contract code. There appear to be use cases where such behaviour is desirable but potentially leaves it open for misuse. So users interacting with a seemingly \u2018benign\u2019 contract earlier could suddenly be interacting with a newer contract (at the same address) which implements a completely different (potentially malicious) functionality. Perhaps this is obvious to some but not to many. So it may be worthwhile to make sure this is discussed and documented. I\u2019m copying the gitter discussion context below: From @carver:  So, based on my social network and @holiman 's sampling, it looks like a lot of contract devs aren\u2019t aware that (new) contracts will be able to change in-place after CREATE2 from Constantinople goes live. How about in this room, is this a broadly-understood change? It opens up a lot of interesting ways of tricking people into giving you their ether/tokens/etc \u2013 for example: have a user verify contract source, send a transaction to your contract, and then front-run them with a couple transactions to swap in the new contract with arbitrary source.   I think the implication there is that any mischievous contract post-Constantinople already looks shady, pre-Constantinople. But you can construct a pretty innocuous contract pre-C, one that has two possible outcomes from a transaction: {\u201ccontract exists\u201d: \u201cswap tokens\u201d, \u201ccontract self-destructs\u201d: \u201cwaste some gas\u201d}. Post-Constantinople, the options could now become {\u201ccontract exists\u201d: \u201cswap tokens\u201d, \u201ccontract self-destructs\u201d: \u201cwaste some gas\u201d, \u201ccontract replaced\u201d: \u201call ERC20 tokens that were pre-approved to the contract are stolen\u201d}. There are mitigations for these problems, of course. We just need to educate coders and auditors, and soon. (I\u2019ll do my part and write something up, but my reach is pretty minimal)   For example, the init code could load bytecode from another contract and return it. So the init code doesn\u2019t change, but returns arbitrary contract code to deploy.  From @holiman:  And the corollary being, as previously, that if someone verified the source, he should have noticed the  SELFDESTRUCT  (without a due inactivity period) and avoid interacting with it. I would believe that most perusers of this channel are fully aware of all the effects of  CREATE2 . The general eth deveopers and auditors, less so, unfortunately.   Yes, that\u2019s it. I\u2019m constantly surprised about how little known that fact is - even in this very niche channel  From @veox:  CREATE2 allows for many new funky use cases; @carver - could you explain your example?.. CREATE2-derived contract address depends on the \u201cinit code\u201d hash being passed as argument to the instruction, so \u201cnew contract with arbitrary source\u201d (in actual on-chain deployment) translates to that contract being deployed to a different address (than would have been presented previously to the user). (This is a non-issue for the attacker if the user is to interact with the CREATE2-deployed contract through an attacker-provided delegation mechanism.)   You mean a scheme of: in-CREATE2 init_code loads data to memory from storage of a fixed external contract, and the external contract is under an attacker\u2019s control (allows changing payload in storage).   Future educational material on CREATE2 could benefit from highlighting that init_code is not the code to be deployed, but the code to generate the code to be deployed. Similar to current send-to-none \u201ccontract deployment\u201d transactions that use CREATE. Highlighting generate, that is (so dynamic!).  From @rajeevgopalakrishna:  Doesn\u2019t this change a major invariant assumed by users today and introduce a potentially serious attack vector with  CREATE2 ? Doesn\u2019t this mean that any contract post-Constantinople with a  selfdestruct  is now more suspect than before? Should restrictions be considered on  init_code  used in  CREATE2  to prevent it from loading bytecode from storage of other contracts (not sure if this is possible)?  From @veox:  Not SELFDESTRUCT per-se, but non-deterministic init_code. Restricting storage access would also limit the usefulness of CREATE2, specifically in cases where one would want non-determinism. Say, a claim to ownership of a particular ENS entry in the past. Or, more broadly, a query to ENS in init_code. Or to the reverse registrar. Or even an ERC-20 balance look-up\u2026  ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/summary-create2-immutability-assumed-by-social-contract/2671",
+                        "https://ethereum-magicians.org/t/immutables-invariants-and-upgradability/2440/62"
+                    ],
+                    "GPT-summary": "The post discusses the potential security implications of CREATE2 (EIP-1014) and how it allows contracts to change in-place after being deployed. The post highlights the potential misuse of this feature and suggests that coders and auditors need to be educated about it. The post also includes a discussion among various individuals about the implications of CREATE2 and how it could be used maliciously.",
+                    "GPT-proposal-categories": [
+                        "Privacy, Security and risk management",
+                        "Smart contract updates",
+                        "Interoperability and Scaleability",
+                        "Token economics",
+                        "Law and regulations"
+                    ],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.189108551266085
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "08/02/2019-04:41:54",
+                    "content": "Limiting the init code to avoid these problems is almost certainly going to be ineffective. For example, even if we stop the code from invoking any external contract/storage, the init code could emit bytecode A until block number 7.5M and then bytecode B afterward. Not to mention that there isn\u2019t enough time to make a change to the opcode before Constantinople launches. If we decide that these in-place updates are unresolvable, then pretty much our only option would be to remove it entirely. It\u2019s not too late to do that, but we\u2019re getting close. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.227678571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "08/02/2019-04:58:11",
+                    "content": "I am not aware of the design rationale here but won\u2019t this problem be avoided if we simply prevent CREATE2 from creating a contract at an address if one had already been created at that same address before (and SELFDESTRUCT-ed thereafter)? Not sure if there are valid use cases which require this behaviour. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.53125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "08/02/2019-05:03:38",
+                    "content": "Unfortunately, that would require keeping around a flag for every contract that has ever existed, after it\u2019s gone. That can have a significant impact on the account trie size/structure over time. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "08/02/2019-05:16:21",
+                    "content": "But one bit per contract (only those created using CREATE2) is worth it if the alternative is that such a contract might change in-place in future and it is hard (?) to verify beforehand that a contract is capable of doing so. Are there any other possible mitigations? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.052083333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "08/02/2019-05:20:15",
+                    "content": "You can actually do this with regular CREATE contracts too, if you layer them underneath CREATE2 ones. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "08/02/2019-05:30:41",
+                    "content": "I see. So based on your analysis and prototypes (and ongoing discussion with @Arachnid on gitter - pasted below), this is a real exploitable concern, correct? If analysing init_code is hard and not sufficient, then besides keeping a flag-bit history for created contracts, are there any other options we could consider? From @carver:  I\u2019m not even sure if looking at the init code used is enough. I don\u2019t have a prototype of this one, but you can theoretically deploy a malleable contract which itself calls a regular CREATE. Then when you reset the malleable deployer contract, you can do another CREATE to the same address, because you reset the nonce on the deployer contract. Now you don\u2019t have any constraint on the init code being the same.  From @Arachnid:  This is a really good point. You\u2019d have to verify everything back to the first EOA-created contract.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.513888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "08/02/2019-05:42:28",
+                    "content": "    rajeevgopalakrishna:  From @carver:  I\u2019m not even sure if looking at the init code used is enough. I don\u2019t have a prototype of this one, but you can theoretically deploy a malleable contract which itself calls a regular CREATE. Then when you reset the malleable deployer contract, you can do another CREATE to the same address, because you reset the nonce on the deployer contract. Now you don\u2019t have any constraint on the init code being the same.    By \u2018reset\u2019, do you mean re-create the malleable deployer contract using CREATE2 at the same address? Keeping a flag-bit for CREATE2 only contracts would prevent this, won\u2019t it? You won\u2019t be able to reset the deployer contract and hence the nonce. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.34375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "9",
+                    "likes": "2",
+                    "time": "08/02/2019-05:50:40",
+                    "content": "    rajeevgopalakrishna:  this is a real exploitable concern, correct?   It\u2019s not an EVM exploit, exactly, but it is a way to maybe make auditors\u2019 jobs more difficult. There are ways around each of these \u201csocial attacks\u201d, but most of them require education. That will surely lag behind the Constantinople upgrade itself.     rajeevgopalakrishna:  By \u2018reset\u2019, do you mean re-create the malleable deployer contract using CREATE2 at the same address? Keeping a flag-bit for CREATE2 only contracts would prevent this, won\u2019t it? You won\u2019t be able to reset the deployer contract and hence the nonce.   Right, if you prevent CREATE2 redeploys, then you prevent CREATE redeploys, as far as I can tell. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.624313186813187
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "08/02/2019-06:17:11",
+                    "content": "    carver:  It\u2019s not an EVM exploit, exactly, but it is a way to maybe make auditors\u2019 jobs more difficult. There are ways around each of these \u201csocial attacks\u201d, but most of them require education. That will surely lag behind the Constantinople upgrade itself.   Agree but at some level this further reduces the trust end-users expect from contracts being \u201cimmutable.\u201d Not only can they be upgraded but now they may be redeployed as well. There is a perceptional risk here and we can\u2019t blame the users (or the auditors).     carver:  Right, if you prevent CREATE2 redeploys, then you prevent CREATE redeploys, as far as I can tell.   So the additional redeploy-tracking flag-bit only for CREATE2 contracts might not add much (?) to the state assuming that most use cases will continue to use CREATE, correct? But as @Arachnid indicated, this will be a consensus change. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.7445054945054945
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "11",
+                    "likes": "3",
+                    "time": "08/02/2019-08:02:20",
+                    "content": " Regarding the fact that CREATE2 ->A, CREATE -> B+2 x SELFDESTRUCT and then CREATE2 -> Amod, CREATE -> Bmod   I don\u2019t think that changes things a lot. It simply further an argument against an anti-pattern: the anti-pattern of trying to establish trust through investigating history of a contract. The pattern that should be used, is:  Use EXTCODEHASH to verify that the code you are calling matches what you expect. This might mean that during either compilation, construction or initialization (not necessarily same as construction), you store the expected EXTCODEHASH for other contracts that you will interact with.  Example: A DEX, when enrolling new ERC20 assets, may have to store the EXTCODEHASH when the new asset is enrolled.  Bonus: When solidity does a call, today it uses EXTCODESIZE to verify that the contract exists. It could use EXTCODEHASH instead, and internalize it so the call would look maybe like theToken.verify(codehash).transfer(from, to, value). Alternative: when enrolling the token, it would do a safety-check, to verify once and for all that the contract is immutable.   There may arise an immutability-registry. That would simply run a check that contract X does not have SELFDESTRUCT, DELEGATECALL, CALLCODE  (that\u2019s it right?).  EDIT TO CLARIFY: A registry of codehashes, not addresses.    That was the on-chain scenario, so how about the EOA scenario, interacting with a contract Casino?   Attack vector: When user sends large amount of ether to Casino, then the operator front-runs with two transactions:   SELFDESTRUCT Casino.  CREATE2 a new Casino which steals the funds.    OBS: The SELFDESTRUCT and recreation cannot happen within one transaction, due to how SELFDESTRUCT operates. This scenario is flawed from the beginning:  The EOA should not send money to a contract which can SELFDESTRUCT without prior notice. That\u2019s dangerous even today (but there is no payout for the operator, only the wreak-havoc factor). If the user, despite this, wants to interact with the contract, he can do so e.g. via a personal on-chain wallet.  At the end of the day, auditors and developers NEED to get up to speed with these new changes. It\u2019s been discussed ever since the suggestion of the first CREATE2 variant, and then further discussed with the current variant. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None"
+                    ],
+                    "Sentiment": 4.939307851239669
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "08/02/2019-09:19:32",
+                    "content": "Thanks for the detailed explanation with examples. As @Arachnid explained on gitter, the \u201cbytecode invariant\u201d may not hold for contracts deployed with CREATE2 or even with CREATE if one of its ancestors were deployed with CREATE2. Therefore, it\u2019s going to be even more critical going forward that the security pattern leverages EXTCODEHASH before interacting with other contracts. So it sounds like the bottomline is that these concerns are not new, have been deliberated, no mitigations are necessary and what is needed is incorporating this guideline in the security best practises.     holiman:  There may arise an immutability-registry. That would simply run a check that contract X does not have SELFDESTRUCT , DELEGATECALL , CALLCODE (that\u2019s it right?).   This is a very interesting idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.292060212514759
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "13",
+                    "likes": "4",
+                    "time": "08/02/2019-09:25:41",
+                    "content": "    holiman:  Use EXTCODEHASH to verify that the code you are calling matches what you expect. This might mean that during either compilation, construction or initialization (not necessarily same as construction), you store the expected EXTCODEHASH for other contracts that you will interact with.   I really think this is an antipattern; for interoperability and for permissionless innovation, security models should not depend on called contracts having specific bytecode. Contracts should be designed to be secure regardless of the callee\u2019s code.     holiman:  Example: A DEX, when enrolling new ERC20 assets, may have to store the EXTCODEHASH when the new asset is enrolled.   \u2026and it won\u2019t help here; a malicious token contract could be deleted and replaced with one with a constructor that produces the same byte code, but allocates the initial balances arbitrarily. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.098011363636363
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "08/02/2019-09:40:42",
+                    "content": "    Arachnid:  \u2026and it won\u2019t help here; a malicious token contract could be deleted and replaced with one with a constructor that produces the same byte code, but allocates the initial balances arbitrarily.   Yes, that naturally depends on what properties you want guarantees on. I was more thinking of the scenario where you audit a potential ERC20 token before enrolling it, to ensure that it will behave in certain ways when invoked. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.5102040816326525
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "08/02/2019-09:54:45",
+                    "content": "    Arachnid:  \u2026and it won\u2019t help here; a malicious token contract could be deleted and replaced with one with a constructor that produces the same byte code, but allocates the initial balances arbitrarily.   Darn! So EXTCODEHASH offers no protection against this scenario. Doesn\u2019t this alone justify a mitigation measure? @Arachnid\u2019s below suggestion on gitter seems elegant:  I honestly think the simplest solution to all of this would have been to modify self destruct to leave an account\u2019s nonce intact. Selfdestruct is already an ineffective way to encourage freeing state, and this would solve the issues.  Does this have any other side-effects? Some of the text at https://github.com/ethereum/EIPs/issues/684 from @vbuterin seems to perhaps raise this concern as well, but I don\u2019t have all the insight/context and could be mistaken:  Specification If a contract creation is attempted, due to either a creation transaction or the CREATE (or future CREATE2) opcode, and the destination address already has either nonzero nonce, or nonempty code, then the creation throws immediately, with exactly the same behavior as would arise if the first byte in the init code were an invalid opcode. This applies retroactively starting from genesis. Rationale This is the most correct approach for handling the case where a contract is created in a slot where a contract already exists, as the current behavior of overwriting contract code is highly unintuitive and dangerous. Currently this is not an issue because there is no way to create a contract with the same address twice without spending >2^80 computational effort to find an address collision, but with #86 this will change. Hence it is important to have correct behavior for this situation in the long term. This can be safely applied retroactively for simplicity, because currently creating a contract with the same address twice is computationally infeasible.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.465624999999999
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "08/02/2019-10:38:31",
+                    "content": "Is there any way to characterise the overall risk here given that EXTCODEHASH does not fully protect against all scenarios? If the risk is minimal, that would justify status quo. If the risk of misuse is high and all mitigations require consensus-changes, then what is the best way forward? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 6.325000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "08/02/2019-20:02:39",
+                    "content": "    holiman:  Yes, that naturally depends on what properties you want guarantees on. I was more thinking of the scenario where you audit a potential ERC20 token before enrolling it, to ensure that it will behave in certain ways when invoked.   \u201cCan\u2019t change the balances arbitrarily\u201d seems like a pretty important property to preserve!     rajeevgopalakrishna:  Is there any way to characterise the overall risk here given that EXTCODEHASH does not fully protect against all scenarios?   Again, relying on a callee contract to have specific behaviour is a bad pattern. We should be authoring contracts to be secure regardless of what a third-party contract does. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.632142857142856
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "09/02/2019-01:57:14",
+                    "content": "Yes, defensive programming is something everyone should ideally practise and educate, but if there is a design flaw, it should be addressed as such without shifting that burden to the user/developer/auditor. And this unintended/unintuitive side-effect of CREATE2 which can be maliciously exploited in multiple ways certainly looks like a flaw in opcode semantics. Yes, it may be too late to fix/remove it now before Constantinople (assuming the cost to fix > risk of exploitation) but has to be addressed soon if we believe this is indeed a design flaw. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.814285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AdamDossa",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "09/02/2019-02:18:06",
+                    "content": "If I\u2019ve understood correctly then for it to be possible to mutate contract A\u2019s byte code, contract A must somewhere call selfdestruct. If that\u2019s the case, a big red warning on etherscan.io for post-C contracts which contain selfdestruct opcode would probably make this exploit / obfuscation near useless. I do think it would pretty much kill off use of selfdestruct but don\u2019t see that as problematic as it is fairly rarely used today due to their being little incentive to include it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.01875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "09/02/2019-12:22:34",
+                    "content": "    Arachnid:  \u201cCan\u2019t change the balances arbitrarily\u201d seems like a pretty important property to preserve!   Right, and if that\u2019s a concern, you should not let in contracts that can SELFDESTRUCT. If, however, your main concern is that it doesn\u2019t do a  reentrancy-attack against you, then you might allow that but don\u2019t allow change of code. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.502976190476191
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adamkolar",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "09/02/2019-17:55:34",
+                    "content": "    AdamDossa:  If I\u2019ve understood correctly then for it to be possible to mutate contract A\u2019s byte code, contract A must somewhere call selfdestruct. If that\u2019s the case, a big red warning on etherscan.io for post-C contracts which contain selfdestruct opcode would probably make this exploit / obfuscation near useless.   For this to work, you would also need to check for  delegatecall  and  callcode ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.6000000000000005
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0age",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "09/02/2019-18:35:36",
+                    "content": "This might sound crazy, but hear me out: couldn\u2019t this also be considered a feature? Obviously, there will be a lot of education, mitigation, etc. required in cases where immutability is the desired behavior, but in the case of upgradeable contracts this could be a great way to cut down on the overhead of needing to delegatecall out to a logic contract, especially in cases where persistent contract storage isn\u2019t required. I know this is likely a controversial perspective, and any upgradeability mechanism should of course be paired with adequate precautionary measures and / or governance, but if it works, it would be a pretty cool positive unintended consequence! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.921611952861952
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "09/02/2019-22:20:40",
+                    "content": "Interesting thread. I suggest modifying the semantics of CREATE2 so that the created contract starts with a unique nonce, using mechanism similar to what was suggested in dust removal replay protection EIPs ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.458333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ethernian",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "10/02/2019-11:36:46",
+                    "content": "    0age:  is the desired behavior, but in the case of upgradeable contracts this could be a great way to cut down on the overhead of needing to delegatecall out to a logic contrac   disagree. We need a robust immutable identity for the things we are assume to be immutable. Immutability check should work without lookup through the chain history. In case of upgradable contracts we should just follow version paradigm: any change is a new version (with own immutable ID). It should be an explicit decision which version (inclusive HEAD) to follow. That is why I am not quite happy with current proxy based solution, but your proposal will make things even worse. For my taste I would implement upgradable contracts by using ENS resolution. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.272005772005772
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0age",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "10/02/2019-15:54:41",
+                    "content": "Look, I agree that this will make things a little trickier than before. However, there will still be ways to perform the immutability check without looking at the history:  Ensure that no selfdestruct, delegatecall or callcode opcodes appear in the contract, If there are delegatecall or callcode opcodes, ensure that it\u2019s not possible to somehow reach a selfdestruct opcode, Enforce that the contract has been created by some trusted source (such as an established CREATE2 factory contract that maintains a mapping of deployed contract addresses and will not allow a contract to be redeployed) via a require statement in the constructor or some other means.  The need for upgradeable contracts has been well-established at this point, and many of the most high-impact issues in Ethereum\u2019s history thus far could have been mitigated with adequate upgradeability mechanisms in place. Obviously it\u2019s not a paradigm that should be forced onto everyone, but if there are ways to implement it more efficiently, it will greatly benefit those that do need it. Both the proxy pattern and ENS resolution result in increased overhead vs. a direct equivalent, but an optimal upgradeable contract would operate on par with a standard contract from an efficiency standpoint. This could be a way to achieve that aim, assuming the corresponding risks can be properly addressed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.740277777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "28",
+                    "likes": "1",
+                    "time": "10/02/2019-16:48:26",
+                    "content": "This is a good idea! A proxy contract which is rather easy - you send the seed and the init_code to this contract and it has a mapping(address => bool) which holds if a contract is deployed at this address (hence the return code of CREATE2 or generated by using the definition of address generation by CREATE2). It sets the value of the address key to true if a contract has been created successfully at this address. If the value of this key is true before creating the contract it reverts. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.970238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jvluso",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "10/02/2019-18:28:40",
+                    "content": "Is there any design pattern that would want a contract deployed with CREATE1 by a contract deployed with CREATE2 that isn\u2019t looking to take advantage of this? If there isn\u2019t, any contract deployed by this method can just be flagged as being able to have its code change. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/davesque",
+                    "index": "30",
+                    "likes": "2",
+                    "time": "12/02/2019-19:21:03",
+                    "content": "I think it might end up being a lot trickier than before.  For example, it seems that the only possible secure contract is one that contains no selfdestruct, delegatecall, or callcode.  Otherwise, you\u2019d need to verify not only that delegated calls cannot possibly hit a selfdestruct opcode but also that the delegate contract contains no selfdesctruct opcode itself.  What if the delegate contract, itself, contains delegated calls?  The dynamics of this question get complicated pretty rapidly. Also, as @carver pointed out, there are cases where you have to perform a similarly chained verification process in the reverse direction, verifying the properties of creator contracts and the creators of those creator contracts, and so on. The recursive nature of this problem gives me the intuition that there are even more complex dynamics still lurking beneath the surface that may yet be discovered. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.175
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "31",
+                    "likes": "1",
+                    "time": "12/02/2019-20:43:33",
+                    "content": "We can deploy a \u201cSafe CREATE2 deployment\u201d contract where it is not possible to recreate at the same address. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maurelian",
+                    "index": "32",
+                    "likes": "1",
+                    "time": "13/02/2019-16:16:34",
+                    "content": "Just in case this is actually a debate about removing CREATE2 from Constantinople, or delaying it, then I oppose both. I think the checks @0age lists are easy enough to make:     0age:   Ensure that no selfdestruct , delegatecall or callcode opcodes appear in the contract, If there are delegatecall or callcode opcodes, ensure that it\u2019s not possible to somehow reach a selfdestruct opcode, Enforce that the contract has been created by some trusted source (such as an established CREATE2 factory contract that maintains a mapping of deployed contract addresses and will not allow a contract to be redeployed) via a require statement in the constructor or some other means.    Any system not following those parameters should raise red flags. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.192708333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maurelian",
+                    "index": "33",
+                    "likes": "1",
+                    "time": "13/02/2019-16:22:39",
+                    "content": "Not to disagree with myself, but I will admit I am worried about an attack that includes some social engineering. Specifically:  Project team gets and audit on system using a DELEGATECALL proxy pattern for upgradability Project team \u201cForgets\u201d to mention that it will be deployed using CREATE2. System looks OK to auditors. \u2026 the rest is self explanatory  The only real protection against this requires a lot of UX and engineering work by etherscan et al. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.916666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dmdque",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "13/02/2019-23:07:58",
+                    "content": "From @rajeevgopalakrishna:  For example, the init code could load bytecode from another contract and return it. So the init code doesn\u2019t change, but returns arbitrary contract code to deploy.  I\u2019m assuming this refers to the EXTCODECOPY opcode. Wouldn\u2019t the returned value always be the either:  The same code or Empty (in the case that contract has been selfdestructed)  This is with the assumption that the init_code is exactly the same, due to the collision resistance property of the keccak hash function. However, (I realized this as I was typing this reply) maybe this can be used as a branch in the init_code to deploy different bytecode? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.946428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maurelian",
+                    "index": "36",
+                    "likes": "1",
+                    "time": "13/02/2019-23:52:03",
+                    "content": "Good question, it doesn\u2019t have to use EXTCODECOPY.  A couple things you could do with identical init code to deploy different code:  init code returns a different value after a specific block height init code calls to a contract which returns code from an address held in storage, which can be updated.  I\u2019m sure there\u2019s more. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maurelian",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "14/02/2019-00:07:03",
+                    "content": "    consciousEntity:  Before interacting with a contract, a user will either need to trust some audit process, which I really feel goes against the spirit of Ethereum, or have a good understanding of contract operation and commit a considerable amount of time to check a potentially long chain of contracts.   By \u2018audit process\u2019 do you mean something wallets and interfaces do automatically to see if it was instantiated by CREATE2? I agree, that would be hard, and probably poorly standardized. Would it be a bad idea to somehow mark contracts as originating from a CREATE2 op? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.528645833333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dmdque",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "14/02/2019-01:01:38",
+                    "content": "Is it intentional that this EIP allows selfdestructed contracts to be redeployed? It seems to me like more of an unintended side effect. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maurelian",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "14/02/2019-01:03:37",
+                    "content": "That\u2019s my understanding. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0age",
+                    "index": "40",
+                    "likes": "4",
+                    "time": "14/02/2019-03:27:35",
+                    "content": "I\u2019ve been thinking more about this edge case over the last few days (as I\u2019m sure many of us have been), and I do agree that this is going to complicate things significantly on multiple fronts. That being said, I\u2019m starting to realize that this could open up a whole new paradigm of contract that could improve the user experience immensely, by enabling the creation of transient workspaces that can be used in place of EOAs or simple proxies. Here\u2019s what I mean by transient workspaces: right now, if you want to interact with a contract, you have three main methods of doing so, each with its own limitations:   Call right into the smart contract from the originating EOA, passing in the function selector and arguments as calldata. This is the standard method, but prevents the caller from accessing many \u201cpower features\u201d like preconditions based on current EVM state (for instance, as discussed above you cannot use EXTCODEHASH when calling from an EOA), requires that the entity in question is intrinsically tied to a particular keypair, and does not allow for the same address to also perform its own processing when receiving calls.   Deploy a static contract that will relay the call into the target smart contract for you. Basic proxies and multisigs that simply pass along a bytes payload to the target will solve the issue with keypair coupling, but still cannot adequately tap into \u201cpower features\u201d or intelligently send and receive calls. Alternately, you can deploy contracts with actual logic that employs \u201cpower features\u201d and processes incoming calls, but then you are trapped: the logic will be permanent, and the identity associated with that address will not be portable in the same way that an EOA would be.   Deploy an upgradeable contract (such as a transparent proxy with assignable \u201cimplementation\u201d logic contracts) that will relay the call into the target smart contract. At first glance, this method seems to solve both the feature-deficit of EOAs and basic proxies as well as the malleability-deficit of standard contracts, but it falls short of the ideal outcome for both. In the former case, a proxy will not accurately convey its true behavior when it is the target of operations other than a standard call - for instance, its EXTCODEHASH will remain unchanged even when the implementation has been altered - and resists straightforward introspection. (If we\u2019re really optimizing for the end-user and want to make contracts auditable, then this upgradeability pattern is not exactly making it easy!) For the latter, the logic may be upgradeable but the state is still persistent, which is also difficult to properly manage even with the proper education and tooling. On top of all that, the added overhead from the delegatecall to the implementation contract makes it more expensive to use.   Armed with a transient workspace, a user can set up an identity contract that contains whatever logic they want and track internal state however they want, accessing all the \u201cpower features\u201d available to contracts and handling incoming calls, then tear the whole thing down and start from scratch while still retaining ERC20 balances, accumulated reputation, or other external state referencing the address. Applications can set up \u201cguard-rails\u201d for new users, helping to on-board them with a few pre-loaded methods while they start to accrue a reputation but enabling them to wipe the slate clean and take full control of the address when they\u2019re ready. And once the \u201ctransient\u201d aspect is no longer desired, the deployed code can be made immutable by restricting access to selfdestruct or removing it entirely. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.667425530818388
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "14/02/2019-04:49:35",
+                    "content": "An article on this topic from @carver which explains the various scenarios in detail with some examples: https://medium.com/@jason.carver/defend-against-wild-magic-in-the-next-ethereum-upgrade-b008247839d2 ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "14/02/2019-05:10:56",
+                    "content": "    maurelian:  Would it be a bad idea to somehow mark contracts as originating from a CREATE2 op?   I think that would be helpful, as long as you mean that a contract is flagged if it or an ancestor contract was deployed with CREATE2. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 3.229166666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "43",
+                    "likes": "1",
+                    "time": "14/02/2019-14:36:33",
+                    "content": "Made a safe deploy version! =) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yannis",
+                    "index": "44",
+                    "likes": "2",
+                    "time": "14/02/2019-17:19:02",
+                    "content": "(Reposting here my comment from the Medium article) I suspect that, for the overwhelming majority of contracts and security inspectors, this will never be an issue. Even before better tooling comes along, one will be able to quickly tell the \u201ccommon case\u201d of contracts that have been deployed with CREATE \u201call the way down\u201d, without inspecting creation code. Just look up the contract\u2019s creator, try a few small integer nonces (1\u2013255 will catch virtually all cases), see if keccak256(rlp([creator, nonce])) returns the contract\u2019s address, repeat the same for creator recursively. One can do this manually or it\u2019s an easy utility to write over existing info in blockchain explorers. E.g., the test in Solidity (given contract and creator addresses) is: contract == keccak256(abi.encodePacked(byte(0xd6), byte(0x94), address( creator ), byte(nonce)) . If it passes, the contract was created with CREATE, not with CREATE2. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.135416666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "14/02/2019-22:13:55",
+                    "content": "Or look it up on etherscan, which caches when the contract was created (e.g. in what TX). Via the parity trace of etherscan you can hence check it. If you want to be super sure you can check the txhash in your own archive node. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.388888888888888
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nepalbitcoin",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "14/02/2019-23:59:41",
+                    "content": "I\u2019ve few questions,  Is it possible to change bytecode/salt but still get same contract address? ETH2.0 can move forward without CREATE2 for now? How\u2019s this related to counterfactual/plasma/channels\u2026 like stuffs?  I made this fun contract to test Zombie mode. && I\u2019m still thinking if this is a \u201cfeature or bug\u201d? Remix + gist link  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.1
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "47",
+                    "likes": "1",
+                    "time": "15/02/2019-02:16:43",
+                    "content": "    nepalbitcoin:   Is it possible to change bytecode/salt but still get same contract address? ETH2.0 can move forward without CREATE2 for now? I\u2019m still thinking if this is a \u201cfeature or bug\u201d?     Neither the init code nor the salt can change for the same address. ETH2.0 phase 0 has nothing resembling an EVM, so CREATE2 is pretty irrelevant for at least 12-18 months.  It\u2019s not a bug in the sense that the spec allows it, so all clients are meeting the spec correctly. We can argue about whether it is a good spec, which is a matter of taste/opinion, and I don\u2019t expect to get total consensus on that point. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.09375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "48",
+                    "likes": "3",
+                    "time": "15/02/2019-03:39:15",
+                    "content": "Just wanted to dump this here. I find this really amazing! Etherscan shows if you CREATE/ SUICIDE / CREATE a contract as \u201cReInit\u201d!  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 9.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "15/02/2019-08:54:13",
+                    "content": "Preventing redeployments is better but in its absence, at least being able to (programmatically) detect that one is interacting with a redeployed contract is a good security check. As discussed earlier, even the same contract bytecode redeployed with different initial values may exploit users; so EXTCODEHASH is apparently of limited use. But if we think that this slightly increases the assurance level (i.e. same code but maybe not data), why was only the hash of init_code but not that of contract bytecode included in CREATE2 address generation - what am I missing? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.3390731292517
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "50",
+                    "likes": "1",
+                    "time": "15/02/2019-15:06:36",
+                    "content": "I don\u2019t get your question. What do you mean with contract bytecode? The actual deployed bytecode? This doesn\u2019t help in your case because we can still alter the storage. So if you really want it to work you should basically calculate a merkle root of the deployed contract storage, calculate the deployed bytecode and put those in the hash input. But this creates some weird edge cases. What if the deployed bytecode depends on the current address? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.387499999999999
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "15/02/2019-15:39:14",
+                    "content": "    jochem-brouwer:  What do you mean with contract bytecode? The actual deployed bytecode?   Sorry, yes, this is what I meant - to-be-deployed bytecode along with the deploy/init code.     jochem-brouwer:  This doesn\u2019t help in your case because we can still alter the storage. So if you really want it to work you should basically calculate a merkle root of the deployed contract storage, calculate the deployed bytecode and put those in the hash input.   Correct, this is the point about EXTCODEHASH not being sufficient (discussed earlier in this thread) because it captures only code not storage. But isn\u2019t this better than only capturing init_code in the address calculation? Not sure I understand your suggestion on hashing deployed contract storage - are you saying that we can capture the storage state that will be initialised by the init_code (i.e. within the constructor)? I suppose as long as init_code is not dependent on external state, this aspect is already captured in its hash, i.e. any different storage initialisations in the init_code will change its hash, correct? But changes in external data dependencies (e.g. from other contract state, block state) if present in init_code won\u2019t be detected and cannot be captured here I think. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.820833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "15/02/2019-15:56:30",
+                    "content": "If you care only about the deployed bytecode then you can use EXTCODEHASH to verify that the deployed bytecode is indeed the code which you expect. I agree that if the function is not dependent on external factors then you can indeed precalculate what code will be deployed. (However, realize that in terms of gas costs this essentially will mean running the constructor twice to get the deployed bytecode before hashing it!). Be careful though - you can do some tricks using ORIGIN, CALLVALUE or ADDRESS. In what ADDRESS should we run the to-be-deployed contract? EDIT: In the end this all boils down to how the code has been deployed. If you don\u2019t want redeploys you make a guard at the point where it was created, which in my opinion solves all problems. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.461516203703704
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/antoineherzog",
+                    "index": "53",
+                    "likes": "0",
+                    "time": "15/02/2019-20:58:17",
+                    "content": "CREATE2 opens also the world about the Private Key of your tokens. I wrote an article about it    Medium \u2013 11 Dec 18    A user-centric blockchain framework to enable mass-adoption Written by Antoine Herzog from IOV and Peg from darkcrystal.pw Reading time: 8 min read       ",
+                    "links": [
+                        "https://medium.com/iov-internet-of-values/a-user-centric-blockchain-framework-to-enable-mass-adoption-ae50490fa0e0"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving negative feedback on proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "16/02/2019-15:39:21",
+                    "content": "I haven\u2019t read up on all the ins and outs here yet, but\u2026 If I can overwrite an existing contract at a given address with a new contract, that to me completely invalidates the value prop for Ethereum, period. Even if it CAN be worked around, most devs won\u2019t.  Money or tokens will be stolen, and Ethereum will be blamed (rightly so). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving negative feedback on proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.277597402597403
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "56",
+                    "likes": "0",
+                    "time": "16/02/2019-18:02:42",
+                    "content": "    pereztechseattle:  If I can overwrite an existing contract at a given address with a new contract, that to me completely invalidates the value prop for Ethereum, period.   You can effectively do this with proxy contracts pre-Constantinople. The idea is that users know to look at a contract and identify that it\u2019s a proxy, and when it can change. Now users have another thing to look for. I agree that it would be better if contracts couldn\u2019t be brought back after being destroyed. But I think it\u2019s not as dire as \u201cinvalidat[ing] the value prop\u201d. It is definitely happening, so at this point the best thing to do is to help with the education campaign to make sure people know what to look for. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.7727272727272725
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "57",
+                    "likes": "0",
+                    "time": "16/02/2019-18:58:33",
+                    "content": "    carver:  You can effectively do this with proxy contracts pre-Constantinople.   I don\u2019t think that\u2019s an apt analogy.  It is reasonably obvious to any professional developer when linked contract addys can be updated.  And I can typically query the linked address on-chain whenever I like.  If the address hasn\u2019t changed, I can be confident the linked code hasn\u2019t either. This is totally different.  No reasonable developer would assume this is possible (I surely didn\u2019t).  I think this qualifies as \u201cdire.\u201d edit: In other words, where in the Solidity source does it say \u201cthis code is subject to replacement at any time?\u201d  What\u2019s the line of code for that? edit2: not for nothin\u2019 but simply saying \u201cbut you could ALWAYS swap out code; this is happening\u201d does not inspire confidence\u2026  (in Ethereum, not you. ) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.669871794871795
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "58",
+                    "likes": "0",
+                    "time": "16/02/2019-20:15:03",
+                    "content": "    jochem-brouwer:  In the end this all boils down to how the code has been deployed. If you don\u2019t want redeploys you make a guard at the point where it was created, which in my opinion solves all problems.   How so?  If my intention is to never redeploy my own contract, there IS no problem.  That\u2019s not what we\u2019re talking about.  We\u2019re talking about the situation where I DO want to redeploy my contract (for nefarious reasons) and the users of my contract don\u2019t know that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.111111111111112
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "59",
+                    "likes": "1",
+                    "time": "16/02/2019-20:48:35",
+                    "content": "    AdamDossa:  a big red warning on etherscan.io for post-C contracts which contain selfdestruct opcode would probably make this exploit / obfuscation near useless.   I can\u2019t believe we\u2019re seriously having conversations like these.  \u201cYeah, it\u2019s Swiss cheese, but let\u2019s just educate everybody!\u201d   Let me peer into the future for you on this one:  Company XYZ: Announcing the $50MM Ethereum killer app! Ethereum community: Killer App!  But wait a tick; you forgot to guard against CREATE2 exploits Company XYZ: Ah, shoot, you\u2019re right.  Well, it would be cost prohibitive to redo it now;  You\u2019ll just have to trust us Ethereum community: Okie dokie, then.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.680272108843537
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/esaulpaugh",
+                    "index": "60",
+                    "likes": "0",
+                    "time": "17/02/2019-02:59:17",
+                    "content": "What is the motivation for allowing zombie contracts? I don\u2019t see it in the EIP:  Motivation Allows interactions to (actually or counterfactually in channels) be made with addresses that do not exist yet on-chain but can be relied on to only possibly eventually contain code that has been created by a particular piece of init code. Important for state-channel use cases that involve counterfactual interactions with contracts.  None of this seems to imply that creation has to be allowed to take place multiple times. What am I missing As for defensive programming, it is optimistic to assume that it will be the norm given the perverse incentives inherent to (high) gas costs ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3291666666666675
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ethernian",
+                    "index": "61",
+                    "likes": "0",
+                    "time": "17/02/2019-14:50:34",
+                    "content": "    AdamDossa:  If that\u2019s the case, a big red warning on etherscan.io \u2026   I don\u2019t believe it: are we really seriously ready to oursource security guarantees of protocols we are creating to centralized blockchain explorer?!      AdamDossa:  \u2026 for post-C contracts which contain selfdestruct opcode   Is it possible to determine the absence of  selfdestruct opcode with 100% reliability? Is there (will it be later) any possibilities to \u201chide it\u201d or construct it later \u201con the fly\u201d? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.169642857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "62",
+                    "likes": "0",
+                    "time": "17/02/2019-15:21:04",
+                    "content": "Then it should be your job to communicate this to your users and it\u2019s the users\u2019 job to check the security of the contract they are interacting with. Of course you cannot expect that users are programmers and can read EVM - but in that case, they should delegate this check to other people they trust to check the security for the contract.     AdamDossa:  If I\u2019ve understood correctly then for it to be possible to mutate contract A\u2019s byte code, contract A must somewhere call selfdestruct . If that\u2019s the case, a big red warning on etherscan.io for post-C contracts which contain selfdestruct opcode would probably make this exploit / obfuscation near useless.   This makes no sense because it can be a feature. Etherscan should not put a \u201cbig red warning\u201d on it - a small yellow warning might be fine, just like how they warn on older solidity versions in contracts verified.     Ethernian:  Is it possible to determine the absence of selfdestruct opcode with 100% reliability? Is there (will it be later) any possibilities to \u201chide it\u201d or construct it later \u201con the fly\u201d?   Yes. Even in contracts. You can EXTCODECOPY  and check that there is not a single byte (not in a PUSH operation) which equals 0xff. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.947358630952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ethernian",
+                    "index": "63",
+                    "likes": "0",
+                    "time": "17/02/2019-15:38:24",
+                    "content": "    jochem-brouwer:  Yes. Even in contracts. You can EXTCODECOPY and check that there is not a single byte (not in a PUSH operation) which equals 0xff .   It is really not possible to JUMP into PUSH's arguments, one of them is 0xff? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0892857142857135
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "64",
+                    "likes": "2",
+                    "time": "17/02/2019-18:07:46",
+                    "content": "    jochem-brouwer:  Then it should be your job to communicate this to your users\u2026   None of that makes sense.  This attack vector is available to the OWNER of the contract.  If my intention is to replace my own contract to nefariously do something, why on earth would I warn my users about it? And none of this solves the problem.  See my \u201cCompany XYZ\u201d scenario above. This is insane.  I think once this vulnerability is more widely known, the Constantinople upgrade is going to make a lot of new Bitcoin programmers, unfortunately.  I mean, just personally, I don\u2019t know that I can tell my clients to build on Ethereum when I know this giant turd is floating around out there.  It\u2019s just a matter of time before this gets exploited in a big and spectacular way.  Sure, my clients\u2019 contracts will be unaffected, but Ethereum will have lost all credibility (rightly so). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party expressing concern about proposal's security implications",
+                        "3rd party questioning the feasibility of using Ethereum for clients",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.519859307359307
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "65",
+                    "likes": "0",
+                    "time": "17/02/2019-20:36:18",
+                    "content": "True. I meant if you want to check it in a contract you should check that the byte is 0xff but also that it is not part of a PUSH. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "66",
+                    "likes": "0",
+                    "time": "17/02/2019-20:39:44",
+                    "content": "This comment makes no sense to me. If I create a scam contract on the ETH network I obviously don\u2019t tell my users about it. Should we hard fork out all scams such as a contract which simply forwards all ETH to my address while I promote it as a dex or something? If you interact with a contract it is your job to make sure the contract does what you expect it to do. If it\u2019s a scam, you don\u2019t use the contract. I honestly don\u2019t see where all this negativity comes from. EVM needs to be handled with care - see for example re-entrancies which are not trivial and it is logical that a new programmer does not think about the possibility of a re-entrancy. If you use CREATE2 you need to think about these attack vectors. I don\u2019t see any problems with it. If people want to move to Blockstream then that\u2019s their own choice. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.997053872053872
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "68",
+                    "likes": "0",
+                    "time": "18/02/2019-18:23:00",
+                    "content": "    jochem-brouwer:  If you interact with a contract it is your job to make sure the contract does what you expect it to do.   I\u2019m sorry, but that\u2019s just not how the real world works.  People don\u2019t trust the network because they verified the contract bytecode (how would that even work after CREATE2?  you do that before EVERY contract call?  What about transaction ordering?) People trust the network because billions of dollars that could have been stolen weren\u2019t.  The minute that\u2019s not true anymore \u2013 which this \u201cfeature\u201d makes about 1000x more likely \u2013 and Ethereum becomes a footnote in the Big Book of Bitcoin History. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ethernian",
+                    "index": "69",
+                    "likes": "0",
+                    "time": "18/02/2019-18:32:56",
+                    "content": "    jochem-brouwer:  should check that the byte is 0xff but also that it is not part of a PUSH   Ok. If it is part of PUSH, what does it mean? Would forbid it or will you check if there any JUMP going to 0xff? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 3.4375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ethernian",
+                    "index": "70",
+                    "likes": "1",
+                    "time": "18/02/2019-18:43:56",
+                    "content": "    pereztechseattle:  how would that even work after CREATE2? you do that before EVERY contract call? What about transaction ordering?   One more usecase: currently you are fine to send a Tx even if your client is not fully synced. If you know your nonce and has evaluated the contract before, of course. Even not explicit: we have \u201caudit once, trust many\u201d in our social contract now. It will not work any more\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.1875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ethernian",
+                    "index": "71",
+                    "likes": "0",
+                    "time": "18/02/2019-19:27:39",
+                    "content": "   [Summary] CREATE2: immutability assumed by social contract   Further, because we can\u2019t be certain of transaction ordering, there\u2019s no way to check-then-proceed-if-ok.   What if we introduce a fail-fast target codebase check in transaction call? Check codebase if doesnt match - fail. Looks like a use of Account Abstraction. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.684523809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "72",
+                    "likes": "1",
+                    "time": "18/02/2019-19:34:46",
+                    "content": "    Ethernian:  What if we introduce a fail-fast target codebase check in transaction call? Check codebase if doesnt match - fail.   Generally, when you have to start working around your own features, you know you\u2019ve left the barn.    I think a better solution is to retain immutability as a feature of Ethereum. But just to see if I understand what you\u2019re saying, you would submit something like a hash with every transaction and if the source code doesn\u2019t match that hash you revert?  I would like that solution if it could also account for linked contract addresses (which is a matter of state, not source code).  If you could verify the contract source hasn\u2019t changed and the linked libs haven\u2019t changed, I could see that being a decent feature. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.680555555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/meronym",
+                    "index": "74",
+                    "likes": "2",
+                    "time": "19/02/2019-13:06:05",
+                    "content": "    consciousEntity:  I am also really struggling to see the point of the \u201cfeatures\u201d of CREATE2. It doesn\u2019t add any significant new functionality, and makes it harder and much more hazardous for users to interact with contracts safely.   CREATE2 makes it possible to instantiate contracts at deterministic addresses, so you can refer to them with certainty in the off-chain world as though they are created but without the requirement of instantiating them on-chain. It improves the architecture of layer-2 solutions (e.g. counterfactually-instantiated contracts) and the privacy of certain deployments \u2013 e.g. parties can agree off-chain on a multi-sig contract and proceed on sending money to its deterministically-computed address without actually deploying the contract on-chain, thus making it impossible for any external observer to determine whether that address belongs to an external account or to a contract. The contract will of course need to be deployed before its logic can be enacted by the network, but this can happen at a later time (i.e. withdrawal, closing the state channel). Another use case might be contract upgradeability (in the legit scenario, the creator of a contract could destroy it and deploy an updated version at the same address), but for this one I guess the inherent immutability and security trade-offs are obvious and have been already pointed out above. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.433050745550746
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "77",
+                    "likes": "0",
+                    "time": "19/02/2019-15:17:54",
+                    "content": "Because you review the init code of the contract and also the code which deploys the actual contract. From there you can prove that the contract cannot be changed. Of course if this is a feature of the contract you can also prove that it can be changed, and can show on what factors this depends. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jvluso",
+                    "index": "78",
+                    "likes": "0",
+                    "time": "19/02/2019-17:20:56",
+                    "content": "    consciousEntity:  Why would I ever use such a system, if the contracts can be changed?   I think the problem might be that you misunderstood the security implication. A contract deployed by the create2 operation cannot have its code changed. The only contracts that can have their code changed are contracts deployed by create by a contract deployed by create2. There is no reason other than plans to later modify the code for that deployment scheme to ever occur. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.84375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "80",
+                    "likes": "0",
+                    "time": "19/02/2019-22:33:24",
+                    "content": "    jochem-brouwer:  Because you review the init code of the contract and also the code which deploys the actual contract. From there you can prove that the contract cannot be changed.   As I\u2019ve explained above, that\u2019s not true in any practical, real-world sense. This is a real problem, guys.  And is this the right forum to be addressing this? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.310714285714285
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "81",
+                    "likes": "0",
+                    "time": "19/02/2019-22:35:46",
+                    "content": "    consciousEntity:  create2 (and a following \u2018create\u2019) requires a fairly challenging audit/review process every time.   \u2026 which will produce a worthless audit, since the contract can be changed at any time.  There is no such thing as \u201csafely interacting with a contract that uses create2\u201d.  Even if my audit and my transaction occurred at the same instant in time, we can never be sure of transaction ordering, so a \u201creplace my contract\u201d transaction very well may be in between. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "82",
+                    "likes": "0",
+                    "time": "19/02/2019-22:44:53",
+                    "content": "    jvluso:  There is no reason other than plans to later modify the code for that deployment scheme to ever occur.   You mean like if I\u2019m planning a heist? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.270833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jvluso",
+                    "index": "83",
+                    "likes": "1",
+                    "time": "19/02/2019-23:14:08",
+                    "content": "    pereztechseattle:  \u2026 which will produce a worthless audit, since the contract can be changed at any time. There is no such thing as \u201csafely interacting with a contract that uses create2\u201d. Even if my audit and my transaction occurred at the same instant in time, we can never be sure of transaction ordering, so a \u201creplace my contract\u201d transaction very well may be in between.   No contract deployed with create2 can have its code changed. The only contracts that can have their code changed are contracts deployed by create. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.928571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "84",
+                    "likes": "0",
+                    "time": "19/02/2019-23:27:37",
+                    "content": "    jvluso:  No contract deployed with create2 can have its code changed. The only contracts that can have their code changed are contracts deployed by create .   How is the audit of any contract that can be changed at-will useful? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jvluso",
+                    "index": "85",
+                    "likes": "0",
+                    "time": "20/02/2019-00:19:54",
+                    "content": "    pereztechseattle:  How is the audit of any contract that can be changed at-will useful?   An audit can tell you if a contract can have its code changed, who can change the code, how they can change it, and what the code can be changed to. Contracts being able to have their code change has always been possible, and this just provides a new way to do it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.170454545454546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "86",
+                    "likes": "0",
+                    "time": "20/02/2019-15:41:01",
+                    "content": "Can you link me your explanation? I cannot find it. I would like to see a real world scenario where somehow you cannot prove that redeployments are not possible. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/araskachoi",
+                    "index": "87",
+                    "likes": "0",
+                    "time": "20/02/2019-19:05:25",
+                    "content": "Can you explain this a little better? I was under the impression that CREATE2 was the opcode to redeploy a contract at a specific address with \u201cupgraded code\u201d. If you cannot have any code changed, the all CREATE2 is good for is redeploying the same smart contract to the same address \u2026 ? Thanks in advance! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.922991071428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "88",
+                    "likes": "2",
+                    "time": "20/02/2019-23:45:10",
+                    "content": "    jvluso:  No contract deployed with create2 can have its code changed. The only contracts that can have their code changed are contracts deployed by create .   create2 contracts can also have their code changed, if the init code permits it.     pereztechseattle:  There is no such thing as \u201csafely interacting with a contract that uses create2\u201d.   Yes, you can safely interact with a CREATE2 contract, you just need to validate some new things:  Prove that there is no way to destroy the contract, then nothing is different from an audit with a CREATEd contract OR, prove that the init code always produces the exact same bytecode. This should be possible for many/most \u201chonest\u201d use cases. You still need to determine if \u201czombie contracts\u201d are a problem in your scenario (where the same contract pops up after it has been destroyed).  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.343181818181818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "89",
+                    "likes": "0",
+                    "time": "24/02/2019-02:36:38",
+                    "content": "This is like talking to a brick wall. \u201cProve that there is no way to destroy the contract\u201d  What if that\u2019s not true? \u201cOR, prove that the init code always produces the exact same bytecode.\u201d  What if that\u2019s not true either? \u201cThis should be possible for many/most \u201chonest\u201d use cases.\u201d  WTF?  We\u2019re not talking about \u201chonest\u201d use cases, we\u2019re talking about people pulling a fast one, which this makes 1000x more likely. This is full-blown Twilight Zone territory. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.95
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "90",
+                    "likes": "0",
+                    "time": "24/02/2019-03:30:51",
+                    "content": "Gladly.  It goes like this:   Company XYZ: Announcing the $50MM Ethereum killer app!   Ethereum community: Killer App! But wait a tick; you forgot to guard against CREATE2 exploits   Company XYZ: Ah, shoot, you\u2019re right. Well, it would be cost prohibitive to redo it now; You\u2019ll just have to trust us   Ethereum community: Okie dokie, then.   (months or years pass)   Company XYZ: Ooops!  Turns out I was a scoundrel.  Contract replaced.  Money stolen, or whatever I want.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 7.845982142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pereztechseattle",
+                    "index": "91",
+                    "likes": "0",
+                    "time": "24/02/2019-03:32:54",
+                    "content": "    jochem-brouwer:  cannot prove that redeployments are not possible   Eliminating the double negatives, you want me to prove redeployments are possible?  Your very own CREATE2 does that, friend. OK, I\u2019m going to stop beating this dead horse because it\u2019s getting me nowhere.  I\u2019ll just reiterate this: People don\u2019t trust the network because they verified some bytecode.  That is not how the real world works. People trust the network because a lot of horrible shit that could\u2019ve happened didn\u2019t.  That\u2019s it. This is inviting another DAO-like disaster.  You really think we\u2019ll get away with it twice? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.140000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0age",
+                    "index": "92",
+                    "likes": "4",
+                    "time": "25/02/2019-04:01:50",
+                    "content": "I\u2019ve gone ahead and implemented a factory contract for creating what I\u2019m calling metamorphic contracts, or contracts that can be redeployed with new bytecode to the same address. It does so by first deploying an implementation contract, then deploying a transient contract with fixed, non-deterministic initialization code via CREATE2. The transient contract clones the bytecode of the implementation contract and uses it to deploy the metamorphic contract via CREATE, then immediately self-destructs. There\u2019s also an immutable create2 factory contract for preventing metamorphism in any contracts it deploys, which operates similarly to the one by @jochem-brouwer, but with a different mechanism for preventing address collisions / frontrunning. Use this feature / bug responsibly, try to educate as many people as possible, and stay vigilant against mutable villainy!    GitHub    0age/metamorphic A factory contract for creating metamorphic (i.e. redeployable) contracts. - 0age/metamorphic      ",
+                    "links": [
+                        "https://github.com/0age/metamorphic"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.659090909090909
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0age",
+                    "index": "93",
+                    "likes": "0",
+                    "time": "27/02/2019-15:33:01",
+                    "content": "Revised the metamorphic contract factory so that it no longer requires an intermediate transient contract. Here\u2019s an explanation of the current initialization code used to deploy the metamorphic contracts: https://gist.github.com/0age/9a4541cce380a1b2c7e477af06ba6376 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0age",
+                    "index": "94",
+                    "likes": "0",
+                    "time": "05/03/2019-16:43:31",
+                    "content": "Here\u2019s another use-case for metamorphic contracts: you can use their runtime code as dynamic storage to save gas in certain applications https://medium.com/coinmonks/on-efficient-ethereum-storage-c76869591add ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Extending to proposal",
+                        "3rd party giving additional information on proposal"
+                    ],
+                    "Sentiment": 5.5357142857142865
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tim-cotten",
+                    "index": "95",
+                    "likes": "0",
+                    "time": "12/06/2019-12:07:52",
+                    "content": "I\u2019ve updated my own written material about EIP-1014 to reflect Rajeev\u2019s (and this thread\u2019s) concerns about the proposal. https://blog.cotten.io/ethereums-eip-1014-create-2-d17b1a184498 Until I read this thread I had not realized how trivial EIP-1014 made it to create mutable contracts, but can now fully grasp the attack vectors described and the danger of doing this. I strongly agree with those who say we can\u2019t rely on external block explorers for safety: this is an on-chain problem.  pereztechseattle This is inviting another DAO-like disaster. You really think we\u2019ll get away with it twice?  ",
+                    "links": [
+                        "https://ethereum-magicians.org/u/pereztechseattle"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal"
+                    ],
+                    "Sentiment": 6.541666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tim-cotten",
+                    "index": "97",
+                    "likes": "1",
+                    "time": "13/06/2019-13:23:52",
+                    "content": "Bleh. Does an EIP not exist for determining whether an address contains a contract or not? I\u2019ve seen the code relying on EXTCODESIZE but as has been pointed out can be hacked when being checked within a constructor (https://ethereum.stackexchange.com/questions/15641/how-does-a-contract-find-out-if-another-address-is-a-contract/64340#64340). It\u2019d be nice to have an OPCODE that can definitely state: Account, Contract (CREATE), Contract (CREATE2). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tim-cotten",
+                    "index": "99",
+                    "likes": "0",
+                    "time": "13/06/2019-17:11:38",
+                    "content": "Following along with https://medium.com/coinmonks/why-create2-e99b6afcc28c there\u2019s some really interesting work about the ability to replicate the utility of CREATE2 with standard CREATE. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0age",
+                    "index": "101",
+                    "likes": "0",
+                    "time": "24/06/2019-16:19:05",
+                    "content": "I just released an article on another application for redeployable contracts - using them to create a wallet contract, or \u201chome address\u201d, that supports repeated deployment of arbitrary \u201ctransaction scripts\u201d (and a utility for working with home addresses called HomeWork): https://medium.com/@0age/on-efficient-ethereum-transactions-introducing-homework-6ae4f21801ed ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party or author is advertising proposal"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjchern",
+                    "index": "102",
+                    "likes": "0",
+                    "time": "13/07/2019-00:44:24",
+                    "content": "How to generate different contract bytecode in the same address? if the address is the same, so the init_code must be the same, and then the bytecode is the same(without using delegatecall and so on), so can you give a solidity example to generate different contract bytecode in the same address JUST using create2 ? it confuses me a lot of time. anyone can help me ? thank you very much ! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.232142857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjchern",
+                    "index": "103",
+                    "likes": "0",
+                    "time": "13/07/2019-02:35:52",
+                    "content": "How to generate different contract bytecode in the same address? if the address is the same, so the init_code must be the same, and then the bytecode is the same(without using delegatecall and so on), so can you give a solidity example to generate different contract bytecode in the same address JUST using create2 ? it confuses me a lot of time. anyone can help me ? thank you very much ! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.232142857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "104",
+                    "likes": "0",
+                    "time": "09/04/2020-02:17:54",
+                    "content": "If delegatecall proxies such as USDC and TUSD were replaced by CREATE2 reincarnations, it would reduce the call overhead of upgradeable contracts by at least 1500 gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.25
+                }
+            ]
+        }
+    ],
+    "group_index": "686"
+}

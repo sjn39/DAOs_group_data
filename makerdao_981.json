@@ -1,0 +1,103 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/series-why-integrating-defi-and-real-world-finance-is-hard/14698",
+            "title": "Series: Why Integrating DeFi and Real World Finance is Hard ",
+            "index": 14698,
+            "category": [
+                "Resources",
+                "Research"
+            ],
+            "tags": [
+                "rwa"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/christiancdpetersen",
+                    "index": "#1",
+                    "likes": "12",
+                    "time": "19/04/2022-20:37:33",
+                    "content": "Post #1 This is the first in a series (admittedly to be irregular) of postings on why the integration of real world finance with DeFi is a challenge. Many of these issues are novel. This is solely for informational purposes and to develop a record of lessons learned. The incubating Legal and Transaction Services Core Unit also gives thanks in advance to the broader Maker ecosystem \u201cmind\u201d for potential solutions, etc. Stability Fee compounding on a per second basis The stability fee compounds on a per second basis. However, the time that the borrower calculates the outstanding stability fee (using a RWA Debt Estimator helper contract developed by my friends at CES) and the time the borrower actually repays (moment when the transaction is mined) the vault may differ by seconds, minutes or hours. This creates a mismatch between the amount the borrower calculated for the stability fee at T0 and what the smart contract calculates as the stability fee owing at the exact moment of repayment at T1. While the amount in DAI outstanding may be small (even fractions of a DAI), the amount technically remains outstanding. This is a MIP21 design shortcoming which will need to be improved for future deals. The stability fee can be reduced to zero at repayment so this outstanding amount does not continue to accrue interest in perpetuity. This is not a typical real world finance issue where interest compounds at a time interval longer than the second and the debt gets repaid in full. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/forum-at-a-glance-april-14-20-2022/14727"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.934265010351966
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MFeinberg",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "19/04/2022-20:53:01",
+                    "content": "Great post! Is there a way the borrower can pay a little more which can be held in escrow in case the numbers vary? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.1875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/christiancdpetersen",
+                    "index": "#3",
+                    "likes": "2",
+                    "time": "20/04/2022-00:00:00",
+                    "content": "A good question. Apparently not. As I understand it, the vault will not accept an overpayment. The payment will be rejected. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.6875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MFeinberg",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "20/04/2022-00:18:56",
+                    "content": "That\u2019s too bad. Maybe that can be worked on in the future. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.250000000000001
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/TheThadP",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "28/04/2022-22:15:17",
+                    "content": "To deal with the time delta between transaction submission to the mempool and actual transaction finality you could act in a borrower friendly way and halt compounding at submission time to mempool of the transactions instead of the time of transaction confirmation when the transaction is in a confirmed block (perhaps with some limiting parameters around average gas and a timeout to prevent bad actors from gaming the system). This opens up MKR to some marginal reduction in revenue around settlement, but I think it could be a good way to both solve the issue and not increase complexity on the borrower side. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.520833333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lollike",
+                    "index": "#6",
+                    "likes": "4",
+                    "time": "29/04/2022-00:36:52",
+                    "content": "It is possible to facilitate a full repayment of the vault by implementing a helper contract similar to dss-proxy-actions/DssProxyActions.sol at master \u00b7 makerdao/dss-proxy-actions \u00b7 GitHub that calculates the exact amount of debt, and by using a Dai approval can pull the required amount of tokens to pay down the debt in a single transaction. However because of the two step repayment flow of first transferring Dai into the InputConduit, and from there transferring it back to the RwaUrn this becomes a bit more tricky, as it becomes the actor, who would normally simply facilitate the transfer of Dai into the RwaUrn, who is now also involved in a transaction that repays the debt in order to achieve a full repayment atomically. We\u2019ve experienced that this is a challenge in some cases from a legal point of view. However in other cases, an InputConduit and thus two step transfer flow back to the vault might not even be necessary, in which a helper contract can be constructed which calculates the exact amount of debt, transfers Dai to RwaUrn and repays the debt in a single transaction. Depending on the deal it is questionable whether it makes sense to have an onchain stability fee, as what it does is simply generate more Dai against the onchain asset, but in MIP21 deals for example where the assets are offchain, the assets are instead represented by \u201cRWA tokens\u201d onchain, which in itself is not worth anything, but is simply an accounting mechanism that allows Dai generation. Therefore, onchain stability fee accrual for this type of vault does not have the same effect as e.g. for an ETH-A vault where if you don\u2019t pay down your debt + stability fee, you cannot access the entirety of locked collateral. Or in the extreme case, your vault will get liquidated, and the ETH sold off in the market for Dai. However for MIP21 deals the counter party will not care about fully unlocking this token, and on the other hand it can also not be sold off to recover any outstanding debt. So there are not the same guarantees in place that the generated Dai from fees will actually come back into the system. The system is thus just minting more Dai against the dummy token and increasing the exposure to the counter party over time, without a mechanism that effectively forces a repayment or automatically locking more of the underlying collateral over time, as the collateral is not on chain. Therefore it might make sense to implement a different stability fee accrual mechanism for RWA that either only updates at certain intervals, e.g. each quarter, or in some cases not have automatic accrual onchain at all, and instead define in the loan agreement that interest payments must be made to the surplus buffer directly at certain points in time.     TheThadP:  To deal with the time delta between transaction submission to the mempool and actual transaction finality you could act in a borrower friendly way and halt compounding at submission time to mempool of the transactions instead of the time of transaction confirmation when the transaction is in a confirmed block (perhaps with some limiting parameters around average gas and a timeout to prevent bad actors from gaming the system).   From my perspective this is not the issue in practice as you can easily build contracts that facilitate full repayment in a single transaction. The issue is that only specific actors are allowed to be involved in certain transactions and carry out very specific actions for compliance reasons, which makes an atomic transaction that involve numerous stakeholders and operational steps difficult in some cases. These transactions will in practice probably happen at least minutes if not hours or even days a part in some cases as they must go through a verification process. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.42932015573525
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Khan",
+                    "index": "#7",
+                    "likes": "2",
+                    "time": "29/04/2022-22:32:38",
+                    "content": "Could you allow an actor to lock in a repayment rate that expires after a certain time interval? This would allow a compliance workflow where someone can propose a repayment and only an authorized individual could actually execute it. Maybe implemented as part of the proxy contract so the underlying SF calculation isn\u2019t affected either. Still kind of an awkward detail about accruing the rate at a faster time than is relevant for the asset, so not sure if thats worth exploring deeper. Edit: This also assumes that borrowers are making incremental repayments against their vault and not just single transactions. What is expected behavior? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.224025974025974
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "28/07/2022-22:32:39",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

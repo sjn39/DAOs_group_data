@@ -1,0 +1,1461 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/remediations-for-eip-1283-reentrancy-bug/2434",
+            "title": "Remediations for EIP-1283 reentrancy bug ",
+            "index": 2434,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "hardfork",
+                "eip-1283",
+                "security"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/benjamincburns",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "16/01/2019-01:57:41",
+                    "content": "Starting a thread here to discuss potential mitigations for the reentrancy attack introduced by EIP-1283. Getting the obvious one out of the way up front: we could pull EIP-1283 from Constantinople. The obvious merit to this idea is that it\u2019s quite simple to implement. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/core-devs-discussion-about-a-vulnerability-in-constantinople-delay-of-the-upgrade/2427/5",
+                        "https://ethereum-magicians.org/t/immutables-invariants-and-upgradability/2440/30",
+                        "https://ethereum-magicians.org/t/experiments-we-should-be-running/2573"
+                    ],
+                    "GPT-summary": "The author of the post is starting a discussion about potential mitigations for the reentrancy attack introduced by EIP-1283 and suggests pulling EIP-1283 from Constantinople as a possible solution. The post is asking for feedback and constructive criticism on potential mitigations.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Law and regulations",
+                        "Privacy, Security and risk management"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "2",
+                    "likes": "3",
+                    "time": "16/01/2019-02:04:08",
+                    "content": "Proposals I\u2019ve seen so far:  Add a condition to SSTORE that causes it to revert if less than 2300 gas remains.  Straightforward. Makes the violated invariant (\u2018the gas stipend is not enough to change state\u2019) explicit. Can be applied without the need to enable it only on a hardfork, since all past transactions meet this requirement (on mainnnet, at least).   Add a new call context that permits LOG opcodes but not changes to state.  Adds another call type beyond existing regular/staticcall Makes the violated invariant into a fixed rule   Raise the cost of SSTORE to dirty slots to >=2300 gas  Straightforward Makes net gas metering much less useful.   Reduce the gas stipend  Straightforward Makes the stipend almost useless.   Increase the cost of writes to dirty slots back to 5000 gas, but add 4800 gas to the refund counter  Preserves net gas costs while preventing reentrancy. Still doesn\u2019t make the invariant explicit. Requires callers to supply more gas, just to have it refunded.   Add contract metadata specifying per-contract EVM version, and only apply SSTORE changes to contracts deployed with the new version.  Ensures existing contract behaviour doesn\u2019t change. Adds more implementation complexity. General mechanism that can be reused for other EVM changes.    ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.047878787878788
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ajsutton",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "16/01/2019-02:08:07",
+                    "content": "For any potential solution we\u2019ll need to remember that EIP-1283 has already rolled out on a number of test networks.  As such, we\u2019ll need a way to not break them - most likely by having clients support Constantinople-with-EIP-1283 and Constantinople-as-deployed-on-Mainnet.  Test nets may potentially want to have an additional fork to move from EIP-1238 to whatever winds up being deployed on Mainnet. I suspect from an implementation perspective just dropping EIP-1283 from Constantinople is simplest - clients could then treat it as a separate hard fork which on test nets happened at the same time and never happened on MainNet. How clean that solution is will vary from client to client though. This assumes that the \u201cfixed\u201d EIP-1283 or whatever replaces it would then be part of a later fork which is then applied to all nets. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.319444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ajsutton",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "16/01/2019-03:02:31",
+                    "content": "The problematic EIP is EIP-1283 not 1238 btw. https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1283.md Might be worth updating the title. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/benjamincburns",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "16/01/2019-03:16:59",
+                    "content": "Ack, thanks for pointing that out! Should be fixed now. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "16/01/2019-03:22:31",
+                    "content": "I tried Option I in Parity Ethereum. Looks really simple to me because it applies universally to genesis (if not considering testnets). Some jsontests need to be regenerated, but we need to regenerate them anyway even if we decide to pull. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "16/01/2019-06:33:23",
+                    "content": "Proposal: Take some time to do some deep chain analysis to find out if there are any susceptible contracts that are actually in use, if not move forward with EIP as-is and update documentation to no longer advise users to rely on the stipend. When critquing this proposal, pleases be clear whether your concern is with our ability to accurately find any such contract or that even if we don\u2019t find such a contract we should still not move forward with this path. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "16/01/2019-07:16:36",
+                    "content": " This looks fine This should be a new opcode This is not in line with the idea of gas usage (gas usage is proportional to computation time) which is, if I recall correctly, the entire idea why 1283 was proposed This is only on the solidity side? Solidity explicitly forwards 2300 gas on transfers and calls. I don\u2019t see how this can be changed I don\u2019t like this one because now you have to forward much more gas than which is actually used.  I like 1) the most. This is simple and mitigates this attack. In general, we should discuss what hard forks can change and what not. Since via solidity most developers think that if send or transfer is used re-entrancy attacks are mitigated, we cannot change this in a hard fork later because it is almost certain that there will be vulnerable contracts to this attack (because most contracts are written in solidity and we have a lot of those contracts so the chance of hitting at least a vulnerable one is really high). However, if we think about other forks in the past (such as changing gas usage of extcodesize) this might look straightforward but it could change the behavior of contracts which depend gasleft() and explicitly assume that this opcode uses a certain amount of gas. The question is now: what if all contracts except one handle this EIP fine, but the single contract is now broken? Can we now fork or not? This is not ethical but it is worth discussing. Another, much more general idea is to include an opcode which writes a number to some special storage where this certain contract can opt-in for EIPs. Let\u2019s say a contract is vulnerable for the reentrancy attack. Only the owner of the contract can call this function. The owner simply decides not to opt-in for this EIP while other contracts can. Now the contract is not vulnerable. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.289465140123035
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Flash",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "16/01/2019-08:09:55",
+                    "content": "Does the 2300 gas stipend have a purpose beyond preventing reentrancy? Afaik, these calls were never supposed to change state. Making this explicit by introducing a new call context keeps expected behaviour consistent without shackling SSTORE. Couldn\u2019t the gas stipend then be removed to allow for more logging? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.982954545454545
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "16/01/2019-08:21:42",
+                    "content": "@Flash I think that the 2300 gas stipend was indeed introduced to prevent against reentrancy per this stack exchange post and this discussion. Introducing a new call context where everything is allowed except SSTORE might be interesting but it is starting to get very bloated with all the different call types (call, delegatecall, callcode, staticcall, this new one). Technically sending value is also a special kind of SSTORE since it alters the balance of an address. Logging (events) instead are not the same since these can never be SLOADed (or equivalent for the balance: BALANCE opcode). What do you mean by \u201cremoving gas stipend\u201d? ",
+                    "links": [
+                        "https://github.com/ethereum/solidity/issues/610"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.73516824085006
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "16/01/2019-08:35:49",
+                    "content": "  Is good as a solution that does not require changes to the existing contracts after the release and allows for EIP-1283 to be delivered and remain important. It works nicely because it just blocks something that would not be allowed on Byzantium anyway (so no correctly built contract would expect this not to fail).   It may cause things that were expected not to fail in the valid contracts to fail after the change is introduced and we would have to specify which operations are allowed explicitly - LOG, PUSH?, DUP?, CALLCODE?, etc. - very likely that we would end up blocking SSTORE only in the end.   3,4,5 - all seriously decrease net gas metering impact ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party giving entirely negative feedback on proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.893939393939394
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Flash",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "16/01/2019-08:36:04",
+                    "content": "    jochem-brouwer:  What do you mean by \u201cremoving gas stipend\u201d?   I mean removing the then redundant 2300 gas cap on send and transfer in the case that we went with 2. I wouldn\u2019t call that bloated, it\u2019s a useful call type. But I\u2019ll happily leave that decision to others. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.2749999999999995
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "16/01/2019-08:41:27",
+                    "content": "    Flash:  mean removing the then redundant 2300 gas cap on send and transfer in the case that we went with 2.   This would be a change in solidity? We can\u2019t change contracts which are on the chain already, so we cannot simply change that any contract which forwards 2300 gas now suddenly forwards less. In solidity, I think the reasonable change would be to assume that CALL always costs at least 700 gas and then hence only forward 700 gas. This can only lead to problems if the fallback function is so deep in the contract (too much solidity functions are around) such that the 700 gas is already used before it reaches the fallback function. Of course this can be optimized via a check that if CALLDATALENGTH==0 it immediately jumps to the fallback but this adds a slight amount of overhead gas before you get into any function block. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.7131410256410255
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "16/01/2019-09:11:06",
+                    "content": "    MicahZoltu:  Proposal: Take some time to do some deep chain analysis to find out if there are any susceptible contracts that are actually in use, if not move forward with EIP as-is and update documentation to no longer advise users to rely on the stipend. When critquing this proposal, pleases be clear whether your concern is with our ability to accurately find any such contract or that even if we don\u2019t find such a contract we should still not move forward with this path   I think this is a bad idea both because we can\u2019t guarantee we\u2019ll identify all vulnerable contracts, and because we shouldn\u2019t violate this invariant retrospectively.     jochem-brouwer:  Introducing a new call context where everything is allowed except SSTORE might be interesting but it is starting to get very bloated with all the different call types (call, delegatecall, callcode, staticcall, this new one).   FWIW - delegatecall is a different call type, but results in a regular call context (it executes as normal). Likewise for callcode. We wouldn\u2019t need a new opcode for this, either.     jochem-brouwer:  This is only on the solidity side? Solidity explicitly forwards 2300 gas on transfers and calls. I don\u2019t see how this can be changed   I wasn\u2019t aware Solidity does this. The call stipend is an EVM feature; Solidity could equally set the gas to 0  with the same effect. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.183884297520661
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "16",
+                    "likes": "7",
+                    "time": "16/01/2019-09:16:09",
+                    "content": "In my opinion, the EIP-1283 does not need to be remediated, but rather removed all together. I do understand its intent (making inter-frame communications cheaper), and I proposed an alternative which is cheaper, slightly more powerful, and without the semantic changes to the existing opcodes:     EIP: Transient storage opcodes EIPs       I have written this EIP after having reviewed EIP-1087 (https://eips.ethereum.org/EIPS/eip-1087) and its discussion (EIP-1087: Net storage gas metering for the EVM).  I propose an alternative design (which Nick said he also considered at some point), which in my opinion can bring bigger benefits than EIP-1087, at lower cost (by this I mean new opcodes with very simple semantics and gas accounting rules, and keeping the existing gas accounting rules for SSTORE intact).  Let me know what you thi\u2026      Looking at the history EIP-1283, we see that it has been EIP-1087, formulated in a way which was harder to implement in Parity than in Geth. Then, it was reformulated into EIP-1283, to make it more abstract and less implementation-dependent. However, the semantic complexity was still there, and that caused a consensus issue on Ropsten, which delayed Constantinople once. And now it delays Constantinople once again, due to unintended consequences. Both of these incident can be traced to two things this EIP is doing that were not done before:  Reducing refund counter (prior to that, refund counter was only increased). That was basis of the Ropsten bug Reducing the gas cost on an action. In all other hard forks, the gas cost of operations were only increased.  There is another potential impact of this EIP, which has not been appreciated yet. It will make harder for State Rent group to figure out alternatives to the State Rent, because the edge cases introduced by this EIP will make analysis harder. My suggestion is to simply exclude this EIP from Constantinople. If the inter-frame communication is still in demand, it can be introduced by a more specialised change, rather than piggy-backing on the existing resource (contract storage). But honestly, I think this particular cost reduction is not a very important feature, and app developers can definitely live without it, while we are concentrating our efforts on Ethereum 1x and scalability improvements instead. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-1087",
+                        "https://ethereum-magicians.org/t/eip-1087-net-storage-gas-metering-for-the-evm/383/35",
+                        "https://ethereum-magicians.org/t/immutables-and-invariants/2440"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.308280454113787
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "16/01/2019-09:21:15",
+                    "content": "    MicahZoltu:  Proposal: Take some time to do some deep chain analysis to find out if there are any susceptible contracts that are actually in use, if not move forward with EIP as-is and update documentation to no longer advise users to rely on the stipend. When critquing this proposal, pleases be clear whether your concern is with our ability to accurately find any such contract or that even if we don\u2019t find such a contract we should still not move forward with this path.   I agree with @Arachnid. Besides doing a deep chain analysis which will take very long to \u201clook\u201d correct it will be extremely hard to prove that there are a low amount of contracts susceptible. Keep in mind that simply looking for \u201cdrain\u201d attacks are just part of the scope. It is also possible to do funky things to the contract by writing to some storage slots which messes up the logic of the contract. I think this not doable, but I have no experience with static analysis so that might just be my inexperience.     Arachnid:  I wasn\u2019t aware Solidity does this. The call stipend is an EVM feature; Solidity could equally set the gas to 0 with the same effect.   No this does not work, because the idea behind transfer and send is that you are also allowed to send Ether to contracts which have a payable fallback. These hence execute (given a solidity-compiled contract) the code to select a function: if none is found, it checks if there is a (payable) fallback. (Hence forwarding 0 gas will immediately result in an out of gas error). Besides all this I agree with @AlexeyAkhunov to remove it altogether. I think in most cases writing to the same storage slot in a contract twice should be removed at compile time. At least in transactions which only happen during a single call this can be removed at compile-time. There might be some cases that this is harder if there are calls to other contracts (which call back into the current contract), but I think with some tricks this might also be possible. Hence the only case where this EIP is applicable is where a contract calls another one, which calls back into the current one. In all other cases more than single-writes to the same storage slot can be removed at compile time. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.116955266955267
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "18",
+                    "likes": "2",
+                    "time": "16/01/2019-09:26:45",
+                    "content": "    Arachnid:  we shouldn\u2019t violate this invariant retrospectively   IF we can gain the necessary confidence that this bug isn\u2019t exploitable against any active contracts in the wild, why is maintaining this invariant necessary?  Not only was the invariant only implied, not explicitly stated, but if no one is depending on it what do we gain by maintaining it? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.972222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "19",
+                    "likes": "2",
+                    "time": "16/01/2019-09:27:37",
+                    "content": "    jochem-brouwer:  I think in most cases writing to the same storage slot in a contract twice should be removed at compile time. At least in transactions which only happen during a single call this can be removed at compile-time. There might be some cases that this is harder if there are calls to other contracts (which call back into the current contract), but I think with some tricks this might also be possible. Hence the only case where this EIP is applicable is where a contract calls another one, which calls back into the current one. In all other cases more than single-writes to the same storage slot can be removed at compile time.   Unfortunately, it cannot be removed at compile time, IMO. In order to do that, there would need to be an alternative resource in EVM that allows retaining information between the call frames. Currently, only storage is retained between the frames, since fresh memory is given to each frame, and the stacks are segregated too. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0206766917293235
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "16/01/2019-09:29:35",
+                    "content": "    AlexeyAkhunov:  Unfortunately, it cannot be removed at compile time, IMO. In order to do that, there would need to be an alternative resource in EVM that allows retaining information between the call frames. Currently, only storage is retained between the frames, since fresh memory is given to each frame, and the stacks are segregated too.   Yes, this is why I noted that you cannot remove it if there is a call to another contract which calls back into the current one. But you are right, it is more specific: it there are multiple call frames on the current contract then it is not possible to remove at compile time. However, I think there might be some kind of trick via the returnvalue of a call frame. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4940476190476195
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "16/01/2019-09:30:24",
+                    "content": "    AlexeyAkhunov:  Reducing the gas cost on an action. In all other hard forks, the gas cost of operations were only increased.   I\u2019m generally against asserting that we will never decrease gas costs.  In order for gas accounting to function appropriately we need the power/authority to be able to tune them up/down as hardware/software changes with time.  While I can appreciate that having this ability makes things harder, I believe it is necessary for keeping Ethereum competitive. IIUC, it sounds like you are sort of arguing that Ethereum 1.x is in maintenance mode and we basically shouldn\u2019t be doing any active development on it that isn\u2019t necessary for Ethereum 2.0?  Any changes to the EVM should be proposed targeting Ethereum 2.0 instead? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.227272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "22",
+                    "likes": "1",
+                    "time": "16/01/2019-09:35:06",
+                    "content": "    MicahZoltu:  I\u2019m generally against asserting that we will never decrease gas costs. In order for gas accounting to function appropriately we need the power/authority to be able to tune them up/down as hardware/software changes with time. While I can appreciate that having this ability makes things harder, I believe it is necessary for keeping Ethereum competitive.   I am not saying we should not decrease costs of operations. I am pointing out that there was complexity in EIP which was not on the plain sight. And it should have been given more weight when discussing the alternatives.     MicahZoltu:  IIUC, it sounds like you are sort of arguing that Ethereum 1.x is in maintenance mode and we basically shouldn\u2019t be doing any active development on it that isn\u2019t necessary for Ethereum 2.0? Any changes to the EVM should be proposed targeting Ethereum 2.0 instead?   Yes. It has already been proposed by Vitalik at DevCon3, October 2017, in his \u201cModest Proposal for 2.0\u201d. He suggested to keep Ethereum 1.0 \u201csafe and conservative\u201d. Of course, Ethereum 1x initiative kind of goes opposite to that, but only because we believe that there are SOME changes necessary to keep Ethereum 1.0 alive. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.6437074829931975
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "23",
+                    "likes": "2",
+                    "time": "16/01/2019-09:36:55",
+                    "content": "    jochem-brouwer:  No this does not work, because the idea behind transfer and send is that you are also allowed to send Ether to contracts which have a payable fallback. These hence execute (given a solidity-compiled contract) the code to select a function: if none is found, it checks if there is a (payable) fallback. (Hence forwarding 0 gas will immediately result in an out of gas error).   You misunderstand; the EVM itself enforces the gas stipend. If you make a call to another contract that sends value with 0 gas, the recipient contract gets 2300 gas regardless.     jochem-brouwer:  Besides all this I agree with @AlexeyAkhunov to remove it altogether. I think in most cases writing to the same storage slot in a contract twice should be removed at compile time. At least in transactions which only happen during a single call this can be removed at compile-time. There might be some cases that this is harder if there are calls to other contracts (which call back into the current contract), but I think with some tricks this might also be possible. Hence the only case where this EIP is applicable is where a contract calls another one, which calls back into the current one. In all other cases more than single-writes to the same storage slot can be removed at compile time.   That\u2019s the whole point of the EIP - to make the use of temporary storage for cross-contract  calls practical. Examples include mutexes and setting temporary token allowances.     MicahZoltu:  IF we can gain the necessary confidence that this bug isn\u2019t exploitable against any active contracts in the wild, why is maintaining this invariant necessary? Not only was the invariant only implied, not explicitly stated, but if no one is depending on it what do we gain by maintaining it?   It was explicitly designed in as an invariant, because it\u2019s useful to be able to reason straightforwardly about \u2018value sends\u2019 while still  providing the target contract with the  opportunity  to execute a little code. I don\u2019t think  we should throw that  out, even in the (hypothetical and very unlikely) situation that we can without breaking anything already deployed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.065989326765189
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Flash",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "16/01/2019-09:43:34",
+                    "content": "    Arachnid:  You misunderstand; the EVM itself enforces the gas stipend. If you make a call to another contract that sends value with 0 gas, the recipient contract gets 2300 gas regardless.   This is how I understood it but I wasn\u2019t aware that this was done by the EVM. Is there an issue with removing this gas stipend in the case that send and transfer use the new call context you described for 2.? I agree that an invariant shouldn\u2019t be changed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.965909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "16/01/2019-09:46:59",
+                    "content": "Removing the stipend would break existing  code that relies  on being able to log  an event when  it\u2019s sent funds, if it\u2019s called by an existing contract. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "16/01/2019-09:47:07",
+                    "content": "    Arachnid:  You misunderstand; the EVM itself enforces the gas stipend. If you make a call to another contract that sends value with 0 gas, the recipient contract gets 2300 gas regardless.   I did not know this and assumed you could always forward 0 gas, making transfers to any existing contract impossible.     Arachnid:  That\u2019s the whole point of the EIP - to make the use of temporary storage for cross-contract calls practical. Examples include mutexes and setting temporary token allowances.   I see, this is a good use case. But in that case, I actually think that reducing the stipend is also an interesting option. I misunderstood that the stipend was not the same as the forwarded gas in a call (because solidity forwards this exact amount). Why is this stipend there in the first place? What is the reason for this? Why must we not explicitly forward an amount of gas and why is there a minimum of 2300? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.770833333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "16/01/2019-09:48:08",
+                    "content": "    jochem-brouwer:  But in that case, I actually think that reducing the stipend is also an interesting option. I misunderstood that the stipend was not the same as the forwarded gas in a call (because solidity forwards this exact amount). Why is this stipend there in the first place? What is the reason for this? Why must we not explicitly forward an amount of gas and why is there a minimum of 2300?   The stipend exists to ensure that a contract that\u2019s sent ether always has the opportunity to  log an event to record that fact. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Flash",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "16/01/2019-09:49:30",
+                    "content": "Couldn\u2019t you have it forward as much gas as is required? I\u2019m not understanding why removing this would default it back to 0. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "29",
+                    "likes": "5",
+                    "time": "16/01/2019-09:52:27",
+                    "content": "    jochem-brouwer:  But in that case, I actually think that reducing the stipend is also an interesting option. I misunderstood that the stipend was not the same as the forwarded gas in a call (because solidity forwards this exact amount). Why is this stipend there in the first place? What is the reason for this? Why must we not explicitly forward an amount of gas and why is there a minimum of 2300?   Proper understanding the stipend requires a bit of history. Stipend to contracts was in EVM from the beginning. But, unfortunately, the case where call value was \u201c0\u201d was forgotten (or rather it was thought that people won\u2019t do it), so there is no stipend in this case. That is why, sending 0 wei to a contract would fail some time in the past, whereas sending non-zero amount would succeed. Solidity made a work around to fix this - it now generates the code that checks that if the target of the CALL is a contract, and the Call Value is 0, then it adds 2300 to gas given to the call. This part is not in the EVM, it is a patch to fix the usability issue. The more fundamental fix would be to change EVM, but it was never done ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "16/01/2019-09:55:41",
+                    "content": "    Arachnid:  The stipend exists to ensure that a contract that\u2019s sent ether always has the opportunity to log an event to record that fact.       AlexeyAkhunov:  Proper understanding the stipend requires a bit of history. Stipend to contracts was in EVM from the beginning. But, unfortunately, the case where call value was \u201c0\u201d was forgotten (or rather it was thought that people won\u2019t do it), so there is no stipend in this case. That is why, sending 0 wei to a contract would fail some time in the past, whereas sending non-zero amount would succeed. Solidity made a work around to fix this - it now generates the code that checks that if the target of the CALL is a contract, and the Call Value is 0, then it adds 2300 to gas given to the call. This part is not in the EVM, it is a patch to fix the usability issue. The more fundamental fix would be to change EVM, but it was never done   This is starting to make a little bit more sense. However, I still do not understand that there always is a minimum of 2300 gas forwarded (and via above text this is apparently the minimum if the endowment > 0). What if I want to transfer Ether but want to explicitly revoke that anything is logged (so gas forwarded is now less than 375). I don\u2019t see why this always has to be minimally 2300. So this is also the reason why a lot of (older) contracts always send 1 wei with their CALLs to other contracts? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.78125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "16/01/2019-09:57:29",
+                    "content": "    Flash:  Couldn\u2019t you have it forward as much gas as is required? I\u2019m not understanding why removing this would default it back to 0.   At present, any time you send value with 0 gas, the recipient gets 2300 gas instead. If we removed  the stipend from the EVM, in this event the recipient  would get 0 gas  and immediately fail. This would break a   lot of existing code, as well as breaking the  current assumption that you can always at least log  an  event when sent ether.     AlexeyAkhunov:  Stipend to contracts was in EVM from the beginning. But, unfortunately, the case where call value was \u201c0\u201d was forgotten (or rather it was thought that people won\u2019t do it), so there is no stipend in this case. That is why, sending 0 wei to a contract would fail some time in the past, whereas sending non-zero amount would succeed.   That\u2019s not a mistake - the intention is just to provide a stipend when necessary to log receiving ether. There\u2019s no reason  to log receiving 0 ether. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.074999999999999
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "16/01/2019-09:58:00",
+                    "content": "To be fair, adding new opcodes for transient storage has the exact same issue, just it\u2019s harder to be exploited. Although transient, it\u2019s still a (temporary) state change and can affect things similarly. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.821969696969696
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "33",
+                    "likes": "1",
+                    "time": "16/01/2019-09:59:49",
+                    "content": "I have always been very bothered by the stipend.  Not only does it depend on gas prices not changing in order to provide the value that people want it to provide, it also makes it so receiver contracts can\u2019t do interesting things on receipt of ETH when the caller doesn\u2019t provide much gas.  There are a number of interesting things one could do in a contract\u2019s default function that are not possible because contract authors (and the EVM and Solidity) keep limiting the gas provided to receivers. TL;DR: the invariant that people want to maintain is one that I don\u2019t think ever should have existed and should be removed.  If not for Ethereum 1.x, then for 2.0. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "16/01/2019-10:01:52",
+                    "content": "    sorpaas:  To be fair, adding new opcodes for transient storage has the exact same issue, just it\u2019s harder to be exploited. Although transient, it\u2019s still a (temporary) state change and can affect things similarly   I disagree here. The transient storage would not be used to store things like token balances. No one would think of using transient storage for that. It could be used to buffer any changes done in the other frames - but it will be amenable to separate analysis, not mixed up with the analysis of the storage. I take your comment as an agreement that transient storage is safer, because it is harder to exploit, and because it does not implicate pre-existing contracts ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.480681818181818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "35",
+                    "likes": "1",
+                    "time": "16/01/2019-10:04:55",
+                    "content": "    AlexeyAkhunov:  Solidity made a work around to fix this - it now generates the code that checks that if the target of the CALL is a contract, and the Call Value is 0, then it adds 2300 to gas given to the call. This part is not in the EVM, it is a patch to fix the usability issue. The more fundamental fix would be to change EVM, but it was never done   Are you sure about this? I just tested 0.4.24, and it makes the call with a gas  value  of 0.     jochem-brouwer:  This is starting to make a little bit more sense. However, I still do not understand that there always is a minimum of 2300 gas forwarded (and via above text this is apparently the minimum if the endowment > 0). What if I want to transfer Ether but want to explicitly revoke that anything is logged (so gas forwarded is now less than 375). I don\u2019t see why this always has to be minimally 2300.   The idea is that you shouldn\u2019t be able to do that - contracts should always be able to react to being sent ether. Also, why would you want to?     MicahZoltu:  I have always been very bothered by the stipend. Not only does it depend on gas prices not changing in order to provide the value that people want it to provide, it also makes it so receiver contracts can\u2019t do interesting things on receipt of ETH when the caller doesn\u2019t provide much gas. There are a number of interesting things one could do in a contract\u2019s default function that are not possible because contract authors (and the EVM) keep limiting the gas provided to receivers. TL;DR: the invariant that people want to maintain is one that I don\u2019t think ever should have existed and should be removed. If not for Ethereum 1.x, then for 2.0.   I  don\u2019t follow your argument; removing the stipend would make things worse in this regard, not better. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.74890350877193
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Flash",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "16/01/2019-10:05:08",
+                    "content": "    Arachnid:  At present, any time you send value with 0 gas, the recipient gets 2300 gas instead. If we removed the stipend from the EVM, in this event the recipient would get 0 gas and immediately fail.   Then removing is the wrong word, 2. would allow for it to be dynamically changed because the re-entrancy danger that the 2300 gas number came from no longer applies.     Arachnid:  as well as breaking the current assumption that you can always at least log an event when sent ether.   You can send ether through self-destruct and I don\u2019t believe that sends any gas so the assumption isn\u2019t quite air tight. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.767857142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "37",
+                    "likes": "1",
+                    "time": "16/01/2019-10:06:05",
+                    "content": "    Flash:  You can send ether through self-destruct and I don\u2019t believe that sends any gas so the assumption isn\u2019t quite air tight.   Yes, that\u2019s an unavoidable edge-case - not a feature. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.107142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "38",
+                    "likes": "1",
+                    "time": "16/01/2019-10:11:35",
+                    "content": "    Arachnid:  I don\u2019t follow your argument; removing the stipend would make things worse in this regard, not better.   Solidity\u2019s address.call.value(x)() does exactly what I think all of the ETH sending mechanisms should do, which is provide all gas (minus stack unwind gas) like it does for any other contract call.  I would be fine if CALL with 0 gas either passed 0 gas (and thus failed, because you didn\u2019t use the opcode correctly) or if it passed along all gas like every other contract call does (a reasonable default).  My problem lies in the fact that it sends a hard-coded value that is different from what gets sent along with every other contract call and people rely on that amount to prevent certain behaviors that can\u2019t be guaranteed in a world where gas prices change with time (as seen in this EIP). Note: The above argument is not proposing a migration strategy, only that the pattern people seem keen on keeping (which seems to be the foundation of some arguments here) is a bad pattern IMO and should never have been implemented in the first place and we should not favor a solution just because it retains that pattern. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.6893601190476195
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "39",
+                    "likes": "2",
+                    "time": "16/01/2019-10:13:02",
+                    "content": "    MicahZoltu:  Solidity\u2019s address.call.value(x)() does exactly what I think all of the ETH sending mechanisms should do, which is provide all gas (minus stack unwind gas) like it does for any other contract call. I would be fine if CALL with 0 gas either passed 0 gas (and thus failed, because you didn\u2019t use the opcode correctly) or if it passed along all gas like every other contract call does (a reasonable default). My problem lies in the fact that it sends a hard-coded value that is different from what gets sent along with every other contract call and people rely on that amount to prevent certain behaviors that can\u2019t be guaranteed in a world where gas prices change with time (as seen in this EIP).   Right, I understand your objection. But removing the stipend - allowing calls-with-value to have less than 2300 gas - would make the situation worse, since  callees could no longer have any guarantees over what  they can do when sent value -  and would break a lot of existing code. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.932692307692308
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "16/01/2019-10:14:49",
+                    "content": "    Arachnid:  allowing calls-with-value to have less than 2300 gas   Can you clarify, what happens if someone issues a CALL with value and specifies 500 gas?  Does the EVM increase the gas provided to 2300, or does it make the call with 500 gas?  I was under the impression that the bump to 2300 was only if 0 was specified for gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.583333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "16/01/2019-10:15:40",
+                    "content": "    Arachnid:  Are you sure about this? I just tested 0.4.24, and it makes the call with a gas value of 0.   You are right, I don\u2019t know where I got from that solidity always forwards 2300 gas. It indeed forwards 0 gas.     Arachnid:  The idea is that you shouldn\u2019t be able to do that - contracts should always be able to react to being sent ether. Also, why would you want to?   I don\u2019t know why you would want this, but I just find this a weird design rationale. This whole stipend makes EIPs harder to review because we now always have to check if you can\u2019t do any fancy tricks with the 2300 - 700 (700 for CALL) gas via reentrancy. I agree with @MicahZoltu that this stipend is dangerous especially if gas prices change. For example in EIP150, what if someone had a contract which logged extcodesize of the called contract at some point and then suddenly could not because this gas was increased (2300 gas was not enough suddenly). I find that this stipend constrains us a lot.  That being said we can\u2019t lower this stipend because this will break stuff aswel. What if we do the same thing for EIP 1283 but now use a new opcode which does exactly the same as SSTORE but also implements EIP 1283 on dirty storage. (This might be an EIP which has been proposed before, sorry if that is the case). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.020021645021645
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "16/01/2019-10:16:40",
+                    "content": "    MicahZoltu:  Can you clarify, what happens if someone issues a CALL with value and specifies 500 gas? Does the EVM increase the gas provided to 2300, or does it make the call with 500 gas?   It makes the call with 2800 gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "43",
+                    "likes": "1",
+                    "time": "16/01/2019-10:19:04",
+                    "content": "    Arachnid:  Are you sure about this? I just tested 0.4.24, and it makes the call with a gas value of 0.   Yes. I encountered this during Gnosis Safe audit (I looked through byte code, rather than Solidity text). Just tried this code: pragma solidity ^0.5.0; contract Sender {         function send(address payable target, uint256 amount) public {                 target.transfer(amount);         } } If you perform solc --asm Send.sol look for the string \u201c8fc\u201d (which is hex for 2300), and you will see the code that adds the stipend if amount is 0:         /* \"Send.sol\":108:131  target.transfer(amount) */       0x8fc         /* \"Send.sol\":124:130  amount */       dup3         /* \"Send.sol\":108:131  target.transfer(amount) */       swap1       dup2       iszero       mul       swap1 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "44",
+                    "likes": "1",
+                    "time": "16/01/2019-10:20:55",
+                    "content": "    jochem-brouwer:  This whole stipend makes EIPs harder to review because we now always have to check if you can\u2019t do any fancy tricks with the 2300 - 700 (700 for CALL) gas via reentrancy.   I agree - that\u2019s why I personally favor options 1 or 2, because they make the stipend invariant more explicit.     jochem-brouwer:  What if we do the same thing for EIP 1283 but now use a new opcode which does exactly the same as SSTORE but also implements EIP 1283 on dirty storage. (This might be an EIP which has been proposed before, sorry if that is the case).   Personally I think that\u2019s quite a messy remediation - it adds a new opcode that exists solely to work around a bug elsewhere.     AlexeyAkhunov:  Yes. I encountered this during Gnosis Safe audit (I looked through byte code, rather than Solidity text). Just tried this code:   I see, it only adds to the amount if the value is 0. I have to say, this is pretty damn weird.  Why did the Solidity authors feel it important to allow  for calls  with no value to log things? Edit:  Never mind, I get it. It\u2019s to work around the case of x.transfer(y) where y happens  to be 0 immediately failing due to out-of-gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.091507177033493
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "45",
+                    "likes": "2",
+                    "time": "16/01/2019-10:26:03",
+                    "content": "    Arachnid:  Why did the Solidity authors feel it important to allow for calls with no value to log things?   It has been introduced because lot of people complained about failing \u201csend\u201d to contracts if the value is 0. So they would either ask everybody to enclose their \u201csend\u201d into if amount > 0 {    target.send(amount) } Or make it for them, to stop them complaining  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "46",
+                    "likes": "1",
+                    "time": "16/01/2019-12:58:41",
+                    "content": "In general, and especially in light of Eth2 and Ewasm, I am not a fan of changing existing EVM semantics (introducing \u201cbreaking changes\u201d) at this stage. Introducing a new opcode, instead of changing the behavior of an existing one, could have prevented this issue. I created a new thread to discuss this:     Immutables and invariants EIPs       One of the critical meta-questions raised by Remediations for EIP-1283 reentrancy bug and the delay of the Constantinople upgrade is: Precisely what on Ethereum is immutable and what behavior should be considered invariant?  Since irregular state transitions are outside the scope of this conversation, for sake of argument let\u2019s all agree that code and data (storage) are immutable.  However, we\u2019re left with the challenge that EVM semantics can and do change during a hard fork, the most germane ex\u2026     ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/remediations-for-eip-1283-reentrancy-bug/2434/18",
+                        "https://ethereum-magicians.org/t/core-devs-discussion-about-a-vulnerability-in-constantinople-delay-of-the-upgrade/2427"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.865530303030303
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "16/01/2019-13:01:24",
+                    "content": "    ajsutton:  For any potential solution we\u2019ll need to remember that EIP-1283 has already rolled out on a number of test networks. As such, we\u2019ll need a way to not break them - most likely by having clients support Constantinople-with-EIP-1283 and Constantinople-as-deployed-on-Mainnet.   No need for that. Have another fork, \u201cConstantinople Again\u201d, that disables EIP-1283, and roll it out on testnets at first opportunity. Then have another fork, \u201cConstantinople Finally\u201d, that re-enables EIP-1283, and enables an EIP that makes the \u201cno SSTORE if below 2300 gas left\u201d invariant explicit. On main-net, roll out all three forks at the same block. If testnets are not deemed that important, can also combine \u201cAgain\u201d and \u201cFinally\u201d into one. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.821428571428572
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "48",
+                    "likes": "1",
+                    "time": "16/01/2019-13:08:03",
+                    "content": "For the record, this is more or less what @karalabe proposed, except as two forks rather than three. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "16/01/2019-13:33:14",
+                    "content": "    MicahZoltu:  what happens if someone issues a CALL with value and specifies 500 gas?   Here\u2019s a snippet from py-evm: child_msg_gas = gas + (constants.GAS_CALLSTIPEND if value else 0)  (gas and value are arguments to CALL.)  As shown in this discussion, reasoning gets a little more complicated when taking Solidity\u2019s workaround to enable fingering into account: // Provide the gas stipend manually at first because we may send zero ether. // Will be zeroed if we send more than zero ether. m_context << u256(eth::GasCosts::callStipend); ... // gas <- gas * !value m_context << Instruction::SWAP1 << Instruction::DUP2; m_context << Instruction::ISZERO << Instruction::MUL << Instruction::SWAP1;  These lines are between ~2 and ~4 years old. ",
+                    "links": [
+                        "https://github.com/ethereum/solidity/blob/678a95f6e3bbd9f1c4914151c0178847348de970/libsolidity/codegen/ExpressionCompiler.cpp#L658-L668",
+                        "https://github.com/ethereum/solidity/blame/678a95f6e3bbd9f1c4914151c0178847348de970/libsolidity/codegen/ExpressionCompiler.cpp#L658-L668"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.65625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "50",
+                    "likes": "2",
+                    "time": "16/01/2019-14:03:24",
+                    "content": "    AlexeyAkhunov:  It has been introduced because lot of people complained about failing \u201csend\u201d to contracts if the value is 0.   For ref: implementing commit, PR, and issue. Via the latter - people discussing the workaround. That links to a blog post, which should help find discussions where \u201ca lot of people complained\u201d (by reference search). (This is getting awfully OT, sorry.) ",
+                    "links": [
+                        "https://github.com/ethereum/solidity/pull/1008",
+                        "https://github.com/ethereum/solidity/issues/977",
+                        "https://github.com/ConsenSys/smart-contract-best-practices/issues/59"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 3.666666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/naikmyeong",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "16/01/2019-16:58:47",
+                    "content": "I agree with @ajsutton ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "53",
+                    "likes": "0",
+                    "time": "16/01/2019-18:42:23",
+                    "content": "    consciousEntity:  I would say it\u2019s actually a very clean remediation - instead of redefining an existing opcode, our set of desired properties is encoded into a new one.   The only change to the existing opcode, though, is that it costs less gas in certain situations. If we weren\u2019t  aware that could introduce a vulnerability, I don\u2019t think we\u2019d even be considering it. And if we start introducing a new opcode for every gas cost change, we\u2019ll run out of opcodes very quickly. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.925216450216451
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "54",
+                    "likes": "2",
+                    "time": "16/01/2019-18:51:26",
+                    "content": " Cost could be 2300 gas and 2100 gas refund instead of just cost 200 gas  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mandrigin",
+                    "index": "55",
+                    "likes": "4",
+                    "time": "16/01/2019-19:50:16",
+                    "content": "One more (much technically challenging) solution would be to assign EVM version and gas prices to contracts at deployment. That means, that smart contract that is deployed before the hard fork is always executed with old gas prices (and old features of EVM). So, we will have EVM0 (pre Constantinople) and EVM1 (Constantinople). When a new contract (running EVM1) calls anything that is deployed before that, EVM1 communicates to EVM0, and the old contract will use old gas prices and old assumptions will stay the same. This communication isn\u2019t trivial, but since contracts have very specific interfaces it is not impossible. Cons:  more complicated codebase and testing; more complicated contract interaction; bloating codebase with any hardforks;  Pros:  contracts that are already deployed aways will stay the same and behave the same; incentive for those who can to upgrade their contracts to the new version because cheaper gas, etc.  I still think that this might solve the whole class of problems like that and might be worth it in the long run because the contracts behaviour would be truly immutable. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.538843402973837
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/benjamincburns",
+                    "index": "56",
+                    "likes": "1",
+                    "time": "17/01/2019-00:55:31",
+                    "content": "From Dan Guido (@dguido, Trail of Bits) via gitter:  Hello all, we teamed up with ChainSecurity and Eveem to investigate the ramifications of EIP-1283 over the last 24 hours. We have collected our findings and recommendations into a document which you can find here: https://github.com/trailofbits/publications/blob/master/reviews/EIP-1283.pdf You will want to note a few key takeaways: We strongly recommend against adopting EIP-1283. If you must implement EIP-1283, then you should ensure that dirty storage is tracked per call, not per transaction. This will ensure that any call causing reentrancy will not be given a gas discount. You will also note that we did find a few contracts that became vulnerable due to EIP-1283, however, our review was NOT exhaustive. All three of the analysis techniques that we used \u2013 ChainSecurity, Trail of Bits, and Eveem \u2013 have limitations. I expect that we\u2019ll update the doc again tomorrow with some minor additional notes, recommendations, and findings. This was a race to the finish line, and I think we all would have wanted to do more.  ",
+                    "links": [
+                        "https://github.com/trailofbits/publications/blob/master/reviews/EIP-1283.pdf"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.629166666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "57",
+                    "likes": "6",
+                    "time": "17/01/2019-01:19:23",
+                    "content": "    mandrigin:  So, we will have EVM0 (pre Constantinople) and EVM1 (Constantinople). When a new contract (running EVM1) calls anything that is deployed before that, EVM1 communicates to EVM0, and the old contract will use old gas prices and old assumptions will stay the same. This communication isn\u2019t trivial, but since contracts have very specific interfaces it is not impossible.   This is a reasonable idea - I\u2019ll add it to the list. The main barrier is that it will require either a new consensus field for accounts, or  some other means of communicating EVM versioning. It\u2019s worth noting that this doesn\u2019t require two entirely separate EVMs, just some context that gets passed around for the current execution environment. Nodes already need  most of this functionality to handle previous hard forks that have changed execution rules. One way to handle this would be to introduce a new opcode, along these lines:  VERSION: Pops one element from the stack and changes the execution environment to the specified version. Clears stack and local memory before handing control to the new version, which begins executing at  the next PC value.  Each new contract would then start with a prologue along the lines of PUSH 1 VERSION to enable the new  EVM. This avoids the need  to introduce new consensus data structures. This can even be used for a transition to Web Assembly; contracts  would just start with a prologue that switches the execution environment to EWASM. Alternately, this could be a pseudo-opcode that\u2019s only valid at the start of a contract, for simplicity reasons. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.417540792540793
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "58",
+                    "likes": "1",
+                    "time": "17/01/2019-04:32:05",
+                    "content": "Very well articulated. IMO, this is very similar to challenges faced by microprocessor companies when introducing or modifying architectural features. The underlying micro-architecture can/will change to improve performance/power but existing architectural interfaces/semantics will remain the same or are enhanced with new features via new opcodes. Backward-compatibility and Interoperability are social contracts with developers/users. This may be viewed as legacy baggage but guarantees that code running on one processor will have the same behaviour on any future processor. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.316287878787879
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "59",
+                    "likes": "1",
+                    "time": "17/01/2019-04:57:46",
+                    "content": "Gas usage is exposed to the contract and therefore could have been used to encode certain semantics in it. So changing it in either direction could break existing contracts. It might have been explicitly stated that this could change in future and hence do not rely on it; but if it has been exposed to the developer then there\u2019s no guarantee on how creatively it may have been used.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.190476190476191
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "60",
+                    "likes": "2",
+                    "time": "17/01/2019-05:12:35",
+                    "content": "Versioning might get complicated but don\u2019t see how we can avoid it. Either we version the opcodes i.e. SSTORE, SSTORE2 (similar to CREATE, CREATE2) and run the risk of exhausting one-byte opcodes forcing us to go multi-byte and variable-length opcodes, or we version the EVM semantics. EVM versioning gives the most flexibility IMO. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/subtly",
+                    "index": "61",
+                    "likes": "0",
+                    "time": "17/01/2019-06:25:34",
+                    "content": "    Arachnid:  It was explicitly designed in as an invariant, because it\u2019s useful to be able to reason straightforwardly about \u2018value sends\u2019 while still providing the target contract with the opportunity to execute a little code. I don\u2019t think we should throw that out, even in the (hypothetical and very unlikely) situation that we can without breaking anything already deployed.   It is, as many have pointed out, implied functionality. Saying that it was explicitly designed as an invariant is misleading. There was always an expectation that storage would change because of how economically significant it is and due to the complexity of the EVM\u2019s stack-based execution model. This particular feature was added when the idea of logging was added, and yes, it was added to solve the simple problem \u201cif I receive ether to my code account, how will I know?\u201d. The invariant, if there is one, is: there is enough gas to emit a log when a code account receives ether. The invariant was never that a called code account cannot call another method that modifies storage. Just because the behaviour is default, does not mean that it is an invariant. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.587673611111112
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/subtly",
+                    "index": "62",
+                    "likes": "0",
+                    "time": "17/01/2019-06:26:47",
+                    "content": "Although I agree with @AlexeyAkhunov, I think the best and safest option is 5: to require 5000 gas and refund 4800. This keeps the status quo (safe default) while also enabling all of the benefits of the EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 8.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bradleat",
+                    "index": "63",
+                    "likes": "0",
+                    "time": "17/01/2019-07:24:21",
+                    "content": "Another solution would keep the old mechanics until the last step of transaction where the amount will be refunded. This means that the old sstore gas mechanics dictates how much gas must be available before and during the transaction, but the new mechanics determine how much will be available after the transaction. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.960227272727273
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "64",
+                    "likes": "1",
+                    "time": "17/01/2019-07:59:18",
+                    "content": " Another solution would keep the old mechanics until the last step of transaction where the amount will be refunded. This means that the old sstore gas mechanics dictates how much gas must be available before and during the transaction, but the new mechanics determine how much will be available after the transaction.  This is  basically option 5. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.960227272727273
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "66",
+                    "likes": "1",
+                    "time": "17/01/2019-09:35:28",
+                    "content": "We should also add here proposal #0, which is to drop EIP-1283 as suggested by EIP-1283 Incident Report. For simplicity, security and a more generic past/future friendly framework, we should consider both proposals #0 (drop EIP-1283) and #6 (EVM versioning based opcode/gas/behaviour updates). Once we have #6, we can reconsider EIP-1283 or any of its variants because the impact will be limited to contracts deployed with that latest version. Or, if we are not too concerned about using up one more opcode, we could introduce EIP-1283 as SSTORE-CHEAPER (as @lrettig suggested) for now - proposal #7 which needs to be added to the above list. We will have to be judicious about opcode allocation going forward but this will avoid having to design an EVM versioning system and manage complex deployment/interaction scenarios. And this might suffice if the current EVM will eventually be replaced (before the opcodes run out) by an EWasm engine in Serenity Phase 2. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8353174603174605
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ethernian",
+                    "index": "67",
+                    "likes": "0",
+                    "time": "17/01/2019-12:31:15",
+                    "content": "    mandrigin:  we will have EVM0 (pre Constantinople) and EVM1 (Constantinople). When a new contract (running EVM1) calls anything that is deployed before that, EVM1 communicates to EVM0, and the old contract will use old gas prices and old assumptions will stay the same.   Consider a Factory creating new Contract for every new user (like a Multisig). It could be a hardcopy or just a delegate wrapper. How versioning should work in this case? Looks like it should stick to Factory\u2019s EVM version, even the newer EVM was introduced. Should we give a possibility to \u201cupgrade\u201d the EVM version? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.506493506493506
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mandrigin",
+                    "index": "68",
+                    "likes": "0",
+                    "time": "17/01/2019-13:59:01",
+                    "content": "Yeah, that is a great edge case you have noticed. Theoretically, there should be some way to re-deploy contracts and upgrade them. And the current upgradeability scheme doesn\u2019t seem to be well suited for it, so it needs to be though through. Any child contract that is deployed by a Factory should theoretically share the same EVM version because otherwise it would be the same scenario as with this Constantinople situation: you have a vulnerable contract and you can\u2019t do anything about it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.214285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mandrigin",
+                    "index": "69",
+                    "likes": "0",
+                    "time": "17/01/2019-14:05:05",
+                    "content": "yeah, one of the advantages to the proposal #6 is that it allows more aggressive improvements to the EVM in a safer way. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MrChico",
+                    "index": "70",
+                    "likes": "1",
+                    "time": "17/01/2019-16:55:15",
+                    "content": "I support #5, or #0, dropping the EIP. For better or for worse, gas behaviour is a part of EVM semantics, and any direct change in gas costs will have possibility of changing the behaviour of already deployed contracts. The only way we can reduce the cost of transactions without changing their semantics is by putting the discount into the refund bucket. Making changes to account for the gas stipend arbitrary number of 2300 would imply that contracts written with call.gas(2031).value(x) would now have changed behaviour.  This is why I do not support proposal #3 or #1. And as I final note, I don\u2019t think changes in the EVM should not take into account how solidity writes contracts. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.083333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cheeselord1",
+                    "index": "71",
+                    "likes": "0",
+                    "time": "17/01/2019-17:42:16",
+                    "content": "I think #5 is the cleanest way of fixing the issue. It maintains nearly all the benefits of EIP-1283 (lower gas usage for certain contracts). Also should not break any existing functionality since base SSTORE cost is still 5000 and any discount is handled in refunds. Though if #5 involves a significant delay to getting Constantinople out the door, would prefer to just drop the EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.861607142857142
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/montyly",
+                    "index": "72",
+                    "likes": "3",
+                    "time": "17/01/2019-23:31:17",
+                    "content": "Hello, Trail of Bits has reviewed the six proposals from the Ethereum Magicians forum for resolving the security issues with EIP-1283. All of the six proposals are incomplete or introduce undesirable changes in existing contracts. We recommend selecting one of the following paths forward:  Abandon EIP-1283 and avoid implementing it at all. Implement our own proposal #7 to address the security risks of EIP-1283.  We have detailed proposal #7 in Appendix C of our EIP-1283 report document. You can find the latest copy (1.2) of it here: https://github.com/trailofbits/publications/blob/master/reviews/EIP-1283.pdf ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MrChico",
+                    "index": "73",
+                    "likes": "0",
+                    "time": "18/01/2019-01:15:13",
+                    "content": "What ToB outlines as prop #7 is how I interpreted that #5 would work. Of course the gas discount should be given in the refund in all cases, not just the 5000 dirty store case. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 2.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "74",
+                    "likes": "0",
+                    "time": "18/01/2019-02:12:30",
+                    "content": "    montyly:  All of the six proposals are incomplete or introduce undesirable changes in existing contracts.   Can you please elaborate? Dismissal without discussion is not very useful. Edit: Sorry, I see they are discussed in the new version of the report. Addressing these:     montyly:   Implement our own proposal #7 to address the security risks of EIP-1283.    I believe this is #5. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.620979020979021
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "75",
+                    "likes": "0",
+                    "time": "18/01/2019-07:46:13",
+                    "content": "    Arachnid:    Implement our own proposal #7 to address the security risks of EIP-1283.   I believe this is #5.   So do I, more or less at least. However, there\u2019s one additional thing in their #7.  Currently, a refund cannot exceed more than half of the gas used per transaction. We may want these proposed refunds to bypass this upper bound in order to fully take advantage of indended deductions.  IMO, this would be a DoS vector. That would mean that a user can submit a tx with a lot of gas, which looks juicy (maybe even with a high gasPrice). After executing the transaction, however, the actual gas usage would be way below the actual corresponding work done by the miner (and all nodes processing the tx). The gas refund is really refunded on the expense of the miner. It becomes a mismatch between work performed and work paid for, which is inherently dangerous. Additionally, there\u2019s\u2019 a high likelihood that such a tx would never be included in a block, since it doesn\u2019t actually pay for itself properly. So these transactions could easily slosh around in pools on the network and cause problems. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.2651315789473685
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MrChico",
+                    "index": "76",
+                    "likes": "0",
+                    "time": "18/01/2019-09:28:04",
+                    "content": " IMO, this would be a DoS vector. That would mean that a user can submit a tx with a lot of gas , which looks juicy (maybe even with a high gasPrice ). After executing the transaction, however, the actual gas usage would be way below the actual corresponding work done by the miner (and all nodes processing the tx). The gas refund is really refunded on the expense of the miner.  I don\u2019t think this is a valid argument. It is already the case that miners do not know beforehand how much gas will actually end up being used in a tx. And refunds should only be given out when there actually is less work to be done, isn\u2019t this the motivation for the discount in the first place? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.165416666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/equivrel",
+                    "index": "77",
+                    "likes": "0",
+                    "time": "18/01/2019-09:49:45",
+                    "content": "I agree. I think that moving a gas discount from run-time to refund is basically a no-op from the miner point of view, since you could achieve the same effect you are describing by just submitting transactions with a high gas limit that don\u2019t actually consume much gas. On the other hand, this is semantically preferable since you can play around with the refund without affecting run-time semantics of the contract, which is exactly what we want to avoid as much as possible if we want contracts to be truly \u201cimmutable\u201d. I also agree that ToB\u2019s #7 is probably how most people expected #5 to work. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.491666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "78",
+                    "likes": "2",
+                    "time": "18/01/2019-09:52:40",
+                    "content": "    MrChico:  I don\u2019t think this is a valid argument. It is already the case that miners do not know beforehand how much gas will actually end up being used in a tx   Well, not quite. They know that either  If the tx goes OOG or error, they\u2019ll get the full gas without doing all the corresponding work If the tx exit\u2019s early, they\u2019ll get the gas corresponding to that amount of work done. Since gasUsed is lower than gas, only gasUsed will count towards the block gas used, so they can fit another tx in with the gas that was not used. If there\u2019s a refund, at least they get paid for half of the work done  I thing bullet three is quite important. Essentially, why would a miner ever choose to include a tx which they get nothing in transaction fees for (in the extreme that there was no limit on the refund) I\u2019m not saying that the whole thing is bad, just that the comment about removing the refund cap is not a good idea. EDIT: another example from a malicious miner point of view: I could make a tx which first burns throough 2M gas in a spin-loop or whatever, then clear some storage that I have previously filled (or gastoken), earn 2M of refunds. After tx, only 1 gas was consumed. So I can fill a block with 8M of those transactions (well, maybe keep it a bit lower than that  ), and mine that block. It would grind everyone to a halt, essentially allowing me to mine blocks with unlimited gasLimit amount of work in it, but still within the gasLimit. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.199561403508772
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/montyly",
+                    "index": "79",
+                    "likes": "0",
+                    "time": "18/01/2019-09:57:59",
+                    "content": "If #7 is the actual intended behavior for #5, I would recommend changing the proposal to state that the gas cost is not 5,000 gas, but the original gas cost pre-EIP. A misunderstanding of EIP 1283 was already the root cause of the Ropsten fork, so I think it\u2019s crucial to be as precise as possible, to remove any assumption on how the reader will understand the proposal. That would help the correct review from third-party. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.775
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MariusVanDerWijden",
+                    "index": "80",
+                    "likes": "0",
+                    "time": "18/01/2019-10:02:56",
+                    "content": "Has someone already proposed to create a new stack for every external function call, by doing so, we could prevent called functions from changing the state of the calling function. Or we could use a shadow stack that can not be written by external functions and compare it to the stack after the external function was completed. Edit: Nvm, I just realized I did not understand the attack correctly. I thought it was about smashing the existing stack ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.170454545454546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "81",
+                    "likes": "3",
+                    "time": "18/01/2019-10:02:57",
+                    "content": "    montyly:  A misunderstanding of EIP 1283 was already the root cause of the Ropsten fork, so I think it\u2019s crucial to be as precise as possible, to remove any assumption on how the reader will understand the proposal. That would help the correct review from third-party.   Nitpick, it actually wasn\u2019t. An early theory was that there was a misunderstanding whether it was per-context or per-tx, but that wasn\u2019t the case. The ropsten fork came because of an erroneous assumption in the implementation details, caused by having per-context refund counters instead of global refund counter. The assumption was that they could not go negative, which is only true for the global one. It\u2019s true that EIP did not clarify this, but assumed the use of a global refund counter - a fair assumption imo, since YP only defines it as such. @MariusVanDerWijden I think you\u2019ll have to flesh out some more details, I don\u2019t follow. There\u2019s already a new stack for every external function call. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.456937799043063
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alex-forshtat-tbk",
+                    "index": "82",
+                    "likes": "0",
+                    "time": "18/01/2019-12:02:24",
+                    "content": "    montyly:  Proposal 1: Add a condition to SSTORE that reverts if less than 2300 gas remains This proposal is meant to capture reentrancies due to Solidity send and transfer functions, which provide only 2300 gas. This proposal changes the semantics of existing contracts. Moreover, it does not prevent reentrancy for calls with gas between 2300 and the minimal SSTORE gas price of 5000. A contract providing 4999 gas would be safe from reentrancy based on state variables changed prior to EIP-1283, but would become vulnerable with this proposition. We do not recommend this proposal   Could you please elaborate on what the semantic change in this context means? Also, would you recommend that SSTORE revert if less than 5000 gas remains, and if not, why? Regarding the initial choice of 2300 as minimal remaining gas as opposed to 5000. The gas cost of opcodes are not invariant and contract developers are warned about it, so providing 4999 gas is a logical mistake in my opinion, and I doubt that developers who had made it should be protected by the EVM, even if there is an instance of such contract on the mainnet. Relying on a gas stipend to be lower than storage write cost, on the other hand, seemed to be the original intention since the very beginning. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.169270833333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "83",
+                    "likes": "2",
+                    "time": "18/01/2019-13:24:31",
+                    "content": "Trying to provide a draft what #5 and #7 would look like. #5:     If current value equals new value (this is a no-op), 200 gas is deducted.     If current value does not equal new value         If original value equals current value (this storage slot has not been changed by the current execution context)             If original value is 0, 20000 gas is deducted.             Otherwise, 5000 gas is deducted. If new value is 0, add 15000 gas to refund counter.         If original value does not equal current value (this storage slot is dirty). Apply all of the following clauses.             Deduct 5000 gas, and add 4800 gas to refund counter.             If original value is not 0                 If current value is 0 (also means that new value is not 0), remove 15000 gas from refund counter. We can prove that refund counter will never go below 0.                 If new value is 0 (also means that current value is not 0), add 15000 gas to refund counter.             If original value equals new value (this storage slot is reset)                 If original value is 0, add 19800 gas to refund counter.                 Otherwise, add 4800 gas to refund counter.  #7:     If current value equals new value (this is a no-op).         If current value is 0, and new value is not 0, deduct 20000 gas, and add 19800 gas to refund counter. Otherwise, deduct 5000 gas, and add 4800 gas to refund counter.     If current value does not equal new value         If original value equals current value (this storage slot has not been changed by the current execution context)             If original value is 0, 20000 gas is deducted.             Otherwise, 5000 gas is deducted. If new value is 0, add 15000 gas to refund counter.         If original value does not equal current value (this storage slot is dirty). Apply all of the following clauses.             If current value is 0, and new value is not 0, deduct 20000 gas, and add 19800 gas to refund counter. Otherwise, deduct 5000 gas, and add 4800 gas to refund counter.             If original value is not 0                 If current value is 0 (also means that new value is not 0), remove 15000 gas from refund counter. We can prove that refund counter will never go below 0.                 If new value is 0 (also means that current value is not 0), add 15000 gas to refund counter.             If original value equals new value (this storage slot is reset)                 If original value is 0, add 19800 gas to refund counter.                 Otherwise, add 4800 gas to refund counter.  Both look like fine fix. But still, compared with #1, I have a slight feeling that this tries to preserve an invariant that we really didn\u2019t have. This is an good thing to discuss whether we should preserve those as it\u2019s about immutability. However, I want to note that any hard fork related to EVM would inevitably break at least those contracts that is designed specifically to be broken by it. (For example, any new opcode breaks a contract that just have this opcode byte, any gas cost change prevents an assertion that GAS must equal to a specific value.) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.428872053872054
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "84",
+                    "likes": "0",
+                    "time": "18/01/2019-17:18:08",
+                    "content": "    sorpaas:  (For example, any new opcode breaks a contract that just have this opcode byte, any gas cost change prevents an assertion that GAS must equal to a specific value.)   I find this a really interesting point to discuss on the \u201cethical\u201d side of forks. The fork is now delayed because this introduces reentrancies into contracts and some of them have been found. The main reason I think for the delay is because most smart contract writers have assumed that send/transfer guards against reentrancies while actually this is not a feature of them: it is just that on the current network it is indeed not possible. Because most developers were \u201ceducated\u201d this way we can assume there are \u201cmany\u201d contracts on the network which can now be attacked and therefore we delay. But this poses the question. What if there is a contract with 1 ether in it. The only way for the owner to withdraw this Ether is to self-call into the contract and run into an INVALID opcode (which is not the designated INVALID opcode but just a random one which is currently not assigned (e.g. CREATE2 opcode pre-constantinople)). If we now fork we break how this contract works. More fundamentally: the state change of a single TX pre-fork is now different than the state change of the same TX after-fork (and of course this can fundamentally be expanded to multi-tx state changes). Do we now move on with the fork? I think everyone here would say \u201cyes, of course, because this contract looks like it wants to prevent a fork to use this specific opcode which was INVALID before but we now want to use it for this EIP\u201d. Or: \u201cyes, this is the only contract affected\u201d. Or: \u201cthere only is one ether in it\u201d. But is this ethical? What if there was 1 million Ether in it? How about 10 million? What if there are 10 contracts to be found? What about 100? What if 1% of all contracts are affected? Can someone take the network hostage (against forks) by creating a contract which opposes a certain fork? Examples are hence the above: can only withdraw Ether if the opcode is INVALID. You can expand this to ALL opcodes which are currently INVALID - if these are VALID opcodes (you would need some tricks here to make this contract of course because of stack management - but it is hypothetical for now) then this Ether is locked. Or another example raised by @sorpaas the assertion that some opcode uses certain GAS. Could I have taken the network hostage by assering that extcodesize uses 20 gas (pre Tangerine Whistle) instead of 700? These are nitpicky things to think about but I think we need to be more clear about what kind of changes we can expect in the future and what \u201cimmutable\u201d features Ethereum has. Will gas stipend ever change? Etc. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.488554374918011
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "85",
+                    "likes": "1",
+                    "time": "18/01/2019-19:32:27",
+                    "content": "We have changed semantics before. I think the general way of thinking has been like this\u2026  Has the contract developer, who\u2019s contract semantics may change, done a reasonable thing, or just plain stupid?  For example, we haven\u2019t been too concerned with changing some gascosts, simply because ith has been a best practice for years not to hardcode expectations on gascosts. Also, in the case of invalid opcodes, could a developer just make up an opcode and hope that it is unallocated forever? Why would someone make that assumption? Additionally, he\u2019d have to code that up in assembly, since a soldity dev can\u2019t add his own opcodes. In the current case, it has been \u2013 if not best practice \u2013 at least commonly agreed that a solidity send and transfer cannot lead to state changing re-entrancy. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.879870129870129
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "86",
+                    "likes": "0",
+                    "time": "18/01/2019-20:31:34",
+                    "content": "    holiman:  IMO, this would be a DoS vector. That would mean that a user can submit a tx with a lot of gas , which looks juicy (maybe even with a high gasPrice ). After executing the transaction, however, the actual gas usage would be way below the actual corresponding work done by the miner (and all nodes processing the tx). The gas refund is really refunded on the expense of the miner. It becomes a mismatch between work performed and work paid for, which is inherently dangerous.   In the case of net gas metering, the mismatch is  in the other direction: contracts are paying far more gas  than is required for SSTOREs that don\u2019t result in any change on disk. Refunds would simply level that out, so inn t his case I believe it would be safe to have an uncapped refund counter.     holiman:  I thing bullet three is quite important. Essentially, why would a miner ever choose to include a tx which they get nothing in transaction fees for (in the extreme that there was no limit on the refund) I\u2019m not saying that the whole thing is bad, just that the comment about removing the refund cap is not a good idea.   I don\u2019t believe anyone is suggesting removing the refund cap as a  whole - only  that refunds due to the gas savings from 1283 should be unlimited. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.981547619047619
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "87",
+                    "likes": "0",
+                    "time": "18/01/2019-21:37:13",
+                    "content": "    Arachnid:  I don\u2019t believe anyone is suggesting removing the refund cap as a whole - only that refunds due to the gas savings from 1283 should be unlimited.   Ah, yeah maybe that was the intention. While that does get around the stuff I wrote, it\u2019s not exactly straightforward either. Instead of keeping a global refund counter, where we eventually just cap and apply, we would instead have to have two separate refund counters, where one is uncapped, and the other capped. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.802083333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "88",
+                    "likes": "0",
+                    "time": "18/01/2019-22:11:06",
+                    "content": "Yeah, that\u2019s the reason why from this thought experiment I would have a slight preference towards #1, compared with #5 or #7. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rajeevgopalakrishna",
+                    "index": "89",
+                    "likes": "1",
+                    "time": "19/01/2019-14:09:46",
+                    "content": "    holiman:  We have changed semantics before. I think the general way of thinking has been like this\u2026  Has the contract developer, who\u2019s contract semantics may change, done a reasonable thing, or just plain stupid?  For example, we haven\u2019t been too concerned with changing some gascosts, simply because ith has been a best practice for years not to hardcode expectations on gascosts. Also, in the case of invalid opcodes, could a developer just make up an opcode and hope that it is unallocated forever? Why would someone make that assumption? Additionally, he\u2019d have to code that up in assembly, since a soldity dev can\u2019t add his own opcodes. In the current case, it has been \u2013 if not best practice \u2013 at least commonly agreed that a solidity send and transfer cannot lead to state changing re-entrancy.   Not sure if there is already one but wouldn\u2019t it be useful to have a \u201ccontract developer\u2019s manual\u201d (similar to \u201csoftware developer\u2019s manual\u201d for microprocessors) whose instruction set reference explains in detail the operation of every opcode and what assumptions developers may make or not? A more descriptive and less formal version of YP\u2019s Appendix H.2 perhaps. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.8028273809523805
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "90",
+                    "likes": "3",
+                    "time": "19/01/2019-14:21:53",
+                    "content": "We absolutely need this. I have not been able to find an actual list of all Ethereum opcodes around (which makes me question how clients are developed in the first place - there must be some centralized place where developers of these clients find an overview of what their clients should do). For example this evm-opcode list of Trail of Bits shows opcodes which either have no description or are not in the Yellow Paper (I have not checked if TXEXECGAS actually exists or not (EDIT: does not exist - appears to be tx.gas instead of msg.gas proposed in some non-accepted EIP)). If there is a place where this is all documented, please let me know. IMO, this documentation should be either the Yellow Paper edited or the Jello Paper (the \u201creadable\u201d Yellow Paper) edited in such way that it provides an overview of what EVM features are and what a developer can expect to be immutable. Examples are that semantics of non-invalid opcodes do not change, with exception to gas usage. Another thing which should be in there is what developers can expect the gas stipend to be immutable or not. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.525
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "91",
+                    "likes": "0",
+                    "time": "19/01/2019-15:45:50",
+                    "content": "    holiman:  We  have  changed semantics before. I think the general way of thinking has been like this\u2026 Has the contract developer, who\u2019s contract semantics may change, done a reasonable thing, or just plain stupid?   I disagree for reasons I explained here:     Immutables, invariants, and upgradability EIPs       One of the critical meta-questions raised by Remediations for EIP-1283 reentrancy bug and the delay of the Constantinople upgrade is: Precisely what on Ethereum is immutable and what behavior should be considered invariant?  Since irregular state transitions are outside the scope of this conversation, for sake of argument let\u2019s all agree that code and data (storage) are immutable.  However, we\u2019re left with the challenge that EVM semantics can and do change during a hard fork, the most germane ex\u2026     Intent is subjective and hard to establish and I don\u2019t think we core developers should be in the business of trying to establish intent. Maybe someone wrote something a certain way on purpose. Maybe they made a mistake. In any case, this is a social question, not a technical question. The underlying question here is, what social contract do contract developers have with Ethereum, explicit or implied? ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/remediations-for-eip-1283-reentrancy-bug/2434/18",
+                        "https://ethereum-magicians.org/t/core-devs-discussion-about-a-vulnerability-in-constantinople-delay-of-the-upgrade/2427"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.944444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "92",
+                    "likes": "0",
+                    "time": "19/01/2019-22:12:59",
+                    "content": "I\u2019m confused. In the first part, you\u2019re saying that we should not be the judge of contract developer (that is, we don\u2019t have a saying in whether a contract is doing a reasonable thing, or just \u201cplain stupid\u201d). Thus we should make sure all upgrades to be backwards-compatible. However, one of the solutions you give is that we make changes by introducing new opcodes. Doesn\u2019t new opcodes break backwards-compatibility for those contracts contained that new opcodes, if we don\u2019t consider contract developers\u2019 intent? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.685064935064935
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "93",
+                    "likes": "0",
+                    "time": "19/01/2019-23:51:18",
+                    "content": "This is an extreme case. A contract should not be using an unused opcode. IMHO that should be a VM error (though I think in EVM it may be treated as a noop). Anyway we can get around this too with VM versioning. See Immutables, invariants, and upgradability. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "94",
+                    "likes": "0",
+                    "time": "20/01/2019-00:40:46",
+                    "content": "Following what you wrote above, if we don\u2019t consider contract developers\u2019 intent, I disagree that this would be an \u201cextreme\u201d case compared with other cases you provided. We can well have developers who used customized compilers before we got designated invalid instruction, and that compiler happened to use another opcode for out-of-gas revert (because let\u2019s face it, 0xfe isn\u2019t that obvious, not like 0xff or 0x00, both of which have been used for other proposes). For the same reason, I argue changing invalid opcode from out-of-gas revert to noop would be a bad idea. I do agree with you that account versioning (given it\u2019s well designed) would solve the problem you wrote, but I think it\u2019s a logical error if we use new opcodes to solve the problem you wrote. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.686868686868687
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "95",
+                    "likes": "0",
+                    "time": "20/01/2019-01:04:50",
+                    "content": "    sorpaas:  For the same reason, I argue changing invalid opcode from out-of-gas revert to noop would be a bad idea.   I agree that this should not be changed now, but I consider this a design flaw in EVM. There should be a single \u201ccorrect\u201d opcode for OOG revert, and all other unimplemented opcodes should cause a VM error. When there are fatal, low-level flaws in your VM design (and EVM has others), the only option may be to start from scratch\u2013in our case, with empty shards in Eth2 and/or with Ewasm. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.169642857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "96",
+                    "likes": "2",
+                    "time": "20/01/2019-23:08:19",
+                    "content": "    jochem-brouwer:  We absolutely need this. I have not been able to find an actual list of all Ethereum opcodes around (which makes me question how clients are developed in the first place - there must be some centralized place where developers of these clients find an overview of what their clients should do).   This is in the yellow paper - albeit, it\u2019s not very readable. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.678571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/benjamincburns",
+                    "index": "97",
+                    "likes": "2",
+                    "time": "24/01/2019-23:34:19",
+                    "content": "If it helps the conversation/decision any, we\u2019ve released an experimental version of ganache-cli which allows the user to set a flag to disable EIP-1283. Installation instructions are available at our release page here: https://github.com/trufflesuite/ganache-cli/releases/tag/v6.4.0-eip1283.0 tl;dr: npm install -g ganache-cli@eip1283 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "98",
+                    "likes": "0",
+                    "time": "19/07/2019-00:00:17",
+                    "content": "It seems that on today\u2019s ACD call (https://www.youtube.com/watch?v=41kiRf1E-jI) there was some agreement to consider EIP-1283 again for the next update (Istanbul). It is considered together with http://eips.ethereum.org/EIPS/eip-1706 (or an alternative solution proposed by @chfast accomplishing the same fix). This has been documented in EIP-2200. I am still worried there might be another bug in EIP-1283, because it decreases costs greatly. And we don\u2019t seem to have another \u201cgood name\u201d for a new Petersburg update. @sorpaas how can we ensure that more testing and review before Istanbul would be able to spot issues? @holiman what would be the best way to look for issues (e.g. parts of EVM affected, other potential cases which could affect already deployed contracts)? Would an \u201caudit\u201d useful in any way? Would an implementation in KEVM help detecting any potential issues? ",
+                    "links": [
+                        "http://eips.ethereum.org/EIPS/eip-1706",
+                        "https://github.com/ethereum/EIPs/pull/2200"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.414256198347108
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "99",
+                    "likes": "0",
+                    "time": "19/07/2019-00:10:16",
+                    "content": "We have many other gas reduction EIPs this time. All of them will break backward compatibility in some ways. I wouldn\u2019t really think 1283 is any more dangerous compared with them. As for our past experience, if we have issues, it is in most cases not about the EIP itself, but about how it interacts with existing contracts. What we can do is to reach out to developers in the ecosystem for feedbacks, as much as we can, to ensure the vast majority of the contracts do not have issues. That\u2019d actually be enough. But of course, for all those gas reduction EIPs, we can just use account versioning to avoid any potential backward compatibility problems. But we did not have agreement on this point yet (not only 1283, but also several other EIPs). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.285714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "100",
+                    "likes": "0",
+                    "time": "19/07/2019-00:39:24",
+                    "content": "    sorpaas:  We have many other gas reduction EIPs this time.   This is true. I\u2019m aware that 1884 and 2045 propose changes/reductions. Is there any other left in Istanbul proposing reductions? However, only 1283 reduces the cost of SSTORE, hence it is the only one having a potential effect cross call frames. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.425
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/haydenadams",
+                    "index": "101",
+                    "likes": "0",
+                    "time": "19/07/2019-02:13:14",
+                    "content": "Do you have any reasons for thinking this other than general concern? This EIP makes mutex way cheaper which is a much better pattern for limiting reentrancy than calls with a max gas limit of 5000. Long term it feels much safer to have. Also, no live contracts were ever found that are vulnerable to even the original issue is fixed in 1706. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.267676767676768
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "102",
+                    "likes": "0",
+                    "time": "19/07/2019-17:15:36",
+                    "content": "My reason is that the EIP was out for many months and the issue was only discovered a few days prior to launching on mainnet. Once the risk at that time was averted, I don\u2019t think anyone kept reviewing the change for other issues. Now we\u2019ll have a single month for people to focus on it again. I don\u2019t think we can afford another case of finding an issue last minute. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.073979591836735
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/haydenadams",
+                    "index": "103",
+                    "likes": "0",
+                    "time": "21/07/2019-17:51:00",
+                    "content": "I barely consider the other issue to be an issue since there wasn\u2019t a single live contract found that it would break, but I do see your point. Personally, I don\u2019t think we can afford another hardfork without some form of this EIP getting through.   The gas cost of multi-step token transfers is absurdly high right now, and very limiting for DAPP developers. There are a number of uniswap extension contracts I want to write that will have prohibitively high gas costs without this EIP, and totally reasonable costs with it.   This EIP finally makes mutex affordable which is much better pattern for stopping re-entrancy. The only reason there was any issue is people using gas limited sends to prevent re-entrancy, which is an anti-pattern. Reentrancy can become almost a non-issue if this upgrade goes through and Solidity adds the nonreentrant modifier like vyper did. This is way better than the current status quo. https://github.com/ethereum/vyper/issues/1204   It add significant scaling to Ethereum 1.0 at essentially no cost (smarter gas pricing).   In my opinion this EIP is the lowest hanging fruit in ETH 1.0 improvements today and it would be a huge mistake to kill it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.710321257689679
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "104",
+                    "likes": "0",
+                    "time": "08/08/2019-12:30:49",
+                    "content": "For reference, there is a new proposal coming from @AlexeyAkhunov which I\u2019m now promoting which is something in between option 5 and 3. Already proposed here as number 6.     k06a:   Cost could be 2300 gas and 2100 gas refund instead of just cost 200 gas      github.com/ethereum/EIPs       Rebalance net-metered SSTORE gas cost with consideration of SLOAD gas cost change     by sorpaas   on 09:33PM - 18 Jul 19 UTC   4 commits   changed 1 files   with 96 additions   and 0 deletions.         I did quick analysis of @AlexeyAkhunov alternative proposal to charge min 2300 for SSTORE but add 1500 refund more. None of the EIPs list use cases for it, so I took a simple lock/mutex which is SLOAD  # check the lock status SSTORE 0 -> 1 # lock ... # do something, e.g. make a call SSTORE 1 -> 0 # unlock  @AlexeyAkhunov\u2019s proposal (let\u2019s call it variant 2) looks pretty solid because SSTORE / SLOAD will cost 800 now (I still have 200 in my mind). In simplest operation of a CALL costing 700 the variant 2 is less than 7% more expensive in the end. For the case where in variant 1 we get full refund and the protected operation cost ~17k the difference is less than 4%. In the final case where variant 2 also get full refund the protected operation cost ~20k (and the end costs are the same obviously). https://docs.google.com/spreadsheets/d/1l6HHVAEcmJyb76J-trNQQFD1lipjkBkl5-QYx3ME2mc/edit?usp=sharing   I admit I might have missed some responses in this thread, but critic found for 3/5 like options are:     tkstanczak:  3,4,5 - all seriously decrease net gas metering impact   I don\u2019t believe the 4% gas cost increase in worst case matches with \u201cseriously\u201d.     jochem-brouwer:  I don\u2019t like this one because now you have to forward much more gas than which is actually used.   I can try to add information how much gas in advance you need to provide in transaction to the spreadsheet. But so far \u201cmuch more\u201d is not very precise figure. \u2013 Also, would be nice to put #6 and #7 in the top comment. ",
+                    "links": [
+                        "https://github.com/sorpaas",
+                        "https://github.com/ethereum/EIPs/pull/2200",
+                        "https://github.com/sorpaas",
+                        "https://github.com/ethereum/EIPs/pull/2200",
+                        "https://github.com/AlexeyAkhunov",
+                        "https://github.com/AlexeyAkhunov",
+                        "https://docs.google.com/spreadsheets/d/1l6HHVAEcmJyb76J-trNQQFD1lipjkBkl5-QYx3ME2mc/edit?usp=sharing"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.399836829836829
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "107",
+                    "likes": "0",
+                    "time": "08/08/2019-14:33:01",
+                    "content": "What I meant by \u2018seriously decreasing the impact\u2019 is that the final gas cost is less important for scaling here than the gas limit of a transaction. If I want to execute 100 SSTOREs out of which 99 are just updating the single storage address I will need at least 21000 + 100 * 5000 gas now (gas limit of 521000), with the EIP 1283 it was meant to be 21000 + 5000 + 99 * 200 (gas limit of 45800). With the 2300 + 2100 refund the gas limit required would be 21000 + 5000 + 99 * 2300 (253700). Maybe we can test the transaction gas limit against the gas used - refund? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.8619047619047615
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "108",
+                    "likes": "0",
+                    "time": "08/08/2019-15:07:05",
+                    "content": "    tkstanczak:  Maybe we can test the transaction gas limit against the gas used - refund?   We cannot because this test is done before the transaction is executed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "109",
+                    "likes": "0",
+                    "time": "14/08/2019-15:06:27",
+                    "content": "I meant testing the remaining gas in the transaction - transaction limit vs currently used gas. So if we are executing and having 100k gas used and 70k refund then even if tx gas limit is 51k it would still allow to continue execution. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "110",
+                    "likes": "0",
+                    "time": "14/08/2019-15:26:02",
+                    "content": "That would be quite excessive change (considering the scope of this EIP) with a lot of security considerations needed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "111",
+                    "likes": "0",
+                    "time": "15/08/2019-07:44:49",
+                    "content": "    tkstanczak:  With the 2300 + 2100 refund the gas limit required would be 21000 + 5000 + 99 * 2300 (253700). Maybe we can test the transaction gas limit against the gas used - refund?   See https://github.com/ethereum/EIPs/pull/2200#issuecomment-521546302  If the 2300 gas is to guard against reentrancy following a transfer, then 1600 will also suffice as the underlying CALL will cost at least 700.  So in actual fact, we could do 21000 + 5000 + 99 * 1600 = 184400, which is at least better than 253700 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.9
+                }
+            ]
+        }
+    ],
+    "group_index": "648"
+}

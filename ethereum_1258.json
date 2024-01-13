@@ -1,0 +1,138 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/simple-way-to-decrease-network-gas-usage/5524",
+            "title": "Simple Way to Decrease Network Gas Usage ",
+            "index": 5524,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "gas"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/junderw",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "10/03/2021-05:56:35",
+                    "content": "Sort the top gas spenders of the past 24 hours and what do you see? Centralized Exchanges as far as the eye can see. (Also, it is very common for exchanges to have multiple accounts splitting responsibilities like forwarding funds from deposit addresses etc.) \u30b9\u30af\u30ea\u30fc\u30f3\u30b7\u30e7\u30c3\u30c8_2021-03-10_14-29-181375\u00d7924 117 KB Even if you sort by the largest gas guzzler contracts, what do you see (besides Uniswap)? ERC-20 stable coins. Who uses ERC-20 stable coins the most (by direct call, not internal call)? Centralized Exchanges. \u30b9\u30af\u30ea\u30fc\u30f3\u30b7\u30e7\u30c3\u30c8_2021-03-10_14-32-411376\u00d7926 135 KB What can we do that is easy and will decrease the footprint of CEX on Ethereum? Answer Add a memo field in the transaction. This can be added during the London hard fork. It can be inserted after the data field, and each byte added to memo will cost the same as calldata bytes (iirc. 16 gas for non-zero byte, 4 gas for zero byte) This memo should not be accessible from EVM. Why not just use the data field? While txes to EOA accounts would be fine, ERC20 transactions would need to append the memo to the end of the transfer calldata. This might be fine now, but Solidity dev has said that in the future Solidity might check upper bounds on calldata. Also there is no guarantee that contracts don\u2019t revert on extra data. Why make memo invisible to EVM? This is to prevent contracts from preventing memos. Why allow useless data? Set a max size for memo if that worries you. But tbh as long as there is a gas cost for bytes it shouldn\u2019t be a problem. How does this lower gas usage? Currently, most exchanges do the following:  Deposit account is EOA hot wallet. User sends to deposit EOA (21000 gas (40~60k for ERC20)) X deposit count Deposit sends to central single wallet (hot or cold). (21000 gas (40~60k for ERC20)) X deposit count  This essentially doubles the gas usage that is actually needed. If there was a memo field, there could be an address format that specifies the memo field to be an identifier for each user. Or (like XRP and XLM) we could just tell them to manually copy paste the memo data. Then each deposit would all be sent to the same account, no need to double the gas usage by creating a new tx. Related threads I have created in the past.     EIP: Add memo to Transaction (Requires hard fork) EIPs       This is related to EIP-2876  The following idea is an alternative to the above EIP for deposit systems (centralized exchanges and merchants being major use cases) to differentiate funds moving toward a single account.  By adding a memo space (it can be small and very limited, 8 bytes etc.) all deposits can be sent to one single cold wallet account, and the deposit watching system could just check the memo for an identifier.  This would allow for apps like BTCPay to easily support ETH deposits, E\u2026         EIP-2876: Deposit contract and address standard EIPs       This ERC defines a simple contract interface for managing deposits. It also defines a new address format that encodes the extra data passed into the interface\u2019s main deposit function.  EIP is here: https://eips.ethereum.org/EIPS/eip-2876  Sample Implementation is linked in the EIP.  One major question brought up: Why not EIP-681? It also supports ERC-20 which many exchanges need.  I mention why no ERC-20 support is not an issue in the EIP (separation of logic and keys) and as for why not EIP-681\u2026     EIP2876 is \u201chow do we do this without a hard fork? (assuming memo feature fails)\u201d I think we can use the address format from EIP2876 as a format that exchanges can use with each other. I will write up an EIP about this hard fork proposal, and modify EIP2876 to focus on the address format, and switch between the Deposit interface or the memo field depending on whether the hard fork change passes. I like the discussions on other scaling methods, but there are some low hanging fruit here that can really help with congestion. ",
+                    "links": [
+                        "https://ethereum-magicians.org/uploads/default/original/2X/9/915f91102881edac3b7d68cf56d96ab04a191502.png",
+                        "https://ethereum-magicians.org/t/eip-add-memo-to-transaction-requires-hard-fork/4982",
+                        "https://eips.ethereum.org/EIPS/eip-2876",
+                        "https://ethereum-magicians.org/t/eip-2876-deposit-contract-and-address-standard/4504",
+                        "https://eips.ethereum.org/EIPS/eip-2876"
+                    ],
+                    "GPT-summary": "The author proposes adding a memo field to transactions to decrease the gas usage of centralized exchanges on Ethereum. The post explains the benefits of this proposal and addresses potential concerns. The post also references related threads and proposals and invites collaboration and feedback.",
+                    "GPT-proposal-categories": [
+                        "Interoperability and Scalability",
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "Board composition",
+                        "Law and regulations"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.0111598124098125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/junderw",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "10/03/2021-05:59:40",
+                    "content": "@poojaranjan and myself discussed this issue along with the EIP I have proposed.      ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "3",
+                    "likes": "4",
+                    "time": "10/03/2021-08:20:17",
+                    "content": "Several years ago, we (IIRC in particular @Arachnid) tried to convince centalized exchanges to use the calldata. And make contracts, essentially (pseudocode): function deposit(uid) payable{   assert( checksum_ok(uid))   emit Paid( uid, msg.value) }  So exchanges would put up a contract, which they could fetch money from whenever they saw fit. They were concerned that users would bungle the data, but since the data can be verified in the contract, I seems like that would be pretty solvable. But essentially, their stance was \u201cIf a user can do it wrong, they will. And the user deposit may thus revert, and the user won\u2019t succeed in making the deposit. We prefer to create N thousand EOA accounts for deposits, rather than adding any extra complexity to the deposit UX\u201d. So that\u2019s why things are like they are. Based on that, which is tragic and IMO very wrong, I don\u2019t see how they (CEX:es) would be amenable to the memo approach, since the memo approach is more or less the same idea, however:  If the memo data is bungled, there is no way to revert the transaction. Instead, people would have to contact the CEX and say \u201cHey I sent over XX ether, but got the memo wrong, help?\u201d. And they\u2019d have a huge problem sorting it all out.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.796875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "10/03/2021-08:44:21",
+                    "content": "Other schemes are possible too. For example, you could make users just send to the same place, without any extra data at all. If the user can then (off-chain) provide one of these things:  A signed tx which is unexecutable (e.g. nonce 0), with the data 0xXXX... is owned by <uid>, or A signed message, saying Transaction XXX from YYY was sent by <uid>.  So there definitely are ways of solving all these problems, but I have the feeling that none of these options have been seriously investigated (at least not to my knowledge) by the large CEX:es, due to their conviction that ease of deposit trumps everything else. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.628306878306878
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/junderw",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "10/03/2021-09:27:31",
+                    "content": "This is exactly what EIP-2876 does. It also defines a new address format solely for use with these types of interfaces. However, I think that it would be better to have the address format from EIP-2876 and instead of defining it to mean \u201cuse the Deposit function signature from EIP-2876\u201d instead define it to mean \u201cplace the 8 byte id in the memo\u201d (if the memo feature were added) If there was a simple address format (emphasis on simple) where it was trivial for exchanges to implement the encoding and decoding of them, and they contained an identifier. The problem then becomes \u201cwhere should the identifier go?\u201d Best case is \u201ca new memo field added via hardfork\u201d and the compromise is the current EIP-2876 contract interface. If you have time, please watch the PEEP an EIP, we discuss the issue in depth. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.698863636363636
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/junderw",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "10/03/2021-09:30:14",
+                    "content": " ease of deposit trumps everything else.  This is also a big hurdle. Which I think can be overcome if the simple account+id address format were adopted by both wallets and other exchanges. It is a chicken and egg problem, BUT I think if we can standardize it, the network fee savings for CEXes will be significant. We spent millions every year in ETH fees. That could be half. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.559523809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adietrichs",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "11/03/2021-10:48:11",
+                    "content": "To point out one other potentially relevant EIP here: EIP-3074, currently being considered for inclusion in London, would allow CEXes to significantly reduce the gas footprint of collecting ERC-20 deposits even under their current one-address-per-user-and-asset design. Basically, CEXes could collect multiple deposits within one single transaction, where each collection would only have the static gas cost overhead of a signature check and a call (~4000 gas). A solution like e.g. the discussed memo field, where funds can be immediately sent to the correct final destination, would of course be even more advantageous for this specific issue though. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.657738095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/junderw",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "11/03/2021-22:39:21",
+                    "content": "    adietrichs:  Basically, CEXes could collect multiple deposits within one single transaction, where each collection would only have the static gas cost overhead of a signature check and a call (~4000 gas).   While this proposal sounds great and has many use cases, especially for DeFi, it should be noted that a lot of CEX platforms tend to limit the scope of their deposit/withdraw systems to use EOA accounts only (ie. every operation is an external call) because the cost of developing, testing, and auditing a solidity contract is magnitudes higher than an application that just uses some JavaScript with web3 to do some external contract calls to a token contract. (IERC20.transfer etc.) On a slightly related note, this is also why a lot of CEXes don\u2019t detect ETH deposits from internal contract calls. All the ethereum stack exchange solutions are \u201cbuild a contract and emit events, then watch those events\u2026\u201d which then leads to \u201cnope, parse every tx in every block and match the to field to our giant list of EOA deposit accounts.\u201d because no one wants to touch smart contract development because of the high maintenance cost (not to mention lack of skilled engineers who know about EVM security, let alone \u201ccan code solidity\u201d.) The result of this is that CEX systems are highly inefficient, which doesn\u2019t matter much to them (us) because we take large fees for withdrawals anyways. So we essentially pass the inefficiency off to the customers, and the ETH network as a whole suffers for it. I do like EIP-3074, though, and it sounds like a great idea for what its trying to accomplish. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.805428571428571
+                }
+            ]
+        }
+    ],
+    "group_index": "1258"
+}

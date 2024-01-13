@@ -1,0 +1,86 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/dssblow-making-surplus-buffer-repayments-easy/11583",
+            "title": "DssBlow: Making Surplus Buffer Repayments Easy ",
+            "index": 11583,
+            "category": [
+                "Updates"
+            ],
+            "tags": [
+                "system-surplus",
+                "core-unit-tools",
+                "surplus-buffer"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/lollike",
+                    "index": "#1",
+                    "likes": "19",
+                    "time": "11/11/2021-10:26:35",
+                    "content": "Hello everyone! I\u2019m happy to introduce DssBlow, a new helper smart contract that makes it easy for Core Units to repay excess Dai to the MakerDAO Surplus Buffer, aka the Vow. This is the opposite of suck-ing Dai from the Vow, hence the meme blow.  Motivation The motivation behind creating this contract was the recent need for GovAlpha to pay back excess Dai to the Maker Surplus Buffer. This is not trivial, as you cannot simply send ERC20 Dai to the Vow contract address. Rather, you need to use the Dai Join adapter, to deposit Dai into the Maker Protocol, and send \u201cinternal\u201d Dai to the Vow. This process is error prone for non technical users, which is why I have built DssBlow.  Solution With DssBlow you can simply send ERC20 Dai directly to the DssBlow contract address. Once the Dai has been received by DssBlow, anyone can call blow() to send all deposited Dai in DssBlow as internal Dai to the Surplus Buffer. The blow() function handles the internal logic of depositing Dai into the Maker Protocol and sending internal Dai to the Vow, using the Dai Join adapter.  Usage If a Core Unit has excess Dai they wish to repay to the surplus buffer, they simply send a standard ERC20 Dai transaction to the address of DssBlow:   0x0048fc4357db3c0f45adea433a07a20769ddb0cf (Etherscan Link).  This should make repayments easy, even when using a Multisig wallet. Once the Dai has been transferred to DssBlow, anyone can call blow (on Etherscan it\u2019s 1. blow), to finalize the transfer of internal Dai to the Vow.  Deployment   Mainnet  0x0048FC4357DB3c0f45AdEA433a07A20769dDB0CF Etherscan    Goerli  0x5Db4D1Be83EE0DaC45E0cc2e5565a19d9c428dAF Etherscan     Resources  DssBlow GitHub Repository   Security The code has not been audited, but the code is very simple, and has been tested and reviewed internally. ",
+                    "links": [
+                        "https://etherscan.io/address/0x0048fc4357db3c0f45adea433a07a20769ddb0cf#writeContract",
+                        "https://etherscan.io/address/0x0048fc4357db3c0f45adea433a07a20769ddb0cf#code",
+                        "https://goerli.etherscan.io/address/0x5db4d1be83ee0dac45e0cc2e5565a19d9c428daf#code",
+                        "https://github.com/Lollike/dss-blow",
+                        "https://forum.makerdao.com/t/remaining-autonomous-makerdao-budget-returned/13701",
+                        "https://forum.makerdao.com/t/govalpha-gov-001-quarterly-review-q1-2022/15589/2",
+                        "https://forum.makerdao.com/t/mip41c5-sp5-facilitator-offboarding/13005/41",
+                        "https://forum.makerdao.com/t/mip55c3-sp17-continue-to-fund-the-ambassador-program/20042",
+                        "https://forum.makerdao.com/t/maker-relay-ep-71-en-espanol/11712",
+                        "https://forum.makerdao.com/t/maker-relay-ep-71/11666",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-november-4th-november-11th/11591"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.39029909484455
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#2",
+                    "likes": "5",
+                    "time": "11/11/2021-11:23:14",
+                    "content": "So in general I think this is super great, but I have some comments on verification with respect to the contract source. I don\u2019t love the parameterized constructor convention\u2026  \u2026because it means that you can\u2019t verify that the daiJoin and vow addresses are correct purely by looking at the verified source. When PE write executives these are either defined as constant variables, or they are pulled from the chainlog contract (which requires governance permissions to edit, and is therefore more trustworthy.) Basically, without digging through the deploy(?) transaction, I can\u2019t verify that this is safe to use. Second point is more minor, but I don\u2019t love the overloading of blow to do two similar but distinct operations. Generally, the convention is that the same function name with and without a numeric parameter means that the unparameterized version makes some assumption about the numeric parameter (ie blow everything.) Basically, my expectation would be:   blow - Joins everything in the contract into the buffer.  blow(int) - Joins int DAI from the contract into the buffer.  OR   blow(int) - Joins int from my wallet into the buffer.  blow - Joins all the DAI in my wallet into the buffer.  I\u2019m aware that 2 and 4 aren\u2019t great pieces of functionality though, so maybe that\u2019s fine in this case? I think I would prefer to see these with different function names, though, to make it more intuitively obviously that they are different functionality. Caveat: Not a solidity dev  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.340062111801243
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lollike",
+                    "index": "#3",
+                    "likes": "6",
+                    "time": "11/11/2021-11:32:41",
+                    "content": "    LongForWisdom:  I don\u2019t love the parameterized constructor convention\u2026  \u2026because it means that you can\u2019t verify that the daiJoin and vow addresses are correct purely by looking at the verified source. When PE write executives these are either defined as constant variables, or they are pulled from the chainlog contract (which requires governance permissions to edit, and is therefore more trustworthy.) Basically, without digging through the deploy(?) transaction, I can\u2019t verify that this is safe to use.   All the contract addresses are immutable, and can be verified here: https://etherscan.io/address/0x0048fc4357db3c0f45adea433a07a20769ddb0cf#readContract The pattern of assigning the addresses in the constructor is widely used in Maker already and is the same as e.g. dss-flash     LongForWisdom:  Second point is more minor, but I don\u2019t love the overloading of blow to do two similar but distinct operations. Generally, the convention is that the same function name with and without a numeric parameter means that the unparameterized version makes some assumption about the numeric parameter (ie blow everything.)   I understand your second point, however I don\u2019t see blow(wad) being used much, and I was thinking if I should even leave it in, as it is very similar to the old fashioned way of using DaiJoin where you need to specify the amount in wad, and grant approval first. That\u2019s also why I didn\u2019t mention it in the usage section - it\u2019s more of a power function, but I decided to leave it in for flexibility  ",
+                    "links": [
+                        "https://github.com/makerdao/dss-flash/blob/master/src/flash.sol#L83"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.943877551020408
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/makerburn",
+                    "index": "#4",
+                    "likes": "8",
+                    "time": "11/11/2021-18:21:47",
+                    "content": "Makerburn has been updated to register DAI transfers to DssBlow (0x0048fc4357db3c0f45adea433a07a20769ddb0cf) in addition to transfers to the pause proxy (0xbe8e3e3618f7474f8cb1d074a26affef007e98fb) as repayments. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "25/11/2021-18:22:09",
+                    "content": "This topic was automatically closed 14 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

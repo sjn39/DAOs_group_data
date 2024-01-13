@@ -1,0 +1,839 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-2315-simple-subroutines-for-the-evm-analysis/4229",
+            "title": "EIP-2315 \"Simple Subroutines for the EVM\" - Analysis ",
+            "index": 4229,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "evm",
+                "opcodes",
+                "eip-2315"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "1",
+                    "likes": "3",
+                    "time": "29/04/2020-11:04:55",
+                    "content": "by Pawel Bylica @chfast, Andrei Maiboroda @gumb0, and Alex Beregszaszi @axic. This is a short analysis of certain properties of EIP-2315: Simple Subroutines for the EVM (version as of 2020-04-16). We have focused on both usability from compilers point of view and the effect on EVM implementations. First we discuss two problems, followed by two relevant remarks, which could benefit from the solutions to the problems. Fallthrough to next subroutine Problem During instruction-by-instruction execution when BEGINSUB is encountered the execution continues (BEGINSUB works as no-op). I.e. execution falls through from one subroutine to the next one. PUSH 0 CALLDATALOAD PUSH 32 CALLDATALOAD JUMPSUB $sub1 PUSH 0 SSTORE  BEGINSUB $sub1 ADD  BEGINSUB $sub2 PUSH 1 ADD RETURNSUB  This feature is not very useful for code generators (Solidity, EVM LLVM) therefore it will not be used. But an EVM implementation has to support it. And this behavior requires additional testing. This is especially problematic when translating EVM to more structured representation (e.g. LLVM IR). Here we will represent the above example with C-like pseudo-code (as a substitute for LLVM IR functions): void entry(char* calldata) {     int depth = 0;          Stack stack;     stack.push(uint256(calldata[0]));     stack.push(uint256(calldata[32]));          // Call the subroutine with bumped depth.     sub1(&stack, depth + 1);          sstore(0, stack.pop()); }  void sub1(Stack* stack, int depth) {     if (depth == 1023)         abort();      uint256 a = stack.pop();     uint256 b = stack.pop();     uint256 result = a + b;     stack.push(result);          // Because the sub1 does not end with RETURNSUB      // or any other terminating instruction     // the next subroutine must be called at the end     // to emulate subroutine fallthrough behavior.     // Depth is not bumped though because this is not `JUMPSUB`.     // Therefore, we can run out of system call stack space.     sub2(stack, depth); }  void sub2(Stack* stack, int depth) {     if (depth == 1023)         abort();              uint256 a = stack.pop();     uint256 result = a + 1;     stack.push(result); }  Solution Change the specification in a way that BEGINSUB can only be reached via JUMPSUB. Specifically:   Execution of BEGINSUB causes exception (OOG: all gas consumed) and terminates execution. This way BEGINSUB behaves like INVALID (aka 0xfe) and it should never be executed in a well-formed EVM program.   JUMPSUB sets the pc to location + 1 (As opposed to location in the current spec).   In the edge case when BEGINSUB is the last instruction in code and this subroutine is jumped-to, the implementations should execute STOP. This is consistent with the other similar case of returning from a subroutine jumped-to from the JUMPSUB being the last instruction in code.   JUMPs across subroutines Problem The EIP intentionally does not modify the semantics of JUMP/JUMPIs. They are still only restricted to targeting JUMPDESTs. It is allowed to jump from any point in one subroutine to any JUMPDEST-marked point in another subroutine. Current EIP properly specifies what would happen in each of these cases, but this feature is not practically useful (code generators are unlikely to use it). And it creates a family of edge cases which are needed to be properly covered with tests. It seems very impractical to translate such EVM program to C / LLVM IR. The only partial support may be possible by using setjmp / longjmp. Because of the complexity of such translation C examples are not provided in this section.  Example: JUMP to the middle of subroutine  JUMP $middle  BEGINSUB DUP1 JUMPDEST $middle RETURNSUB # Causes exception as return_stack is empty.   Example: JUMP between subroutines  JUMPSUB $sub1  BEGINSUB $sub1 JUMP $middle RETURNSUB  BEGINSUB $sub2 NOT JUMPDEST $middle RETURNSUB  # Returns to the \"main\" code after JUMPSUB.  Solution  Use BEGINSUB as strict subroutine boundaries. 1.1. There exists a \u201cmain\u201d subroutine starting at PC 0 without BEGINSUB. See Main (subroutine) section. 1.2. Every BEGINSUB opcode position in the code marks the beginning of a new subroutine and the ending of the \u201cprevious\u201d subroutine. 1.3. This implies that there\u2019s no code outside of subroutines (all the code is either in explicit subroutines or in the implicit \u201cmain\u201d subroutine) When collecting valid JUMPDEST locations (must be done before execution) assign them to subroutines. Instead of having flat list as before, we get 2-level collection grouped by subroutines. During execution keep information which subroutine is currently being executed. During execution when validating a jump target only consider JUMPDESTs from the list of the current subroutine.  Example 00 PUSH 0 02 CALLDATALOAD 03 PUSH 32 05 JUMPDEST 06 CALLDATALOAD 07 JUMPSUB $sub1 08 JUMPDEST 09 PUSH 0 0a SSTORE  0b BEGINSUB $sub1 0c JUMPDEST 0d ADD 0e JUMPDEST 0f RETURNSUB  10 BEGINSUB $sub2 11 PUSH 1 13 ADD 14 JUMPDEST 15 RETURNSUB    Before: JUMPDESTs: (05, 08, 0c, 0e, 14)   After:   \"main\" @ 00: (05, 08)   \"sub1\" @ 0b: (0c, 0e)   \"sub2\" @ 0f: (14)     Benefits   When checking if a jump destination is valid search is performed on a smaller collection (limited to current subroutine scope only).   JUMPDEST analysis (collecting valid jump destinations) can be performed lazily per subroutine. Optimized EVM implementation may perform advanced code analysis and/or translation beyond collecting JUMPDEST offsets.   May help with code merklization. With properly isolated subroutines it is possible to collect a list of subroutines used in a given transaction and it is easy to include in a witness those only. The other two options currently which exist for merklization: a) partition by JUMPDESTs; b) chunk code by even-sized parts, which needs offsets in case of splitting through a PUSH opcode. With the original EIP, it seems the gains of merklization-by-subroutine is restricted or even diminished by the ability to jump around.   Having subroutine-level \u201cpure\u201d control flow (no magic jumps between subroutines) helps performing static analysis.   Limits complexity of test cases. In the original EIP, test cases composed of multiple steps are required. Examples of two-step test cases: (jump cross subroutine, RETURNSUB reached causing exception), (jump cross subroutine, RETURNSUB returns successfully). Test cases composed of 3+ steps may be also needed. This is not required in the version with restricted jumps because it is only needed to check if execution terminates with exception on \u201cjump cross subroutine\u201d.   Potential issues caused by the change   Jumps across subroutines allow implementing tail subroutine calls.  This is not very elegant. There are two distinct kinds of jumping targets: JUMPDEST and BEGINSUB. However this encourages to also use JUMPs to perform a kind of subroutine call.  Suggestion: If tail subroutine calls are desired, let\u2019s introduce a TAILJUMPSUB instruction.    This restriction can potentially break existing contracts. E.g. JUMP $skip      # Not allowed as $skip JUMPDEST belongs to other subroutine. BEGINSUB        # Previously invalid instruction, but never executed. JUMPDEST $skip    Suggestion: analyze existing contracts whether this would cause an issue (e.g. search for the BEGINSUB opcode used in existing contracts)    Remark: example implementation of JUMPDEST analysis Prior to this EIP, evmone stores JUMPDEST's code offset in an array. They are already ordered so binary search is used to validate a jump destination. After the change we can still keep JUMPDESTs as an array. For subroutines we additionally have to collect ranges of JUMPDESTs - it is enough to keep 2 pointers: to the begin/end JUMPDEST's entry in the array. To validate a jump destination do binary search of the current subroutine JUMPDEST's range. Main (subroutine) This section introduces the concept of \u201cmain\u201d subroutine as a result of the EIP-2315 \u201cSubroutines\u201d with our two proposed changes. Execution of an EVM bytecode starts at PC=0 (the \u201cfirst\u201d byte). We propose that code segment starting as PC=0 and ending just before first BEGINSUB (or end-of-code) is now called the \u201cmain\u201d subroutine. The following restrictions apply to the \u201cmain\u201d subroutine\":  The return_stack remains empty (i.e. is not populated with the \u201cmain\u201d subroutine\u2019s caller return address). Therefore, RETURNSUB is invalid inside \u201cmain\u201d subroutine. Since the \u201cmain\u201d subroutine does not start with a BEGINSUB, it cannot be called from any other subroutine (including \u201cmain\u201d subroutine itself). The \u201cmain\u201d subroutine defines the scope for JUMP/JUMPDEST validity - jumps within \u201cmain\u201d subroutine are valid as in any other subroutine.  Comparison with POSIX  We can now compare an EVM bytecode to a \"POSIX binary\": // alias STOP = RETURN(0, 0);  // An example subroutine. int doSomething() {   if (random() & 1)     return 1;  // => RETURNSUB   else     exit(0);   // => STOP }  // The C language main function. int main() {   if (doSomething())       exit(1)  // => RETURN(0, 1)      // This is not be allowed in EVM, as RETURNSUB is invalid in \"main\" subroutine.   return 0;    // => RETURNSUB }  // The POSIX start fuction - entry point invoked by the operating system. void start() {   int ret = main();   exit(ret); }    Since most current EVM programs start with what resembles \"main\" above (because they have to ability to \"exit\" by reaching the end), we don't want to consider and introduce \"start\" into EVM.  Benefits We believe this rather small semantical distinction of \u201cmain\u201d subroutine provides a cohesive and structured design, and will prove beneficial in the future.  One potential use case could be in \"account abstraction\" (AA), where instead of paying with supplied gas or Ether token, there needs to exist some other mean to pay the \"miner\". It is wished this would exists via executing code, which pays the miner.  Making this possible with main:  Disallow JUMP/JUMPI in main The miner has to be paid before the first JUMPSUB  Restrict the number of instructions allowed (and terminate if exceeded)    This could seriously reduce the complexity miners would be need to face when evaluating such AA-enabled transactions.  \u201cBEGINDATA\u201d A lot of EVM programs contain data. The most prevalent example is constructor bytecode containing the runtime bytecode at the very end. Unfortunately without structure, currently the \u201cdata\u201d has to be also analyzed for JUMPDESTs. Some proposals were made to alleviate this by introducing a BEGINDATA opcode (see EIP-615 and EIP-2327). We however think the above changes could also be used to provide an alternative to BEGINDATA by placing a unreferenced BEGINSUB prior to the data. Downside: this looks like an abuse of BEGINSUB, but so far the authors have not found any problem with it. # The \"main\" subroutine: the contract constructor. COPYCODE($data+1, S) RETURN(0, S)  # The unreferenced subroutine with data. BEGINSUB $data ...  ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/fcab0ca9d905ba7baace204fdfd4ab8e4ea76128/EIPS/eip-2315.md",
+                        "https://en.wikipedia.org/wiki/Setjmp.h",
+                        "https://ethereum-magicians.org/t/eip-2315-simple-subroutines-for-the-evm/3941/29",
+                        "https://eips.ethereum.org/EIPS/eip-615",
+                        "https://eips.ethereum.org/EIPS/eip-2327",
+                        "https://ethereum-magicians.org/t/eip-2315-simple-subroutines-for-the-evm/3941/52",
+                        "https://ethereum-magicians.org/t/eip-2315-simple-subroutines-for-the-evm/3941/55"
+                    ],
+                    "GPT-summary": "The post is an analysis of EIP-2315, which proposes \"Simple Subroutines for the EVM\". The authors discuss two problems with the proposal and suggest solutions. They propose restricting the use of BEGINSUB and JUMPs across subroutines to improve usability and EVM implementation. They also introduce the concept of a \"main\" subroutine and suggest it could be useful for account abstraction. The post provides examples and benefits of the proposed changes, as well as potential issues. The post also includes a suggestion for an alternative to the BEGINDATA opcode.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Token economics",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.135661060752973
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "29/04/2020-12:09:42",
+                    "content": "Some quick notes/questions, I\u2019ll probably have more when I\u2019ve digested it a bit further.     chfast:  Fallthrough to next subroutine   This one is pretty simple, and I agree. Implementation-wise, it can be done either as you describe it or something else, but it\u2019s not a big change.     chfast:  JUMPs across subroutines Problem The EIP intentionally does not modify the semantics of JUMP / JUMPI s. They are still only restricted to targeting JUMPDEST s. It is allowed to jump from any point in one subroutine to any JUMPDEST -marked point in another subroutine.   I agree this is unfortunate.     chfast:  Benefits  When checking if a jump destination is valid search is performed on a smaller collection (limited to current subroutine scope only).    This is not necessarily true. Geth does a one-pass analysis, and the lookup is O(1) on the bitmap. If we have N different (small) analysis:es for each contract, it will probably actually be slower.     chfast:  JUMPDEST analysis (collecting valid jump destinations) can be performed lazily per subroutine. Optimized EVM implementation may perform advanced code analysis and/or translation beyond collecting JUMPDEST offsets.   It can be done lazily even now. Not until an actual jump is there any need to do the analysis (geth does this, AFAIR). In theory, the analysis could stop after going past the desired jump location, and continue later if needed. I agree with the other benefits, and the concept in general.     chfast:  This restriction can potentially break existing contracts. E.g.   Oh, that\u2019s a bit nasty, nice catch! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.91584564860427
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "29/04/2020-12:38:16",
+                    "content": "This generally seems OK, though I\u2019m very short on time to analyze it.  My general concern with imposing any structural restrictions was to not slide down a slippery slope towards EIP-615. And I did have in mind EVM code as a target for compilers more than the reverse - so my model was more existing CPUs and optimizing compilers. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.031746031746032
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "29/04/2020-14:51:28",
+                    "content": "Good effort analysing this! The most concerning piece that I learnt from this analysis is the cross-subroutine jumps. I think if we do not introduce structural restrictions on the legacy JUMP/JUMPI, it will be very messy situation. But, as @gcolvin noted, introducing these restriction is a \u201cslippery slope\u201d towards EIP-615. I hope it will prompt former opponents of EIP-615 reconsider the hypothesis that spitting it into pieces would make thing simpler. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.393750000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lialan",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "29/04/2020-16:01:14",
+                    "content": "Good observations about tail calls. The tail calls is definitely a benefit to the performance, but I think it is a good-to-have feature for compilers. If the code is compiled by a compiler then it is structured code, and EIP2315 can only guarantee compiler-generated cases. Should compilers optimize tail calls? sure in this case. Will it change the call structure? sure, yes, that is what tail calls intended to do anyway. But users should not feel encouraged to use such technique to circumvent the checks, as compiler generated code is not intended to be read by humans. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lialan",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "29/04/2020-16:03:18",
+                    "content": "    chfast:  This restriction can potentially break existing contracts.   To guarantee safety, it is best to have versioning on contract codes, or checks inside EVM. Should we do that? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "29/04/2020-16:42:00",
+                    "content": "    lialan:  To guarantee safety, it is best to have versioning on contract codes, or checks inside EVM. Should we do that?   I would much rather analyze the chain first, and if there is no major breaking contract, then announce this decision (so that people deploy vulnerable contracts by their own decisions) and launch it without versioning. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.265625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lialan",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "29/04/2020-16:49:12",
+                    "content": "True. But I think this is more of a one time solution. But I still think that there will be backward-incompatible add-ons in the future, which will make versioning inevitable. So it is good to start thinking how versioning can be implemented. edit: forgot to cc: @axic ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.550000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "29/04/2020-17:16:39",
+                    "content": "Great thing @axic, @chfast, @gumb0. As for the main subrotuine - actually Nethermind has a separation of the top level call and subcalls already. I was planning to refactor that but now it will make me think twice. As for the jump dest analysis - currently is has barely any performance impact because of caching and single O(1) pass. It may be relevant for stateless clients but agree with Martin that taking into account how simple and optimized current implementations are any additional splitting would probably make it slower. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.9226190476190474
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "29/04/2020-17:17:57",
+                    "content": "I would not introduce the discussion of BEGINDATA into this EIP and maybe discuss it in a separate one? As Greg mentioned - we do not want to go into a scope creep scenario. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "29/04/2020-19:14:54",
+                    "content": "There is no suggestion to include the BEGINDATA opcode, but as a result of the restrictions, an unreferenced BEGINSUB can be used for storing \u201cdata\u201d. At least it\u2019s better than the current situation: Solidity inserts INVALID to avoid code flowing into the data, but EVMs still need to crunch through it looking for JUMPDESTs. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "29/04/2020-22:35:09",
+                    "content": "    lialan:  True. But I think this is more of a one time solution. But I still think that there will be backward-incompatible add-ons in the future, which will make versioning inevitable. So it is good to start thinking how versioning can be implemented.   Sure, versioning can be useful. There were some concerns that versioning complicates any future repricings, so if it is possible to avoid/postpone it, maybe we should take that option. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.305555555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "30/04/2020-09:35:54",
+                    "content": "1.2. Every BEGINSUB position starts new subroutine ending the \u201ccurrent\u201d one. Does this mean that ENDSUB is not requried between subroutines? SO that a valid program might be: PUSH2 1024 JUMPSUB BEGINSUB,BEGINSUB,BEGINSUB,BEGINSUB,BEGINSUB,BEGINSUB,BEGINSUB,BEGINSUB....  That is, N tiny subroutines, up to around 24K of them (on a normal contract, way higher if it\u2019s initcode being executed)? I think the code above would make a 2-level jumpdest mapping croak. Using a bitmap for jumpdest analysis was the way to save the day, when someone executed a one-megabyte large slice of initcode filled with jumpdests. With this new propose approach, we\u2019re back at having to either  Maintain a map[PC]->bitmap of subroutines, or Maintain a bitmap of A of \u201cbeginsub/or/not\u201d, in addition to the map B of \u201cdata/or/code\u201d. Then we could, at JUMP X, first do the regular check of X against B, and afterwards, go to bitmap A and scan backwards (or forwards) all the way from X to current PC, to verify that there are no bits set on the way there (abort early if we hit a bit set: indicating a subroutine boundary).  It sounds like it might be attackable, but maybe there\u2019s some better algorithm. I suspect this comes at a cost, though ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.608170995670996
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "30/04/2020-09:58:42",
+                    "content": "I like this proposal a lot! I hope the cross-sub-jump analysis can be done efficiently, because I think disallowing \u201ccrossing returnsubs\u201d makes testing much easier, as suggested by the authors. Returning from a sub will be a syntactic instead of a semantic action. One edge case that would have to be covered by a test: Jumping to a beginsub that is directly followed by a beginsub, which could be implemented differently than flowing into a beginsub. I\u2019m pretty sure the Solidity compiler never generated code that jumped over non-code. Anything that is not code is at the end of the bytecode. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.958333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "30/04/2020-10:07:12",
+                    "content": "I think these two things are confusing, taken together:  Every BEGINSUB position starts new subroutine ending the \u201ccurrent\u201d one.  (this implies, to me, that there\u2019s some form of \u201cimplicit returnsub\u201d on a BEGINSUB?) and  Execution of BEGINSUB causes exception  Your example program:     chfast:  0b BEGINSUB $sub1 0c JUMPDEST 0d ADD 0e JUMPDEST 0f BEGINSUB $sub2 10 PUSH 1 12 ADD 13 JUMPDEST 14 RETURNSUB   What would happen after 0e, doesn\u2019t it suddenly walk into a new subroutine and crash? If there is not an implicit returnsub, shouldn\u2019t you put RETURNSUB at e.g 0f in the example? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.965909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "30/04/2020-10:14:30",
+                    "content": "Update: comment again before reading the entire message      holiman:  (this implies, to me, that there\u2019s some form of \u201cimplicit returnsub\u201d on a BEGINSUB ?)   There is a statement in \u201cFallthrough to next subroutine\u201d, but I agree the \u201cspec\u201d part of \u201cJUMPs across subroutine\u201d not clear:  Execution of  BEGINSUB  causes exception (OOG: all gas consumed) and terminates execution.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "01/05/2020-06:09:56",
+                    "content": "I\u2019m still worried about making subroutines syntactic.   The intent was pure mechanism at the level of EVM assembly - retaining current control flow operations and adding a Forth-style return stack.  At first I only had JUMPSUBs to any JUMPDST.  It was trying to write some example code that way inspired BEGINSUB - it seemed the minimum necessary structure. For an interpreter this doesn\u2019t present much trouble, but I can see how  it would cause problems for LLVM and similar tools.  So I\u2019d ask, without time to analyze, for the minimal structure needed for the purpose. And I suspect extended dup and swap could help. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.091269841269841
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "01/05/2020-12:37:53",
+                    "content": "    holiman:  This is not necessarily true. Geth does a one-pass analysis, and the lookup is O(1) on the bitmap. If we have N different (small) analysis:es for each contract, it will probably actually be slower.       holiman:  It can be done lazily even now. Not until an actual jump is there any need to do the analysis (geth does this, AFAIR). In theory, the analysis could stop after going past the desired jump location, and continue later if needed.   Lazy JUMPDEST analysis is indeed possible currently and problematic in the same time \u2014 it is rather complex to implement and easily defeatable by worst cases. In nature it may help in average workloads so I never was keen to implement it and check it in practice. I regret a bit I mentioned it in this context at all. However, having subroutines strictly partitioning code opens up new (at least theoretical) strategies.      holiman:   This restriction can potentially break existing contracts. E.g.  Oh, that\u2019s a bit nasty, nice catch!       lialan:  To guarantee safety, it is best to have versioning on contract codes, or checks inside EVM. Should we do that?   Originally I was wrong. We are able to perform static analysis of all EVM code deployed and check if BEGINSUB instruction is present there. We actually should extend this and collect information about \u201cusage\u201d of all unassigned opcodes. Should be helpful for some future EIPs. But in case BEGINSUB is present, it would be very difficult to check there exist a possible jump over it. Requiring code versioning is definitely not something we want to use here.      gcolvin:  My general concern with imposing any structural restrictions was to not slide down a slippery slope towards EIP-615.       AlexeyAkhunov:  I think if we do not introduce structural restrictions on the legacy JUMP / JUMPI , it will be very messy situation. But, as @gcolvin noted, introducing these restriction is a \u201cslippery slope\u201d towards EIP-615.   I actually was not considering EIP-615 at all. @gcolvin proposed the MVP of subroutines what was good decision on its own and also good discussion starting point. We propose two additional \u201crestrictions\u201d which (in our opinions) provide some additional benefits to this feature. But it stays within EVM Look&Feel:  it is backward compatible with existing contracts (one issue remains here), no code version is needed, no code validation is needed at deploy time, all execution aborts happen only when you execute malformed piece of code.  I think it is good to stay within this boundaries.      holiman:  I think the code above would make a 2-level jumpdest mapping croak. Using a bitmap for jumpdest analysis was the way to save the day, when someone executed a one-megabyte large slice of initcode filled with jumpdests. With this new propose approach, we\u2019re back at having to either  Maintain a map[PC]->bitmap of subroutines, or Maintain a bitmap of A of \u201cbeginsub/or/not\u201d, in addition to the map B of \u201cdata/or/code\u201d. Then we could, at JUMP X , first do the regular check of X against B , and afterwards, go to bitmap A and scan backwards (or forwards) all the way from X to current PC , to verify that there are no bits set on the way there (abort early if we hit a bit set: indicating a subroutine boundary).  It sounds like it might be attackable, but maybe there\u2019s some better algorithm. I suspect this comes at a cost, though       tkstanczak:  As for the jump dest analysis - currently is has barely any performance impact because of caching and single O(1) pass. It may be relevant for stateless clients but agree with Martin that taking into account how simple and optimized current implementations are any additional splitting would probably make it slower.   I must to agree here. How to perform jumpdest/subroutine analysis and how later store this information is problem on its own. And looks it will get much harder with the proposed change. I think we at least need to inspect that further and propose a recommended implementation. I would prefer to discuss that on a side as there is a lot to say about this problem. Some quick ideas though:  You can store the information in a byte array of the size of the code. We need 1 bit for \u201cis it a JUMPDEST\u201d, 1 bit for \u201cis it a BEGINSUB\u201d, and we have 6 bits left to encode (using variadic length encoding) the length of a subroutine. This has 8x larger memory footprint than bitset used in geth. To bound worst cases we can limit the max code size to the 2x the max deplyable code size (this will affect the input size for CREATE, CREATE2 and \u201ccreate\u201d transactions). EIP-1985 comes to mind.       holiman:  I think these two things are confusing, taken together:  Every BEGINSUB position starts new subroutine ending the \u201ccurrent\u201d one.  (this implies, to me, that there\u2019s some form of \u201cimplicit returnsub\u201d on a BEGINSUB ?) and  Execution of BEGINSUB causes exception    The first sentence is about analysis, not execution. I changed it to:  Every BEGINSUB opcode position in the code marks the beginning of a new subroutine and the ending of the \u201cprevious\u201d subroutine.      holiman:   0b BEGINSUB $sub1 0c JUMPDEST 0d ADD 0e JUMPDEST 0f BEGINSUB $sub2 10 PUSH 1 12 ADD 13 JUMPDEST 14 RETURNSUB What would happen after 0e , doesn\u2019t it suddenly walk into a new subroutine and crash? If there is not an implicit returnsub, shouldn\u2019t you put RETURNSUB at e.g 0f in the example?    It would crash only if \u201cno subroutine fallthrough\u201d is applied. But I put the missing RETURNSUB in the example not to be distracted by this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.170505612713406
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "01/05/2020-12:57:10",
+                    "content": "    chfast:   it is backward compatible with existing contracts (one issue remains here), no code version is needed, no code validation is needed at deploy time, all execution aborts happen only when you execute malformed piece of code.  I think it is good to stay within this boundaries.   Yes, when you put it like this, I agree ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal"
+                    ],
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "01/05/2020-21:40:18",
+                    "content": "I really am coming to prefer the approach of subroutines as pure mechanism.  Just new control-flow operators, with no syntax and no changes to any other operators. Unlimited SWAP and DUP instructions would probably be useful in this programming model. Can the imposition of further syntax and invariants \u2013 for things like validation, merklization, and clean compilation \u2013 be handled with custom smart contracts and init code? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.816626082251082
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "03/05/2020-17:44:26",
+                    "content": "I have an variant of the proposal.  A subroutine may only start at PCs divisable by 32: 0, 32, 64` etc. The BEGINSUB, if executed at some other position, causes error. If a BEGINSUB is at PC % 32 == 0, then we say that a new subroutine starts there.  With these changes, the following effects happen:  We keep the old code/data bitmap. Size codelen / 8. (A) We create one more bitmap during jumpdest-analysis. Bit 0 represents PC=0, bit 1 represents PC=32. If a new subroutine starts there, we place a 1 in the bitmap. (B). Size of B is codelen/ 32 /8    Now, whenever we need to check if a JUMP is valid, we do  Check A as before, Check LOC is JUMPDEST as before, Seek through B from PC to LOC. This seek operation effectively covers 32 bytes per check. On a 64-bit platform, large large jumps can be checked with 64 bits at a time, effectively covering 32*64 bytes of code per check.  A jump across 1MB gigantic subroutine can be performed with ~490 checks.  This means that compilers will have to be smart about allocating the subroutines, and use some padding here and there, and maybe inline small stuff instead of subroutining it. For code merklization, that might be a good thing too, since it puts a floor on the size of a code chunk. Furthermore:  this decreases the chance of causing backward compatibility problems: any non-32 BEGINSUB op is still \u2018just an invalid opcode\u2019, and the only case that would cause problems would be  A jump across a data-section, where a BEGINSUB is at PC %32 ==0.    PS: The choice of 32 is pretty arbitrary. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.93840718105424
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "04/05/2020-14:38:04",
+                    "content": "I still expect (without proof) that EIP-615\u2019s restrictions can be validated on the simpler instruction set without restrictions. And yes, that might make the LLVM output harder work.  Current clients are interpreters, so aren\u2019t in trouble. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "05/05/2020-10:48:13",
+                    "content": "Some preliminary results about performing jumpdest analysis and doing JUMPS. Building the jumpdest analysis(es) required: Old implementation versus new, where we also need to build the secondary smaller bitmap. It incurs an extra cost in all cases: JumpdestAnalysis_1200k/zeroes-6          801\u00b5s \u00b1 2%  1981\u00b5s \u00b1 1%  +147.15%  (p=0.016 n=5+4) JumpdestAnalysis_1200k/jumpdests-6       803\u00b5s \u00b1 1%  1958\u00b5s \u00b1 3%  +143.75%  (p=0.016 n=4+5) JumpdestAnalysis_1200k/push32-6          397\u00b5s \u00b1 2%   462\u00b5s \u00b1 2%   +16.58%  (p=0.008 n=5+5) JumpdestAnalysis_1200k/push1-6          1.85ms \u00b1 0%  1.94ms \u00b1 2%    +5.08%  (p=0.016 n=4+5) JumpdestAnalysis_1200k/beginsub-6       1.56ms \u00b1 7%  2.09ms \u00b1 4%   +33.50%  (p=0.008 n=5+5) JumpdestAnalysis_1200k/beginsub_push-6  1.88ms \u00b1 2%  1.97ms \u00b1 2%    +4.71%  (p=0.008 n=5+5)  Code is 1.2 Mb. zeroes: zero-filled code jumpdests: all jumpdest push32 : all push32 push1: all push1 beginsub: all beginsub beginsub_push: all push1, but every 32th is a BEGINSUB Executing a JUMP This benchmark evaluates the validity of a JUMP across the entire body of code, from 0 to the end (1.2 Mb). Code consists of all JUMPDEST. BenchmarkJumpdestValidation/jumpdests-6         \t151248043\t         7.57 ns/op BenchmarkJumpdestValidation/jumpdests-with-subroutines-6         \t   25620\t     46575 ns/op  The \u2018old\u2019 way is very fast, at sub 8ns, and does not depend on the size of the jump nor the size of the code. The code chosen is notorious for the seek-based approach, since it there are no subroutines to abort the check early. It takes 46us. In this case, I have not optimized it to check bits 64 at a time, but if we assume that it can be optimized by a factor of 64 for large jumps, that would still land at 727ns, which is almost a factor 100 slower than previously. Note, though. that for a \u2018regular\u2019 contrcact, limited to 24K, the figures look differently: BenchmarkJumpdestValidation/jumpdests-6         \t154333724\t         7.59 ns/op BenchmarkJumpdestValidation/jumpdests-with-subroutines-6         \t 1000000\t      1070 ns/op  If we apply the same 64 divisor, we wind up with 7.6ns vs 16.7ns, which is much more reasonable. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.324184704184704
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "05/05/2020-12:36:03",
+                    "content": "    holiman:  I have an variant of the proposal.  A subroutine may only start at PCs divisable by 32: 0 , 32 , 64` etc. The BEGINSUB , if executed at some other position, causes error. If a BEGINSUB is at PC % 32 == 0 , then we say that a new subroutine starts there.    This indeed makes the potential number of subroutines manageable. I can think of an alternative subroutine map implementation (B).  We keep an array []uint32 of subroutine sizes at valid PC values (0, 32, 64, \u2026). The subroutine size includes BEGINSUB so the size of a subroutine cannot be 0. Zero value means there is no subroutine at given PC. The size of B is codelen/8 (because codelen/32 * (32/8))  The JUMPSUB validation:  Check LOC % 32 == 0, Check B[LOC / 32] > 0, Remember current subroutine span:  current_subroutine_begin = LOC current_subroutine_end = current_subroutine_begin + B[LOC / 32]    The JUMP validation:  Check if LOC is JUMPDEST (as pre-EIP) Check current_subroutine_begin <= LOC < current_subroutine_end   There are also other possible encodings of this variant of B:  Use uint16 but divide subroutine size by 32. Then the limit subroutine size is 2**16 * 32 == 2M. Use uint8 and variadic length number encoding like LEB128.  I would consider factor values: 16, 32, 64. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.9188311688311686
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "05/05/2020-13:38:05",
+                    "content": "With pawels suggested algo (the uint16 version), I get this (against the current master implementation) name                                    old time/op  new time/op  delta JumpdestAnalysis_1200k/zeroes-6          842\u00b5s \u00b111%  2594\u00b5s \u00b1 0%  +208.00%  (p=0.016 n=5+4) JumpdestAnalysis_1200k/jumpdests-6       885\u00b5s \u00b121%  2612\u00b5s \u00b1 1%  +194.98%  (p=0.008 n=5+5) JumpdestAnalysis_1200k/push32-6          420\u00b5s \u00b112%   453\u00b5s \u00b123%      ~     (p=0.222 n=5+5) JumpdestAnalysis_1200k/push1-6          2.00ms \u00b1 5%  1.86ms \u00b141%      ~     (p=0.151 n=5+5) JumpdestAnalysis_1200k/beginsub-6       1.68ms \u00b1 6%  2.67ms \u00b1 1%   +59.20%  (p=0.016 n=5+4) JumpdestAnalysis_1200k/beginsub_push-6  1.99ms \u00b110%  1.63ms \u00b1 7%   -18.19%  (p=0.008 n=5+5)  The worst case (beginsub) is roughly on-par with the seek-algo. It\u2019s a lot better on the /beginsub_push than the seek-algo, since it\u2019s faster to set a byte than flip a bit (I guess?). I am not going to do an evaluation of the speed of validating the JUMP: it\u2019s obviously O(1), and can\u2019t be much slower than the current jump-instructions. Code is here btw: https://github.com/holiman/go-ethereum/tree/subroutines2 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.909090909090909
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "12/05/2020-08:57:20",
+                    "content": "It would really be nice if we could have this EIP without the restriction on where to start a subroutine. Note that this EIP does not bring a very big benefit for compilers. If the subroutine does not have many return values, it might even be better to use a regular jump instead of wasting 16 bytes on average when using the subroutine mechanism. I think it should be possible to extend the current analysis to also allow beginsubs at arbitrary positions, the following might be a start: We have a bitmap where bit i is 1 if and only if there is a beginsub opcode somewhere between PC 32 * i and 32 * (i + 1) - 1. With this data structure, we essentially do the analysis proposed by @holiman , just with an additional linear search inside the 32 bytes of code (problem to solve: pushdata): The subroutine size data structure proposed by @chfast can be similarly modified: For each chunk of 32 bytes, we store the (largest) number of following chunks that do not contain a beginsub opcode. For a jumpsub, we check if the target is a valid beginsub by first looking at the 32-byte-granular beginsub bitmap. If there is no match, we OOG. If there is a match, we check the code itself. For jumps, we keep track of the PC of the beginsub of the current subroutine, let this be O. Let E be the number of 32-byte chunks following the chunk of O that do not contain a beginsub opcode, as read from the data structure. For a jump with target T, we check if T is less than O and OOG if yes. Let C be floor(T / 32), the target chunk. If C = floor(O / 32), we perform a linear search for beginsub on the at most 32 bytes of the chunk and OOG if we find one. If C > floor(O / 32) + E, we OOG. If C = floor(O / 32) + E, we do a linear search on the 32 bytes of chunk C and OOG if and only if there is a beginsub between the beginning of the chunk and T. I have the feeling that there should already be generic data structures and algorithms that can answer the question \u201cdoes the array slice from x to y contain a zero\u201d and that we can use without many modifications\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.553030303030303
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "13/05/2020-06:43:14",
+                    "content": "Hm, I\u2019m a bit sceptical about this, tbh. The original EIP added one more data structure: the returnstack. With this suggestion + Pawels implementation idea, we will need to have one more: the stack of \u2018current subroutine offset\u2019, to remove the linear factor from evaluating a JUMP. With the idea proposed by @chriseth, we\u2019d add back a penalty to the analysis itself, and add a penalty to the jump evaluation. A JUMP costs 8 gas, so it needs to be pretty slim in order to not be exploitable. I mean, it might be doable. But is the 32-byte offset really that much of a problem? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.0703125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "13/05/2020-07:33:14",
+                    "content": "@holiman @chfast maybe we should have a call about this. I do not see in which way my idea adds a penalty that is not present in Pawel\u2019s. Also note that \u201ccurrent subroutine offset\u201d can be removed from my idea by creating a reverse \u201csubroutine sizes\u201d data structure in parallel to the regular one. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lialan",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "13/05/2020-20:19:32",
+                    "content": "    chriseth:  Note that this EIP does not bring a very big benefit for compilers.   If we design subroutine call such that we see the return address as the first operand of the callee function (because it is very easy to calculate the offset of return value), we will have some stack manipulations to bring effective operands (actual operands of the callee function) to top of stack to compute. These are some hidden overheads if the compiler is implemented that way. This EIP will overall reduces the pressure on the stack (by removing one element from it).  The scheduler should be capable to generate better instruction sequences by reducing the stack manipulation opcodes needed. Or, if you implement in such a way that you see the return address value as the last operand in the function, then this EIP\u2019s performance impact will be reduced. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.941025641025641
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "15/05/2020-08:18:16",
+                    "content": "    chfast:  Change the specification in a way that BEGINSUB can only be reached via JUMPSUB . Specifically:  Execution of BEGINSUB causes exception (OOG: all gas consumed) and terminates execution. This way BEGINSUB behaves like INVALID (aka 0xfe ) and it should never be executed in a well-formed EVM program.  JUMPSUB sets the pc to location + 1 ( As opposed to location in the current spec ). In the edge case when BEGINSUB is the last instruction in code and this subroutine is jumped-to, the implementations should execute STOP . This is consistent with the other similar case of returning from a subroutine jumped-to from the JUMPSUB being the last instruction in code.  JUMPs across subroutines   I think this is exactly the right solution.  Have any unfixed conceptual problems been found?  How hard is it to implement? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.18452380952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "15/05/2020-08:34:29",
+                    "content": "[quote=\u201cgcolvin, post:30, topic:4229, full:true\u201d]     chfast:  Change the specification in a way that BEGINSUB can only be reached via JUMPSUB . Specifically:   Execution of BEGINSUB causes exception (OOG: all gas consumed) and terminates execution. This way BEGINSUB behaves like INVALID (aka 0xfe ) and it should never be executed in a well-formed EVM program.  JUMPSUB sets the pc to location + 1 ( As opposed to location in the current spec ). In the edge case when BEGINSUB is the last instruction in code and this subroutine is jumped-to, the implementations should execute STOP . This is consistent with the other similar case of returning from a subroutine jumped-to from the JUMPSUB being the last instruction in code.     I think this is exactly the right solution. Have any unfixed conceptual problems been found? How hard is it to implement? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.18452380952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "15/05/2020-08:53:25",
+                    "content": "    gcolvin:  I think this is exactly the right solution. Have any unfixed conceptual problems been found? How hard is it to implement?   To be clear, the section that you refer to is \u201cprevent walking into subroutine\u201d. This is pretty trivial to implement. So, does that mean you are not favouring the \u201cprevent jumping into another subroutine\u201d ? That one is the more difficult one, but which I think is fully doable, both from an evm-perspective and from a backwards-compatibility perspective. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.175967261904761
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "15/05/2020-09:29:50",
+                    "content": "I am not favoring more than the minimal \u201cprevent walking into another subroutine\u201d.  It\u2019s a clear improvement that presents no difficulties.  Beyond that I\u2019m less much less convinced, as I\u2019ve stated at intervals above. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.138888888888888
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "34",
+                    "likes": "1",
+                    "time": "15/05/2020-09:36:07",
+                    "content": "  github.com/ethereum/EIPs         enter only via jumpsub   ethereum:master \u2190 ethereum:jumpsub            opened 09:32AM - 15 May 20 UTC               gcolvin             +7 -7           ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/2646",
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/pull/2646/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "15/05/2020-09:39:00",
+                    "content": "@chriseth, @holiman, Maybe that was missed, but I suggested to limit \u201ccreate init\u201d code to twice the deployed code size limit, i.e. 2x 24576 == 49152. This should significantly bound the possible number of jumpdests and subroutines. Thoughts? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "15/05/2020-09:46:39",
+                    "content": "    chfast:  Maybe that was missed, but I suggested to limit \u201ccreate init\u201d code to twice the deployed code size limit, i.e. 2x 24576 == 49152 . This should significantly bound the possible number of jumpdests and subroutines. Thoughts?   Yes I think that\u2019s a very good suggestion. Should definitely help ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.60625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "15/05/2020-09:47:17",
+                    "content": "I\u2019m editing the spec now.  How would that go? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "38",
+                    "likes": "2",
+                    "time": "15/05/2020-10:08:24",
+                    "content": "    holiman:      chfast:  Maybe that was missed, but I suggested to limit \u201ccreate init\u201d code to twice the deployed code size limit, i.e. 2x 24576 == 49152 . This should significantly bound the possible number of jumpdests and subroutines. Thoughts?   Yes I think that\u2019s a very good suggestion. Should definitely help   If this were to be applied to the network I would really suggest to make it into a separate EIP, required by 2315, otherwise mixing different restrictions into a feature EIP sounds weird. I could be convinced on the contrary though. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.703571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "15/05/2020-12:05:28",
+                    "content": "What\u2019s the current thoughts about tail calls and e.g. @chfast\u2019s suggestion of TAILJUMPSUB? I\u2019ve personally been wanting to implement tail call optimizations in solidity for a while (although I think there\u2019s no consensus about how beneficial they woud be - however, e.g. potential more functional languages might suffer even more from lacking the possibility of such an optimization). So I\u2019m wondering, since the current proposal reads like that will no longer be possible when using subroutines. (or wait: actually BEGINSUB JUMPDEST ... RETURNSUB and then jumping to that jumpdest from another subroutine would work? If so, then that would encourage jumping into subroutines for this, which @axic wants to avoid; I need to read the proposal a bit more carefully) EDIT: ok, reading the proposal a bit more carefully makes me realize that the only benefit tail call optimizations would bring would be to save one slot in the return_stack - apart from that the combination of JUMPSUB RETURNSUB should do exactly what I want already. And the size of return_stack is probably a reasonable limitation, so further support for tail call optimizations might really not be needed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.7125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "15/05/2020-12:07:40",
+                    "content": "So far as preventing jumping into subroutines goes \u2013 my problem remains that it has no semantics.  It\u2019s syntax, not mechanism, and the Rationale for this proposal is the least amount of mechanism needed to implement subroutines. Throughout this discussion my take becomes stronger that syntactic restrictions should be no part of the specification of the opcodes.  Opcodes control state-machine transitions, and should be constrained only by the validity of the states.  This lack of syntax should pose no obstacles to compilers from high level  languages to EVM code \u2013 they can enforce whatever syntax they like.  I understand that when compiling from EVM to lower level code this matters, but I\u2019ve generally seen compilers just \u201cthrow up their hands\u201d and generate bad code when their input has too little structure. We can avoid this if we want \u2026 We may later want to propose a separate EIP for a more-constrained EVM.  It can enforce code structure at deployment time that is better suited for streaming compilation and other purposes. So along the lines of EIP-615, taking recent conversations and experience with EIP-2315 into account. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.801041666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "18/05/2020-12:26:13",
+                    "content": "Subroutine map with capped executable code size Current max size of deployable code is 24576 (0x6000). We propose to also limit the size of executable code to 2x the above limit, i.e. 49152 (0xc000). This gives nice properties:  instruction offset in code fits 16-bit value, code size fits 16-bit value.  Possible implementations of subroutine maps Shadow array Max memory footprint: 0xc000 We create a byte array of the size of the code shadowing the instructions in the code. The array is initially filled with zeros.  a JUMPDEST instruction is indicated by 0x80 mask in the shadow array. To validate jump destination: (shadow_array[location] & 0x80) != 0. a BEGINSUB instruction is indicated by 0x40 mask in the shadow array. the size of a subroutine is encoded in the remaining 6-bits using variable-length encoding analogous to LEB128. Examples:   40 - subroutine of length zero,  5f - subroutine of length 31 (0x1f), the max length that fits single byte encoding,  6001 - subroutine of length 32 (0x00 + 2^5 * 0x01)  7f - subroutine of length 1023 (0x1f + 2^5 * 0x1f), the max length that fits two-byte encoding,  6081 - subroutine of length 32 followed by a JUMPDEST instruction.    Bitset with linear search Max memory footprint: 0xc000 / 4 == 12288 We create a bitset indicating an instruction is JUMPDEST and another bitset indicating an instruction is BEGINSUB. During execution we keep track of where the current subroutine starts. To validate if a jump stays within a subroutine:  when jumping backwards, just check if juspdest_location >= current_subroutine_begin, when jumping forward, find the beginning of the next subroutine starting from current PC (where the jump is). This is done by linear search in subroutine bitset. We can process 64 bits at a time by using 64-bit load and checking if value is not zero. This may be optimized further using SSE2 (128-bit) or AVX (256-bit).  In worst case we need 0xc000 / 64 == 768 comparisons. Span map Max memory footprint: 0xc000 * 2 == 98304 + jumpdest map. We keep an array of all BEGINSUB instructions offsets. Single value is uint16 and values are already sorted. To verify JUMPSUB check if location is in the array using binary search. When entering a subroutine remember subroutines begin and end location. The end location is the next value in the array. To verify if a jump stays within a subroutine check if jumpdest_location is between subroutine\u2019s begin and end.      axic:  If this were to be applied to the network I would really suggest to make it into a separate EIP, required by 2315, otherwise mixing different restrictions into a feature EIP sounds weird.   I\u2019m not able to prove it, but that was exactly my intention. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.654910714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "18/05/2020-12:36:12",
+                    "content": "    gcolvin:  We may later want to propose a separate EIP for a more-constrained EVM. It can enforce code structure at deployment time that is better suited for streaming compilation and other purposes. So along the lines of EIP-615, taking recent conversations and experience with EIP-2315 into account.   The deploy-time code validation is the precise boundary I don\u2019t want to cross. See EIP-2315 \"Simple Subroutines for the EVM\" - Analysis. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.553571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "18/05/2020-16:52:09",
+                    "content": "One detail that you don\u2019t mention explicitly, but might be worth to note: I believe all three implementations would require that JUMPSUB pushes current subroutine start into control stack togetter with return location, so that after RETURNSUB we can remember to which one we returned. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "18/05/2020-23:50:31",
+                    "content": "Here is a complete (untested) C++ implementation of a variant of @chfast\u2019s idea of the shadow array. It does not use a complicated variable-length encoding and needs less memory, though. It needs two bit fields with code_size number of bits: The first stores at bit i whether code[i] is push data or not. The second stores the length of each subroutine such that the length of the subroutine that starts at byte i is stored in binary starting at the ith bit. It does not need a stop marker for the length encoding because it reads the length bit-by-bit and checks if the end of the subroutine has been reached already. This can easily be removed by making the size of the bitset twice as large or by using a more complicated (prefix-free) number encoding.   gist.github.com   https://gist.github.com/chriseth/ea98864522d53e49c8450cf123f46c46 analysis.cpp #include <iostream> #include <vector> #include <optional> #include <assert.h>  using namespace std;  uint8_t constexpr PUSH = 0x60; uint8_t constexpr JUMPDEST = 0x5b; uint8_t constexpr BEGINSUB = 0xb5; This file has been truncated. show original        ",
+                    "links": [
+                        "https://gist.github.com/chriseth/ea98864522d53e49c8450cf123f46c46",
+                        "https://gist.github.com/chriseth/ea98864522d53e49c8450cf123f46c46"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.294146825396825
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "19/05/2020-20:48:53",
+                    "content": "This PR incorporates the fix to prevent the EVM from stepping (as opposed to jumping) to BEGINSUB \u2013 JUMPSUB transfers control to the instruction after BEGINSUB;  BEGINSUB itself aborts. This PR does not prevent \u201cjumping into subroutines.\u201d PR EIP @chfast @gumb0 @axic @chriseth @holiman ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/1e3659c86d284473fde869a7a8129c5e7af6fe7e/EIPS/eip-2315.md"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matkt",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "20/05/2020-02:51:12",
+                    "content": "it looks like the example is wrong https://github.com/ethereum/EIPs/blob/1e3659c86d284473fde869a7a8129c5e7af6fe7e/EIPS/eip-2315.md#subroutine-at-end-of-code.  BeginSub shouldn\u2019t be present. Right? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.642857142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "20/05/2020-09:04:08",
+                    "content": "Here is a specification for the restrictions on the jump and jumpi opcodes: https://github.com/ethereum/EIPs/pull/2663 (the \u201cdo not walk into subroutines\u201d part is already merged into EIP-2315) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "20/05/2020-10:57:17",
+                    "content": "Subroutine maps help answering following questions (sometimes also by using information in the code itself):  is this instruction a JUMPDEST? is this instruction a BEGINSUB? what is the length of this subroutine?  For subroutine maps we have two classes of implementations (as identified with @chriseth).  \u201cCode shadow array\u201d The size is proportional to the code length. We believe the variant with the lowest memory footprint would use 2 bits per byte of code (proposed by @chriseth). Up to one byte per byte of code presented as \u201cShadow array\u201d in EIP-2315 \"Simple Subroutines for the EVM\" - Analysis. This class of implementations is generic and does not depend on the discussed executable code length cap. \u201cSpan map\u201d This is a map/set of subroutine begins/ends but can be efficiently stored as an array and binary search can be used to lookup values in the map. The size is proportional to the number of subroutines. But in worst case the code may be only 1-byte long subroutines. This depends on the code length cap because with the cap we can use uint16 type, otherwise we need uint32. In the worst case with uint32 type the memory footprint is 4x the code length.       gumb0:  One detail that you don\u2019t mention explicitly, but might be worth to note: I believe all three implementations would require that JUMPSUB pushes current subroutine start into control stack togetter with return location, so that after RETURNSUB we can remember to which one we returned.   True. I actually did not realized that I need to remember the all the subroutines on the control stack. This is however not needed for \u201cspan map\u201d. One binary search is enough to find both begin and end of a subroutine. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "20/05/2020-13:59:49",
+                    "content": "    chfast:      gumb0:  One detail that you don\u2019t mention explicitly, but might be worth to note: I believe all three implementations would require that JUMPSUB pushes current subroutine start into control stack togetter with return location, so that after RETURNSUB we can remember to which one we returned.   True. I actually did not realized that I need to remember the all the subroutines on the control stack.   That\u2019s what I meant here:     holiman:  The original EIP added one more data structure: the returnstack. With this suggestion + Pawels implementation idea, we will need to have one more: the stack of \u2018current subroutine offset\u2019, to remove the linear factor from evaluating a JUMP .   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.446428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "28/05/2020-11:25:52",
+                    "content": "EIP proposal to limit initcode: https://github.com/ethereum/EIPs/pull/2677 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "53",
+                    "likes": "0",
+                    "time": "02/06/2020-15:32:50",
+                    "content": "Proof of concept / draft implementation, with an implementation of the shadow-array analysis can be found here: https://github.com/ethereum/go-ethereum/pull/21161 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "54",
+                    "likes": "0",
+                    "time": "24/08/2020-13:58:43",
+                    "content": "Coming back around to this, do we know what the changes to the Yellow paper will be to support this?  When I went into it recently I found that even BEGINSUB would add more to the YP than I\u2019d like.  I\u2019d be more sympathetic if this feature can be expressed succinctly there. Also, one reason I don\u2019t like this feature is that it prevents other means of implementing subroutines \u2013 e.g. I think Christian has shown that in some cases leaf routines can be implemented more efficiently with JUMP than JUMPSUB. @axic @gumb0 @chriseth ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.041666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "14/09/2020-13:47:15",
+                    "content": "    gcolvin:  Coming back around to this, do we know what the changes to the Yellow paper will be to support this? When I went into it recently I found that even BEGINSUB would add more to the YP than I\u2019d like. I\u2019d be more sympathetic if this feature can be expressed succinctly there.   I don\u2019t know how difficult it would be to add this to the YP, as I never edited it myself. But I personally don\u2019t see much interest in the community to keep the YP up to date nowadays - it\u2019s never considered when EIPs are being proposed / discussed, and the most recent version only partially covers Petersburg (the fork from February 2019)     gcolvin:  Also, one reason I don\u2019t like this feature is that it prevents other means of implementing subroutines \u2013 e.g. I think Christian has shown that in some cases leaf routines can be implemented more efficiently with JUMP than JUMPSUB.   It wouldn\u2019t prevent ignoring JUMPSUB by the compiler and implementing all the subroutines with only JUMPs. Mixing two kinds of subroutines in one contract (JUMPSUB subs and JUMP subs)  doesn\u2019t sound like a good idea in general to me, for the reasons pointed out in the original analysis: difficulty to test  all the edge cases of such complicated contract, complications for the static analysis, complications for finding limits of each subroutine if we want to merklize them separately or runtime-analyze them separately. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.729166666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "56",
+                    "likes": "0",
+                    "time": "15/09/2020-15:54:45",
+                    "content": "Nick Saves endeavors to keep the YP up to date - it\u2019s the only spec we have.  Actually editing the TeX is difficult, but getting an idea of how much work a new feature would be isn\u2019t so bad. At the least, we need a PR to the EIP, if there isn\u2019t one I missed.  I expect this will be a pain to specify, as currently there is almost no structure specified for bytecode and it amounts to a huge expansion of illegal jump locations.  The EIP will also need to explain how to implement this efficiently. Part of my change of heart here is that although a check for this is needed at runtime (and in my experience checking syntactic constraints at runtime is trouble) a compiler from EVM code can assume that it never happens and take advantage of that promise inside of the subroutine.  (And I still wish I\u2019d never introduced beginsub, but stuck with the bare minimum.) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.410984848484849
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "57",
+                    "likes": "0",
+                    "time": "16/09/2020-18:24:42",
+                    "content": "    chriseth:  Here is a specification for the restrictions on the jump and jumpi opcodes: https://github.com/ethereum/EIPs/pull/2663  (the \u201cdo not walk into subroutines\u201d part is already merged into EIP-2315)   @gcolvin this is the PR. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "58",
+                    "likes": "0",
+                    "time": "17/09/2020-19:47:24",
+                    "content": "@axic Thanks! The whole PR could probably be smaller, but the meat of it looks good:  If there is a BEGINSUB opcode between pc and target, abort.  Will be harder to say in Yellow-Paper-ese, but not too hard. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.631944444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "59",
+                    "likes": "0",
+                    "time": "17/09/2020-19:53:03",
+                    "content": "However, I\u2019m not sure I understand this part, so it worries me:  These changes do not affect the semantics of existing EVM code that does not contain the new opcodes. For EVM code that contains a BEGINSUB opcode that was not meant to be executed but is jumped over, this change can result in such contracts starting to fail where they previously did not fail. While arbitrary data being appended to the end of the bytecode is common, such contracts would have to contain data parts (non-executable code) enclosed by two chunks of executable code. The Solidity compiler is not known to be able to generate such code, not even with inline assembly, unless inline assembly is used to return custom-designed data as the runtime code in the constructor.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.820707070707071
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "60",
+                    "likes": "0",
+                    "time": "19/09/2020-16:42:25",
+                    "content": "Aha, I think I understand. Breaking backwards compatibility might be a showstopper. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1051"
+}

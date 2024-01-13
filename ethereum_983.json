@@ -1,0 +1,309 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-1559-go-ethereum-implementation/3918",
+            "title": "EIP-1559 Go-ethereum implementation ",
+            "index": 3918,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "gas",
+                "eip-1559"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "1",
+                    "likes": "3",
+                    "time": "10/01/2020-21:40:37",
+                    "content": "Hello everyone! This thread will serve to extend the previous EIP-1559 discussions with a focus on the go-ethereum implementation provided by Vulcanize Inc. That implementation can be found here Other relevant links: Updated EIP documentation Previous discussion thread Skinny EIP-1559 thread Ethresear.ch Post w/ Vitalik\u2019s Paper After incorporating feedback received here I can proceed to open a PR for the implementation and the EIP documentation updates. Thanks! ",
+                    "links": [
+                        "https://github.com/vulcanize/EIPs/blob/eip1559/EIPS/eip-1559.md",
+                        "https://ethereum-magicians.org/t/eip-1559-fee-market-change-for-eth-1-0-chain/2783",
+                        "https://ethereum-magicians.org/t/skinny-eip-1559/3738",
+                        "https://ethresear.ch/t/draft-position-paper-on-resource-pricing/2838",
+                        "https://ethereum-magicians.org/t/eip-1559-fee-market-change-for-eth-1-0-chain/2783/70"
+                    ],
+                    "GPT-summary": "The author of the post is seeking feedback on the go-ethereum implementation of EIP-1559 provided by Vulcanize Inc. They provide links to relevant documentation and previous discussions. The author expresses gratitude for any feedback received and plans to update the EIP documentation based on it.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None"
+                    ],
+                    "Sentiment": 5.159722222222223
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/edmundedgar",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "10/01/2020-23:02:52",
+                    "content": "Thanks for doing this. Aside from the transition part, in the final state, would you mind ELI5-ing the way the main parameters (TARGET_GASUSED, BASE_FEE etc) get set in the current proposal? The EIP has a TARGET_GASUSED and a BASE_FEE, but the BASE_FEE is now in a header field, so is the idea that the miners are voting on BASE_FEE directly like they do with the current gas limit, and the TARGET_GASUSED is just a parameter the miners set to feed the implementation\u2019s default method for telling their node how to vote? Or is something else meant by \u201cBASEFEE  is maintained under consensus\u201d? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.388888888888888
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "11/01/2020-10:57:23",
+                    "content": "Did you decide to make the basefee adjustment formula \u201cjust a suggestion\u201d? I thought we had talked about this and decided to make it hard-coded to prevent miners from being able to individually push the fee up or down by a significant amount by adjusting the formula? Or is there some overriding rationale for making it just a suggestion? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.899305555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "12/01/2020-21:46:22",
+                    "content": "Hey @edmundedgar and @vbuterin , thanks for the comments! @edmundedgar TARGET_GASUSED is a constant that is used in the BASEFEE adjustment formula, it is the amount of gas we target to use and miners adjust the BASEFEE up or down depending on how the actual gas usage deviates from this value. Specifically, miners set a block\u2019s BASEFEE as PARENT_BASEFEE + PARENT_BASEFEE * DELTA // TARGET_GASUSED // BASEFEE_MAX_CHANGE_DENOMINATOR, where DELTA = PARENT_GASUSED - TARGET_GASUSED. The BASEFEE is maintained under consensus by the ethash engine. In the verifyHeader() method a header is invalidated if the BASEFEE increases or decreases relative to PARENT_BASEFEE more than the allowed amount (PARENT_BASEFEE // BASEFEE_MAX_CHANGE_DENOMINATOR). @vbuterin per your comment the above is not quite right. I will update the consensus engine so that the exact value from the basefee adjustment formula is enforced, not just an upper and lower bound on the value. The need for this is apparent, currently a miner could change their basefee adjustment algo to submit arbitrary BASEFEEs that are valid so long as they are within the upper and lower limits e.g. they could raise the BASEFEE by as much as PARENT_BASEFEE // BASEFEE_MAX_CHANGE_DENOMINATOR even if PARENT_GASUSED is below TARGET_GASUSED. That\u2019s an oversight on my part, but a simple fix to make. Thank you for pointing it out! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3618113912231555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/edmundedgar",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "12/01/2020-23:40:43",
+                    "content": "@i-norden Thanks, so to make sure this is clear, the proposal is that TARGET_GASUSED is hard-coded at 8 million and never changed, except by a future hard fork. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.508333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "13/01/2020-01:32:16",
+                    "content": "@edmundedgar that is correct! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "13/01/2020-03:32:08",
+                    "content": "Any reason why 8m, and not the current max of 10m? Setting to the current max seems most sensible. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/edmundedgar",
+                    "index": "8",
+                    "likes": "3",
+                    "time": "13/01/2020-09:35:35",
+                    "content": "Just a thought: It might be worth putting something about the change from miner voting to a hard-coded limit that\u2019s only changed in hard forks in the abstract and the motivation section of the EIP; I think I understand the basic reasons why this is being done from the previous Magicians discussion, but it\u2019s arguably a more significant change than the fee market reform that\u2019s the subject of the EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.34375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "13/01/2020-21:12:08",
+                    "content": "@vbuterin 8m is left over from when work began on this, before the gas limit increase to 10m. I simply missed that change. Will update to 10m now. @edmundedgar that is a good point, I will update the EIP doc to be more explicit about this. Thank you both! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.65625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "14/01/2020-04:39:31",
+                    "content": "Another change I would recommend is setting a hard per-transaction gas limit of 10m, arguably even set the per-transaction limit to 8m. Don\u2019t want to set the precedent that yuge transactions are possible. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.270833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "15/01/2020-21:11:55",
+                    "content": "@vbuterin added a per-transaction gas limit of 8m as recommended  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tvanepps",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "23/01/2020-16:46:32",
+                    "content": "Just curious, what are the next steps for moving forward with this EIP? Will your team be presenting the updates to the spec on the Core Dev call tomorrow? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "28/01/2020-22:13:00",
+                    "content": "Hi @tvanepp! Sorry for the delayed response. We didn\u2019t make it on the Core Dev call last Friday. The plan of action is to incorporate feedback from here and then move forward by opening a PR for the EIP doc and Go-ethereum implementation. I\u2019ll go ahead and open those PRs at the end of the week if no more changes are recommended/requested here. A more code-focused review can occur on the Go-ethereum PR. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "14",
+                    "likes": "2",
+                    "time": "03/02/2020-16:51:55",
+                    "content": "Hi all! The PRs for the EIP doc and for the implementation have been opened. I\u2019ll continue to incorporate feedback received here. Thanks! ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum/pull/20618"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "04/02/2020-10:52:26",
+                    "content": "I think that we should use the same constant for both GASTLIMIT and this new \u2018TXGASLIMIT\u2019, mostly because some smart contracts may assume that they can use the whole block for gas if necessary, this is sometimes used to detect out of gas exceptions on-chain. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.750463821892393
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "04/02/2020-18:19:08",
+                    "content": "@Agusx1211 just to clarify, we should use the 16m MAX_GAS_EIP1559  as the TX_GASLIMIT? Or the 10m TARGET_GAS_USED? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "07/02/2020-15:53:07",
+                    "content": "IMO we should use the 16m (or 20m ?) MAX_GAS_EIP1559  as the TX_GASLIMIT ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "07/02/2020-16:48:18",
+                    "content": "Thanks @Agusx1211! One potential issue with this is that during the transition period during which both legacy and EIP1559 transactions are accepted the MAX_GAS_EIP1559 is split between the two gas pools. For example, at the block that EIP1559 is activated 8m is in the legacy pool and 8m is in the 1559 pool. So a transaction to either pool with gas usage of MAX_GAS_EIP1559 would be rejected. This would be the case until the EIP finalization block is reached and the entire MAX_GAS_EIP1559 is available to the 1559 pool. Perhaps the TX_GASLIMIT could be set to the portion of MAX_GAS_EIP1559 available for processing that type of transaction at a given blockheight. But that will still cause issue for smart contracts that assume they can use the whole block for gas. We\u2019ve raised the TARGET_GAS_USED to 10m since that is the current gas limit, but I am hesitant to raise MAX_GAS_EIP1559 to 20m. It was originally set to be 24m, but there were some concerns raised by P\u00e9ter and in our Core Dev\u2019s call about the ramifications of this (EIP-1559: Fee market change for ETH 1.0 chain). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.021825396825396
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "08/02/2020-14:56:33",
+                    "content": "    i-norden:  But that will still cause issue for smart contracts that assume they can use the whole block for gas.   Wouldn\u2019t smart contracts read that the \u201cwhole block\u201d is composed by the \u201cportion of  MAX_GAS_EIP1559  available for processing that type of transaction at a given blockheight\u201d? If opcode 0x45 (GASLIMIT) returns the portion of the block available for processing it should be safe to allow TXs to reach the same limit, in that way we aren\u2019t breaking the two implicit rules of the current chain A) A TX could use the totality of GASLIMIT and B) GASLIMIT can never be below the TX gas Maybe I am missing the point ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.9603174603174605
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "20",
+                    "likes": "1",
+                    "time": "09/02/2020-19:30:04",
+                    "content": "Opcode 0x45 returns the gas limit value from the block header, after EIP1559 activation this value is the gas limit for the EIP1559 gas pool and the gas limit for the legacy gas pool is equal to MAX_GAS_EIP1559 - this value. Sorry for the confusion, the issue I brought up in my previous response still exists with where the per-tx gas limit is set right now (8m), e.g. just 1 block after EIP1559 activation the legacy gas pool will have less than 8m gas available for processing transactions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.8769841269841265
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MrChico",
+                    "index": "21",
+                    "likes": "1",
+                    "time": "15/02/2020-19:06:03",
+                    "content": "I\u2019m thinking that it might be a good idea to introduce a check for monotonically increasing tx.gasprice in block validation along with this EIP. While default miner software already orders the transactions of a block according to their gas price, there doesn\u2019t seem to be any checks that miners running custom software adhere to this rule. The assumption that higher gas price transactions will be executed before low gas price transactions is widespread in developing and interacting with contracts and is the default behaviour of client software. I don\u2019t see any reason it why miners should be given the capability to order transactions as they see fit. Transaction ordering is a highly sensitive matter, as demonstrated in Flash Boys 2.0 by Phil Daian et. al and I think we should limit miner privileges where we can. I think enforcing tx ordering by gas price would definitely increase the predictability of outcomes here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.208333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/i-norden",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "18/02/2020-04:47:46",
+                    "content": "@MrChico thank you for bringing this up! My initial reaction is that this should be a separate EIP because while EIP1559 potentially exasperates this issue (I\u2019ll get to that at the end) it\u2019s not specific to EIP1559. There are a few reasons why that assumption is already not safe to make even with standard miners/clients. I apologize and please correct me if I am wrong on any of these points or if I misunderstood you.   Parity has a CLI flag --tx-queue-strategy that lets you customize how your miner prioritizes transactions (this might be for the miner pool only with standard sorting still done before committing, I\u2019m not super familiar with Parity)   Geth sorts and commits local and remote transactions separately, it commits all local transactions before moving to the remotes   Within the local and remote batches the transactions are sorted by nonce and gas price, with nonce taking precedence. More specifically, in NewTransactionsByPriceAndNonce we iterate through a map of addresses to nonce-sorted transactions, taking only the lowest-nonce transaction for each address and adding it to a heap which is sorted by gas price. Transactions are read from the heap here and after they are committed they are replaced with the next lowest nonce transaction for that account and the heap is re-sorted.   E.g. let\u2019s say we have 2 remote accounts A and B A has three transactions with nonce n and gas price p: A(n:0, p:100), A(n:1, p:200), A(n:2, p:100) B has three transactions: B(n:0, p:200), B(n:1, p:50), B(n:2, p:400) And one local account C with a single tx: C(n:0, p:50) The final ordering (as I understand it) will be: C(n:0, p:50), B(n:0, p:200), A(n:0, p:100), A(n:1, p:200), A(n:2, p:100), B(n:1, p:50), B(n:2, p:400) As for how EIP1559 relates to this all\u2026 This implementation currently retains the above ordering of transactions using either legacy or EIP1559 gas price. During the transition period during which both legacy and EIP1559 transactions are accepted, since EIP1559_GASPRICE = min(BASE_FEE + GAS_PREMIUM, FEE_CAP) and the BASE_FEE is always burned a miner will be rewarded more for a LEGACY_GASPRICE where LEGACY_GASPRICE < EIP1559_GASPRICE so long as LEGACY_GASPRICE > GAS_PREMIUM or LEGACY_GASPRICE > FEE_CAP - BASE_FEE if FEE_CAP < BASE_FEE + GAS_PREMIUM. We can prescribe a new ordering based on LEGACY_GASPRICE and GAS_PREMIUM  or FEE_CAP - BASE_FEE instead, that would remove the new incentive but then the standard itself would no longer be to order by gas price as it does now. The other way would be what you recommend and include tx ordering under consensus  Curious what other people\u2019s thoughts are. I can bring this up at the Core Dev\u2019s call this Friday. ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum/blob/master/core/types/transaction.go#L337",
+                        "https://github.com/ethereum/go-ethereum/blob/master/miner/worker.go#L751",
+                        "https://github.com/ethereum/go-ethereum/blob/master/miner/worker.go#L792",
+                        "https://github.com/ethereum/go-ethereum/blob/91b228966e042d8fad36451d524bbf8b2abde690/core/types/transaction.go#L372"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.963580611307884
+                }
+            ]
+        }
+    ],
+    "group_index": "983"
+}

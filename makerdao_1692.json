@@ -1,0 +1,160 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/risk-profiles-of-erc721-non-fungible-tokens-as-collateral-within-mcd/17698",
+            "title": "Risk profiles of ERC721 non-fungible tokens as collateral within MCD ",
+            "index": 17698,
+            "category": [
+                "Updates"
+            ],
+            "tags": [
+                "pe-001",
+                "protocol-engineering",
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Arby",
+                    "index": "#1",
+                    "likes": "4",
+                    "time": "06/09/2022-19:31:57",
+                    "content": " Risk profiles of ERC721 non-fungible tokens as collateral within MCD  TLDR Oracle issues - Existing OSM structure allows for price manipulation attacks for certain collections due to NFT collections\u2019 sizes and volatility. NFT pricing oracles have not been sufficiently proven yet (JPEG\u2019d oracles seem to be the best at present). Liquidation counterparty issues - NFT transactions cannot be settled atomically in a proven and tested way (SudoSwap is still new but looks promising) ERC721 incompatibility issues - Metadata not being frozen and contracts being either ownable, infinitely mintable or easily rugged are common issues for PFP NFTs. Infrastructure is not in place for use of oracles with financial instrument NFTs yet. Maturity of the sector will lead to eventual solutions within this space.  Brief Non-Fungible Token collateral as part of multi-collateral DAI is a popular idea and has been explored by MonetSupply in a post from earlier this year. Building on this idea, this post explores a hypothetical implementation of ERC721 NFT collateral within MCD, outlining challenges and potential solutions which are likely to arise.  Motivation As a recap of MonetSupply\u2019s post, motivations for MakerDAO implementing some form of NFT collateral largely revolved around strong demand, low competition and a large addressable market size. In the time since the original post, competitors have emerged, the market has decreased in size significantly and (importantly) distinctions between types of demand have been made apparent (more on this later). As the implementation of ERC721 as a token specification becomes increasingly popular outside of the realm of \u201cJPEG tokens\u201d, it is instrumental that MakerDAO develops the ability to interact with these new collateral types in order to remain relevant and maintain an expanding addressable market outside of ERC20 tokens and RWA vaults.  Types of ERC721 tokens The two main types of ERC721 tokens as I have defined them are financial instrument tokens and digital collectible tokens. An example of a financial instrument token is a Uniswap v3 LP NFT while an example of a digital collectible token is a CryptoPunk or an XCOPY artwork. These two types of tokens carry different risk profiles and represent different implementation structures with different challenges.  Previous work - NFT lending frameworks MonetSupply explains that there are four main types of loans with NFT collateral exposure which Maker can serve, namely:  Fractional token loans - this does not involve ERC721 token interaction  Floor asset loans - lend against the token based on floor price  Repurchase agreements - acquire the tokens for DAI with a repurchase option  Loans to other NFT lending projects - this is just \u201clending to CeFi\u201d   There are two viable strategies explored here: Floor asset loans, where ERC721 tokens are locked into a vault and DAI is drawn according to the floor price of the token\u2019s collection, and; Repurchase agreements, where Maker takes on the ERC721 tokens as collateral based on a significantly lower valuation than market price at time of loan issuance. Both of these frameworks involve direct interaction with the ERC721 tokens and will be explored in this analysis.  ERC721 Token exposure  ERC721 token standard risk profile As a token standard, ERC721 tokens (sans metadata and other attributes) are significantly different to ERC20 tokens and therefore pose a threat to DSS contract security. In short:  ERC721 tokens use onERC721Received to allow for safe transfers, which could allow for reentrancy-style attacks on DSS contracts  Currently, DSS contracts exclusively use ERC20 tokens as collateral, meaning that any potential interactions which could be caused by implementation of ERC721 collateral must be explored. Even under the assumption that previous audits and security analysis provides sufficient evidence that the existing system is safe, this will mean a lot of developers\u2019 time spent combing through code to double-check. This is a low severity risk  ERC721 collectibles risk profile Most digital collectible NFT collections (\u201cPFP\u201d sets) operate using an ownable minting contract and an API for metadata hosting. These two factors carry risks;  The contract owner can mint additional NFTs beyond the supply cap through a reserveTokens function or similar. This would devalue all tokens in a collection and cause Maker\u2019s assessment of token value to be vastly inaccurate, leading to undercollateralised loans.  Upgradable ERC721 contracts have the same vulnerabilities as outlined in (1) if the dev is malicious. This is probably going to be very rare, since a majority of ERC721 tokens are basically templates. The contract owner of an established collection can change the baseURI value and rug token holders (which is very unlikely) or (far more likely) change the metadata values for certain tokens in a collection (if they are deemed to be stolen, for example) - causing them to drop to floor value - or censor a token outright (not serve metadata at all) causing near complete devaluation of the token.While this is relatively rarely seen (usually this method is used to \u2018reroll\u2019 tokens if a mint has been gamed), the potential for collections to do this is present in almost all tokens.   CloneX1024\u00d7610 17 KB  CloneX serves their metadata exclusively through their API  Azuki1544\u00d7606 25.8 KB  Azuki serves their metadata using Pinata - the resulting metadata may be hosted on IPFS, but from a safety perspective this is no different to directly using an API Collections like Bored Ape Yacht Club, which previously faced controversy relating to contract ownership have renounced ownership and now host their metadata directly on IPFS rather than serving it via an API. These collections represent a minority of ERC721 digital collectibles but present the least risk.  BAYC1230\u00d7600 22.3 KB  BAYC serves their metadata directly from IPFS. This is the best option. While this risk seems low at a first glance, given Maker\u2019s permissionless nature, it stands to reason that depositing stolen ERC721 tokens (either directly stolen or \u201cblacklisted\u201d assets) exacerbate this risk significantly and are an eventuality. Implementations of the floor asset loans such as BendDAO have already had \u201cquestionably obtained\u201d NFTs used as collateral (which may be valued as less than floor price due to large marketplace exclusion). Contracts being owned This is a medium severity risk  Stolen ERC721 token risk profile Given the absurd number of stolen Bored Apes amongst other tokens, the non-technical risk element of offering permissionless collateralisation of stolen assets (and therefore attracting attention from law enforcement) poses risks for Maker as an entity rather than for the collateralisation of DAI itself. Using an NFT AMM such as SudoSwap for liquidations lessens this risk significantly. This is a high severity risk  Floor asset loan challenges Pricing of NFTs based on floor prices leads to a plethora of issues, based on a few fundamental truths:  Floor prices do not represent open offers for \u201cany element of this collection\u201d but rather represent a value above what the market prices the collection\u2019s currently purchasable tokens at (i.e. slightly above \u201cmarket rate\u201d)  By virtue of this, floor prices can actually be manipulated at scale - for example, in small collections, \u201ccommon\u201d tokens could remain unlisted if there was collusion by the token holders, leading to the floor price actually representing the value of tokens of \u201cuncommon\u201d rarity or higher. While in reality this collusion is nearly possible to execute when there are typically over 5000 common tokens in a PFP-style collection, if the collection was smaller (for example 1000 tokens) then this is possible and would allow for collateral depositors to borrow against their tokens at an inflated valuation. In terms of selling assets instantly for floor price, SudoSwap NFT AMM pools offer a relatively new solution for disposal of assets.  Floor prices can be manipulated easily in some cases.  An example of this being easily possible is XCOPY\u2019s Mortal  series which is comprised of 10 tokens. At date of writing, one token is for sale for 350 ETH, with two others having last sale prices of 12 and 32 ETH. Here, one of the owners of another Mortal piece could purchase the token for 350 ETH and instantly relist it at 3,500 ETH. Assuming that Maker vaults allowed collateralisation of any of XCOPY\u2019s selected works (which all use the same contract) with floor prices taken from the Mortal sub-collection, this would allow for potentially infinite borrowing against a single token up to the debt ceiling. This is a high likelihood for tokens such as XCOPY artworks (which are considered to be blue chip by NFT collectors).  Floor prices vary depending on market  The floor prices on OpenSea and LooksRare are different since OpenSea delists / censors stolen or controversial assets. At the time of writing, the difference in floor prices for BAYC on LooksRare and OpenSea is 3.83%. Existing NFT collateral lending platforms such as BendDAO use floor prices from OpenSea and LooksRare with a TWAP mechanism.  Question1608\u00d7434 41.2 KB  The short answer to this question posed on their forum is \u2018no\u2019 While this appears to be a reasonably safe mechanism for their purposes, it is nowhere near what the MCD system currently implements in regards to ERC20 collateral. High volatility periods or downtime of OpenSea and/or LooksRare (or their hosting dependencies) could mean rapid liquidiation of NFT collateral backed loans without an OSM-like module. However an OSM module would face issues with regards to attacks presented in (1) and (2) and allow coordinated attacks if it is not designed with such attacks in mind (ERC20 OSM does not consider this a risk since it is a manifestation of non-fungibility and low supply or collusion).  Oracle infrastructure is not yet available for these usecases  Existing infrastructure used by BendDAO (which they call an \u201cOracle Mechanism\u201d) is far from sufficient to replace the OSM and timelocks expose Maker to attacks (1) and (2) as outlined above.  Oracle2230\u00d7610 59.5 KB  BendDAO\u2019s \u201cOracle Mechanism\u201d MonetSupply\u2019s proposed solution to the issue of pricing was as follows:  *\u201cA team or set of teams within MakerDAO will carry out periodic appraisals of supported NFT collateral assets.\u201d  While this can work, it would require a lot of additional work compared to the existing ERC20 OSM setup that exists. Additionally, a \u2018lagging price\u2019 implemented through a timelock (as the OSM operates) allows for potential abuse (that, on paper, appears just as severe as for the existing ERC20 OSM) which due to NFT volatility may become more severe or frequent. Current Oracle solutions by JPEG\u2019d offer the most appealing solution presented to date, however their documentation does not offer much by way of a technical description of how it operates. Incorporating recent purchases in valuations would prevent attacks of type (2), however a more complex solution would be needed to mitigate attacks as described in (1).  Oracle21562\u00d7378 38.8 KB  JPEG\u2019d provides a solution for floor price manipulation attacks in some ways The hypothetical ideal oracle would also uses a \u201crarity score\u201d based model to prevent attacks as described in (1) above to prevent large scale collusion amongst token holders to only have purchasable tokens comprising floor be of intrinsically higher rarity or value than their own assets. This particularly applies to PFP-style collections where the collection size is small enough to allow such collusion. Ideally, team ownership stakes could be used to mitigate such attacks, however if there was enough buy pressure, even this could be overcome. While this attack appears to be incredibly difficult to execute and not very economically viable, it represents a risk if PFP-style token adoption were to scale.  Stolen NFTs  Stolen NFTs can be used as collateral - this has been explored from the perspective of an existential risk to MakerDAO above. However, these tokens are also generally traded for prices under floor price. This means that lower collateralisation ratios would need to be used to ensure that liquidation auction purchasers are still incentivised to purchase the token (this is not a problem if the NFT is sold to a SudoSwap pool as it is also permissionless). Additionally, the collateral could be discounted to ensure a safety margin, however this would make Maker\u2019s offering less competitive (market lending rate is 30-40% of floor price).  DAI peg changes  Competitors issue USD-pegged stablecoins such as PUSd or issue ETH loans. Both USD and ETH are common denomination units for NFTs - while the counterparty bears the depeg risk for PUSd and other stablecoins, at date of writing, the average NFT owner is likely to assume that DAI is pegged to 1 USD. This is more of a par/TRFM issue than one specific to ERC721 lending, however it may affect competitiveness of the proposed Maker implementation. NFT holders are considered to be less knowledgable regarding DeFi, hence the use of USD-pegged stables and ETH for loan issuance on existing platforms.  Repurchase agreement challenges  Maker acts as a middleman for NFT transactions via collateral locking and loan issuance  The primary risk associated here is that Maker is custodying the assets and since NFT theft is often more publicised than ERC20 token theft, it may draw unnecessary risk to Maker (outweighing the benefits in terms of accrued fees and collateral diversification).  Maker may not be efficient in terms of rates  The fees earned by Maker for repurchase would likely not outweigh the volatility risk given that the entire NFT asset class has seen wild fluctuations. MonetSupply suggests that the repurchase agreement method be used for 1 of 1 pieces and very high rarity tokens. In my view, even this is too high a risk for Maker to take on given the sector\u2019s volatile history; Maker would be better off investing in NFT investors.  DAI peg changes  DAI peg changes may disincentivise repurchases of tokens by the counterparty. This can be solved however is a problem worth mentioning.  Financial instrument token challenges Financial instrument tokens such as Uni v3 LP NFTs can be priced in one of two ways:  Reverse engineer the price calculation by replicating the protocol\u2019s NFT minting process, or; Use an oracle of some kind to price the tokens  Option (1) is dangerous given that an exploit in either Maker\u2019s pricing contract or the original contract (for example, allowing minting positions 10x the size they should be) would allow for attacks which can mint DAI up to the debt ceiling. Option (2) has shortfalls in that Oracles may face difficulty pricing so many tokens. Considering that these tokens may be minted and burnt constantly, this is a difficult problem for oracles to solve. Overall, the technology to safely price these tokens is yet to exist. A hypothetical solution would be an oracle which compares contract input and output estimate values during minting and burning of the financial instrument NFTs. No such solution exists at present and this sector is still maturing.  Overcoming shortcomings  Oracles Currently, no oracle exists which is safe enough to prevent all attack types with certainty. The JPEG\u2019d oracle appears to offer the best solution available at present and therefore should be explored.  Liquidation counterparties Previously, there was no atomic way of selling NFT collateral in the event of a liquidation. SudoSwap presents a novel technology which should be explored as an element of auction liquidations.  Fundamental incompatibilities Assuming for some reason that ERC721 tokens are fundamentally incompatible with MCD as an extension of the existing system (either temporarily until the technology becomes available or permanently), it is still possible to obtain collateral diversity through Fractional ERC20 token representations of NFTs.  Conclusion The risks presented when considering inclusion of ERC721 collateral as part of MCD are broad and can be severe. Three main technologies present potentially viable options for facilitating ERC721 collateral within MCD and should be explored further:  JPEG\u2019d price oracles for use in DAI drawdown and initiating liquidations  SudoSwap NFT AMM pools for use in facilitating NFT liquidations  Fractional NFTs as ERC20 tokens for gaining ERC721 token exposure without ERC721 token use   ",
+                    "links": [
+                        "https://etherscan.io/token/0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d#readContract",
+                        "https://www.benddao.xyz/",
+                        "https://slate.com/technology/2022/06/bored-ape-yacht-club-thefts-nfts-cryptocurrency.html",
+                        "https://docs.sudoswap.xyz/",
+                        "https://opensea.io/assets?search%5Bquery%5D=mortal%20xcopy",
+                        "https://opensea.io/assets?search%5Bquery%5D=mortal%20xcopy",
+                        "https://opensea.io/assets?search%5Bquery%5D=mortal%20xcopy",
+                        "https://etherscan.io/token/0xd652d2633cdbfd5f27f50cddb098e708fa8433f3",
+                        "https://looksrare.org/collections/0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D",
+                        "https://opensea.io/collection/boredapeyachtclub",
+                        "https://docs.benddao.xyz/portal/lending-protocol/oracle-price-feeding",
+                        "https://docs.jpegd.io/about-the-lending-protocol/the-lending-mechanics#the-oracle",
+                        "https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c",
+                        "https://twitter.com/fiveoutofnine/status/1558880403649593344",
+                        "https://docs.jpegd.io/tokenomics/pusd"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.380496030484667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Saludiego_201",
+                    "index": "#2",
+                    "likes": "3",
+                    "time": "06/09/2022-20:07:16",
+                    "content": "   benddao.xyz    BendDAO - Web3 Data Liquidity BendDAO is the first decentralized peer-to-pool based NFT liquidity protocol.      In the case of this DAO, having major liquidity problems and completely subjective pricing is a problem. ",
+                    "links": [
+                        "https://www.benddao.xyz/"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/0xbocaJ",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "06/09/2022-20:13:38",
+                    "content": "    Arby:  given Maker\u2019s permissionless nature, it stands to reason that depositing stolen ERC721 tokens (either directly stolen or \u201cblacklisted\u201d assets) exacerbate this risk significantly and are an eventuality.   I understand that this no-blacklist condition is true for the Dai contract, but does this necessarily need to be true for vaults? Couldn\u2019t we design a vault that queries a list of stollen NFTs and refuses to accept as collateral any NFT that is on that list? Alternatively, couldn\u2019t we demand that Oracles price stollen NFTs at zero? As a community member, I want to keep the protocol open, but I also don\u2019t want to to see something good being used to profit off stollen goods. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.3392857142857135
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Saludiego_201",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "06/09/2022-20:17:01",
+                    "content": "Your enemy\u2019s money is good money, if we can all use it then that means it works and it is free, if certain conditions are placed on its \u201cfreedom\u201d then it is not free. Decentralization and freedom must go hand in hand, unfortunately no one likes that \u201cnegative\u201d groups use our currencies to do their misdeeds, but if they do it is because DAI is free. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.045918367346939
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/0xbocaJ",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "06/09/2022-20:28:20",
+                    "content": "I\u2019m not talking about taking away their Dai, I\u2019m talking about determining how we value collateral. Can you clarify why Maker Governance deciding that stollen goods have no value to our community as collateral is necessarily against values of decentralization and freedom? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MFeinberg",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "06/09/2022-21:00:38",
+                    "content": "I like the idea behind this. I want to find as many ways to use NFTs as possible. I\u2019m pleased to see this has been built upon by prior discussions amongst the community. As to the \u201cstolen\u201d or \u201cflagged\u201d NFTs it seems opensea is the only platform trying to work through that issue by implementing a policy/procedure. I don\u2019t think any of the other marketplaces do that but I could be wrong. With some marketplaces taking a hands off approach as to possibly stolen NFTs, I think that might be an issue. In other words, it could be harder (and take longer) to spot a stolen NFT. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.886363636363637
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Arby",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "06/09/2022-21:42:43",
+                    "content": " I understand that this no-blacklist condition is true for the Dai contract, but does this necessarily need to be true for vaults?  I am against blacklists / blocklists in principle and believe in writing permissionless software. Either way, what stops an NFT thief from instantly using a freshly stolen NFT as collateral (before a blacklist)?  Can you clarify why Maker Governance deciding that stolen goods have no value to our community as collateral is necessarily against values of decentralization and freedom?  Completely separate to the points on values, this method alongside the hypothetical above would lead to undercollateralisation (e.g. someone deposits a stolen ape worth 50E, borrows 15E and then the ape is marked as stolen and written off as 0E value). Stolen NFTs tend to trade at 70-90% floor of non-stolen NFTs on marketplaces. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/0xbocaJ",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "06/09/2022-21:53:04",
+                    "content": "Yeah, I don\u2019t have a great solution for what to do against stollen NFTs that have already been collateralized. Maybe the vault could require a certain amount of seasoning of the NFT-holding address before generating collateral, but I recognize such a solution would be harming the usability of the platform, so maybe not worth it. But I didn\u2019t mean to get into a normative discussion; I\u2019m just trying to understand from a technical perspective what barriers exist to NFT-based collateral blacklisting. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.459821428571429
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Arby",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "07/09/2022-15:43:41",
+                    "content": "I agree that a timelock style system would be quite effective at doing this, maybe requiring the holder to have owned it for 1-2 weeks prior to using it as collateral? This would of course break atomic-transaction uses of the system but that\u2019s hardly a concern. It also wouldn\u2019t stop them using the stolen token weeks later as collateral - we would need to make it permissioned somehow to accomplish that! Main barriers are currently that there is no single list of stolen tokens - OpenSea has been too aggressive with designating assets as stolen and so isn\u2019t a good source of information for this. The system is improving but still centralised and can be used to cause harm if false positives can be weaponised. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.450396825396825
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/0xbocaJ",
+                    "index": "#10",
+                    "likes": "1",
+                    "time": "07/09/2022-16:54:30",
+                    "content": "Curating a good list of stollen/not stollen should maybe fall within the Oracle working group? I agree that we shouldn\u2019t blindly accept one corporation\u2019s blacklist (though it could be informative data). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Arby",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "08/09/2022-17:34:53",
+                    "content": "For anyone looking at this thread once it\u2019s archived:  LMAO1184\u00d71554 92.3 KB  I called it. As above, ERC721 tokens cannot be used as viable collateral for MCD (or really any lending system) until the metadata is frozen on IPFS and the contract ownership is renounced. Once this is complete, Maker should take steps (via the oracles team or otherwise) to pin the IPFS data as well and avoid it being taken down. Who is to say that instead of an upgrade, a token gets downgraded? A rare made into a common? A common made to return no information? NFTs as they exist are (nearly all) a speculative hot potato bubble formed from the foundations of incredibly powerful technology. Let\u2019s exercise caution in dealing with this and not conflate some uses of a technology with the tech itself. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.247222222222222
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "07/12/2022-17:35:06",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

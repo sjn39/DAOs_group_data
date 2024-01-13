@@ -1,0 +1,127 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/estimating-dai-usd-from-the-eth2dai-order-book-instead-of-dex-trades/92",
+            "title": "Estimating DAI/USD from the eth2dai order book instead of dex trades ",
+            "index": 92,
+            "category": [
+                "Core Units",
+                "Risk"
+            ],
+            "tags": [
+                "analysis",
+                "data",
+                "rates"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/lix",
+                    "index": "#1",
+                    "likes": "8",
+                    "time": "09/07/2019-03:41:43",
+                    "content": "Throughout the history of DAI the vast majority of the volume has been through the oasis/eth2dai contract. This poses a problem when it comes to estimating the DAI/USD price using trades because it takes a few blocks to cancel a limit order. If ETH/USD moves against the maker, an arbitrager/market maker/metamask meatball will take it. In terms of DAI/USD, this trade looks like it occurred at an outlier price of +1.02/0.98 when compared to a centralized ETH/USD feed. This adds unnecessary noise to our DAI/USD error signal if DAI/USD was close to 1 the rest of the day. The second problem with calculating the DAI/USD price by trades is liquidity. Occasionally, uniswap or tap contract pure revenue bots will chew through offers on eth2dai +2% away from the spread. If the market makers on eth2dai put their offers right back where they were (with respect to 1), then these trades also add noise to our DAI/USD error signal. The third problem - how do we calculate DAI/USD if very few trades occurred during that hour/day? This hasn\u2019t been an issue lately, but some days during 2018 it was. Calculating the DAI/USD price from the order book reduces these three sources of unnecessary error. Here is eth2dai order book over around 1000 blocks.  book_feb132511\u00d71351 54.7 KB  My primary goal is to get a cleaner, more accurate,  DAI/USD error signal into my PID controller for repeatable off chain SF estimation. (updated post on PID coming soon) Sites that calculate DAI/USD from trades like http://dai.descipher.io/ or https://dai.stablecoin.science/ are excellent for getting a quick look at what is going on in DeFi, but they are too noisy to make repeatable estimations possible using a PID for the reasons I listed above. Lets compare a volatile period where DAI was too low in April 2019. Calculating the DAI/USD error signal by trades: Trade Histogram April 9d GIF | Gfycat Calculating the DAI/USD error signal by eth2dai order book: 0413 GIF | Gfycat Comparing the two on the same plot:  old_v_new04132511\u00d71351 270 KB  (plot notes: 1. I omitted a few trades that happened at extremely low or high values. 2. The hourly order book depth is calculated by the median amount of DAI available from eth2dai over a 1 hour period. 3. All error bands signify 1 standard deviation) The benefit is marginal for when DAI is off the peg. The standard deviation bands for the order book method are slightly tighter than using trades, but overall the signals look about the same. Now, lets take a look at a less volatile (in terms of DAI/USD) period a few weeks ago. Calculating the DAI/USD error signal by trades: Trade Histogram June 9d GIF | Gfycat Calculating the DAI/USD error signal by eth2dai order book: 0621 GIF | Gfycat Comparing the two on the same plot:  old_v_new06212511\u00d71351 159 KB  This is where the order book method really shines. If there are asks above 1, and bids below 1, the SF is in its happy place. There is no reason to change it, so the error signal can =0 when this is the case. If you were calculating the error using trades it would be much harder to say what was going on due to all the noise. Let me know if you have any questions/comments as the feedback I\u2019ve gotten so far has been spectacular. data sources: trades - dai.stablecoin.science ETH/USD (gemini minute) - http://www.cryptodatadownload.com/data/northamerican/ order book - eth2dai/oasis contract source code: 1000 block order book plot - GitHub - lixwhi/order_book_plot: plots the eth2dai order book get the order book data - GitHub - lixwhi/get_oasis_book: puts the oasis/eth2dai orderbook into a csv file for plots plot the book histogram and make gif GitHub - lixwhi/oasis_hourly_histogram: plots the liquidity depth from data here - https://github.com/lixwhi/get_oasis_book dex trades histogram and compare plots- GitHub - lixwhi/dex_trades_histogram: plots a histogram of dex trades from dai.stablecoin.science and compares it to the order book method ",
+                    "links": [
+                        "https://dai.stablecoin.science/",
+                        "https://gfycat.com/frighteningselfreliantadder",
+                        "https://gfycat.com/mintybriefamericanredsquirrel",
+                        "https://gfycat.com/deadlygroundedblowfish",
+                        "https://gfycat.com/waryopenafricanporcupine",
+                        "http://www.cryptodatadownload.com/data/northamerican/",
+                        "https://github.com/lixwhi/order_book_plot",
+                        "https://github.com/lixwhi/get_oasis_book",
+                        "https://github.com/lixwhi/oasis_hourly_histogram",
+                        "https://github.com/lixwhi/dex_trades_histogram",
+                        "https://forum.makerdao.com/t/julys-community-mentions-of-the-month/232",
+                        "https://forum.makerdao.com/t/maker-2019-7-25/212",
+                        "https://forum.makerdao.com/t/scientific-governance-and-risk-thursday-july-25-9am-pst-4-00-pm-utc/176"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.366071428571429
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "25/07/2019-22:26:04",
+                    "content": "Comment about why noise in the prices is also an important data-point  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/wjmelements",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "14/10/2019-20:45:35",
+                    "content": "It is important to consider the gas cost of the oracle. Uniswap V1 has pretty thick liquidity rn, and it requires very little gas to check its price (compared to reading an orderbook) because you only have to check its ETH balance and its DAI balance, both of which you can do without calling into the contract. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.10625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/PatrickDehkordi",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "15/10/2019-19:55:26",
+                    "content": "Of course you can do a weighted volume averages or devise other ways of defining the \u201cmarket price\u201d However to call any free market trade data \u201cnoise\u201d or \u201cerror\u201d, is dangerous. It shouldn\u2019t matter if a trade is made by man/machine, market/limit, arbitrage/momentum automated/manual marginal/central central/otc and so on \u2026  More market data, increases accuracy of \u201cprice\u201d. no? This maybe just a philosophical bias on my part, but this is what I was thought. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.175
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lix",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "16/10/2019-00:26:51",
+                    "content": "Sorry guys, I should have been more clear. I was attempting to show that there are some trade-offs to consider when calculating DAI/USD for a PID controller.     wjmelements:  It is important to consider the gas cost of the oracle   I\u2019m not suggesting we should bring the DSR or SF calculations on chain yet. One day, that might be achievable. It would help out with voter fatigue to make the rate calculations automatic. However, at this stage in the project, I think the price is too easy to manipulate to have on chain rate calculation.     PatrickDehkordi:  However to call any free market trade data \u201cnoise\u201d or \u201cerror\u201d, is dangerous.   I agree with this, and should have been more clear in what I was going for. By \u201cerror\u201d and \u201cnoise\u201d I mean signal error and signal noise in the context of an off chain PID controller. The controller\u2019s purpose is to make the error=0. So, if DAI is 1.01 then the error is 0.01. The transient trades that occur definitely mean something. However, from the controller\u2019s point of view, these \u201cout of spec\u201d trades induce unnecessary instability into the error signal. The DAI/USD ratio moves slowly. That\u2019s why the controller doesn\u2019t need to consider every trade to provide a rate estimation - it only needs the big picture. Thanks for the feedback. I haven\u2019t written anything on the PID controller recently because I\u2019ve had second thoughts on if it can work. I think it would require voting more frequently than once per week, and that is not possible due to governance fatigue. The controller might suggest better values in MCD if we only change the DSR to keep the peg. We\u2019ll have to wait and see. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.246527777777778
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bartek",
+                    "index": "#6",
+                    "likes": "2",
+                    "time": "18/10/2019-04:41:23",
+                    "content": "It may be worth noting here that Oasis team keeps track of the Order Book midpoint price for each block, we can set up API for easy access if that would be useful ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.722222222222223
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#7",
+                    "likes": "2",
+                    "time": "10/11/2019-19:12:36",
+                    "content": "Well as a controls guy familiar with feed back or feed forward PID loops. In the context of frequency of voting vs. something more finely grained one could simply vote a range available for such a PID loop and then enable the PID loop to operate to make automatic adjustments  on finer timescales. The question would be what range, and time slice of the PID.   Careful consideration of the data sources and system response characteristics would be imporant.   The real question is what levers to allow the PID to pull and how success is measured. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.045833333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lix",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "10/11/2019-20:03:07",
+                    "content": "    MakerMan:  In the context of frequency of voting vs. something more finely grained one could simply vote a range available for such a PID loop and then enable the PID loop to operate to make automatic adjustments on finer timescales.   I think having a contract make automatic adjustments to the SF would be challenging in today\u2019s DAI market. Wouldn\u2019t it be fairly cheap to manipulate the DAI/USD price and induce wild rate swings from the PID regardless of the response characteristics we give it? I suppose an on chain solution could work if we had authority to shut it down quickly in case it was being attacked. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.247222222222223
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#10",
+                    "likes": "2",
+                    "time": "10/11/2019-20:51:14",
+                    "content": "PID design is tricky for reasons cited above (signal noise, systemic or random). Also note that I pointed out in the first post that the PID allowed range to operate would be limited. Lets say +/- 5% of the current SF for example. Right now that would be 4.75-5.25%. It is a nice way to have a PID do fine grained and somewhat limited changes in scope on a more frequent basis (say once/hr or once/day). In fact it would be the best way to test such a PID is to just limit how much it can change the voted target fee (or whatever is being used). Doing a % of the SF fee means that if the SF voted target was 1% the PID given the +/-5% range example above would go from .95-1.05. If it was 20% this would give a working range of 19-21%. Over time one if we found that the PID worked reasonably well we could open the range to 10 or 20% of the voted target range. EDIT ADD: Note I\u2019m not saying TO DO a PID just as a guy who deals with this for a living that there are good ways. What to try to regulate on and how is always the tricky part of PID design. I come back to something I\u2019ll say a lot. What is the goal? How do we measure success or failure? BTW: In reply to the OP and using eth2dai orderbook as a DAI/USD oracle. Given that orders require fees this may be interesting but I see a lot of bots that will move orders instantly as I trade on eth2dai a lot. Most people consider that using the orderbook for anything to not be a great idea generally as the liquidity is virtual not actual because orders can appear and disappear quickly (whether there are fees or not). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.031462585034014
+                }
+            ]
+        }
+    ]
+}

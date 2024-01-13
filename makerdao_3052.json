@@ -1,0 +1,178 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/11-25-20-oracle-outage-post-mortem/5547",
+            "title": "11/25/20 Oracle Outage Post-Mortem ",
+            "index": 5547,
+            "category": [
+                "Updates"
+            ],
+            "tags": [
+                "oracles",
+                "post-mortem"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/NikKunkel",
+                    "index": "#1",
+                    "likes": "16",
+                    "time": "08/12/2020-06:39:43",
+                    "content": "11/25/20 Oracle Outage Post-Mortem Summary On Wednesday, November 25th between 22:46 UTC and 02:23 UTC the following morning, the Maker Oracle Protocol experienced an outage. During this time, no Oracles were updated. The outage was due to a hardcoded \u201cstate size\u201d limit in Scuttlebot, a p2p gossip network protocol utilized by the Maker Oracle Protocol. No liquidations were affected during this time. Root Cause Analysis Scuttlebot is similar to a blockchain in that messages are hash-linked and stored locally by every peer on the network. As more messages are gossiped on the Scuttlebot network, the state size grows larger, which is reflected in the size of a file called log.offset. Since Feeds and Relayers are connected to have complete visibility of each other in the network, state size will tend to be relatively consistent across different peers. Scuttlebot has a hardcoded limit for log.offset of 4294967295 bytes (4.29 GB) after which the Scuttlebot server will crash and refuse to restart. The Oracle Domain Team has been aware of this issue since September 6, 2019 when it had encountered it in testing prior to the release of Multi-Collateral Dai. Back then the team had opened a Github issue in the Scuttlebot repository documentation the bug. The issue was tracked down to a limitation of an OffsetCodec that was used by Scuttlebot. Calculations were made estimating how long it would take the log.offset to reach 80% of its maximum threshold given the number of Feeds, the number of collateral types, and assuming the frequency of price updates was equivalent to that seen during the previous year of testing. These calculations led the Oracle Domain Team to estimate a figure of approximately 18 months before a migration to a new Scuttlebot network would be necessary. Based on this figure, the team correctly prioritized Transport Layer redundancy with a timeline that would precede the estimated recurrence of the Scuttlebot bug. Further analysis of what caused the state size to grow much quicker than initial estimates is still ongoing. One factor is that the frequency of price updates during the time since Multi-Collateral Dai launched is significantly greater than during the preceding year of testing. This could be caused by cryptocurrencies being much more volatile in 2020 than in 2019. Another factor may be that performance optimizations in the Oracle implementation to reduce the latency of fetching prices led to more frequent price updates than the estimate accounted for. Mitigations and improvements Since the initial launch of the Maker Oracle Protocol, the Oracle Domain Team roadmap has been focused on an initiative called \u201cOracle De-Risk\u201d which seeks to mitigate Oracle outages through improving the resiliency of the Oracle. The Maker Oracle Protocol today has full infrastructure redundancy. Any Feed, Relayer, or data source can go offline without affecting the availability of the Oracle. This is a critical feature, showcasing the decentralization of the Maker Oracle Protocol. The key next step is to achieve implementation redundancy, such that no dependency exists on a single implementation for any component of the Oracle stack (price sourcing, transport layer, feed client, relayer client, etc.). Over the past year, the Oracle Domain Team has made considerable progress on this front. This includes delivering a new price sourcing implementation such that no bug in a single price sourcing implementation affects Oracle availability. The team spent a considerable amount of time researching alternative Transport Layers to Scuttlebot, ultimately settling on libp2p. Transport Layers are the medium through which Oracle Feeds distribute signed price messages to Relayers. By utilizing multiple Transport Layers in parallel, Oracle availability becomes unaffected should a Transport Layer fail or be attacked. After extensive research, the team selected libp2p as the prime candidate. The Oracle Domain Team has been working on implementing libp2p as a Transport Layer for the Maker Oracle Protocol for all of Q4. A functional prototype has been completed, and a production-grade implementation is in the later stages of development. However, the scuttlebut bug recurred before our calculated estimates and we were unable to push the completed libp2p integration into production in time to mitigate the issue. This is quite frustrating, in that if the timing of the Scuttelbot bug was delayed by just a month, libp2p would have been running in production and the scuttlebot failure would not have resulted in an Oracle outage. The Oracle Domain Team was precisely aware of the problem in the Maker Oracle Protocol, the solution required to solve the problem, and was in the midst of executing on that solution. In order to prevent the recurrence of this issue, the Oracle Domain Team has put in place real-time monitoring solutions for the Scuttlebot state size. This should give advanced warning of any unexpected state size increase that could lead to triggering the Scuttlebot bug. The introduction of libp2p into the Maker Oracle Protocol is the more permanent solution and is expected to be released into production early next year. Timeline Discovery Wednesday 20:58 A community member notifies The Oracle Domain Team of an Oracle Relayer failure. Analysis Wednesday 21:09 The Oracle Domain Team confirms the cause is related to a known issue associated with Scuttlebot. The team begins investigating whether the same issue could potentially affect other nodes in the Scuttlebot network. Wednesday 21:15 The Oracle Domain Team begins reaching out to Feeds and Relayers to request information to assess the situation. Wednesday 21:31 After confirming the size of the log.offset parameter with several Feeds and Relayers it is determined the issue is critical, time-sensitive, and may lead to a loss of quorum (the number of Feeds needed to update the price of an Oracle). Calculations show some Feeds will begin to go offline due to the issue within an hour. Execution Wednesday 21:55 After comparing potential solutions, the Oracle Domain Team makes the decision to execute an emergency migration. The Oracle Domain Team alerts all Feeds of the critical issue and to be on standby for an emergency migration. Wednesday 22:21 The first Oracle Feeds begin to drop offline. Wednesday 22:25 The Oracle Domain Team completes bootstrapping a new Scuttlebot network. Wednesday 22:46 Enough Feeds have dropped offline from the critical scuttlebot issue that quorum is lost. At this point all Maker Oracles stop updating. Wednesday 22:55 The Oracle Domain Team begins reaching out to all customers of the Maker Oracles informing them of the outage. Wednesday 23:12 The Oracle Domain Team has completed the emergency migration documentation and tested it to verify completeness and correct behavior. The documentation is shared with all Oracle Feeds. Wednesday 23:34 The first 3 Feeds have completed the emergency migration and are fully functional on the new Scuttlebot network. Thursday 02:17 13 Feeds have completed the emergency migration, quorum is restored (the Maker Oracle Protocol is online again). Thursday 02:23 A relayer submits the first price update to the ETH/USD Oracle from the new Scuttlebot network. Thursday 02:30 Relayers begin updating all other Oracles from the new Scuttlebot network.  Thursday 02:36 The Oracle Domain Team begins informing customers that the Maker Oracles are fully operational. Thursday 11:31 12 hours after the migration began, 21 out of 26 Feeds have completed the emergency migration. Tuesday 10:35 All 26 Feeds have completed the emergency migration. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/response-to-chainlinkgod-accusations/9112",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24/5534",
+                        "https://forum.makerdao.com/t/maker-relay-ep-25/5671",
+                        "https://forum.makerdao.com/t/weekly-sourcecred-distribution-work-reaches-ath/5670",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/8",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-121-thursday-december-10-16-00-utc/5468/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33-en-espanol/6729",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-129-thursday-february-18-17-00-utc/6506/5",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/18",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33/6694",
+                        "https://forum.makerdao.com/t/maker-relay-ep-25-en-espanol/5680"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.198382635882636
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Sherlock",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "10/12/2020-23:39:26",
+                    "content": "I\u2019m having trouble understanding how the team knew this might be an issue and just assumed it wouldn\u2019t happen this soon. Reminds me of standing on the train tracks and then being surprised you got hit by a train. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hongbiao_li",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "11/12/2020-02:51:55",
+                    "content": "I can only say that we are lucky. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/martymcfly",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "11/12/2020-05:19:56",
+                    "content": "    NikKunkel:  One factor is that the frequency of price updates during the time since Multi-Collateral Dai launched is significantly greater than during the preceding year of testing. This could be caused by cryptocurrencies being much more volatile in 2020 than in 2019. Another factor may be that performance optimizations in the Oracle implementation to reduce the latency of fetching prices led to more frequent price updates than the estimate accounted for.   They hadn\u2019t taken into account new optimizations when they tested in the past \u201cOne factor is that the frequency of price updates during the time since Multi-Collateral Dai launched is significantly greater than during the preceding year of testing. This could be caused by cryptocurrencies being much more volatile in 2020 than in 2019. Another factor may be that performance optimizations in the Oracle implementation to reduce the latency of fetching prices led to more frequent price updates than the estimate accounted for.\u201d ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.543181818181818
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/wouter",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "11/12/2020-10:15:05",
+                    "content": "If there is a list of 10 identified risks, you can\u2019t tackle all of them at the same time. Prioritization based on probabilities is always key. It\u2019s not a single railroad track. You\u2019re standing on a crossroads of 10 tracks. You need to chose which one to divert first, and the train of number 3 happened to arrive earlier than the estimated schedule indicated. That being said, the monitoring piece that is added now will give more of an advance warning. In this case, a solution is costly and it was already in the works for months. However it wasn\u2019t ready in time. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.704081632653061
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Dave1000",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "12/12/2020-02:08:20",
+                    "content": "It seems like Maker\u2019s oracle team needs additional outside help then. This was a known issue for a year so they should have at least set up an monitoring solution for when the Scuttlebutt log file got over 4GB. As Maker TVL grows, more feeds will have to will have to be launched and will continue to strain resources if more oracle devs aren\u2019t brought on. This issue should have never happened in my opinion. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/NikKunkel",
+                    "index": "#7",
+                    "likes": "5",
+                    "time": "12/12/2020-02:38:56",
+                    "content": " As Maker TVL grows, more feeds will have to will have to be launched and will continue to strain resources if more oracle devs aren\u2019t brought on.  I think you\u2019re misunderstanding terminology here. Feeds report prices for all collateral types. The number of Feeds doesn\u2019t need to change with TVL, neither does it need to increase with the number of collateral types. I think what you mean to say is more Oracles need to be deployed as collateral types are onboarded into the protocol. Even then, the Oracle Team has been consistently ahead of schedule on collateral onboarding related work, with the Risk and Smart Contracts team being the primary bottleneck for collateral-onboarding (with no disrespect to those teams, the amount of work they\u2019re expected to take on is enormous!). The majority of the Oracle Teams resources are focused on Oracle protocol development. My team has had 3 more hires in the past 6 months alone. We\u2019re doing fine with development resources and will continue to scale up as our workload increases.  This issue should have never happened in my opinion  I agree, the Oracle Team strives for 100% uptime as goal. Our entire design philosophy is built around optimizing resiliency through redundancy. Even with this incident, the Maker Oracles have a 99.9% uptime record which is better than Chainlink can say about their Oracles after their Black Thursday outage (and doesn\u2019t include other outages that they haven\u2019t publicized). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.831407563025211
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/taylor814ce",
+                    "index": "#8",
+                    "likes": "4",
+                    "time": "14/12/2020-14:36:44",
+                    "content": "I have always appreciated the Maker community\u2019s transparency around the protocol and its focus on decentralization. It has allowed the project to flourish into one of the most pivotal and trusted components of the DeFi ecosystem at large. However, I think there are fundamental improvements that should be made regarding the oracle system to prevent events like this from happening again. Managing an oracle system really needs a full time team so developers don\u2019t get spread too thin. So in this regard, I think Maker should integrate with an external oracle project that already has a full time team who can track and mitigate these issues on the behalf of the Maker community. It seems the primary reason for this issue was the design decision of separating the data sourcing process from the data delivery process through the usage of third party relayers and the ScuttleButt network (used in a way it really wasn\u2019t designed for). Such oracle related issues can lead to the false liquidation of users as we recently saw with Compound\u2019s oracle which also uses third party relayers in its design. While adding more redundancy with libp2p may or may not help, it isn\u2019t guaranteed to be a reliable solution and doesn\u2019t solve the bandwidth issue of Maker\u2019s oracle team. While there were, fortunately, no liquidations as a result of Maker\u2019s outage, this is only because of pure chance. Had there been market volatility that pushed prices downwards during this 3.5 hour time period, the Maker protocol could have easily become undercollateralized and required another minting of MKR similar to the situation with black thursday and the $0 liquidations, which is clearly not ideal for anyone. So to fix this issue at its source, I would like to re-open the discussion around using Chainlink price feeds as Maker\u2019s oracle solution, which based on my research does not require third-party relayers as the oracles deliver data directly on-chain and has proven its reliability for projects like Synthetix and Aave. I am curious to hear the community\u2019s thoughts on this, because as a DAI user this seems like the best path forward. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/using-chainlink-oracles-for-link-usd/2670"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.615221088435374
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/NikKunkel",
+                    "index": "#9",
+                    "likes": "10",
+                    "time": "14/12/2020-16:27:40",
+                    "content": "    taylor814ce:  It seems the primary reason for this issue was the design decision of separating the data sourcing process from the data delivery process through the usage of third party relayers and the ScuttleButt network (used in a way it really wasn\u2019t designed for).   It seems you are misunderstanding the root cause here. I suggest you go re-read the post-mortem. Whether you separate the data sourcing from data delivery is completely irrelevant.     taylor814ce:  Such oracle related issues can lead to the false liquidation of users as we recently saw with Compound\u2019s oracle which also uses third party relayers in its design.   No, not really, you\u2019re conflating brittle Oracle Data Models (the Compound event) which can lead prices that diverge from the fair market value and cause unintended liquidations, with an outage which doesn\u2019t update the price and thus by definition can\u2019t liquidate anyone. An event the Maker Protocol has never experienced before.     taylor814ce:  While adding more redundancy with libp2p may or may not help, it isn\u2019t guaranteed to be a reliable solution and doesn\u2019t solve the bandwidth issue of Maker\u2019s oracle team.   Re-read my reply above, the Oracle Domain Team doesn\u2019t have a bandwidth issue:  Even then, the Oracle Team has been consistently ahead of schedule on collateral onboarding related work, with the Risk and Smart Contracts team being the primary bottleneck for collateral-onboarding (with no disrespect to those teams, the amount of work they\u2019re expected to take on is enormous!). The majority of the Oracle Teams resources are focused on Oracle protocol development. My team has had 3 more hires in the past 6 months alone. We\u2019re doing fine with development resources and will continue to scale up as our workload increases.      taylor814ce:  So to fix this issue at its source, I would like to re-open the discussion around using Chainlink price feeds as Maker\u2019s oracle solution which based on my research does not require third-party relayers as the oracles deliver data directly on-chain   What you are citing is not a problem but an intentional design decision. Maker Oracles had this this fused sourcing and delivery model in the first implementation of the Oracle protocol. It\u2019s not an optimal design, so it was an explicit design goal of version 2.0 to split this responsibility. Feeds should do one thing and do it well. Having Feeds take over the data delivery role is an anti-pattern, not a strength. I\u2019m sure Chainlink will realize this at one point as well and copy our architecture, just as Chainlink recently added aggregation signatures a feature Maker Oracles have had for YEARS. Congratulations on finally catching up with us. Furthermore there are fundamental reasons why it is unappealing for MakerDAO to adopt an external Oracle protocol that were cited in the thread you linked and have not changed since then. It is an incredibly dangerous position for the DAO to hand over control of the system to an external protocol. This is made even more dangerous by the fact Chainlink isn\u2019t a decentralized protocol, but rather a centralized company which retains the ability to control who is a Feed for an Oracle, which ultimately allows them to manipulate the Oracle price at will. The amount of leverage it gives the external protocol and its stakeholders is enormous. It throttles the Maker Protocol\u2019s ability to scale, relative to an in-house protocol which is purpose built for the needs of the Maker Protocol. The DAO should never put itself in a position where its expenses can be controlled by an external entity. This is before even taking into account that Chainlink\u2019s model of using a volatile token to pay for Oracle services is broken. Not only that, but the DAO has an incredible business opportunity to sell its Oracle services which already have a large portfolio of users, whose adoption is accelerating, and which are expected to generate significant revenue. As you can see, there is little reason the Maker Protocol should utilize Chainlink, nor any other Oracle protocol. Thank you for registering a forum account just so you can shill. I respect the hustle. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/using-chainlink-oracles-for-link-usd/2670",
+                        "https://twitter.com/ChainLinkGod/status/1337469556315418630/photo/1"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.3040146909827754
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/taylor814ce",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "14/12/2020-23:04:32",
+                    "content": "I appreciate the response and additional clarification on some of the points I brought up. At the end of the day I\u2019m just a DAI user that wants the best for the Maker protocol as I believe it to be a crucial pillar of DeFi as a whole. That said, I do not share many of the concerns you brought up regarding Chainlink. Namely around centralization\u2014Chainlink consists of hundreds of public nodes (market.link) which have undergone security reviews and verified to be independent. Also, I think Chainlink would actually enable Maker to scale at a faster rate when it comes to things like adding additional collateral types. This is part of the reason why projects like Yearn, Synthetix, Aave etc. are so nimble. They don\u2019t have to worry about oracle-related bottlenecks. Again I really appreciate the thoughtful response, and I applaud the efforts you are making. However, I\u2019d love to know what the community at large thinks regarding this issue. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.3392857142857135
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#11",
+                    "likes": "0",
+                    "time": "14/12/2020-23:16:40",
+                    "content": "    NikKunkel:  the Oracle Team has been consistently ahead of schedule on collateral onboarding related work, with the Risk and Smart Contracts team being the primary bottleneck for collateral-onboarding   We\u2019re on the same page about LINK. I trust the experts. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.864285714285714
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#12",
+                    "likes": "4",
+                    "time": "14/12/2020-23:22:07",
+                    "content": "I think Oracles are a core competency of Maker and should not be outsourced. Oracle is knowing the truth. You don\u2019t rely on a third party to know the truth. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#13",
+                    "likes": "7",
+                    "time": "14/12/2020-23:37:31",
+                    "content": "    taylor814ce:  I\u2019m just a DAI user that wants the best for the Maker protocol   I would feel better about this statement if you had engaged with Maker Governance on any other issue, and if your previous post had not been liked by multiple accounts that are either days old, or have interacted almost exclusively with chainlink related threads. Normally when you see multiple users signing up to like a post, it\u2019s a good sign that it\u2019s been shared elsewhere. Nothing wrong with that in and of itself, but it somewhat undermines your claim that you are \u2018just\u2019 a concerned DAI user. Certainly possible I\u2019m wrong and generally I try to engage in good faith, but yeah, posts like this have a tendency to be interpreted negatively (whether accurately or not.) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.581140350877193
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#14",
+                    "likes": "0",
+                    "time": "21/12/2020-23:37:35",
+                    "content": "This topic was automatically closed 7 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

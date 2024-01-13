@@ -1,0 +1,432 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/add-wallet-methods-to-improve-dapp-to-wallet-interaction/1848",
+            "title": "Add `wallet_` methods to improve dapp to wallet interaction ",
+            "index": 1848,
+            "category": [
+                "Wallets"
+            ],
+            "tags": [
+                "ux"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "1",
+                    "likes": "8",
+                    "time": "08/11/2018-22:35:02",
+                    "content": "Wallets are the most important interaction point between dapps and the Ethereum chain. Currently the most important wallet methods ( eth_sendTransaction ,  eth_sign  and  eth_signTypedData ) are part of the general api specification. For most wallets it does not make sense to provide implementations for all  eth_  methods. Therefore it would make sense to introduce a new prefix  wallet_  (this was already introduced with EIP 747: wallet_watchAsset). This will provide the possibility to support new types of wallets. While the current methods are focused on wallets based on externally owned accounts, more and more wallets start to make use of smart contracts. Interacting with smart contract based wallets is different to the interaction with EOA based wallets. The biggest difference is that smart contract based wallets cannot generate ECDSA signatures. Also smart contract based wallets provide the possibility for a lot of extended functionality. There is an early version of an EIP (https://github.com/rmeissner/EIPs/blob/rmeissner-wallet-rpc/EIPS/eip-xxx.md) and I would love to move this forward. The idea is to provide a standard that can be used by any sdk building ontop of an EthereumProvider. This interface could also be used for communication between mobile wallets and mobile apps. And it should be able to provide a base that can be extended for future wallet specific improvements. (e.g. this would make it possible that dapps build there own EthereumProvider and browser wallets just inject the a WalletProvider that handles the wallet_ rpc calls) ",
+                    "links": [
+                        "https://github.com/rmeissner/EIPs/blob/rmeissner-wallet-rpc/EIPS/eip-xxx.md",
+                        "https://ethereum-magicians.org/t/eip-2253-add-wallet-getaddressbook-json-rpc-method/3592/10",
+                        "https://ethereum-magicians.org/t/pop-up-sessions-in-berlin-today-and-friday-sticker-transport-to-ethdenver/2128",
+                        "https://ethereum-magicians.org/t/forming-a-ring-provider-ring/1852/7",
+                        "https://ethereum-magicians.org/t/automatic-authentication-signature/2429/2",
+                        "https://ethereum-magicians.org/t/eip-5792-wallet-function-call-api/11374/9"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.996272246272246
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "09/11/2018-11:16:42",
+                    "content": "Hey - thanks for the initiative - really like it. Just having  a problem with one detail: wallet_getActiveWallet I really do not like the idea of having the state of an active-account - would rather like to see that the account has to be passed as parameter to eth_sign, eth_signTypedData, \u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "09/11/2018-13:42:38",
+                    "content": "My idea was that wallet_getActiveWallet just indicates which wallet is selected by default (if you don\u2019t specify anything for sign or signTypedData) Also a lot of dapps use coinbase to get the currently selected account from MetaMask and this would be a more explicit way of querying that. But I think it makes sense to allow specifying an account for sign and signTypedData. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "09/11/2018-14:56:06",
+                    "content": "I think you should be forced to specify the account for signing. Really do not like the idea of an active account. And with the recent changes from metamask the coinbase thing should also not work anymore - correct? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.333333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pcowgill",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "09/11/2018-21:54:28",
+                    "content": "I think this would be a great change, @rmeissner. @ligi I agree - I think storing an active/default wallet should be the dapp\u2019s responsibility. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 9.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "09/11/2018-22:07:37",
+                    "content": "In this case would you add something like wallet_getWallets to allow the dapp to query all addresses with their wallet types. If the wallet (e.g. MetaMask) now manages multiple addresses and the dapp requests a signature from address2, should the user be allowed to change this? @ligi even with EIP-1102 the coinbase approach should work after the user approved the dapp. A lot of wallet still have a selected account which is used for certain actions (e.g. sendTransactions). Should this be somehow explicitly exposed? What should a dapp display as the account if it sees that the user has multiple? EDIT: After some thinking you could also say: If the wallet doesn\u2019t want that the dapp can select between different address it should only return a single address (this is actually what we do for the safe extension right now). So if a wallet provider returns a list of addresses the dapp should be able to freely choose (this is what @ligi and @pcowgill were suggesting if I understood correctly) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.8311688311688314
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/androolloyd",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "09/11/2018-22:33:41",
+                    "content": "I purpose a new method wallet_validNotaries - effectively a way to return an array of valid accounts that can sign messages on behalf of the contract (meta txns, other types of messages, etc) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0189393939393945
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/androolloyd",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "09/11/2018-22:38:55",
+                    "content": "this is one of my original design approaches, the wallet could define default exposed identities to the dApp or service/ecommerce ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/digitaldonkey",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "15/11/2018-15:07:40",
+                    "content": "    pcowgill:  I think this would be a great change, @rmeissner. @ligi I agree - I think storing an active/default wallet should be the dapp\u2019s responsibility.   Shouldn\u2019t that be the responsibility of the Wallet? Why encourage Dapp devs to chose from an Array of adresses. Wouldn\u2019t it be better to expose only one address and let the Wallet user decide which one? So that you don\u2019t need to share multiple addresses if it\u2019s not required. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/digitaldonkey",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "15/11/2018-15:13:19",
+                    "content": "Second question to improve my understanding: You can use provider-engine to combine Wallet/signing functions and other Web3 functions. So the wallet just needs to provide the functions it supports. Is there something wrong with that approach? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.958333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "16/11/2018-10:15:44",
+                    "content": "That was the initial idea. After thinking some more, I am actually not sure what would be use cases where a dapp needs to know that a provider manages multiple wallets (e.g. why should a dapp know that I have multiple metamask accounts) For your second question this is exactly the idea. Currently wallets and providers are kind of the same. So meta mask is proving an ethereum provider for all possible request (that includes nonce caching, filter abstracting and what endpoint is being used). By defining the wallet interface it should be possible that wallets just inject the wallet subprovider and each dapp uses the provider-engine to build a provider for their needs. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.458333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "12",
+                    "likes": "2",
+                    "time": "24/11/2018-21:35:32",
+                    "content": "I like this idea! There might be less scenarios where a user might want to manage multiple accounts in the same Dapp but there is definitely a lot room to be played there. Plus this is already possible with hardware wallets, I think it would be great to provide this for other implementations like Metamask and WalletConnect. The great thing about standards is that we won\u2019t have to ask developers to consult our proprietary APIs and they can just assume these features are available for all wallets and build Dapps accordingly. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.949074074074074
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "25/11/2018-20:53:42",
+                    "content": "clef has a very similar API - see e.g. https://github.com/ethereum/go-ethereum/pull/18079/files#diff-d93f8d0c622b04c41f4723de960a1b20 Perhaps these efforts can be joined? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "14",
+                    "likes": "2",
+                    "time": "26/11/2018-07:47:11",
+                    "content": "Here are the \u2018official docs\u2019 of the current WIP api for Clef: https://github.com/ethereum/go-ethereum/tree/master/cmd/clef . It\u2019s subject to change, particularly around the signing, since I hope that we can get signedTypedData in there \u2013 the challenge is around that how to build the user flow, so the user knows what he/she is signing. I also dislike statefullness in the actual wallet rpc endpoint (so wallet_getActiveWallet). Also, clef is written to have as little external dependencies and communications as possible, so there are no sendXX methods whatsoever, all you can do is request to have something signed, and you get back a result. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.8828125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "28/11/2018-15:10:28",
+                    "content": "Adding one more discussion point to this. The networkId is also state currently that I would love to see vanish. some context: https://discuss.walletconnect.org/t/networkid-in-the-protocol/42 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "16",
+                    "likes": "2",
+                    "time": "28/11/2018-22:44:35",
+                    "content": "I was thinking alot about that state topic recently and the walletconnect topic made me think of the following. The rpc calls wallet_ should not assume any state. In wallet connect you open a session an the state is part of the session, but that is something that would be a level above the rpc calls (at least in my opinion). So if we assume an a dapp that wants to interact with a wallet. Then there could be a WalletSDK which allows the selection of the prefered wallet (or if only 1 wallet is exposed just default to that). And any signing/sending of transactions would make use of that wallet. This would make it easy for dapp developer do implement interaction with the wallets, but would also manage the state on the dapp site. Another question would be if something like the session should be part of the rpc methods. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.208333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "30/11/2018-21:43:19",
+                    "content": "I agree, that makes a lot of sense and I think it\u2019s very much inline with the discussions around web3 providers. The state should be separate between a wallet and a session, that may live in a web3 provider or any equivalent wallet sdk as @rmeissner was describing. The JSON RPC methods should be used to gain access to more/new data to feed this state. This could fix one of the annoying ux flows that request users to change network/chain when a Dapp could simply just proceed and handle the chain selection on their side. Something that already happens with offline and hardware wallets. The question is should this be a fixed design or should it be flexible that would Dapps to choose their preferred pattern. We need standarization but also to be cautious to not make them to opinionated. Preferably we can design two or more branches of standards that follow well defined design choices so that increase interoperability without removing options. Example:  Standards that favor Stateless Dapps (where Wallets control active account, chain, etc) Standards that favor Stateful Dapps (where Dapps can control state only requesting more information for Wallets)  Either way, there is room to branch out multiple standards to solve many of these. I was about to suggest that a better user flow to solve the chain switching would be to introduce a rpc method wallet_changeChain PS - I\u2019m trying to use the term chain instead of the network because of the EIP-155 prevents chainID conflict while networkID doesn\u2019t ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.651262626262627
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "02/12/2018-22:52:04",
+                    "content": "    holiman:  Here are the \u2018official docs\u2019 of the current WIP api for Clef: https://github.com/ethereum/go-ethereum/tree/master/cmd/clef    just FYI - account_version seems to be missing in the the docs ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "02/12/2018-22:53:41",
+                    "content": "    rmeissner:  The rpc calls wallet_ should not assume any state. In wallet connect you open a session an the state is part of the session, but that is something that would be a level above the rpc calls (at least in my opinion). So if we assume an a dapp that wants to interact with a wallet. Then there could be a WalletSDK which allows the selection of the prefered wallet (or if only 1 wallet is exposed just default to that). And any signing/sending of transactions would make use of that wallet. This would make it easy for dapp developer do implement interaction with the wallets, but would also manage the state on the dapp site.   I think it should be exactly as you described - this is what I had in mind when asking for removing the state in the protocol     rmeissner:  Another question would be if something like the session should be part of the rpc methods.   I do not see a reason to. so I would see the following alterations to your EIP: wallet_getActiveWallet would be removed and replaced with something wallet_requestAccounts which can return one or more accounts - it can also return different accounts in subsequent calls. On the wallet side the user would be asked which accounts should be exposed to the dapp (at this point in time) wallet_sendTransaction would get an extra parameter chainId from the account side sendTransaction and eth_sign are already stateless as the account/from is passed in the call already ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.451388888888888
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "03/12/2018-23:45:16",
+                    "content": "I know it\u2019s easier to add new methods then altering existing ones but I think these methods wallet_requestAccounts and wallet_sendTransaction feel duplicated. Currently eth_accounts would serve the same purpose as wallet_requestAccounts and we already call it multiple times with Metamask to detect account switching. This would also be possible to support with WalletConnect easily. Also wallet_sendTransaction includes an incremental change to eth_sendTransaction thus I would suggest a coordination of efforts with major clients and major wallets to simply update the existing eth_sendTransaction to include the chainId as second parameter BEFORE {   \"id\":1,   \"jsonrpc\": \"2.0\",   \"method\": \"eth_sendTransaction\",   \"params\": [txn] }  AFTER {   \"id\":1,   \"jsonrpc\": \"2.0\",   \"method\": \"eth_sendTransaction\",   \"params\": [txn, chainId] }  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.664457070707071
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "04/12/2018-00:08:36",
+                    "content": "yes if feels a bit duplicated - and usually I am preaching for DRY - but in this case I see it a bit different. The difference between eth_accounts and wallet_requestAccounts is that eth_account returns all accounts and I see wallet_requestAccounts as the possibility to incrementally expose accounts to a dapp (user chooses which accounts are exposed to a dapp). As far as I understand eth_accounts it is always returning all accounts from a client. with eth_sendTransaction the problem is a bit more complex. The main problem is that there is no real versioning of the JSON RPC interface. So adding a parameter is really messy. Also I think a wallet should not really send the transaction - this is responsibility of the dApp. The wallet should just sign the transaction and return the signature. Think e.g. about offline signing use cases. So long story short - I would still signal for adding these methods to the wallet_ namespace and keep the eth_ methods untouched. There can be a translation layer in between that translates eth_sendTransaction to wallet_signTransaction for the migration phase. Also as a learning from the past we should really add versioning - so I signal the need for wallet_rpcversion - returning a semver string which in the first iteration could be  \u201c1.0.0\u201d ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.966666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "22",
+                    "likes": "2",
+                    "time": "04/12/2018-09:56:16",
+                    "content": "@pedrouid I also normally am not a fan of duplicating functionality. My idea was to start clearly separating wallet related calls from general ethereum interaction. Right now everything is part of eth_ and it is not clearly defined what eth_ calls should be implemented by a wallet and which not. This is why the injected MetaMask provider implements nearly every eth_ call somehow (which IMO is not the job of MetaMask or any other wallet provider). Separating this would also make it clear that shared notes like infura are not providing any wallet_ functionality. To clearly separate this I would move everything wallet/account releated to a new wallet_ group. This will mean that some of the functionality is duplicated, but for me this would make sense. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.128990800865801
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "04/12/2018-15:17:43",
+                    "content": "I still think we are early enough to make these \u201cbreaking\u201d changes for a more interoperable ecosystem. The EIP 1102 and EIP 712 included far more aggressive breaking changes that this proposal which would literally not even change the API for Web3.js which is widely used by 99% of Dapps today. We would be gaining instant multi-chain compatibility from a single parameter in already existing Dapps! Adding a new JSON RPC group would require advocating Dapps to adapt while this change would be backwards compatible as the chainId is already handled by middleware in a non-standard way regardless. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.637265512265513
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "05/12/2018-09:38:09",
+                    "content": "But these are different topics, right? Adding a new JSON RPC group that is not implemented by nodes provides far more flexibility. Changing an existing JSON RPC call requires you do get everybody (or at least the major) clients (nodes + providers) onboard. I don\u2019t have a strong opinion on adding the chain id to the JSON RPC call, but for me it is a different discussion  Also EIP712 didn\u2019t do any breaking changes afaik, as this also is just an additional JSON RPC call and the behaviour of existing calls was not touched. For EIP1102 it only changed the behaviour of the very outer layer for javascript (web3 provider) and that already triggered quite some discussion. Changing a JSON RPC call that influences every client is on a different level for me. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.590796356421356
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "13/12/2018-14:17:03",
+                    "content": "@ligi I updated the EIP draft with the points of our discussion (mentioned Pop up sessions in Berlin today and Friday & sticker transport to ETHDenver) Here the link to the latest version: https://github.com/rmeissner/EIPs/blob/rmeissner-wallet-rpc/EIPS/eip-xxx.md ",
+                    "links": [
+                        "https://github.com/rmeissner/EIPs/blob/rmeissner-wallet-rpc/EIPS/eip-xxx.md"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "13/12/2018-14:45:29",
+                    "content": "thanks - great work! looks good - just some nits:  String  - The current wallet protocol version.  I would add that it MUST be given in SemanticVersioning and maybe even give the value \u201c1.0.0\u201d for the state of the current EIP  CHAIN_ID -  String  wonder if we should make it an int - if we leave it an int we should define as : decimal / no 0x prefix  WILDCARD -  String  should define there it is \u2018*\u2019 - you can extract this information from the samples - but I think it should be defined there - perhaps like this:  WILDCARD -  String = \u201c*\u201d  not 100% what the correct syntax here is - perhaps someone else can chime in \"error\": {      \"code\": -32602,      \"message\": \"Invalid params: Transaction handling type <specified type> not supported\"  }  or  \"error\": {      \"code\": -32602,      \"message\": \"Invalid params: Chain id <specified chain id> is not supported\"  }  I think we should define different error-codes here - mainly for translations later on. that\u2019s it for now - hope to do a bit a deeper look later today. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.257575757575758
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "13/12/2018-15:29:34",
+                    "content": " wonder if we should make it an int - if we leave it an int we should define as : decimal / no 0x prefix  I just used a string to avoid possible limits in some languages. Also JSON RPC \u00b7 ethereum/wiki Wiki \u00b7 GitHub uses a string. Will specify that it should be an decimal without 0x prefix  not 100% what the correct syntax here is - perhaps someone else can chime in  Yeah not sure about that either, was just copying what is returned when I do an invalid request for other rpc calls. Not even sure if this is a standard or depends on the client. Maybe I should remove the examples for this from the EIP and just state that it should return an error. Updated the EIP again  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "14/12/2018-02:18:13",
+                    "content": "Great - gets better and better! just nits. the parameter enumeration in wallet_handleTransaction is wrong currently (is:1,1,2  should be 1,2,3) and I would really specify the current version in wallet_version. And not yet sure how ERC1271 signing would look like on the wallet side in practice. How let the user know what he is signing? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.328125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "29",
+                    "likes": "1",
+                    "time": "14/12/2018-08:45:02",
+                    "content": " and I would really specify the current version in wallet_version.  What version would you propose? 1.0.0 or rather 0.1.0 to indicate that this WIP?  And not yet sure how ERC1271 signing would look like on the wallet side in practice. How let the user know what he is signing?  Bascially that works the same as with a normal wallet, just that the generated signature is different. So if we take the Safe (App + Chrome extension) for example it would prompt the user in the chrome extension with the typed data, once the user confirms it there the user would also need to confirm this in the App and then the generated signature bytes (a combination of multiple ecdsa signatures in the case of the Safe) is returned to the app. To verify this you generate the data blob for the typed data (based on EIP-712) then you call isValidSignature on the wallet contract (address of the wallet for which you called signTypedData) with the data blob bytes and the signature bytes. I am in the progress of working on a PoC for that, once I have more I can share it  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.175000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "14/12/2018-09:25:30",
+                    "content": "    rmeissner:  What version would you propose? 1.0.0 or rather 0.1.0 to indicate that this WIP?   no strong opinion on this - usually with projects i start x<1.0.0 - but as this is a standard I think it could make sense to do 1.0.0 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.222222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "31",
+                    "likes": "2",
+                    "time": "03/01/2019-13:12:46",
+                    "content": "    pedrouid:  Example:  Standards that favor Stateless Dapps (where Wallets control active account, chain, etc) Standards that favor Stateful Dapps (where Dapps can control state only requesting more information for Wallets)  Either way, there is room to branch out multiple standards to solve many of these. I was about to suggest that a better user flow to solve the chain switching would be to introduce a rpc method wallet_changeChain   I would like to follow up on the proposed method wallet_changeChain to update the name to wallet_updateChain and include the following parameters suggested by @danfinlay on an earlier discussion last week on Twitter   twitter.com          Dan Finlay (danfinlay)     @pedrouid @austingriffith @scott_lew_is @MPtherealMVP @5chdn @stellarmagnet Yeah the eip could be fairly simple: chainId, netId, rpcUrl, nativeCurrencyName. Hardest part is \u201cget price for base chain\u2019s native currency. Should we trust rando \u00d0app to declare its own coins\u2019 values? \ud83d\ude2c also block explorer link templating?\u201d  9:59 AM - 27 Dec 2018     5            The suggested parameters are: chainId, networkId, rpcUrl, nativeCurrencyName. A JSON RPC request would look like the following for requesting the user to add/connect to a xDai remote node: {   \"id\":1,   \"jsonrpc\": \"2.0\",   \"method\": \"wallet_updateChain\",   \"params\": [{ \"chainId\": 100, \"networkId\": 1, \"rpcUrl\": \"https://dai.poa.network\", \"nativeCurrencyName\": \"xDAI\"  }] }  This would provide a Stateless Dapp like for example @austingriffith\u2019s Burner Wallet a better UX to quickly request within the Wallet to switch the chain/network/node that the Dapp wishes to connect. Austin has already quick fix for this by displaying a popup to easily guide the user to change the chain on Metamask.  Screenshot 2019-01-03 13.08.53.jpg2050\u00d72356 439 KB  This pattern is very common in a lot of Dapps and this simple JSON RPC request can improve the UX dramatically. I was planning to include this as a WalletConnect-specific method within the v1.0 SDK but I think this would be more beneficial as a standard that can be shared with other Wallet patterns like Metamask, Ledger, etc ",
+                    "links": [
+                        "https://twitter.com/danfinlay/status/1078360661393006592",
+                        "https://twitter.com/danfinlay/status/1078360661393006592",
+                        "https://ethereum-magicians.org/uploads/default/original/2X/c/c53cdac62905a025dce3d2b9b61b325aa187312f.jpeg",
+                        "https://ethereum-magicians.org/t/eip-2015-wallet-update-chain-json-rpc-method-wallet-updatechain/3274"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.230333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "32",
+                    "likes": "2",
+                    "time": "04/01/2019-03:37:56",
+                    "content": "Awesome, thanks for writing this up. I think we could move to another thread, but before we do: What if the provider could return another provider, allowing Dapps to potentially maintain connections to multiple blockchains at once? This also limits possible errors related to specifying the wrong network when sending a transaction (which funnily enough, you presented a solution for in another thread by adding a network/chain ID parameter to the sendTransaction method ), clearly a pain you\u2019re hitting as a dapp dev, and that\u2019s the gold of our developer experience, so I\u2019m really eager to add this. We need to also consider that concern about price feeds. It may be beyond the scope of this initial proposal, and maybe we make-do without exchange rates on custom networks for a while. If we do want to provide a permission for providing a price feed, we will probably want it to use a syntax that can allow for exchange rates pegged to any of the user\u2019s known-priced currencies. Clients need to do some validation here, because if a dapp can suggest chainId then there\u2019s a replay attack vector if they can suggest a chain ID that the user already uses. There\u2019s also a UX opportunity for the client, to potentially show the new network\u2019s currency alongside other currencies, as \u201cselected network\u201d becomes increasingly abstracted away from the UI. This method\u2019s parameters should also be built into the provider.enable() method\u2019s parameters (which I\u2019m thinking of also exposing as wallet_enable()). This would allow the network suggestion to be unified with the account request. Naturally on that screen we\u2019re going to need to allow account selection, and that login could potentially only be permitted to send transactions on behalf of that requested/approved network. In fact, the account-on-network is maybe the most important part, since if you wanted to read from this provider you\u2019d just be doing it. What this is really about is making the user aware of a new account they have, with a new base currency, and potentially making it easy to transfer funds into it. Okay that\u2019s enough thoughts for now! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.531004489337823
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "33",
+                    "likes": "2",
+                    "time": "06/01/2019-18:13:04",
+                    "content": "Agreed. These are really great suggestions. I think returing extra providers for connecting to multiple networks is a good use-case.     danfinlay:  We need to also consider that concern about price feeds. It may be beyond the scope of this initial proposal, and maybe we make-do without exchange rates on custom networks for a while. If we do want to provide a permission for providing a price feed, we will probably want it to use a syntax that can allow for exchange rates pegged to any of the user\u2019s known-priced currencies.   This assumes that price feeds would have a standard API and this will just lead us down into another rabbit hole. I think Wallets should handle this with simply not displaying price data for this. Disabling inputs for native currency conversion is faster, easier and less prone to error. Plus I can imagine a bunch of attack vectors here where the user is a approving a transaction for 5 USD equivalent amount when in fact the price feed was purposely tweaked to hide that it was actually 100 times more.     danfinlay:  This method\u2019s parameters should also be built into the  provider.enable()  method\u2019s parameters (which I\u2019m thinking of also exposing as  wallet_enable() ). This would allow the network suggestion to be unified with the account request.   I really like this because that\u2019s how WalletConnect is also designed, in fact it could actually bring both providers to be more similarly designed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.792592592592593
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/antoineherzog",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "07/01/2019-06:43:34",
+                    "content": "Hi Guys! We are buiding IOV-core which is a very strong typescript library well tested to connect to different chains from a unique API format including Ethereum, Cosmos and other Tendermint chains. it is still a work in progress but you can have a look and play with it with the CLI interface:    GitHub    iov-one/iov-core Client library for secure key management and multi-blockchain communication - iov-one/iov-core      It seems we want to pursue the same goal with a unify API to access blockchains from a wallet. Cheers, Antoine ",
+                    "links": [
+                        "https://github.com/iov-one/iov-core"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.866666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "11/01/2019-09:53:27",
+                    "content": "The idea of triggering a network switch is really cool. I am not sure if this should be part of the initial version of this EIP and I also think that some of the ideas should be coordinated with the provider ring  Theoretically it is also possible for dapps implement custom chain handling with this EIP. @ligi wanted to have a method that just signs a transaction and returns the signed raw transaction (wallet_handleTransaction). With this it is possible that the dapp uses their own rpc endpoint for their chain with the connected wallet. We also had a discussion with Martin and Stefan recently that it should be possible for a wallet to tell a dapp what rpc endpoint to use (to allow full decentralization where everbody could use their own node) Many interesting ideas  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.864010989010989
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "11/01/2019-10:51:03",
+                    "content": "The wallet_handleTransaction method sounds the same as eth_signTransaction. Am I missing something? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "37",
+                    "likes": "1",
+                    "time": "11/01/2019-21:16:56",
+                    "content": "    pedrouid:  The wallet_handleTransaction method sounds the same as eth_signTransaction. Am I missing something?   yea - sign is a special case of handle. But sometimes you need to do more than just sign. E.g. think about contract wallets. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.821428571428572
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "38",
+                    "likes": "1",
+                    "time": "20/02/2019-18:08:58",
+                    "content": "Hey guys, I was going to start a new thread but after replying to this existing thread on Automatic Authentication Signature. I realised this should be part of the wallet_ methods.     Automatic Authentication Signature Wallet Ring       I\u2019m glad that Discourse notified me of this thread as I was about to write a new one.  I think this a great use-case where automated signing is harmless and improves the Web3 UX significantly for both users and developers.  I discussed this with a few people at ETH Denver (@rouven @jamesyoung @michaelsena @oed) and I\u2019m planning to introduce this to the WalletConnect protocol sooner than later. However I want WalletConnect to embrace as many standards as possible working together with other Web3 \u2026     As you can read on the other thread, the proposal describes including a standard authentication signature that would be automatically signed by the Wallet to verify the account ownership on the Dapp side. Perhaps this could be part of either wallet_accounts or wallet_requestAccounts method where we could provide an array of addresses accompanied with a matching signature that would follow a standard authentication message that could be verified by the Dapp. This message doesn\u2019t even require EIP-712 in my opinion, since it\u2019s not meant to be read by the user. Something as simple as doing a personal_sign for a fixed message I own this account that return a JSON RPC response as follows. {   \"id\": 1,   \"jsonrpc\": \"2.0\",   \"result\": [     {       \"address\": \"0x9b7b2B4f7a391b6F14A81221AE0920A9735B67Fb\",       \"signature\": \"0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400\"     {   ] }   ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/automatic-authentication-signature/2429/5",
+                        "https://ethereum-magicians.org/t/automatic-authentication-signature/2429/4"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.572860962566844
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "14/05/2019-17:45:53",
+                    "content": "Just created a separate thread for EIP-2015 [wallet_updateChain].     EIP-2015: Wallet Update Chain JSON-RPC Method (`wallet_updateChain`) Wallet Ring       The EIP is looking good so far and I\u2019m happy with the specification to be implemented.  I would only suggest that we keep JSON-RPC requests consistent and only use hexadecimal encoded values on the parameters.  Just as eth_chainId returns the chainId value hex encoded, we should also pass this parameter and networkId on wallet_updateChain value hex encoded.  However as @danfinlay pointed out here, the EIP-747 uses decimal values but I since this EIP is also on Draft, I personally would like to s\u2026     ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/2015#issuecomment-491943421"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.321428571428571
+                }
+            ]
+        }
+    ],
+    "group_index": "513"
+}

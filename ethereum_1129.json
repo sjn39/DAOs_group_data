@@ -1,0 +1,573 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-2930-optional-access-lists/4561",
+            "title": "EIP-2930: Optional access lists ",
+            "index": 4561,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "eip-2930",
+                "transactions"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "02/09/2020-01:13:33",
+                    "content": "A companion EIP to #eip-2929.   github.com/ethereum/EIPs         Optional access lists   ethereum:master \u2190 ethereum:vbuterin-patch-3            opened 12:08PM - 01 Sep 20 UTC               vbuterin             +133 -1           Adds a transaction type which contains an access list, a list of addresses and storage keys that the transaction plans to access. Accesses outside the list are possible, but become more expensive. Intended as a mitigation to contract breakage risks introduced by EIP 2929 and simultaneously a stepping stone toward broader use of access lists in other contexts. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/2930",
+                        "https://github.com/ethereum/EIPs/pull/2930",
+                        "https://github.com/vbuterin",
+                        "https://github.com/ethereum/EIPs/pull/2930/files"
+                    ],
+                    "GPT-summary": "The post introduces EIP-2930, which is a companion EIP to EIP-2929. It proposes the addition of a transaction type that contains an access list, which is a list of addresses and storage keys that the transaction plans to access. The post explains that this is intended as a mitigation to contract breakage risks introduced by EIP 2929 and a stepping stone toward broader use of access lists in other contexts. The post does not advertise the proposal, ask for feedback, or suggest collaboration.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Not a proposal"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/andrekorol",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "04/09/2020-06:47:47",
+                    "content": "Really interesting concept. Seems like a stepping stone towards stateless clients. The EIP mentions that the discount for transactions using access lists will increase over time as more tools are developed and access-list generation matures. What kind of tools will need to be developed? Is it just for access-list generation, or also for validation? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.800000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "04/09/2020-14:05:05",
+                    "content": "Just for access list generation. The code for determining whether or not accesses are part of the access list and doing things based on that is already in 2929. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "06/11/2020-10:08:35",
+                    "content": "Transaction Format Options // RLP multi-pass 3 || rlp([nonce, gasPrice, gasLimit, to, value, data, access_list, sendrV, senderR, senderS]) // RLP single-pass 3 || rlp([[senderV, senderR, senderS], rlp([3, nonce, gasPrice, gasLimit, to, value, data, access_list])]) // SSZ deduped ssz([3, nonce, gasPrice, gasLimit, to, value, data, access_list]) || ssz([sendrV, senderR, senderS]) // SSZ duped 3 || senderV || senderR || senderS, ssz([3, nonce, gasPrice, gasLimit, to, value, data, access_list])   RLP Multi-Pass  Advantages  No new encoding format No data duplication   Disadvantages  Requires an RLP encoder and decoder to validate Validation has decode-split-encode-validate flow     RLP Single-Pass  Advantages  No new encoding format Can validate signature without needing an RLP encoder Supports decode-validate flow   Disadvantages  Duplicates the transaction type byte Requires RLP decoder to validate     SSZ Deduped  Advantages  No data duplication Can validate signature without needing an SSZ encoder Supports decode-validate flow   Disadvantages  Requires SSZ encoder for creating Requires SSZ decoder for validating Requires retaining access to the leading type byte when processing (or re-inserting it)     SSZ Duped  Advantages  Can validate without an SSZ encoder Can validate without an SSZ decoder Supports fixed offset extraction of signature Supports pluck-validate flow   Disadvantages  Requires SSZ encoder for creating Duplicates the transaction byte      ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.9393939393939394
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "07/11/2020-04:06:09",
+                    "content": "This is a great summary, thanks @MicahZoltu. Why does the second option need to have 3 in multiple places? Couldn\u2019t we alternatively enforce keccak(3 || rlp([nonce, gasPrice, gasLimit, to, value, data, accessList])) be the hash that is signed over? It would require minimal assemble and would avoid the weird edge case where the outer type doesn\u2019t match the inner type. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.285714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "07/11/2020-04:26:33",
+                    "content": "    matt:  Couldn\u2019t we alternatively enforce keccak(3 || rlp([nonce, gasPrice, gasLimit, to, value, data, accessList])) be the hash that is signed over?   I believe this option would work, but it means we would have two different encoding schemes at play, which is a bit unfortunate.  Part of the goal with these 4 proposals was to minimize the complexity of encoding, and having to encode most of the signed data and then encode that along with some more data to get the final signed thing increases complexity. If people believe that this proposed solution is superior to the 4 options above, I don\u2019t mind adding it to the list to be discussed though! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.857142857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "01/12/2020-12:06:12",
+                    "content": "At the All Core Devs call we decided on no SSZ for Berlin.  After some discussion in Discord, we have decided to go with multi-pass as it saves a byte and aligns pretty closely to with how we already deal with transactions.  We also decided to switch over to yParity rather than v to pay down a bit of technical debt around v (EIP-155 and Bitcoin baggage). The tentative final transaction format will be: 1 || rlp([chain_id, nonce, gas_price, gas_limit, to, value, data, access_list, y_parity, r, s])  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.118055555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/qizhou",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "08/12/2020-21:59:12",
+                    "content": "Should SSTORE gas cost also be reduced by being included the lists?  Looks like the SSTORE\u2019s performance can be increased if its MPT paths are pre-loaded - writing a key-value in MPT is essentially a read-modify-write operation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "17/01/2021-16:46:58",
+                    "content": "What exactly is the rationale for introducing this Y_Parity parameter? This seems to add unnecessary complexity? Why would we want to introduce this Y_Parity - are there use cases? Doesn\u2019t this ruin the idea of EIP-155, which prevents that we can run Transactions on chains with a different chain ID? Since we only have a binary v value now, this thus does not prevent us from running the Transaction on other chains with different chain IDs? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.770833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "17/01/2021-20:05:57",
+                    "content": "Y_Parity is essentially the same as V in normal signatures. It was simplified to just 0 or 1 instead of 26 or 27. Since chainID is now an explicit element in the payload, we can interpret however we like. Although it is not supported in the current spec, we could definitely add support for chainID == 0 meaning that the transaction is valid on all chains. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.15
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "17/01/2021-20:35:43",
+                    "content": "Ah right, I forgot that the chain ID is actually part of the payload - makes sense! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.7142857142857135
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poojaranjan",
+                    "index": "14",
+                    "likes": "2",
+                    "time": "20/01/2021-04:17:46",
+                    "content": "EIP-2929 & EIP-2930 explained by Vitalik Buterin & Martin Swende - https://youtu.be/qQpvkxKso2E ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/winsvega",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "23/01/2021-21:22:34",
+                    "content": "What is the hash formula of new transactions? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.681818181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "23/01/2021-21:30:45",
+                    "content": "What is the reason that we have to save all the zeros of these addresses and storage slots? Can\u2019t we save some data by left-padding the addresses to 20 bytes with zeros, and the storage slots can be left-padded to 32 bytes with zeros? It does not make sense to me to save all these zeros if we can also left pad them. Transactions are invalid if they provide addresses longer than 20 bytes or storage slots longer than 32 bytes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "23/01/2021-21:31:47",
+                    "content": " The yParity, senderR, senderS elements of this transaction represent a secp256k1 signature over keccak256(rlp([1, chainId, nonce, gasPrice, gasLimit, to, value, data, access_list])).  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "23/01/2021-22:17:28",
+                    "content": "    jochem-brouwer:  What is the reason that we have to save all the zeros of these addresses and storage slots?   This seems like an optimization that can be done over the wire, rather than in consensus. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "23/01/2021-22:19:40",
+                    "content": "Ah good point, you are right. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.464285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/winsvega",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "24/01/2021-12:52:12",
+                    "content": "The transaction hash as of geth currently  is Hash ( 01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, access_list, y, r, s])) Also a thing about this 01 byte inserted before RLP kind of breaks the block rlp encoding. this byte is not rlp encoded and thus makes block rlp oversized. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "24/01/2021-19:45:23",
+                    "content": "Does this EIP also implement the Homestead rule: if you create a contract, then charge 53k gas instead of 21k? (I\u2019d assume yes). From EIP-2:   The gas cost for creating contracts via a transaction is increased from 21,000 to 53,000, i.e. if you send a transaction and the to address is the empty string, the initial gas subtracted is 53,000 plus the gas cost of the tx data, rather than 21,000 as is currently the case. Contract creation from a contract using the CREATE opcode is unaffected.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "28/01/2021-13:40:11",
+                    "content": "How exactly are we supposed to encode this transaction type on a eth_getTransactionByHash (and friends)? Do we include a new field transactionType here? If this field does not exist, it is a legacy transaction? Simply trying to cast it on the available fields seems dangerous to me (if we get an alternative transaction type which also uses access_list then it might get wrongly casted by consumers). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.738636363636363
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "29/01/2021-00:50:25",
+                    "content": "I don\u2019t believe it has been formally specified yet, but the approach we\u2019ve taken so far for typed transactions we also append the type field and the transaction-specific fields. You can sort of see how this is done in the PR: https://github.com/ethereum/go-ethereum/pull/21502/files#diff-77719ae57e7e6c3e0cac05fa12c6c5f2e5f9bc810c034d1446de2414c36d9210 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/winsvega",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "31/01/2021-14:12:05",
+                    "content": "looks like the response of this function now is a bytearray. then you evaluate the first byte and cast the rest to tx.rlp if legacy byte then the whole bytearray is casted to tx.rlp also the block rlp now is RLP (HEADER + TXLIST + UNCLELIST) where TXLIST is list of bytearrays. and the same logic applies. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/winsvega",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "01/02/2021-00:38:14",
+                    "content": "Do I understand this right? if in the block trlist  would have 01+trRLP   it is invalid rlp and I get errors when parsing it. because 01 means just one byte and there fore each prefix byte is another list element. i dont think that this is how it was supposed to be meaning this would be an RLP of access transaction type inside block RLP 0xf8c801b8c5f8c301800183061a8094095e7baea6a6c7c4c2dfeb977efac326af552d87830186a0821122f85bf859940000000000000000000000000000000000001337f842a00000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000280a07672ffebbbf9eb38251124628835a51e308c844b7864295abbbe181ad4e6663ca01a9a4f40f06befc68b0529ace1b8a2cc3e6306fd5089863f4677eaa78a744286 list  [ 01 ,   trrlp ] and not this 0x01f8c301800183061a8094095e7baea6a6c7c4c2dfeb977efac326af552d87830186a0821122f85bf859940000000000000000000000000000000000001337f842a00000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000280a07672ffebbbf9eb38251124628835a51e308c844b7864295abbbe181ad4e6663ca01a9a4f40f06befc68b0529ace1b8a2cc3e6306fd5089863f4677eaa78a744286 01, trrlp because in block it is list of transactions in the second case it would be list  [ 01, trrlp,  another_trrlp \u2026 ] 01 would act as a transaction also the hash then should be   hash ( list [ 01,  trrlp ] )    the sha3 hash of the whole bytes of the first example. not the hash (01 + trrlp) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.919642857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "01/02/2021-17:54:43",
+                    "content": "I\u2019m not sure if I quite follow, but the encoding over the wire should be rlp_string(0x01 || rlp([chainId, nonce, ..., v, r, s]) where rlp_string wraps in the inner bytes with the rlp string prefix b8. Note that since this encoding only occurs over the wire, it isn\u2019t considered in the consensus logic. Legacy transaction will not change in their encoding and they will not be wrapped. When the tx trie root is calculated, 2718 txs are not wrapped in an rlp string.     winsvega:  also the hash then should be hash ( list [ 01, trrlp ] ) the sha3 hash of the whole bytes of the first example. not the hash (01 + trrlp)   Since the wrapped version is just a convenience encoding for transmission, I believe that the consensus-defined encoding (01 || payload) should be the preimage for the hash. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.2
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "06/02/2021-11:36:53",
+                    "content": "/// <summary> /// We store the extra information here to be able to recreate the order of the incoming transactions. /// EIP-2930 (https://eips.ethereum.org/EIPS/eip-2930) states that: /// 'Allowing duplicates /// This is done because it maximizes simplicity, avoiding questions of what to prevent duplication against: /// just between two addresses/keys in the access list, /// between the access list and the tx sender/recipient/newly created contract, /// other restrictions? /// Because gas is charged per item, there is no gain and only cost in including a value in the access list twice, /// so this should not lead to extra chain bloat in practice.' /// /// While spec is simplified in this matter (somewhat) it leads to a bit more edge cases. /// We can no longer simply store the access list as a dictionary, we need to store the order of items /// and info on duplicates. The way that I suggest is by adding an additional queue structure. /// It be further optimized by only including a queue of integers and a strict ordering algorithm for the dictionary. /// /// I leave it for later in case such an optimization is needed. /// </summary>   public class AccessListBuilder {     private readonly Dictionary<Address, IReadOnlySet<UInt256>> _data = new();      private readonly Queue<object> _orderQueue = new();      private Address? _currentAddress;          public void AddAddress(Address address)     {         _currentAddress = address;         _orderQueue.Enqueue(_currentAddress);         if (!_data.ContainsKey(_currentAddress))         {             _data[_currentAddress] = new HashSet<UInt256>();         }     }      public void AddStorage(UInt256 index)     {         if (_currentAddress == null)         {             throw new InvalidOperationException(\"No address known when adding index to the access list\");         }                  _orderQueue.Enqueue(index);         (_data[_currentAddress] as HashSet<UInt256>)!.Add(index);     }      public AccessList ToAccessList()     {         return new(_data, _orderQueue);     } }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.322830578512397
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "06/02/2021-11:37:56",
+                    "content": "Shall we RLP storage in the access list without leading zeros. I think this improves the memory allocations needed and decreases the network bandwidth / deserialization / serialization cost. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "29",
+                    "likes": "2",
+                    "time": "06/02/2021-13:55:51",
+                    "content": "I believe the signature format should be: keccak256(1||rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, access_list])). or it should not contain the type at all. If we move the type inside the serialization format then we make an assumption that serialized data starts with the first item or we lose the replay protection meaning of adding the type in the first place. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "30",
+                    "likes": "1",
+                    "time": "06/02/2021-14:17:37",
+                    "content": "Very true.  EIP-2718 even explicitly says that this needs to be the case, we (probably me) just messed it up.   PR out to fix it: Makes signature have type as the first byte. by MicahZoltu \u00b7 Pull Request #3253 \u00b7 ethereum/EIPs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.7625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AusIV",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "11/03/2021-18:13:25",
+                    "content": "Since this has gone live on Ropsten, I\u2019ve been tinkering with it, and was surprised to find increased gas costs in places where I expected savings. Digging in, I\u2019ve found that the ACCESS_LIST_ADDRESS_COST is charged even for the contract being called in a transaction. This is at a \u201cdiscounted\u201d rate relative to making a CALL from one contract to another, but since there is no CALL opcode charged for the initial transaction, this is 2,400 additional gas being charged by including an access list. This means that the only scenario in which a transaction can save gas by including an access list for the contract invoked by a transaction is if it makes at least 25 SLOAD operations from its own data - a fairly rare occurrence from my sampling of transactions. It strikes me as an oversight that the 2,400 gas cost is included for calls to the first contract invoked by a transaction, given that there is no equivalent cost absent access lists, and there is no way to specify storage slots in an access list without incurring this cost. And given that the contract targeted by a transaction is going to be loaded no matter what, there\u2019s not really any additional computational cost that this 2,400 gas is needed to cover. I\u2019m assuming it\u2019s too late for Berlin, but for London might it make sense to exclude the 2,400 gas cost for access lists for the \u201cto\u201d address of a contract? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.244318181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/qizhou",
+                    "index": "32",
+                    "likes": "2",
+                    "time": "16/03/2021-19:13:12",
+                    "content": "We did a performance experiment by pre-loading access_list of the transactions in parallel in a block and then execute the transactions (assuming access_list contains full access list of each tx).  This saves a lot of read latency when executing the transactions because the data to be accesses in tx are already in memory. Result The result is that about 60% performance improvement on a commodity PC.  The example code based on go-ethereum is here. Steps of the test:  Given a range of blocks, create access_list of each tx by running each tx and save the resulting access_list Start geth and import blocks Before executing txs for each block, the import will pre-load account/storage data to memory in parallel. Record used time  Result Details  Block ranges 8M to 8.20M Geth\u2019s import time: 4h6m ~ 246m Geth\u2019s with preload import time: 2h34m ~ 154m Improvement 246 / 154 - 1 ~ 60% Based on 5900x + 64G memory + SN750  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.583333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kael-shipman",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "10/04/2021-17:19:24",
+                    "content": "Hey all, I\u2019m having a lot of trouble getting information about how to use these new access lists in an everyday application. I see examples of what they look like, but I can\u2019t find any explanation about how I would actually create them correctly - e.g., what addresses to use, and what \u201cstorage keys\u201d are\u2026 I\u2019m using (Berlin-compatible) @ethereumjs/tx@3.1.3 to self-sign transactions, and I\u2019ve read all their docs, but they seem to be focused exclusively on format, not content. I need something that will tell me, \u201cThis is what a storage key is. This is how you make one. This is how you obtain storage keys for a given transaction. This is the address you would use in an access list for this example transaction, and this is why\u2026\u201d etc. (FYI, this is for a live use-case serving real customers right now, so I\u2019d at least like to know that what we currently have in production will not break on ~April 14th. Even better if I can use these new features to optimze\u2026) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.2895021645021645
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/LukaszRozmej",
+                    "index": "34",
+                    "likes": "1",
+                    "time": "12/04/2021-11:10:12",
+                    "content": "Question if this is right. This EIP produced an edge case where sending access list for a simple transaction that touches few storage indexes for either sender address or recipient address is suboptimal and can lead to higher gas price than omitting that part of access list. For example a transaction with access list for transaction that is sent to address X and accesses index 0x1, will have intrinsic access list cost of ACCESS_LIST_ADDRESS_COST + ACCESS_LIST_STORAGE_KEY_COST = 2400 + 1900 = 4300 And there will be additional cost for SLOAD when actually executing transaction WARM_STORAGE_READ_COST = 100 and free if it will be SSTORE. But if we won\u2019t send this access list, then we won\u2019t charge anything for accessing recipient address (nor sender address), and for SLOAD we would charge only 2100. In the end we are charging 2200 more. So first [2400/200, 2400/100] = [12, 24] first accesses on those 2 addresses are better not to be included in access list in order to reduce gas cost. 12 - for only SLOADs, 24 for only SSTOREs, and we can have any combination in the middle. Is it known trade-off of 2930+2929? Is this by design or was just missed? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.798469387755102
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "35",
+                    "likes": "1",
+                    "time": "13/04/2021-12:51:34",
+                    "content": "You can use https://github.com/ethereum/go-ethereum/pull/22550 to figure out which accounts/slots are touched.     LukaszRozmej:  Is it known trade-off of 2930+2929? Is this by design or was just missed?   Yes, it\u2019s known. It\u2019s because to is free, it has this sideeffect. It\u2019s not expected that all (or even many) users will use 2930, it exists today because it\u2019s needed in order to salvage a few cases which would otherwise be irretrievably broken due to 2929. In the future, when costs are raised even further and the difference between \u201cruntime-list\u201d and \u201ctx-list\u201d is larger, it may be more beneficial to use 2930 access lists, and this effect may become more marginal. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.556818181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "15/04/2021-17:36:04",
+                    "content": "    AusIV:  It strikes me as an oversight that the 2,400 gas cost is included for calls to the first contract invoked by a transaction, given that there is no equivalent cost absent access lists, and there is no way to specify storage slots in an access list without incurring this cost. And given that the contract targeted by a transaction is going to be loaded no matter what, there\u2019s not really any additional computational cost that this 2,400 gas is needed to cover.   Currently, EIP-2930 access lists have the nice property that they are very easy verify and calculate the cost of. This is for a couple reasons, but particularly because duplicate keys are allowed. If we were to not charge 2,400 gas for each address (even ones added by 2929) then you could create a valid tx with 1000s of copies of the sender\u2019s address in the access list. To protect against this you\u2019d need to have some way of restricting duplicates - or at least a way to restrict duplicate to, from, createdContract keys. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.842857142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "22/04/2021-03:45:16",
+                    "content": "@holiman It looks like the specification will charge ACCESS_LIST_ADDRESS_COST if you specify accessList storage slots in the auto-warm to address, even though to should already be warm. There is no way to specify storage in to without incurring this cost, and the difference would outweigh any benefits if you were reading less than 12 slots in the to contract. This seems counter to the intentions of the proposal. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "22/04/2021-04:02:26",
+                    "content": "It could have been easy to make the first incident of these in access list free, and then it would always be better to specify everything you will definitely access in the access list. Instead wallets will have to prune the access lists, removing lists for the to address. I question the decision to allow duplicate addresses; it should be very easy for clients and servers to check for that. We are now seeing the consequences of putting simplicity above good incentives. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.779166666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "39",
+                    "likes": "3",
+                    "time": "22/04/2021-18:53:32",
+                    "content": "    wjmelements:  This seems counter to the intentions of the proposal.   The intentions of the proposal is to make it possible to salvage the one percent of cases which were broken by EIP-2929. It was not the intention to turn every tx into type 2930.     wjmelements:  It could have been easy to make the first incident of these in access list free, and then it would always be better to specify everything you will definitely access in the access list.   Yes, it would have. Or, maybe not free, but cheaper. That wasn\u2019t the primary goal, though.     wjmelements:  I question the decision to allow duplicate addresses; it should be very easy for clients and servers to check for that. We are now seeing the consequences of putting simplicity above good incentives.   Anytime a node has to validate a transaction validity, we want that to be as quick as possible. Currently, it\u2019s things like verify signature (derive sender) and  intrinsic gas (whereas nonce and balance check is not needed for tx validity, only for deeming if it can be included in a certain block). A node is constantly bombarded with transactions from the network, and needs to quickly tell if a transaction is valid or not. If we need to validate the uniqueness of the addresses (and slots too, in that case, because one want to be consistent), then the client may have to build up a set of thousands of items to check. Yes it can be done, but it\u2019s easier to just charge what the user specifies. The word \u201ceasy\u201d here doesn\u2019t mean \u201ceasier for devs\u201d, it means simply \u201ceasier for the node\u201d. If we make the validity-checks too cumbersome, an attacker can submit thousands of invalid transactions, forcing the recipient node to evaluate them all before rejecting them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.787527056277057
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Vie",
+                    "index": "40",
+                    "likes": "1",
+                    "time": "22/08/2021-14:14:42",
+                    "content": "Can someone explain, what is the best situation to use AccessList? I used AccessList in a complex transaction, but the gas used is higher than before. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.583333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/q9f",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "14/01/2022-11:16:46",
+                    "content": "Hi. I\u2019m implementing EIP-2028 call-data gas costs and EIP-2930 access-list gas costs. EIP-2028 reduced non-zero byte call data costs from 64 to 16. EIP-2930 contains the following line though:  At the beginning of execution (ie. at the same time as the 21000 + 4 * zeroes + 12 * nonzeroes start gas is charged), we charge additional gas for the access list: ACCESS_LIST_ADDRESS_COST gas per address and ACCESS_LIST_STORAGE_KEY_COST gas per storage key. For example, the above example would be charged ACCESS_LIST_ADDRESS_COST * 2 + ACCESS_LIST_STORAGE_KEY_COST * 2 gas.  Is this 12 * nonzeroes part a bug in the spec or did we change the call-data cost in another proposal that I\u2019m not aware of? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "09/02/2022-19:03:44",
+                    "content": "    q9f:  Is this 12 * nonzeroes part a bug in the spec or did we change the call-data cost in another proposal that I\u2019m not aware of?   12 is 16 - 4  Post must be at least 20 characters  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/EXN7000",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "10/06/2022-09:04:36",
+                    "content": "Hello everyone, does anybody know the step-by-step instructions on who to integrate this EIP-2930 accessList solution to a EIP-2929 error? My ERC721 Smart Contract is unable to call the withdrawAll function due to a gnosis wallet address that requires 2300 gas\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.315476190476191
+                }
+            ]
+        }
+    ],
+    "group_index": "1129"
+}

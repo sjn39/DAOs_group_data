@@ -1,0 +1,97 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/post-shutdown-flash-loan-vulnerability-announcement-and-remediation-plan/13746",
+            "title": "Post-Shutdown Flash Loan Vulnerability - Announcement and Remediation Plan ",
+            "index": 13746,
+            "category": [
+                "Updates"
+            ],
+            "tags": [
+                "bug",
+                "security",
+                "pe-001",
+                "protocol-engineering"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#1",
+                    "likes": "24",
+                    "time": "08/03/2022-14:31:54",
+                    "content": " Executive Summary On Thursday, March 3rd 2022, a latent vulnerability was discovered in the Maker protocol involving an interaction between the DAI flash loan module (\u201cDssFlash\u201d) and the Emergency Shutdown (\u201cES\u201d) process. There is no risk to the system so long as ES has not been triggered. An out-of-band executive will be issued on Wednesday, March 9th 2022 with a short-term mitigation. Eventually, the issue will be fixed permanently by upgrading the DssFlash contract. There is a related but much less severe issue with the module that streams DAI to core units which will also eventually be addressed. A full postmortem is forthcoming.  Explanation of the Vulnerability Taking a DAI flash loan via DssFlash temporarily alters the internal accounting of the system to represent the created DAI on the system\u2019s internal balance sheet. The thaw() function in the End module reads and caches the amount of outstanding DAI. During shutdown, a malicious actor could initiate a flash loan and call thaw() before repaying it, causing the DAI outstanding as read by the End to be anomalously high. This would lower the effective redemption value of DAI during the collateral distribution phase of shutdown. The attacker could profit by shorting DAI (e.g. by borrowing some and selling it to USDC) prior to executing the attack. The impact of the attack is limited by the maximum allowed flash loan size.  Mitigation Plan A module will be deployed that can permissionlessly disable DssFlash after Emergency Shutdown has been triggered. Because there is a delay before End.thaw() can be executed (currently 3 days), there is no concern about insufficient reaction time. This allows the address and maximum loan size of the DssFlash module to be initially unchanged while still eliminating all risk so that integrators do not have to scramble to account for the fix. An executive to add this new module will be available for ratification on March 9th, 2022. Longer-term, a new DssFlash contract will be put into place which automatically disables itself after shutdown, and the risky one deactivated.  A Note on DAI Vesting Core unit DAI payments are dispersed via a module that works similarly to DssFlash. While this module cannot be used to execute the same sort of devaluation attack as DssFlash, it is able to create new DAI after End.thaw() is invoked which creates a redemption race condition since not enough collateral will have been reserved to cover all outstanding DAI. The amount of dilution is much smaller and therefore the impact much lower, so this is not as urgent an issue, but still one that should be fixed. ",
+                    "links": [
+                        "https://github.com/makerdao/dss/blob/master/src/end.sol#L415",
+                        "https://forum.makerdao.com/t/out-of-schedule-executive-proposal-2022-03-09/13783",
+                        "https://forum.makerdao.com/t/pecu-month-in-review-march-2022/14493",
+                        "https://forum.makerdao.com/t/weekly-relay-march-8-14-2022/13906",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-march-2-9-2022/13804",
+                        "https://forum.makerdao.com/t/relay-semanal-8-14-de-marzo/13987",
+                        "https://forum.makerdao.com/t/monthly-governance-review-march-2022/14428",
+                        "https://forum.makerdao.com/t/acreinvest-delegate-platform/11943/12",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-march-17-23-2022/14191",
+                        "https://forum.makerdao.com/t/flash-loan-debt-manipulation-during-emergency-shutdown-vulnerability-postmortem/14036"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.7198206555349405
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Saludiego_201",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "08/03/2022-15:48:51",
+                    "content": "If I understand correctly, by having a three-day execution delay, this de facto prevents the attacker from being able to execute his plan? because flash loans must be repaid in the same block, right? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.309523809523809
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "08/03/2022-16:35:29",
+                    "content": "No, the attacker can execute the flash loan and call thaw in the same transaction. Here\u2019s a PoC:   github.com   kmbarry1/flash-thaw/blob/master/src/FlashThaw.sol // SPDX-License-Identifier: GPL-3.0-or-later pragma solidity 0.8.11;  interface VatLike {     function Line() external view returns (uint256);     function debt() external view returns (uint256); } interface EndLike {     function cage() external;     function thaw() external;     function wait() external returns (uint256);     function debt() external returns (uint256); } interface IERC3156FlashBorrower {     function onFlashLoan(         address initiator,         address token,         uint256 amount,         uint256 fee,         bytes calldata data       This file has been truncated. show original      ",
+                    "links": [
+                        "https://github.com/kmbarry1/flash-thaw/blob/master/src/FlashThaw.sol",
+                        "https://github.com/kmbarry1/flash-thaw/blob/master/src/FlashThaw.sol"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.234375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#4",
+                    "likes": "6",
+                    "time": "08/03/2022-18:28:19",
+                    "content": "    Kurt_Barry:  An executive to add this new module will be available for ratification on March 9th, 2022.   Confirming that we\u2019ll be putting this up on the 9th. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.34090909090909
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#5",
+                    "likes": "2",
+                    "time": "18/03/2022-15:03:07",
+                    "content": "Postmortem: Flash Loan Debt Manipulation During Emergency Shutdown Vulnerability Postmortem ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "01/04/2022-15:03:18",
+                    "content": "This topic was automatically closed 14 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

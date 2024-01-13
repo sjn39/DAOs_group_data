@@ -1,0 +1,154 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/how-to-audit-executive-contract-code/1292",
+            "title": "How to audit executive contract code? ",
+            "index": 1292,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "meta-governance"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#1",
+                    "likes": "4",
+                    "time": "17/02/2020-15:20:20",
+                    "content": "Is it easy enough to see the contract created for executive votes. Is there an easy tutorial to help noobs read and understand what the code does? ",
+                    "links": [
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-thursday-february-27-9am-pst-5-00-pm-utc/1365/2"
+                    ],
+                    "GPT-summary": "The post is asking for guidance on how to audit executive contract code and if there are any tutorials available for beginners to understand the code.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.444444444444445
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Sirlupinwatson1",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "18/02/2020-21:08:54",
+                    "content": "Hi @psychonaut, no there is no tutorial, but the code should be available on github ?? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#3",
+                    "likes": "3",
+                    "time": "18/02/2020-21:29:54",
+                    "content": "Yeah, of course the code is available. I\u2019m interested in a cheat sheet for the common changes. Moreover, once I\u2019m introduced to the basics, I might gradually learn more. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.0625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "18/02/2020-21:40:19",
+                    "content": "Some sort of cheat-sheet would be quite useful, especially for the less technically inclined MKR Holders. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.166666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Sirlupinwatson1",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "18/02/2020-21:42:54",
+                    "content": "I don\u2019t think is a good idea to do this, the code is already on Github, why giving it away to noob or newbie members ? Just to understand what you guys are looking for with the code ?  EDIT : @psychonaut     psychonaut:  once I\u2019m introduced to the basics, I might gradually learn more.   Yeah i understand, this is a good idea if you have some times actually. There is a lot of work to do with the code, if you are interested in it, it could be good. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 7.374999999999999
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#6",
+                    "likes": "2",
+                    "time": "25/02/2020-16:26:01",
+                    "content": "The code isn\u2019t being \u201cgiven away\u201d it\u2019s open source. The point of the post is so that less technical MKR holders have an ability to easily self-audit the changes being proposed in the Executive Votes.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#7",
+                    "likes": "14",
+                    "time": "25/02/2020-17:12:33",
+                    "content": "We have been making an active effort to make the spells extremely readable over the last few months.  Here is the way to approach reading the executive spells:  Find the link to the spell on etherscan from the voting portal. Here is the most recent executive: https://etherscan.io/address/0xD24FbbB4497AD32308BDa735683B55499Ddc2CaD  Once you open the spell, click on the Contract tab You should see the contract code now, if you just see bytecode cry foul in chat and encourage people NOT to vote for it until you can read the contract code. If you scroll down to the bottom, the meat of the spells is down there.  Most of the stuff at the top are flattened libraries included when we verified the contract. Find the lowest contract (e.g. contract DssSpell20200221 is DSMath).  Once this spell 0xD24FbbB4497AD32308BDa735683B55499Ddc2CaD gets enough votes to be lifted to the hat, the schedule() function you see here will be called.  Read through it, if there is something you\u2019re confused about feel free to mention it in this forums thread and we will try to comment it better.  Any addresses you see can be verified against the most recent mainnet changelog, right now that is 1.0.4: https://changelog.makerdao.com/releases/mainnet/1.0.4/contracts.json  The constructor should always look the same:      constructor() public {         sig = abi.encodeWithSignature(\"execute()\");         action = address(new SpellAction());         bytes32 _tag;         address _action = action;         assembly { _tag := extcodehash(_action) }         tag = _tag;     }   The schedule() and cast() call should usually be the same, but for now any SCD changes will be tucked into schedule().  If they deviate from the following, it will be commented:      function schedule() public {         require(eta == 0, \"spell-already-scheduled\");         eta = add(now, DSPauseAbstract(pause).delay());         pause.plot(action, tag, sig, eta);     }      function cast() public {         require(!done, \"spell-already-cast\");         done = true;         pause.exec(action, tag, sig, eta);     }   Note that in this spell, there were SCD changes.  Those are well documented and done with SaiMomAbstract(SAIMOM).setFee(NEW_FEE);.  This calls a contract that has privileged access to make a few configuration changes in SCD.  Verify the address of SAIMOM from the contract definition above.  This is trickier, but you can put the SAIMOM address into etherscan: https://etherscan.io/address/0xF2C5369cFFb8Ea6284452b0326e326DbFdCb867C#code  Now the fun part, NEW_FEE.  What the hell is this?  Well, in short it\u2019s the rate accumulator per second.  We derive this value with any number of high precision calculators, but you can verify it with a bc (Unix/Linux/OSX/WSL) command in a bash shell: bc -l <<< 'scale=27; e( l(1.095)/(60 * 60 * 24 * 365) )' This produces 1.000000002877801985002875644, just drop the decimal place and you can see this matches the definition of NEW_FEE.  Validating all rate adjustments can be done the same way, and there will be plenty more.  For more information on the rates module, @vamsi wrote up a great post here: https://github.com/makerdao/developerguides/blob/master/mcd/intro-rate-mechanism/intro-rate-mechanism.md  Okay, after the delay is up, anyone can call cast() which will execute the code in the SpellAction's execute() function.  This contract is called in an interesting way, so one thing to always validate is that the SpellAction never has anything in contract memory.  That is, all the variables that look like they are contract variables here are actually declared as constant.  I won\u2019t go into detail about why, but will just mention that it\u2019s a MAJOR bug if this isn\u2019t the case and the spell might look like it\u2019s doing one thing but is actually doing another.   So, only constant variables at the contract scope. The execute() function will be too large to go into detail, but each change should be well documented and one should make sure the code does what the comment says.  Anything that changes a rate can be validated with the bc command above.  All of those constant declarations of addresses should be validated against the latest changelog, like above.  Before we change any of the rates, we must call drip() on those respective contracts (e.g. if this is a DSR rate change, we call drip() on the pot or if we are changing the SF of a collateral type, we have to call drip(\"ILK\") on the jug).  Every spell is different, and the one in this example is one of the more complicated ones.  I leave reading through the rest of it as an exercise.  If you think better comments are needed, leave a post here and we will try to make things more clear in future executives.  Also, feel free to take this guide on validating spells and put it somewhere more useful or make changes to it.  It took me over an hour to write, but validating what you\u2019re voting for is important for the security of the system.  We will strive to make these spells more readable and governance should strive to understand them. Cheers ",
+                    "links": [
+                        "https://changelog.makerdao.com/releases/mainnet/1.0.4/contracts.json",
+                        "https://etherscan.io/address/0xF2C5369cFFb8Ea6284452b0326e326DbFdCb867C#code",
+                        "https://github.com/makerdao/developerguides/blob/master/mcd/intro-rate-mechanism/intro-rate-mechanism.md",
+                        "https://forum.makerdao.com/t/removing-sai-from-mcd-completely/2638/8",
+                        "https://forum.makerdao.com/t/discussion-of-collateral-onboarding-process/3338/7",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-thursday-february-27-9am-pst-5-00-pm-utc/1365/2"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.754019360269361
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/dawson",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "02/03/2020-21:56:37",
+                    "content": "@cmooney thanks for the detailed response here! I was looking through Maker docs and found that some of the contract code is annotated with Hypothesis. For example, you can checkout the annotated vat contract here. I tried to view Etherscan through Hypothesis but got stopped by Cloudflare\u2019s bot detection. I think annotating contract code like this is super useful though, and will help the community share knowledge where not everyone is technical. Is there a common place the source for contracts corresponding to executives are hosted? So far I\u2019ve found the following, all very annotatable through Hypothsis  https://github.com/makerdao/dss-add-ilk-spell https://github.com/makerdao/line-spell https://github.com/makerdao/dss-darkfix  Are all votes for executives enacted as spells applied to the system? I\u2019m still wrapping my head around spells and how changes are applied to the Maker system so I\u2019m sorry if these a noob questions. ",
+                    "links": [
+                        "https://github.com/makerdao/dss-add-ilk-spell",
+                        "https://github.com/makerdao/line-spell",
+                        "https://github.com/makerdao/dss-darkfix"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#9",
+                    "likes": "2",
+                    "time": "02/03/2020-22:07:39",
+                    "content": "    dawson:  Are all votes for executives enacted as spells applied to the system? I\u2019m still wrapping my head around spells and how changes are applied to the Maker system so I\u2019m sorry if these a noob questions.   Yes, an executive should be in the form of a spell.  Only an executive that has been lifted to the hat has the ability to call schedule() to insert an action into the Governance Security Module (GSM).  Once the delay has passed, one can call the cast() function to execute the action.  Typically, these actions should change the protocol or the protocol\u2019s configuration in some way.  The changes they make should always be scrutinized to ensure they capture the intent of governance and will perform that intent correctly (free from bugs). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.944444444444445
+                }
+            ]
+        }
+    ]
+}

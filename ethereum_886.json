@@ -1,0 +1,217 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/ethereum-account-versioning/3508",
+            "title": "Ethereum account versioning ",
+            "index": 3508,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "versioning",
+                "accounts"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "27/07/2019-10:25:04",
+                    "content": "In the past few months account versioning was a topic of importance due to EIP-615 requiring it. Additionally it could wall off other changes (such as gas changes) to minimize protocol update effects on existing contracts. There have been a number of proposals for account versioning: EIP-1702, EIP-1707, EIP-1891 as well two auxiliary EIPs EIP-2138 and EIP-2139. All of these proposals were made by @sorpaas. EIP-1702 was the most reviewed option. Some of discussion took place on EVM instruction set versioning, EIP-1702: Generalized Account Versioning Scheme \u00b7 Issue #2 \u00b7 sorpaas/EIPs \u00b7 GitHub and EIP-1891: Contract-based Account Versioning \u00b7 Issue #6 \u00b7 sorpaas/EIPs \u00b7 GitHub, but mostly it was discussed on the AllCoreDevs gitter channel. Created this topic here to have a single place to discuss versioning, because tracking all these places became a burden, at least to me. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/1707",
+                        "https://github.com/ethereum/EIPs/pull/1891",
+                        "https://github.com/ethereum/EIPs/pull/2138",
+                        "https://github.com/ethereum/EIPs/pull/2139",
+                        "https://ethereum-magicians.org/t/evm-instruction-set-versioning/2286",
+                        "https://github.com/sorpaas/EIPs/issues/2",
+                        "https://github.com/sorpaas/EIPs/issues/6"
+                    ],
+                    "GPT-summary": "The author of the post explains the importance of account versioning in Ethereum and lists several proposals for it. The author also mentions that EIP-1702 was the most reviewed option and created the post to have a single place to discuss versioning. A 3rd party could give constructive criticism or audit/review the proposals.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Not a proposal"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.9603174603174605
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "27/07/2019-11:09:02",
+                    "content": "My personal opinion is that account versioning is useful, but it has to be used with great care. I do see a use case  to distinguish between EVM and other bytecode (such as Wasm) or to have different EVM versions when new opcodes are introduced  However locking gas changes into new versions is a double edged sword. On the outset it seems to lock gas changes to new contracts without affecting old ones, but having accounts of different versions interact with each other can easily complicate matters a lot. Two more issues regarding gas changes locked behind versioning:  a reduction of costs cannot be utilised by existing contracts, prompting users to redeploy them, which contributes to state bloat an increase of costs would not affect existing contracts, minimising the intended effect, potentially giving very limited results (one example is repricing SLOAD as per EIP-1884 to reflect the actual workload)  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.473570289359762
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "28/07/2019-02:15:24",
+                    "content": "One case where I see account versioning as a \u201cmust do\u201d is when backwards incompatible changes are being introduced.  I would almost suggest this is the only time a new account version should be considered for introduction. I see a few places where this would be warranted under the \u201cversioning required\u201d standard  introduction of new contract validation rules. prohibition of previously allowed opcodes or constructs  such as dynamic jump or dynamic jump from a non-fixed stack value such as invalid opcodes, like you might find in data sections.   introduction of a new bytecode, such as eWASM  However we may want to consider \u201chorse trading\u201d version upgrades, such as ones that significantly reduce prices on one set of operations at the cost of raising other sets of operations, such as cheaper precompiles for extremely expensive memory operations.  I\u2019m not providing any specific suggestions but am putting it out there as a tool that is available. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.050637958532695
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AntoineRondelet",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "03/09/2019-13:52:32",
+                    "content": "I can see in EIP-1702 that no account versioning is scheduled for the precompiled contracts. See Section Precompiled Contract and Externally-owned Address of EIP-1702: Generalized Account Versioning Scheme  Precompiled contracts and externally-owned addresses do not have version  Why such a decision has been taken? I see several benefits to have version numbers for the precompiled contracts.  It could allow forks of Ethereum to define their set of precompiled without interfering with the addressing scheme used on the main chain (and without needing to allocate/reserve a range of addresses of precompiled for \u201cforks\u2019 custom precompiled\u201d which IMHO does not provide an elegant solution). That way, the precompiled version would always be 0 on the main chain, while it could be set to be =/= 0 on forks so that the same address can be used to call a different/custom precompiled. This makes it easier for forks of Ethereum to define their precompiled and makes it trivial to keep a forked client in sync with the parent project. I also see a benefit of using precompiled versioning on main chain as it could be used to introduce newer versions of the precompiled, and could thus be used to provide backward compatibility. Eg: We could define a new snark/pairing friendly curve on Ethereum and introduce the corresponding precompiled contracts as an upgraded version of the current bn256 precompiled. We know that the bn256 package used on Ethereum was initially claiming to provide 128 bits of security. However, recent work (Kim\u2013Barbulescu variant of the Number Field Sieve to compute discrete logarithms in finite fields | ellipticnews) suggest this is not the case anymore. For this reason, it would make sense to either replace the bn precompiled by precompiled for another curve (BLS12-381?) but this would break backward compatibility (I think it\u2019s a good thing actually), or we could add a new version for the point addition, scalar multiplication and pairing check precompiled such that arithmetic is done over the new curve. As the set of precompiled grows (blake2b has just been introduced which is great) and as new cryptographic primitives and curves are added I think we should think about the event in which new attacks on these are published which could affect the security promises - or even worst - break some of these. For this reason, supporting versioning would make sense I think.  Hopefully this makes sense, and please let me know if I missed something! [EDIT] I proposed an EIP to address some of the matters mentioned above. A thread is dedicated to discuss it here: EIP-2274: Multiple address spaces for Precompiled contracts happy to discuss this further  ",
+                    "links": [
+                        "https://ellipticnews.wordpress.com/2016/05/02/kim-barbulescu-variant-of-the-number-field-sieve-to-compute-discrete-logarithms-in-finite-fields/",
+                        "https://ethereum-magicians.org/t/eip-2274-multiple-addresses-range-for-precompiled-contracts/3652"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.540614478114478
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AntoineRondelet",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "11/09/2019-14:42:10",
+                    "content": "Further to the comment above, I\u2019d be keen to understand better some of the design choices made in EIP1702. @sorpaas, did I understand correctly that you didn\u2019t plan to support precompiled versionning in EIP1702? If so, would you mind exposing the reason behind this choice? Thanks in advance for your help  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.300000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "13/09/2019-23:37:55",
+                    "content": "I was writing the spec under the assumption that all contracts having a global view of precompiled contracts, and adding new precompiles or changing existing precompiles is basically an irregular state change. That\u2019s why in 1702 they don\u2019t have versions. I do see your argument. I\u2019m fine either way. If we make precompiles have versions, then it\u2019s basically treating them as EVM internal implementations that do not query state at all. However, there\u2019s a small inconsistency in that you can call precompiles directly from a transaction, and it indeed has side effect because the gas costs are different. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.287878787878788
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AntoineRondelet",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "17/09/2019-11:55:35",
+                    "content": "I see, thanks very much for your input. As precompiled contracts extend the instruction set of the EVM, I wanted to enable different \u201clibraries of precompiled contracts\u201d. Those defined on mainnet and those which can be defined by forks. To that end, I wrote EIP-2274 that extends EIP-1109 (that I stumbled upon a few days ago) while following the idea mentioned in my comment above. It may be a way to stick to the EIP as you wrote it while having different set of precompiled contracts. I\u2019m not sure, though, I fully understood what you meant by:  However, there\u2019s a small inconsistency in that you can call precompiles directly from a transaction, and it indeed has side effect because the gas costs are different.  If you call a precompiled from a deployed contract, you\u2019ll pay the gas cost of CALL and of the precompiled. However, if you call the precompiled directly via a tx you should only pay only the gas cost of the precompiled contract (in both case you\u2019d also pay for the base tx fee of 21k gas or so). Is that correct and is that what you were referring to as the \u201cside effect\u201d? If so, why is this problematic? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.72
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "04/10/2019-16:25:49",
+                    "content": "    AntoineRondelet:  However, if you call the precompiled directly via a tx you should only pay only the gas cost of the precompiled contract (in both case you\u2019d also pay for the base tx fee of 21k gas or so).   Yeah, and I consider that to be a side effect of precompiled. When doing a tx directly, the address or contract we\u2019re calling can be said to be on the \u201cglobal view\u201d. If any effect of the precompiles (the return value, additional gas cost) is visible, then precompiles can be said to be on the global view. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjayrush",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "23/11/2019-01:04:59",
+                    "content": "Can some change the topic of this pos to \u201cAccount Versioning\u201d? It\u2019s confusing to those of us who are interested in Accounting. Thanks. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "23/11/2019-10:17:23",
+                    "content": "Oh, I have just noticed the typo (\u201cAccounting\u201d), haha. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sorpaas",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "15/02/2020-20:38:34",
+                    "content": "@axic The title is still not yet fixed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "12",
+                    "likes": "2",
+                    "time": "15/02/2020-23:35:53",
+                    "content": "It might be Discourse software does not allow @axic to change it after submitting the topic. I went ahead and updated the title. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "28/04/2021-22:33:24",
+                    "content": "It was not mentioned in this topic, but a related discussion took place here:    EIP-2348: Validated EVM Contracts EIPs       Discussion topic for    A set of contract markers and validation rules relating to those markers is proposed. These  validation rules enable forwards compatible evolution of EVM contracts and provide some assurances  to Ethereum clients allowing them to disable some runtime verification steps by moving these  validations to the deployment phase.     And speaking of validation, EIP-615 also proposed code validation. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-615"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "09/06/2021-21:31:37",
+                    "content": "Another proposal introducing a variant of code versioning is discussed here:    EVM Object Format (EOF) EIPs       Last week I have shared a document on the Eth R&D discord explaining some background on why some EVM changes are hard and motivation for improving the situation:   It also suggests a container format for EVM, which would enable further improvements, such as removing jumpdests, moving to static jumps, etc. While the document does not aim to provide a final, implementable solution, it is a good one for discussions.     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.648809523809524
+                }
+            ]
+        }
+    ],
+    "group_index": "886"
+}

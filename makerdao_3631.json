@@ -1,0 +1,85 @@
+{
+    "poll_list": [
+        {
+            "title": "Add Stablecoin-Volatile UNI LPs to Liquidations 2.0 Framework - May 17, 2021",
+            "index": "8073",
+            "option": "Yes",
+            "supporting_mkr": "14,031",
+            "highest_fraction": 1.0
+        },
+        {
+            "title": "Add Volatile-Volatile UNI LPs to Liquidations 2.0 Framework - May 17, 2021",
+            "index": "8073",
+            "option": "Yes",
+            "supporting_mkr": "14,031",
+            "highest_fraction": 1.0
+        },
+        {
+            "title": "Add UNIV2DAIUSDT-A to Liquidations 2.0 Framework - May 17, 2021",
+            "index": "8073",
+            "option": "Yes",
+            "supporting_mkr": "14,031",
+            "highest_fraction": 1.0
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/uni-lps-liquidations-2-0-parameters/8073",
+            "title": "UNI LPs Liquidations 2.0 Parameters ",
+            "index": 8073,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "auctions",
+                "system-parameter",
+                "liq-20"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#1",
+                    "likes": "5",
+                    "time": "14/05/2021-09:05:10",
+                    "content": "Since many of UNI LPs are different in their volatility profile versus other standard Maker collaterals, we decided to propose a different set of Liq 2.0 parameters that define auction activity. We have three types of UNI LPs based on their volatility profile:     Stablecoin/Volatile Stablecoin/Stablecoin Volatile/volatile     UNIV2DAIETH-A UNIV2DAIUSDC-A UNIV2WBTCETH-A   UNIV2USDCETH-A UNIV2DAIUSDT-A UNIV2UNIETH-A   UNIV2ETHUSDT-A  UNIV2LINKETH-A   UNIV2WBTCDAI-A  UNIV2AAVEETH-A     Stablecoin/Volatile UNI LPs To understand the volatility profile of stablecoin/ETH or stablecoin/WBTC pairs, we first need to analyze the price behaviour of these tokens. In general they exhibit 50% less volatility when smaller drops occur, but when we have a drop of 50%, the impermanent loss increases and the token loses 29.3% of its value.     Volatile asset drop Stablecoin/Volatile     -10% -5.13%   -20% -10.56%   -30% -16.33%   -40% -22.54%   -50% -29.29%   -60% -36.75%   -70% -45.23%   -80% -55.28%   -90% -68.38%    This means that the auction\u2019s price curve slope should be about 2x flatter than the one implemented for other assets so far. In other words a 1% drop should occur in about 180 second instead of 90 seconds as was the default value for other vaults. Because the step length is going to be higher, we believe the curve should be smoother and therefore 0.5% drop is proposed (equals cut of 0.995). Because of lower volatility we believe the buffer that defines the starting price (buffer applied to the last OSM) should also be about half of the default value previously selected at 30%. Hence buf of 1.15 is proposed. There is however another angle to UNI LP auction risks. It is questionable how many keepers will have automated software from the start, where they will be able to use flash loans, unwrap LPs and sell them simultaneously. This is why we propose to a) implement a slope of the curve that is less than 50% of the slope used for other standard vault types and b) to extend the expected auction duration from the current standard of 40 minutes to about 60 minutes. This would lower the delayed bids and slower response risks that could occur initially at UNI LPs. This also has implications for parameters that define auction reset. We propose cusp value of 0.6 which means that the auction can be reset when it reaches 69% of the OSM price (1.15 buf * 0.6 cusp). 31% drop in stable/volatile UNI LP pair equals about 50% in volatile asset drop. Similar logic follows when choosing the tolerance value for the permissionless circuit breaker: since the tokens are about half less volatile we also believe the tolerance should be changed from current 0.5 to 0.7. Pending auction throughput limit defined by ilk.hole is defined by UNI LP underlying asset liquidity. Most of the underlying assets in the pairs covered in this proposal are very liquid. Yet, due to specific risks surrounding UNI LP keeper participation as mentioned above, we propose a bit more conservative values on a level of 5m per vault type. Below is the proposed set of parameters and the price curve. Underlying data can be found here  Screenshot 2021-05-14 at 11.01.001260\u00d7750 59.4 KB  Characteristics of the auction price curve:  Starting price of 115% of last OSM 0.5% drop every 125 seconds or every 2.08 minutes Expected auction settlement duration of 59 minutes Time until auction reset = 213min or 3h33min OSM price at auction reset = 69% Maker loss for 125% LR vault type at lowest auction price is estimated at about -13%  Auction Parameters for:  UNIV2DAIETH-A UNIV2USDCETH-A UNIV2ETHUSDT-A UNIV2WBTCDAI-A  cut = 0.995 step = 125 seconds buf = 1.15 cusp = 0.6 tail = 215 minutes chip = 0.1% tip = 0 ilk.chop = 13% tolerance = 0.7 Global Auction Parameters: hole = 100m DAI ilk.hole Auction Parameters: UNIV2DAIETH-A ilk.hole = 5m DAI UNIV2USDCETH-A ilk.hole = 5m DAI UNIV2ETHUSDT-A ilk.hole = 5m DAI UNIV2WBTCDAI-A ilk.hole = 5m DAI  Volatile/Volatile UNI LPs These pairs exhibit similar volatility patterns than most of the collaterals at MakerDAO. This is why we propose to use a similar auction price curve as was proposed for other \u201cvanilla\u201d type collateral at Maker. The only difference we recommend here is to have auction duration longer than 40 minutes set as default for other collaterals. Same as for Stablecoin/Volatile UNI LPs, we recommend auction duration to be closer to one hour for reasons and risks mentioned above. This is why the only difference recommended compared to other standard vault types is in the parameters step and tail, apart from the regular difference in ilk.hole. The proposed price curve and set of parameters can be seen below and [here]  Screenshot 2021-05-14 at 10.59.281294\u00d7770 61.5 KB  Characteristics of the auction price curve:  Starting price of 130% of last OSM 1% drop every 130 seconds or every 2.17 minutes Expected auction settlement duration of 59 minutes Time until auction reset = 200min or 3h20min OSM price at auction reset = 52% Maker loss for 150% LR vault type at lowest auction price is estimated at about -22%  Auction Parameters:  UNIV2WBTCETH-A UNIV2LINKETH-A UNIV2UNIETH-A UNIV2AAVEETH-A  cut = 0.99 step = 130 seconds buf = 1.30 cusp = 0.4 tail = 200 minutes chip = 0.1% tip = 0 ilk.chop = 13% tolerance = 0.5 Global Auction Parameters: hole = 100m DAI ilk.hole Auction Parameters: UNIV2WBTCETH-A ilk.hole = 5m DAI UNIV2LINKETH-A ilk.hole = 3m DAI UNIV2UNIETH-A ilk.hole = 3m DAI UNIV2AAVEETH-A ilk.hole = 3m DAI  Stablecoin/Stablecoin UNI LPs We have two UNI LP stablecoin pair collaterals at Maker: UNIV2DAIUSDC-A and UNIV2DAIUSDT-A. Note that liquidations are disabled for DAIUSDC-A so we have to define parameters only for UNIV2DAIUSDT-A. We won\u2019t go into details about the current state of Tether and its publicly debatable questionable backing, but we know that USDT did trade with a 4% discount in November 2018. This is also one of the reasons liquidations are turned on for Tether at Maker. There are two types of risks in regards to Tether related liquidations. One is related to oracle malfunction and the other to an actual price decrease of tether due to backing or regulatory related issues. We believe there is a similar if not a bigger chance something goes wrong with oracles rather than witnessing the scenario of Tether becoming unbacked. The potential \u201cunbacked news\u201d effect that would crash the price could be also short lived, where price would stabilize back higher. With that in mind we believe that the auction price curve for an asset that has Tether exposure should be very conservative, meaning it would have a longer expected settlement time, flatter slope, low buffer, high floor price and low tolerance (high tolerance parameter value) for permissionless circuit breaker. The general idea behind such an auction price curve for USDT based collateral assets is to prefer the \u201cwait and see\u201d approach rather than performing aggressive liquidation.  Screenshot 2021-05-14 at 10.59.461294\u00d7736 62.1 KB  Characteristics of the auction price curve:  Starting price of 105% of last OSM 0.1% drop every 120 seconds or every 2 minutes Expected auction settlement duration of 98 minutes Time until auction reset = 212min or 3h32min OSM price at auction reset = 94.5% (floor price) Permissionless circuit breaker can be triggered if OSM price update is lower by 5% or more Maker loss for 125% LR vault type at lowest auction price is estimated at 0%  Auction Parameters for:  UNIV2DAIUSDT-A  cut = 0.999 step = 120 seconds buf = 1.05 cusp = 0.9 tail = 220 minutes chip = 0.1% tip = 0 ilk.chop = 13% tolerance = 0.95 Global Auction Parameters: hole = 100m DAI ilk.hole Auction Parameters: UNIV2DAIUSDT-A ilk.hole = 5m DAI ",
+                    "links": [
+                        "https://docs.google.com/spreadsheets/d/18mu0oiDerZ4t_DZg5Ha3SCGFtyAq9QMbU1fWNa38Giw/edit?usp=sharing",
+                        "https://docs.google.com/spreadsheets/d/18mu0oiDerZ4t_DZg5Ha3SCGFtyAq9QMbU1fWNa38Giw/edit#gid=1724696667",
+                        "https://forum.makerdao.com/t/maker-relay-ep-45-en-espanol/8141",
+                        "https://forum.makerdao.com/t/maker-relay-ep-45/8127",
+                        "https://forum.makerdao.com/t/maker-relay-ep-46/8312",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-142-thursday-may-20-17-00-utc/8116/4",
+                        "https://forum.makerdao.com/t/maker-relay-ep-46-en-espanol/8358",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/32",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-142-thursday-may-20-17-00-utc/8116/3"
+                    ],
+                    "GPT-summary": "The post proposes a different set of Liq 2.0 parameters for UNI LPs based on their volatility profile. The proposal includes different auction price curves, expected auction settlement durations, and other parameters for different types of UNI LPs. The post also discusses the risks associated with UNI LP auction risks and proposes solutions to mitigate them. The proposal is open to feedback and review.",
+                    "GPT-proposal-categories": [
+                        "Change to proposal pipeline",
+                        "Token economics",
+                        "Smart contract updates",
+                        "Grants, Funding and resource allocation",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.018548387096774
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "13/08/2021-15:05:57",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ],
+    "group_index": "3631"
+}

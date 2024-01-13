@@ -1,0 +1,283 @@
+{
+    "poll_list": [
+        {
+            "title": "Ratification Poll for L2-to-L1 Fast Withdrawals (MIP69) - May 9, 2022",
+            "index": "14041",
+            "option": "Yes",
+            "supporting_mkr": "93,786",
+            "highest_fraction": 1.0
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip69-l2-to-l1-fast-withdrawals/14041",
+            "title": "MIP69: L2 to L1 Fast Withdrawals ",
+            "index": 14041,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "mips",
+                "layer-2",
+                "pe-001",
+                "protocol-engineering",
+                "impact-:-high"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#1",
+                    "likes": "22",
+                    "time": "18/03/2022-17:34:32",
+                    "content": " MIP69: L2-to-L1 Fast Withdrawals  Preamble MIP#: 69 Title: L2-to-L1 Fast Withdrawals Author(s): Protocol Engineering Core Unit (PE-001) Type: Technical Status: Accepted Date Proposed: 2022-03-17 Date Ratified: 2022-05-23 Forum URL: https://forum.makerdao.com/t/mip69-l2-to-l1-fast-withdrawals/14041 Ratification Poll URL: https://vote.makerdao.com/polling/QmWZvSpa   References   Github with code, further technical detail and examples. Introducing Maker Wormhole Forum Post  A Multichain Strategy and Roadmap for Maker Forum Post    Sentence Summary This MIP formalises technical work completed to deliver Fast Withdrawals on Layer2.  Paragraph Summary Teleporting DAI from L2 to L1 is known as a \u201cFast Withdrawal\u201d. To complete a fast withdrawal, DAI is burnt on L2, minted on L1, and sent to the user as soon as the L2 transaction is confirmed. This MIP focuses on the above L2-to-L1 transaction. L2-to-L2 transactions will be defined in a future MIP when the full Wormhole functionality is ready to be launched.  Component Summary TBD  Motivation Increase user adoption by allowing users to withdraw L2 funds near instantly by avoiding the need to wait for fraud proofs.  Specification  Definitions  A \u201cDomain\u201d represents a chain such as Ethereum, Optimism, Arbitrum, etc. A \u201cGateway\u201d is a generic term for either side of a bridge or wormhole adapter that connects Domains together. A \u201cWormhole Router\u201d keeps track of each Domain\u2019s Gateway and routes requestMint() or settle() requests to the appropriate contracts.  Contract Interaction Details:  Each Domain connected to an L1 requires a Gateway contract supporting requestMint() and settle() operations to set the amount of DAI.   Fast Withdrawal Fees  PECU is proposing to set the Fast Withdrawal fee to 0.  Additional Details: The fee, if Governance chooses to apply it, is currently an absolute amount, and is levied per Domain. This could be upgraded in the future if the need arises. This fee is only applied to fast withdrawals. The slow withdrawal bridge, which requires a 7 day wait will continue to function without fees even if fees are introduced for Fast Withdrawals.  Roles   Initiator - person initiating DAI transfer by calling initiateWormhole . They can optionally specify Operator and Receiver  Operator - person (or specified third party) responsible for initiating minting process on destination Domain by providing (in the fast path) Oracle attestations. Can call requestMint on WormholeOracleAuth   Receiver - person receiving minted DAI on a destination Domain   Architecture Referencing previously shared information from our Introducing Maker Wormhole post, the following diagram details interactions where 3 users seek to make DAI withdrawals to L1.  1159\u00d7768 170 KB  Instead of the current approach of initiating an L2 \u2192 L1 message, the system will emit an event on L2 of the user\u2019s intent. The L2 DAI will be burnt, and a storage slot will be marked for the Checkpoint Slow Fallback contract. The Maker Oracle Network will attest to the finality and validity of the L2 transaction and operators will watch to provide signed attestations. Users will be able to query for these attestations and provide them to the Oracle Fast Withdrawal contract for authentication. Where authentication is successful, the new DAI will be minted and sent to the user, assuming the Wormhole adapter has enough Debt Ceiling available. In the event that the oracle network is not available for any reason, it will be necessary to provide an on-chain fallback by relying on the slow withdrawal fraud proof. Both of these scenarios have been broken out into further detail below.  Normal (fast) path To fast withdraw DAI from L2, user:  Calls l2bridge.initiateWormhole() - this burns DAI on L2 and sends finalizeRegisterWormhole() L2 \u2192 L1 message to withdraw DAI from L2 bridge. This message, in normal circumstances, will never be relayed and it will eventually expire in L1 message queue Waits for withdrawal attestations to be available and obtains them via Oracle API Calls WormholeOracleAuth.requestMint(WormholeGUID wormholeGUID, bytes signatures, uint256 maxFeePercentage, uint256 operatorFee) which will:  Check if sender is operator or receiver  Check if enough valid attestations (sigs) are provided Call WormholeJoin.requestMint(wormholeGUID, maxfeePercentage, operatorFee) which will  Check if this wormhole hasn\u2019t been used before Check if the Debt Ceiling hasn\u2019t been reached Check the current fee via WormholeFees   vat.slip, vat.frob, daiJoin.exit        Settlement Settlement process moves DAI from L1 Bridge to WormholeJoin to clear the debt that accumulates there. It is triggered by keepers.  On L2 keeper calls l2bridge.flush()  L2 \u2192 L1 message finalizeFlush() is sent to L1Bridge and relayed by a keeper  L1Bridge upon receiving finalizeFlush() calls WormholeRouter.settle() which will  Transfer DAI from bridges\u2019 escrow to WormholeJoin  Call WormholeJoin.settle() which will use transferred DAI to clear any outstanding debt by calling daiJoin.join, vat.frob, vat.slip      Slow (emergency) path If attestations cannot be obtained (Oracles down or censoring), user needs to wait so that L2 message is confirmed on L1 (on Optimistic Rollups that typically is seven days, on zkRollups it can be anything between a few hours to a day). Once L2->L1 message can be relayed, user:  Relays finalizeRegisterWormhole()  message to L1Bridge   L1Bridge upon receiving finalizeRegisterWormhole() will call requestMint() on WormholeRouter which will:  Call WormholeJoin.requestMint(wormholeGUID, maxfeePercentage, operatorFee) which will  Check if this Wormhole hasn\u2019t been used before Check if the debt ceiling hasn\u2019t been reached Check the current fee via WormholeFees   vat.slip, vat.frob, daiJoin.exit        Authorization Authorizations over the following functions are detailed below:   WormholeOracleAuth   requestMint - operator or receiver (set by the user initiating wormhole)  rely, deny, file, addSigners, removeSigners - auth (Governance)    WormholeRouter   rely, deny, file - auth (Governance)  requestMint - L1 Bridge  settle - L1 Bridge    WormholeJoin   rely, deny, file - auth (Governance)  requestMint - auth (WormholeRouter, WormholeOracleAuth)  mintPending - operator or receiver  settle - anyone (typically keeper)    L1WormholeBridge   finalizeFlush() - L2 bridge  finalizeRegisterWormhole() - L2 bridge    L2DAIWormholeBridge   initalizeWormhole - anyone (typically user)  flush - anyone (typically keeper)     L2 Domains The initial deployment of fast withdrawals will include the following Domains:  Optimism Arbitrum  There is current work underway for StarkWare and other Zk rollups to join this ecosystem when ready as well.  Debt Ceiling Parameters For the initial deployment, PECU is proposing the following debt ceiling parameters:  Optimism debt ceiling: 1 million DAI Arbitrum debt ceiling: 1 million DAI  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/introducing-maker-wormhole/11550",
+                        "https://forum.makerdao.com/t/a-multichain-strategy-and-roadmap-for-maker/8380",
+                        "https://forum.makerdao.com/t/introducing-maker-wormhole/11550",
+                        "https://forum.makerdao.com/t/fast-withdrawals-and-risk-assumptions/16375",
+                        "https://forum.makerdao.com/t/pecu-month-in-review-may-2022/15947",
+                        "https://forum.makerdao.com/t/acreinvest-delegate-platform/11943/20",
+                        "https://forum.makerdao.com/t/weekly-mips-update-88/15329",
+                        "https://forum.makerdao.com/t/relay-semanal-10-16-de-mayo-de-2022/15289",
+                        "https://forum.makerdao.com/t/flipside-crypto-delegate-platform/13456/17",
+                        "https://forum.makerdao.com/t/feedblack-loops-llc-delegate-platform-fbl/9366/75",
+                        "https://forum.makerdao.com/t/encuestas-de-la-semana-16-de-mayo-del-2022/15241",
+                        "https://forum.makerdao.com/t/weekly-relay-may-10-16-2022/15238",
+                        "https://forum.makerdao.com/t/weekly-mips-update-87/15220",
+                        "https://forum.makerdao.com/t/governance-and-risk-189-thursday-may-05-17-00-utc/14965/2",
+                        "https://forum.makerdao.com/t/schuppi-delegate-platform/11193/62",
+                        "https://forum.makerdao.com/t/relay-semanal-3-9-de-mayo-de-2022/15157",
+                        "https://forum.makerdao.com/t/presentamos-maker-wormhole-traduccion/15112",
+                        "https://forum.makerdao.com/t/encuestas-de-la-semana-09-de-mayo-de-2022/15089",
+                        "https://forum.makerdao.com/t/weekly-relay-may-3-9-2022/15084",
+                        "https://forum.makerdao.com/t/weekly-mips-update-86-may-9-2022/15058",
+                        "https://forum.makerdao.com/t/weekly-mips-update-85/14914",
+                        "https://forum.makerdao.com/t/governance-and-risk-187-thursday-april-21-17-00-utc/14708/2",
+                        "https://forum.makerdao.com/t/weekly-mips-update-84/14786",
+                        "https://forum.makerdao.com/t/weekly-mips-update-83/14673",
+                        "https://forum.makerdao.com/t/governance-and-risk-185-thursday-april-07-17-00-utc/14464/2",
+                        "https://forum.makerdao.com/t/weekly-mips-update-82/14570",
+                        "https://forum.makerdao.com/t/governance-and-risk-184-thursday-march-31-17-00-utc/14314/2",
+                        "https://forum.makerdao.com/t/pecu-month-in-review-march-2022/14493",
+                        "https://forum.makerdao.com/t/weekly-mips-update-81/14443",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-march-24-30-2022/14332",
+                        "https://forum.makerdao.com/t/weekly-mips-update-80/14274",
+                        "https://forum.makerdao.com/t/request-to-poll-for-maker-wormhole-deployment-and-associated-risk-parameters/14209",
+                        "https://forum.makerdao.com/t/weekly-mips-update-79-pinata/14106",
+                        "https://forum.makerdao.com/t/ruta-de-layer-2-historia-y-futuro-traduccion/17387",
+                        "https://forum.makerdao.com/t/layer-2-roadmap-history-and-future/17310",
+                        "https://forum.makerdao.com/t/encuestas-de-la-semana-1-de-agosto-del-2022/16975",
+                        "https://forum.makerdao.com/t/un-vistazo-al-foro-21-27-de-julio-del-2022/16941",
+                        "https://forum.makerdao.com/t/request-to-poll-for-maker-teleport-deployment-on-starknet-and-associated-risk-parameters/16844",
+                        "https://forum.makerdao.com/t/weekly-forum-recap/16247/8"
+                    ],
+                    "GPT-summary": "The post is a Maker Improvement Proposal (MIP) that formalizes technical work completed to deliver fast withdrawals on Layer2. The proposal explains the process of fast withdrawals, the roles of the initiator, operator, and receiver, and the architecture of the system. The proposal also includes details on the fees, contract interaction, settlement process, and authorization. The post does not advertise the proposal, but rather explains it in detail.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Grants, Funding and resource allocation",
+                        "Not a proposal",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.414902227402227
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "18/03/2022-18:38:37",
+                    "content": "    Derek:   Optimism debt ceiling: 1 million DAI Arbitrum debt ceiling: 1 million DAI    Longtime fan of this Initiative\u2013excited to see it started\u2013thank you to both Derek and the PECU Team. Quick question\u2013is there a parameter for the \u201cWormhole Fee\u201d? In the 2021 post by @hexonaut titled Introducing Maker Wormhole I had ask about how a Fee can be structured\u2013wondering if that is still being considered? Had this crazy notion that folks can stake MKR  and receive a discount for the WormholeFees And last Q, what is the process for increasing the line? Is that yet TBD (sorry if I missed it). Thanks in advanced. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.861111111111111
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#3",
+                    "likes": "2",
+                    "time": "18/03/2022-19:31:56",
+                    "content": "Thanks ElPro, Yes, there is a parameter for fees labeled WormholeFees which we will need to define in the subsequent signal. This will be a minimal amount used only to prevent abuse. Once this is defined I will add it to the above as a Governance Defined Parameter. The process for increasing the debt ceilings will be similar to collateral onboarding - where once we have shown system stability, continued safe behaviour, and that there is sufficient L2 liquidity demands, we\u2019ll be ready to increased it in a weekly executive. I\u2019d be happy to map out a more concrete timeline for this pending ecosystem growth and platform performance. EDIT: Updating here to say that there will be no fees levied upon the user (other than gas costs). Initially this was considered to prevent abuse, however with such a small initial debt ceiling, PE is proposing to not include any fees for fast withdrawals. Once the ecosystem is better known and understood this could be opened for community consideration. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.715277777777778
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Uncle",
+                    "index": "#4",
+                    "likes": "5",
+                    "time": "18/03/2022-19:51:12",
+                    "content": "    Derek:  MIP69   nice  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "19/03/2022-18:53:07",
+                    "content": "Interesting to see this move forward. I have two technical questions.  Who pays the L1 network fees on the L2->L1 exit? Of curiosity could the same technology (if provided bridge funds) be used for ETH/wETH?  The point here of question (2) is perhaps wormhole could be used as a faster and better bridge mechanism that people could/would pay a fee to use THAT Maker could get fees from or is this all just too highly coupled to DAI to not be possible? Point here is that time is money and when it comes to capital cycling between networks building and funding a better/faster/more secure bridge may be a way and reason for Maker to start building it\u2019s own treasury assets beyond DAI and earning returns by making and funding better/faster bridges. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.35
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/krzkaczor",
+                    "index": "#6",
+                    "likes": "2",
+                    "time": "20/03/2022-19:03:50",
+                    "content": "ad 1. It\u2019s always the user who pays fees (both L1 and L2). This is because oracle design is off-chain - user queries off-chain API to acquire attestations and then posts L1 tx to finalize wormhole. The DAO will only pay for keepers \u201cflushing\u201d debt once for a while. ad 2. Yes, especially oracle design is very universal (oracles could attest that any fact happened on a domain). DAI Wormhole design is more or less similar to hop protocol but it will work better for DAI because of 0 capital cost and very deep liquidity. The second point will be especially true when L2 technology advances (trustlessness, full nodes availability). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8560606060606055
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/superTricycle",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "22/03/2022-17:31:26",
+                    "content": "I\u2019ll ask what\u2019s on everybody\u2019s mind - what\u2019s the estimated hit on oracle costs to be a bridgooor? Are there any estimates on fee revenue vs the cost of bridge operations that determined the 1M debt ceiling? Other questions - are these the same oracles running our price feeds? What is the security, does this open attack vectors on our price oracles? I didn\u2019t see anything about oracle security in the Starknet bridge audit. LFG on #L222 but some oracle specifics are lacking when a lot of this depends on them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/marcandu",
+                    "index": "#8",
+                    "likes": "4",
+                    "time": "22/03/2022-18:35:25",
+                    "content": "Regarding costs, keep in mind that the end users will be responsible to push the attestation to the blockchain, saving MakerDAO from having to cover gas costs for fast withdrawals, like it has to do for price oracles. The bulk of oracle operational costs will be to run the oracle feeds and the necessary L2 RPC nodes. At the proposed debt ceiling (1M), we can keep the oracle costs to a minimum because we will be primarily using third party L2 RPC node providers (alchemy, infura, project endpoints, etc.). At a certain much higher debt ceiling, these third party node providers will be become an attack vector and we\u2019ll want the oracle feeds to run their own L2 nodes instead, at a significant expense. We\u2019ll have the opportunity analyze the costs and adjust the fees accordingly before we get to this point. Existing oracle feeds will be put to contribution to sign the Wormhole attestations. They will be running a new software component witnessing the L2 events and signing attestations. One key thing to note from a security point of view is that they will be doing this task independently, solely from observing events on the blockchain. This isolates the oracle feeds from several possible attack vectors that would exist if end users could directly requests attestations to oracle feeds. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.773640422077922
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Gala",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "24/03/2022-04:00:15",
+                    "content": "Reminder that this proposal will enter its Frozen Period in one week, on March 31, 2022. Last day for modifications is March 30, 2022. Substantive modifications beyond that date will render the proposal ineligible for the upcoming Governance Cycle / reset its Frozen Period, as the case may be. Please reach out if you have any questions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "25/03/2022-14:04:28",
+                    "content": "    Derek:  Terminology: Domains, Gateways and Wormhole Router   Minor comment, this paragraph confused me on the definition of domains. It might be good to do a simple: Domain: \u2026 Gateway: \u2026 Wormhole Router: \u2026 \u2026 prior to the current paragraph. Specifically this:     Derek:  On L1, each Domain must be associated with a Gateway,   Initially had me thinking that there could be multiple domains on L1, when actually it\u2019s saying that all domains need a gateway on L1. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.138888888888888
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#12",
+                    "likes": "1",
+                    "time": "25/03/2022-18:42:22",
+                    "content": "Thank you LFW for the suggestions. I have attempted to clarify the language in this section and added information on the fee setup. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/superTricycle",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "30/03/2022-15:36:55",
+                    "content": "Thanks for the response, most of that makes sense but still need some clarifications.     marcandu:  The bulk of oracle operational costs will be to run the oracle feeds and the necessary L2 RPC nodes.   Any estimates? Oracles are our biggest expense and we should have an idea on how much this will tack onto the budget.     marcandu:  Existing oracle feeds will be put to contribution to sign the Wormhole attestations.   Cool, but which ones or how many? Yesterday\u2019s Ronin bridge hack shows that the more nodes, the better. I support this MIP, but there should be more transparency on security and expenses. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 6.805555555555555
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Gala",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "20/04/2022-22:35:45",
+                    "content": "Reminder that this proposal will enter its Frozen Period in seven days, on Thursday, April 28 at 00:00 UTC. Substantive modifications beyond that date will render the proposal ineligible for the upcoming Governance Cycle / reset its Frozen Period, as the case may be. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#15",
+                    "likes": "6",
+                    "time": "02/05/2022-16:55:06",
+                    "content": "Confirming that this has been put forward for formal submission. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Gala",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "10/05/2022-11:36:30",
+                    "content": "This proposal is currently being voted on. Its RP will run from 05/09 to 05/23. Please vote here. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/pecu-month-in-review-april-2022/14942"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bigbangdai",
+                    "index": "#17",
+                    "likes": "0",
+                    "time": "03/03/2023-00:36:21",
+                    "content": "Sir, How things are going on about this MIP? still developing? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "840"
+}

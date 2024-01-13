@@ -1,0 +1,53 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc721-default-lockable-proposal/13366",
+            "title": "ERC721 Default Lockable Proposal ",
+            "index": 13366,
+            "category": [
+                "Tokens"
+            ],
+            "tags": [
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "1",
+                    "likes": "8",
+                    "time": "17/03/2023-06:04:05",
+                    "content": "Many proposals for lockable ERC721 contracts exist in different phases of development:   Ethereum Improvement Proposals   ERC-5192: Minimal Soulbound NFTs Minimal interface for soulbinding EIP-721 NFTs        Ethereum Improvement Proposals   ERC-5633: Composable Soulbound NFT, EIP-1155 Extension Add composable soulbound property to EIP-1155 tokens        Ethereum Improvement Proposals   ERC-5753: Lockable Extension for EIP-721 Interface for disabling token transfers (locking) and re-enabling them (unlocking).      and many others. Unfortunately, any of them misses something or is too complicated and add extra functions that do not need to be part of a standard. I tried to influence ERC-5192 making many comments and a PR that was closed by @Pandapip1 who suggested I make a new proposal. So, here we are. interface IERC721DefaultLockable {  // Must be emitted one time, when the contract is deployed,  // defining the default status of any token that will be minted event DefaultLocked(bool locked);  // Must be emitted any time the status changes event Locked(uint256 indexed tokenId, bool locked);  // Returns the status of the token. // It should revert if the token does not exist. function locked(uint256 tokenId) external view returns (bool);  }  The primary limit in EIP-5192 (which I liked and I used in a couple of projects) is that   it has 2 events for Locked and Unlocked, which is not optimal. To make a comparison, it\u2019s like in the ERC721 instead of Transfer(from, to, id) used for mints, transfers and burns, there were Transfer(from, to, id), Mint(to, id), Burn(from, id), etc.   it forces you to emit an event even when the token is minted, causing a waste of gas when a token borns with a status and dies with it.   Take for example most soulbounds and non-transferable badges. They will be locked forever and it does not make sense to emit an extra event for all the tokens. Using this interface, instead, the contract emits DefaultLocked(bool locked) when deployed, and that event sets the initial status of every token. The Locked events define the new status of any tokenId. The function locked returns the current status, allowing other contracts to interact with the token. IMO, this is a minimalistic solution that reduces gas consumption and covers most scenarios. I think that functions to lock, unlock, lock approvals, etc. should be managed as extensions, and should be not included in a minimalistic interface about lockability. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-5192",
+                        "https://eips.ethereum.org/EIPS/eip-5633",
+                        "https://eips.ethereum.org/EIPS/eip-5633",
+                        "https://eips.ethereum.org/EIPS/eip-5753",
+                        "https://eips.ethereum.org/EIPS/eip-5753",
+                        "https://ethereum-magicians.org/t/minimalistic-erc721-approvable-interface/12968/8",
+                        "https://ethereum-magicians.org/t/final-eip-5192-minimal-soulbound-nfts/9814/49"
+                    ],
+                    "GPT-summary": "The author proposes a new ERC721 Default Lockable interface that defines the default status of any token that will be minted and allows the status of the token to be changed. The proposal aims to reduce gas consumption and cover most scenarios. The author explains the limitations of the existing proposals and how this new interface addresses those limitations. The post also invites feedback and constructive criticism from third parties and suggests that functions to lock, unlock, lock approvals, etc. should be managed as extensions and not included in a minimalistic interface about lockability.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.466897233201581
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/andyscraven",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "19/03/2023-23:52:05",
+                    "content": "I like this approach as not all use cases need to allow for everything as not all use cases need everything. It is, after all, best to practice to us the Single Responsibility principle when possible. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.5476190476190474
+                }
+            ]
+        }
+    ],
+    "group_index": "402"
+}

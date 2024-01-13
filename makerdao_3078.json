@@ -1,0 +1,884 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip32-peg-stability-module-compound-mixed-exposure/5684",
+            "title": "MIP32: Peg Stability Module - Compound Mixed Exposure ",
+            "index": 5684,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "mips",
+                "pegstab-module"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#1",
+                    "likes": "7",
+                    "time": "15/12/2020-16:02:14",
+                    "content": " MIP32: Peg Stability Module - Compound Mixed Exposure  Preamble MIP#: 32 Title: Peg Stability Module - Compound Mixed Exposure Author(s): Alexis Contributors: None Type: Technical Status: Request for Comments (RFC) Date Proposed: 2020-12-18 Date Ratified: <yyyy-mm-dd> Dependencies: PSM, Uniswap, Vat, Join Usdc-lendler, Join Dai-lendler  Replaces: n/a License: AGPL3+   References  The proposed implementation : dss-psm-cme    Sentence Summary This proposal define a new Peg Stability Module which converts USDC to DAI and DAI to USDC, during the conversion it lends the gem via lender token and leverage the position using cdai.  Paragraph Summary The PSM Compound Mixed Exposure is based on the classic PSM but with a second join plug in serie to leverage the position with Dai. It also uses a \u201clending gem join\u201d which lend dai to cdai and usdc to cusdc. The join is a generic \u2018maker join\u2019 and can be plugged to any vaults. It takes as input a collateral and lends it behind the scene to compound, on the output the join redeems the position and return the collateral. It can be applied to Dai or any compound collaterals. Optional fees tin and tout can be activated as well which send a fraction of the trade into the vow. This PSM will have 2 urns one cDai and one cUsdc, but the maker position for this PSM is still on uscd and dai.  Global Overview Diagram  image643\u00d7563 27.8 KB   Component Summary MIP32c1: The PSM Contains snippet of proposed implementation. MIP32c2: The Lending Join MIP32c3: The Burn Delegator MIP32c4: The Harvest contract MIP32c5: Proposed Code MIP32c6: Test cases Lists existing test cases MIP32c7: Security considerations Comments on the security implications MIP32c8: Licensing States the license under which the proposal and code are distributed.  Motivation Currently, the usdc token inside the PSM is inefficient and needs to be diversified. By using cDai and cUsdc we will bring some diversification. The leverage is also motivated by a better outcome and a better diversification.  Specification The PSM Mixed Exposure is articulated around 3 main components:   The PSM (entry point)   The Join (urn)   The excess delegator (excess token conversion)   The harvest contract    MIP32c1: The PSM It is very similar at the actual PSM (MIP 29) with two vaults, one in Dai and one in Usdc. It has three methods:  sell(address usr, uint256 gemAmt) buy(address usr, uint256 gemAmt) reserve()  It also has three admin methods   file(bytes32 what, data) : To change parameters  rely(address contract) : To add authorized address  deny(address contract) : To remove authorized address  There are three prameters:   tin : The fraction of the Gem \u2192 Dai transaction sent to the vow as a fee. Encoded as tin in wad units.  tout: The fraction of the Dai \u2192 Gem transaction sent to the vow as a fee. Encoded as tout in wad units.  line: The maximum amount of Usdc owns by the PSM. Encoded as line in wad units.  sell will take in input usdc, convert usdc into dai via the new lending join (usdc/dai). Then it will take the dai and convert it to dai via another lending join (Dai/Dai) and take the fees and return the Dai. buy will take in input dai, convert the dai after fee into dai via the lending join (dai/dai). Then it will take the dai and convert it to usdc via the lending join (Dai/Usdc) and return the Usdc. reserve will return the reserve inside the contract in dai,token - this is based on the uniswap reserve() call. Additional specification: The same level of debt is maintained for both positions (the leverage urn and the gem urn).  image681\u00d7761 29.7 KB   MIP32c2: The Lending Join This uses a classic maker join with on top the conversion from and to the lender. There is an additional method harvest() behind an allowlist. The collateral is register and allow borrowing on it exactly like a normal collateral, but the lending join lends it to compound. The join is an auth-join type accessible only by the PSM. The extra method \u2018harvest()\u2019 have 2 actions:  move the excess token to the delegator. move the bonus token to the delegator.  The join has one external methods  exit(address guy, uint256 amount)  The join has two authenticated methods  join(address guy, uint256 amount)  harvest() : To move excess to the delegator  The join also has forth admin methods   file(bytes32 what, data) : To change parameters  rely(address contract) : To add authorized address  deny(address contract) : To remove authorized address  cage() : To cage the join  The join has one parameter:   excess_delegator : excess Delegator address  Additional specification: In order to calculate the excess, we add a total variable which represent the amount own by the join. Then we subtract this amount from the lendler underlying collateral.  image651\u00d7541 19.4 KB   MIP32c3: The Burn Delegator The Delegator is replaceable, its main purpose is to manage the token conversion and what we do with it. This delegator has three public methods:   processUsdc() convert the usdc to dai via the psm.  processComp() convert token bonus to dai via uniswap.  processDai()  convert dai to MKR via uniswap and burn the MKR.  The join also has forth admin methods   file(bytes32 what, data) : To change parameters  rely(address contract) : To add authorized address  deny(address contract) : To remove authorized address  cage() : To cage the join  There are six parameters :   psm : psm address - can be changed  route : uniswap route address - can be changed  bonus_auction_duration: min time is sec between 2 uniswap swap  max_bonus_auction_amount : max comp amount by swap.  dai_auction_duration: min time is sec between 2 uniswap swap  max_dai_auction_amount : max dai amount by swap.   MIP32c4: The Harvest contract This contract will have only one external method harvest() which calls the authenticated harvest() method from the join. Two contract will be deployed to call both join. This contract has only one public methods:   harvest() call harvest from the join  We separated this method from the PSM to allow more flexibility for update.  MIP32c5: Proposed code The code : dds-psm-cme   DssPsmCme.sol   BurnDelegator.sol   LendingHarvest.sol   join-lending-auth.sol   spell-DssPsmCme    MIP32c6: Test cases Unit tests:  DssPsmCme.t.sol BurnDelegator.t.sol LendingHarvest.t.sol join-lending-auth.t.sol   MIP32c7: Security considerations  Compound technical risk Errors or security vulnerabilities in the Compound system could result in the underlying USDC deposits to be lost or stolen.  Implementation technical risk In addition to the technical risk inherent to Compound, the adapter implementation itself is non-trivial and could increase the attack/error surface. Due to the design of multi-collateral DAI, worst-case losses should be limited to the collateral deposited in the adapter, and the debt ceiling should be set with this in mind. There is security consideration about the code itself, compound tokens. In this implementation as we don\u2019t use leverage on compound, the c-token can\u2019t be sized. Another risk: uniswap interaction, but limited to the extra bonus.  MIP32c8: Licensing  AGPL3+  ",
+                    "links": [
+                        "https://github.com/makerdao/mips/blob/formal-submission/MIP29/mip29.md",
+                        "https://github.com/alexisgayte/dss-psm-cme/",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/DssPsmCme.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/BurnDelegator.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/LendingHarvest.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/join-lending-auth.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/main/src/spell/DssPsmCompMixExposureLenderJoinSpell.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/DssPsmCme.t.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/BurnDelegator.t.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/LendingHarvest.t.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/join-lending-auth.t.sol",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/maker-relay-ep-31-en-espanol/6455",
+                        "https://forum.makerdao.com/t/maker-relay-ep-31/6450",
+                        "https://forum.makerdao.com/t/maker-relay-ep-30-en-espanol/6360",
+                        "https://forum.makerdao.com/t/maker-relay-ep-30/6303",
+                        "https://forum.makerdao.com/t/weekly-mips-update-26/6291",
+                        "https://forum.makerdao.com/t/maker-relay-ep-29-en-espanol/6220",
+                        "https://forum.makerdao.com/t/maker-relay-ep-29/6214",
+                        "https://forum.makerdao.com/t/maker-relay-ep-28-en-espanol/6124",
+                        "https://forum.makerdao.com/t/maker-relay-ep-28/6118",
+                        "https://forum.makerdao.com/t/weekly-mips-update-25/6092",
+                        "https://forum.makerdao.com/t/weekly-mips-update-24/6052",
+                        "https://forum.makerdao.com/t/maker-relay-ep-27-en-espanol-feliz-2021/6035",
+                        "https://forum.makerdao.com/t/mip36-peg-stability-compound-governance-dai-leverage/6029",
+                        "https://forum.makerdao.com/t/maker-relay-ep-27-happy-2021/6016",
+                        "https://forum.makerdao.com/t/weekly-mips-update-23/5914",
+                        "https://forum.makerdao.com/t/brainstorm-2021-mission-and-objectives/5809",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/9",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-122-thursday-december-17-16-00-utc/5608/5",
+                        "https://forum.makerdao.com/t/mip35-peg-stability-module-compound-mixed-exposure-with-farming/6024",
+                        "https://forum.makerdao.com/t/weekly-mips-update-47/9648",
+                        "https://forum.makerdao.com/t/weekly-mips-update-46/9532",
+                        "https://forum.makerdao.com/t/weekly-mips-update-45/9427",
+                        "https://forum.makerdao.com/t/weekly-mips-update-44/9303",
+                        "https://forum.makerdao.com/t/weekly-mips-update-43/9190",
+                        "https://forum.makerdao.com/t/weekly-mips-update-42/9010",
+                        "https://forum.makerdao.com/t/weekly-mips-update-41/8892",
+                        "https://forum.makerdao.com/t/maker-relay-ep-49-en-espanol/8795",
+                        "https://forum.makerdao.com/t/maker-relay-ep-49/8763",
+                        "https://forum.makerdao.com/t/weekly-mips-update-40/8759",
+                        "https://forum.makerdao.com/t/weekly-mips-update-39/8606",
+                        "https://forum.makerdao.com/t/weekly-mips-update-38/8486",
+                        "https://forum.makerdao.com/t/weekly-mips-update-37/8309",
+                        "https://forum.makerdao.com/t/mips-update-36/8125",
+                        "https://forum.makerdao.com/t/weekly-mips-update-35/7962",
+                        "https://forum.makerdao.com/t/weekly-mips-update-34/7668",
+                        "https://forum.makerdao.com/t/weekly-mips-update-33/7573",
+                        "https://forum.makerdao.com/t/weekly-mips-update-32/7464",
+                        "https://forum.makerdao.com/t/weekly-mips-update-31/7232",
+                        "https://forum.makerdao.com/t/weekly-mips-update-30/7083",
+                        "https://forum.makerdao.com/t/signal-request-adjust-the-surplus-buffer-march-april-2021/6979/12",
+                        "https://forum.makerdao.com/t/weekly-mips-update-29/7000",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35-en-espanol/6949",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35/6932",
+                        "https://forum.makerdao.com/t/weekly-mips-update-28/6791",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33-en-espanol/6729",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33/6694",
+                        "https://forum.makerdao.com/t/weekly-mips-update-27/6649",
+                        "https://forum.makerdao.com/t/maker-relay-ep-32-en-espanol/6600",
+                        "https://forum.makerdao.com/t/maker-relay-ep-32/6596"
+                    ],
+                    "GPT-summary": "The post is a technical proposal for a new Peg Stability Module called Compound Mixed Exposure. The proposal aims to diversify the USDC token inside the PSM by using cDai and cUsdc and leverage the position for a better outcome and diversification. The post explains the components of the proposal, including the PSM, the Lending Join, the Burn Delegator, and the Harvest contract. The post also includes test cases and security considerations. The proposal is open for feedback and questions, and there is no indication of advertising or collaboration.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Grants, Funding and resource allocation",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.324099659206042
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/charlesstlouis",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "15/12/2020-18:27:51",
+                    "content": "Hey @alexis, if you could kindly fork the MIPs repo and make a PR to the RFC branch for this proposal that would be great. Once that\u2019s done, I will do the review and move it to Request for Comments (RFC) status. This is a requirement for it to enter the RFC. If you have any other questions regarding MIP requirements or the MIPs Lifecycle, please check out the MIP Lifecycle overview in MIP0 or reach out to me on Rocket.chat (@charlesstlouis). ",
+                    "links": [
+                        "https://github.com/makerdao/mips/blob/Accepted/MIP0/mip0.md#mip0c3-the-mip-lifecycle"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#3",
+                    "likes": "2",
+                    "time": "15/12/2020-23:30:06",
+                    "content": "Hi @charlesstlouis, Here again, just for record, I have also created a pull request for it :   github.com/makerdao/mips         MIP32: Peg Stability Module - Compound Mixed Exposure   makerdao:RFC \u2190 alexisgayte:MIP32            opened 11:26PM - 15 Dec 20 UTC               alexisgayte             +149 -0           Thanks for pushing it forward ",
+                    "links": [
+                        "https://github.com/makerdao/mips/pull/140",
+                        "https://github.com/alexisgayte",
+                        "https://github.com/makerdao/mips/pull/140/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/charlesstlouis",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "16/12/2020-21:12:51",
+                    "content": "Thanks for pushing the PR! It would be helpful if you could use the Technical MIPs template as a reference for the structure of a Technical MIP. Additionally, some great examples of well written technical MIPs are:  MIP25 MIP20  MIP30.  For now, I\u2019m going to go ahead and make some formatting changes to MIP21 and MIP32 as well as make some comments for you to consider when the proposals get moved to RFC. ",
+                    "links": [
+                        "https://github.com/makerdao/mips/blob/Accepted/MIP25/mip25.md",
+                        "https://github.com/makerdao/mips/blob/Accepted/MIP20/mip20.md",
+                        "https://github.com/makerdao/mips/blob/RFC/MIP30/mip30.md",
+                        "https://forum.makerdao.com/t/mip31-active-reserve-via-amm/5639/22"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.05
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#5",
+                    "likes": "3",
+                    "time": "26/12/2020-21:45:21",
+                    "content": "Hi Everyone, I have updated the MIP32 and improved the specification over the last 2 weeks. I have also implemented it and unit tested it. However the integration needs to be tested too but I failed to get support. If anyone wants to have a look at it and give me some feedback on both the MIPs and the code. The code is here :    GitHub    alexisgayte/dss-psm-cme PSM Compound Mixed Exposure. Contribute to alexisgayte/dss-psm-cme development by creating an account on GitHub.      The pull request for the MIPs is here :   github.com/makerdao/mips         MIP32: Peg Stability Module - Compound Mixed Exposure   makerdao:RFC \u2190 alexisgayte:MIP32            opened 11:26PM - 15 Dec 20 UTC               alexisgayte             +179 -0           I do believe this proposal can generate some income and asserts diversity for maker over the time as we will lend the dai that we can\u2019t sell. ",
+                    "links": [
+                        "https://github.com/alexisgayte/dss-psm-cme/",
+                        "https://github.com/makerdao/mips/pull/140",
+                        "https://github.com/makerdao/mips/pull/140",
+                        "https://github.com/alexisgayte",
+                        "https://github.com/makerdao/mips/pull/140/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.699999999999999
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "06/01/2021-14:02:57",
+                    "content": "Adding this for discoverability/visibility image744\u00d7674 92.3 KB ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Replenish2030",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "06/01/2021-15:10:03",
+                    "content": "Can we use Aave pls? Would be nice to not be supporting a project that\u2019s trying to build a maker clone and is taking active steps to harm dai on their platform. They would look for ways to use this integration to damage dai in order to promote their own stablecoin. Considering they were using deception by claiming not to build a stablecoin, while secretly working on it, who knows what other trick they might pull out of their sleeve? Maybe they\u2019d even seize the funds. Instead by using aave it would be a lot more synergetic and potentially encourage aave not to create their own maker clone, but instead have a healthy symbiosis with maker. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.195833333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "06/01/2021-16:03:45",
+                    "content": "@Davidutro Thanks for bringing it here. just to clarify the join-lending-leverage-auth.sol is not part of this MIP, once we will get the specification done and some code review on this MIP. I will push another MIP for it as it is very similar to this one but with more complexity/more risk. @Replenish2030 don\u2019t get it wrong in that case we push the overflowed Dai into compound and remove the underflowed dai from compound. I don\u2019t think it will serve compound on a long term as they will face the same problem as we are currently facing. You might think that will help them by increasing their exposure but it also creates a lot of instability into their price which is what maker is selling at the end of the day - a fixed rate and an understanding price. However, I think if this situation last - difficulty to sell our debt position - I agree we will need to integrate with Aave too. But my hope is that by the end of this year with RWA, we will be able to sell all our debt position and more instead of using second market lending. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.520833333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "11/01/2021-14:26:53",
+                    "content": "Hi @charlesstlouis, Just to let you know that I\u2019ve changed some elements of the specification. I pushed a PR to RFC and I have also updated this MIP. I also added some clarity regarding the sol files and the spell. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#10",
+                    "likes": "1",
+                    "time": "18/01/2021-16:22:48",
+                    "content": "An alternative version of this MIP has been posted, the implementation includes farming COMP, not just lending the PSM Dai as cDai.     MIP35: Peg Stability Module - Compound Mixed Exposure - With Farming Conception       MIP35: Peg Stability Module - Compound Mixed Exposure - With Farming Preamble MIP#: 35 Title: Peg Stability Module - Compound Mixed Exposure - With Farming Author(s): Alexis Contributors: None Type: Technical Status: Conception Date Proposed: 2021-01-09 Date Ratified: <yyyy-mm-dd> Dependencies: PSM, Uniswap, Vat, Join Usdc-lendler, Join Dai-lendler  Replaces: n/a License: AGPL3+  References  The proposed implementation is part of the dss-psm-cme - Peg Stability Compound Mixed Exposure - project. \u2026     ",
+                    "links": [
+                        "https://github.com/alexisgayte/dss-psm-cme"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#11",
+                    "likes": "0",
+                    "time": "26/01/2021-10:46:26",
+                    "content": "Add Harvest Contract to add more flexibility ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "07/02/2021-10:57:08",
+                    "content": "Hi, I have updated the code to add the line parameter and remove the cage. I have also updated the specification with this new parameter. I have added the classic function to the spec too. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 5.757575757575757
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "14/05/2021-19:33:39",
+                    "content": "@alexis Is the case the same with this MIP as MIP44?Can we mark this proposal withdrawn and archive it? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip35-peg-stability-module-compound-mixed-exposure-with-farming/6024",
+            "title": "MIP35: Peg Stability Module - Compound Mixed Exposure - With Farming ",
+            "index": 6024,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#1",
+                    "likes": "5",
+                    "time": "12/01/2021-09:26:20",
+                    "content": " MIP35: Peg Stability Module - Compound Mixed Exposure - With Farming  Preamble MIP#: 35 Title: Peg Stability Module - Compound Mixed Exposure - With Farming Author(s): Alexis Contributors: None Type: Technical Status: Request for Comments (RFC) Date Proposed: 2021-01-09 Date Ratified: <yyyy-mm-dd> Dependencies: PSM, Uniswap, Vat, Join Usdc-lendler, Join Dai-lendler  Replaces: n/a License: AGPL3+   References  The proposed implementation is part of the dss-psm-cme - Peg Stability Compound Mixed Exposure - project.   Sentence Summary This proposal define a new Peg Stability Module which converts USDC to DAI and DAI to USDC, during the conversion it lends and farm the gem via lender token and leverage the position using cdai using the same technique to farm it too.  Paragraph Summary The PSM Compound Mixed Exposure With Farming is based on the PSM Compound Mixed Exposure MIP32 but with two farming join on each token (cDai and cUsdc). The join use the generic \u2018maker join\u2019 interface. It takes as input a collateral, lends and farm it behind the scene to compound, on the output the join redeems the position and return the collateral. This PSM will have 2 urns one cDai and one cUsdc which are both leverage in compound, but the maker position for this PSM is still on uscd and dai.  Component Summary MIP35c1: The PSM Contains snippet of proposed implementation. MIP35c2: The Lending Join MIP35c3: The Burn Delegator MIP35c4: The Harvest Contract MIP35c5: Proposed Code MIP35c6: Test cases Lists existing test cases MIP35c7: Security considerations Comments on the security implications MIP35c8: Licensing States the license under which the proposal and code are distributed.  Motivation Currently, the usdc token inside the PSM is inefficient and needs to be diversified. By using cDai and cUsdc and farm them we will bring more diversification. The farming bring more risk as the token is locked as collateral, but it is also motivated by a better outcome.  Specification The PSM Mixed Exposure is articulated around 3 main components:   The PSM (entry point) - Same as MIP32   The New Farming Join   The excess delegator (excess token conversion) - Same as MIP32   The harvest contract - Same as MIP32    MIP35c1: The PSM We reuse the MIP32 component and plug the new farming join on it. It has three methods:  sell(address usr, uint256 gemAmt) buy(address usr, uint256 gemAmt) reserve()  It also has three admin methods   file(bytes32 what, data) : To change parameters  rely(address contract) : To add authorized address  deny(address contract) : To remove authorized address  There are three prameters:   tin : The fraction of the Gem \u2192 Dai transaction sent to the vow as a fee. Encoded as tin in wad units.  tout: The fraction of the Dai \u2192 Gem transaction sent to the vow as a fee. Encoded as tout in wad units.  line: The maximum amount of Usdc owns by the PSM. Encoded as line in wad units.  sell will take in input usdc, convert usdc into dai via the new farming join (usdc/dai). Then it will take the dai and convert it to dai via another farming join (Dai/Dai) and take the fees and return the Dai. buy will take in input dai, convert the dai after fee into dai via the farming join (dai/dai). Then it will take the dai and convert it to usdc via the farming join (Dai/Usdc) and return the Usdc. reserve will return the reserve inside the contract in dai,token - this is based on the uniswap reserve() call. Additional specification: The same level of debt is maintained for both positions (the leverage urn and the gem urn).  image681\u00d7761 29.7 KB   MIP35c2: The Farming Join The Farming Join is a new Join. It uses the same join interface as MIP32. A classic join interface with an additional method harvest() behind an allowlist. The join has one external methods  exit(address guy, uint256 amount)  The join has two authenticated methods  join(address guy, uint256 amount)  harvest() : To move excess to the delegator  The join also has forth admin methods   file(bytes32 what, data) : To change parameters  rely(address contract) : To add authorized address  deny(address contract) : To remove authorized address  cage() : To cage the join  The join has seven parameters :   excess_delegator The delegator address.  excess_margin Margin amount until we start sending asserts to the delegator.  cf_target The compound coefficient target in WAD  cf_max The coefficient max in WAD. It overrides the compound provided max coefficient, this parameter is here for safety. If it is set above the compound value the join will take the compound one.  route The uniswap contract to swap token.  max_bonus_auction_amount Max amount we send to uniswap each time - to figth against eventual attack and slippage.  bonus_auction_duration Minimun time between two uniswap auction.  The collateral is register against the vat and allow borrowing on it exactly like a normal collateral, but the farming join lends, and farm the collateral with compound. The join is an auth-join type accessible only by allow list.   The exposure is adjusted to the coefficient target each time we remove or add some assert to the vault. Join(), exit() and harvest().   The coefficient target is calculated by using the minimum between : - 98% of the compound maximum coefficient - 98% of cf_max - cf_target If cf_target is set above the maximum coefficient we use 98% of the maximum coefficient for target as safety.   After join(), exit() and harvest() we check with compound the status of our position and reject the transaction if the vault in a liquidation stage.   We wind and Unwind our position using a loop, we borrow and mint or redeemUnderlying and repayBorrow up to 99% of the max allowed by compound to reach the cf_target. The last iteration will exit the loop.   harvest() method will first check if we have a position superior at 100.1% in compound of the underlying collateral to allow a exit from the join in good order. Please Note, Farming can bring a risk of losing some part of the main collateral.   if we don\u2019t hold the position and if we hold COMP we process to an uniswap auction using the parameters max_bonus_auction_amount and bonus_auction_duration to limit the frequency and the amount. We auction an amount up to max comp or the corresponding dai to go up to 100.1% + excess_margin   if we hold the position  we move the excess token minus the excess_margin to the delegator. we move the bonus token to the delegator.     image651\u00d7541 19.4 KB   MIP35c3: The Burn Delegator We reuse the MIP32 component This delegator has three public methods:   processUsdc() convert the usdc to dai via the psm.  processComp() convert token bonus to dai via uniswap.  processDai()  convert dai to MKR via uniswap and burn the MKR.  The join also has forth admin methods   file(bytes32 what, data) : To change parameters  rely(address contract) : To add authorized address  deny(address contract) : To remove authorized address  cage() : To cage the join  There are six parameters :   psm : psm address - can be changed  route : uniswap route address - can be changed  bonus_auction_duration: min time is sec between 2 uniswap swap  max_bonus_auction_amount : max comp amount by swap.  dai_auction_duration: min time is sec between 2 uniswap swap  max_dai_auction_amount : max dai amount by swap.   MIP35c4: The Harvest contract This contract will have only one external method harvest() which calls harvest from the join. Two contract will be deployed to call both join. This contract has only one public methods:   harvest() call harvest from the join  We separated this method from the PSM to allow more flexibility for update.  MIP35c5: Proposed code The code : dds-psm-cme   DssPsmCme.sol   BurnDelegator.sol   LendingHarvest.sol   join-lending-leverage-auth.sol   spell-DssPsmCme-with-farming    MIP35c6: Test cases Unit tests:  DssPsmCme.t.sol BurnDelegator.t.sol LendingHarvest.t.sol join-lending-leverage-auth.t.sol   MIP35c7: Security considerations  Compound technical risk Errors or security vulnerabilities in the Compound system could result in the underlying USDC deposits to be lost or stolen.  Implementation technical risk In addition to the technical risk inherent to Compound, the adapter implementation itself is non-trivial and could increase the attack/error surface. Due to the design of multi-collateral DAI, worst-case losses should be limited to the collateral deposited in the adapter, and the debt ceiling should be set with this in mind. There is security consideration about the code itself, compound tokens. In this implementation as we use leverage on compound, the c-token can be sized. By using leverage on compound we also expose ourself to a lost of the assert which is currently compensated by COMP token. Another risk: uniswap interaction, but limited to the extra bonus.  MIP35c8: Licensing  AGPL3+  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip32-peg-stability-module-compound-mixed-exposure/5684",
+                        "https://github.com/alexisgayte/dss-psm-cme/",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/DssPsmCme.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/BurnDelegator.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/LendingHarvest.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/join-lending-leverage-auth.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/main/src/spell/DssPsmCompMixExposureLenderLeverageJoinSpell.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/DssPsmCme.t.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/BurnDelegator.t.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/LendingHarvest.t.sol",
+                        "https://github.com/alexisgayte/dss-psm-cme/blob/master/src/join-lending-leverage-auth.t.sol",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/maker-relay-ep-30-en-espanol/6360",
+                        "https://forum.makerdao.com/t/maker-relay-ep-30/6303",
+                        "https://forum.makerdao.com/t/weekly-mips-update-26/6291",
+                        "https://forum.makerdao.com/t/mip32-peg-stability-module-compound-mixed-exposure/5684/10",
+                        "https://forum.makerdao.com/t/weekly-mips-update-24/6052",
+                        "https://forum.makerdao.com/t/mip36-peg-stability-compound-governance-dai-leverage/6029",
+                        "https://forum.makerdao.com/t/weekly-mips-update-32/7464",
+                        "https://forum.makerdao.com/t/weekly-mips-update-31/7232",
+                        "https://forum.makerdao.com/t/weekly-mips-update-33/7573",
+                        "https://forum.makerdao.com/t/weekly-mips-update-34/7668",
+                        "https://forum.makerdao.com/t/weekly-mips-update-29/7000",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35-en-espanol/6949",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35/6932",
+                        "https://forum.makerdao.com/t/weekly-mips-update-28/6791",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33-en-espanol/6729",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33/6694",
+                        "https://forum.makerdao.com/t/weekly-mips-update-27/6649",
+                        "https://forum.makerdao.com/t/maker-relay-ep-32-en-espanol/6600",
+                        "https://forum.makerdao.com/t/maker-relay-ep-32/6596",
+                        "https://forum.makerdao.com/t/maker-relay-ep-31-en-espanol/6455",
+                        "https://forum.makerdao.com/t/maker-relay-ep-31/6450",
+                        "https://forum.makerdao.com/t/weekly-mips-update-35/7962",
+                        "https://forum.makerdao.com/t/weekly-mips-update-30/7083",
+                        "https://forum.makerdao.com/t/weekly-mips-update-37/8309",
+                        "https://forum.makerdao.com/t/mips-update-36/8125",
+                        "https://forum.makerdao.com/t/pre-mip-discussion-psm-flapper/6378"
+                    ],
+                    "GPT-summary": "The post is a technical proposal for a new Peg Stability Module that converts USDC to DAI and DAI to USDC, while lending and farming the gem via lender token and leveraging the position using cdai. The proposal is explained in detail, including its motivation, specification, and components. The post also includes test cases and security considerations. The proposal is open for feedback and review.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "Interoperability and Scalability",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.371838687628161
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "26/01/2021-13:22:12",
+                    "content": "Moved the harvest to a separated contract ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hongbiao_li",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "27/01/2021-03:45:43",
+                    "content": "Oh, it looks good, I hope it will be online soon. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "27/01/2021-08:11:30",
+                    "content": "Compound had a problem with the Coinbase DAI price feed a few months ago. The problem caused some unexpected liquidations if I remember well. Is that fixed and how? EDIT: source: https://cointelegraph.com/news/compound-liquidator-makes-4m-as-oracles-post-inflated-dai-price EDIT2: more sources:    DeFi Rate \u2013 15 Dec 20    No COMPensation For Compound DAI Liquidations via Proposal 32 Learn more about Compound Proposal 32 and how those affected by Thanksgiving DAI liquidations will not be receiving compensation. Est. reading time: 2 minutes           The Block    DAI price increase led to a massive $88 million worth of liquidations at DeFi... A momentary price increase in the DAI stablecoin earlier today led to massive liquidations at decentralized finance (DeFi) protocol Compound.      ",
+                    "links": [
+                        "https://defirate.com/comp-proposal-32/",
+                        "https://defirate.com/comp-proposal-32/",
+                        "https://www.theblockcrypto.com/post/85850/dai-compound-dydx-liquidations-defi",
+                        "https://www.theblockcrypto.com/post/85850/dai-compound-dydx-liquidations-defi"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.722222222222221
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "27/01/2021-16:40:04",
+                    "content": "Not Yet Bit. Looks like they want to follow in the footsteps of Maker: image704\u00d7334 18.7 KB ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "27/01/2021-16:48:14",
+                    "content": "We don\u2019t cross assert so this oracle issue is not applicable here. However, with the farm join we have to enter into the \u201ccompound market\u201d here. Which unflag a safety that allows the token to be liquidated, while there is no logical reason to be liquidated there is a compound attack vector.   No logical reason meaning as we know the exact exposure due to the unique assert and no market gap/ oracle gap can be generated with the same assert.  That is why there is two joins of them MIP35 and MIP32, I believe there is an under evaluated risk here but the reward is higher too. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "27/01/2021-16:52:57",
+                    "content": "Thanks for the update. It looks to me that they chose the worst option. I wonder why they can\u2019t add the Maker and the Uniswap oracle. I will reconsider my Compound exposure and check if Aave and others are more secure options. I guess Maker has already done that homework and it still considers Compound to be the most secure platform. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "27/01/2021-16:57:27",
+                    "content": "To be honest, I have got no feedback, no review, no comment. No fork, No PR, The only person who looked at it is Tokenman. I really don\u2019t feel comfortable to push it to prod, and the main issue that lead to build is also gone by now. overall, I am a bit skeptical about the \u201cRequest For Comment\u201d state. It looks to me point-less, except for the owner to take time to rethink it is work. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.619047619047619
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#9",
+                    "likes": "1",
+                    "time": "27/01/2021-17:08:57",
+                    "content": "Well for one, This is the \u201cPSM\u201d which cannot be touted by Foundation Teams (this will change when they free themselves), and two, or dos, how could anybody in the community NOT love MKR being burned when all we need to do is:  convert the usdc to dai via the psm. convert token bonus to dai via uniswap. convert dai to MKR via uniswap and burn the MKR.  Since I am not technical, I must say, it looks like a win-win! Hence, why the RFC period here has been quiet so far, IMO. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "27/01/2021-17:20:41",
+                    "content": "How that can be linked to PSM? The overall logic is different. Even the code based is now totally different. Is it just the name that blocked the all process? For my disclaim I probably missed part of the story about it. I have 5 MIPs opened with different name and that didn\u2019t change anything. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "01/02/2021-07:29:47",
+                    "content": "I have a hard time even understanding what this is saying TBH. You take usdc and then turn it into dai which you then turn into more dai? and you then repay some dai somewhere.     alexis:  sell will take in input usdc, convert usdc into dai via the new farming join (usdc/dai). Then it will take the dai and convert it to dai via another farming join (Dai/Dai) and take the fees and return the Dai.   Further I would really love to get an accountant to look at this to make sure that the underlying idea is sound / legal. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.215435606060606
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "01/02/2021-09:16:44",
+                    "content": "Hi Andy, Thanks for the replay, I will try to reexplain it, we have two farming join: one is cUsdc and the other is cDai. the first join take usdc return dai. the second join take dai and return dai. Here the module, plug them in series so usdc -> dai  then dai -> dai. so the end user will have a usdc -> dai conversion. But on our end you will have 1 cUsdc and 1 cDai in each vault. There is no magic our main limitation here is the Dai supply as the convertor is used the supply will increase and the dai price will fail twice as fast as a normal psm. The main issue with the PSM is that it levels the dai at one price 1.01or 0.99 this one will actually push the peg down or up. I don\u2019t think, there is no accounting issue here. Actually I don\u2019t think I understand what you mean by accountant to look at the legal behind it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.871961805555555
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#13",
+                    "likes": "1",
+                    "time": "01/02/2021-15:57:27",
+                    "content": "What i mean by accounting issues really boils down to whether or not there is an issue with lending an encumbered asset. Would that be considered legal for a traditional company? DAI isn\u2019t just some 1 dollar currency to the protocol. Its an obligation to provide 1 dollars worth of collateral back at emergency shutdown. IMO that is why @SebVentures calls it a liability in this post. So like seb says in order to buy anything the protocol \u201cexpands it balance sheet\u201d and purchases the asset in question be that a loan or usdc or whatever, but what this basically means it is doing is that it is minting a new liability that it uses to purchase the asset in question. In a sense, these new liabilities (i.e new DAI) basically gives the bearer a lien on the asset that was bought. This is because that dai is redeemable for $1 worth of collateral at ES (see this post explaining ES). That being the case, would it be legal for maker (assuming it existed in the traditional fiance world) to give a purchased asset (which has a lien associated with it) to compound and then receive some cToken that is supposed to be redeemable for the face value of the initial collateral + interest. I know i can\u2019t just give my house to someone and receive some IOU from them for a bigger house without paying back my lender first. My guess (im not a lawyer or an accountant) is that isn\u2019t legal unless you first have equity in the underlying asset. Meaning you first need to pay down the DAI liability to some extent before you are able to give any USDC to compound for investment purposes. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/makerdao-accounting-and-implications/5346",
+                        "https://blog.makerdao.com/introduction-to-emergency-shutdown-in-multi-collateral-dai/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5535181359045
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#14",
+                    "likes": "0",
+                    "time": "01/02/2021-17:57:16",
+                    "content": "Gotcha. So the join() will convert to cToken and increase its leverage to match the CF. the exit() will decrease its leverage and redeem the value in usd/dai from the cToken. Concretely the vault contains in theory at any time more than 100% of underlying collateral (USDC/DAI) equivalent cToken with leverage. so 100% of exit() call can withdraw the position at anytime. - Emergency  Shutdown - I believe the liability is on the cToken, and the assert value is the underlying assert minus the leverage position taken. During the \u201charvest()\u201d call If we are under 100.1% of the join value in usdc, we sell COMP inside the join to top up the underlying collateral with the product of the sell. If we are over we send excess to the delegator. The 100.1% is here to cover the eventuality of a negative interest with no COMP - it gives us probably around 2 weeks to take action ( with 0.1% over collateralization). However, there is a risk that cToken can\u2019t provide the full amount promised during the redeem - sort of real world company bankruptcy where you get only 1/2 of your money -. This risk is probably the same with any others collateral. I believe the overall risk is the same as the cropJoin one which has been evaluated already for cUsdc risk evaluation . ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.583333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#15",
+                    "likes": "0",
+                    "time": "01/02/2021-18:05:56",
+                    "content": "    alexis:  Gotcha. So the join() will convert to cToken and increase its leverage to match the CF. the exit() will decrease its leverage and redeem the value in usd/dai from the cToken for you.   Yeah so what i am really trying to question here is the legality of converting the USDC to cUSDC in the join. Not sure that would be allowed in real world finance, and if it isn\u2019t i think we need to wrangle with the idea that it would be a limitation that we should impose on ourself as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "01/02/2021-18:08:23",
+                    "content": "Further in the event that of a compound insolvency issue. Where does the buck stop? Who is on the hook for the protocols DAI liabilities? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#17",
+                    "likes": "0",
+                    "time": "01/02/2021-18:11:23",
+                    "content": "CropJoin does exactly the same. Real world finance do exactly the same at a level up, last example is : gameStop. You deposit money in your account they lend it to the central bank. You deposit share in your account they lend it to hedge found. You take a credit for your house they package it and sell it as an exotic product. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#18",
+                    "likes": "0",
+                    "time": "01/02/2021-18:15:13",
+                    "content": "Also here the Dai overall liability is not on this vault it is on the all system. All line inside this vault is own by us at the difference of cropJoin. Maker is the only owner of this assert, therefore we don\u2019t have liability to return it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#19",
+                    "likes": "0",
+                    "time": "01/02/2021-19:35:33",
+                    "content": "    Andy_McCall:  In a sense, these new liabilities (i.e new DAI) basically gives the bearer a lien on the asset that was bought.   Not a specific asset, but $1 of assets. Someone can borrow from a vault (using the loan on the vault as collateral) buy some USDC from a third party and at some point clear the debt and the vault. The third-party having DAI still has a claim on Maker even if the originating vault doesn\u2019t exist anymore. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.372727272727272
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#20",
+                    "likes": "0",
+                    "time": "02/02/2021-18:04:55",
+                    "content": "    SebVentures:  Not a specific asset, but $1 of assets. Someone can borrow from a vault (using the loan on the vault as collateral) buy some USDC from a third party and at some point clear the debt and the vault. The third-party having DAI still has a claim on Maker even if the originating vault doesn\u2019t exist anymore.   Sure but i think this explanation still skirts the question at hand. Can maker (the party with the DAI liability) transfer ownership of the asset (the loan in the quote here / the USDC used to mint dai in this MIP) to some other entity such as compound without first paying down that liability. I get that the claim on the asset (i.e Collateral) is fungible. I just don\u2019t really know where to draw the line about transferring ownership of these assets, and I think in the real world a transfer of ownership would require us to pay down the liability first. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.443287037037036
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#21",
+                    "likes": "0",
+                    "time": "02/02/2021-18:35:02",
+                    "content": "I am not sure I understand. Because, what the difference with having 25% of dai vault backed with usdc which is also not usd and we had also transferred the ownership of the assert. We didn\u2019t pay down the liability first. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.7407407407407405
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#22",
+                    "likes": "0",
+                    "time": "02/02/2021-19:14:00",
+                    "content": "Because the protocol bought the USDC loan with its liabilities. That the asset is the USDC loan. It is not able to transfer the ownership of that loan without first having someone pay down the liabilities. Either the vault owner pays back the DAI liabilities directly or the liquidation keepers do. In this case you are buying USDC with your liabilities and then you transfer the ownership of your asset over to compound which is the sticking point for me, and I don\u2019t think this would be allowed if you were trying to do this in the real world. Now obviously the legal landscape here is fledgling and we aren\u2019t bound by the same lending laws that exist in the real world, but that could change any day. So all im trying to bring up here is A: would this be allowed in a real world lending environment and B: if it isn\u2019t do we really want to allow for it to happen with dai C: if we do then why? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.393518518518519
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#23",
+                    "likes": "0",
+                    "time": "02/02/2021-19:33:50",
+                    "content": "Ok you can see it on the other way around. You actually loan the dai to the contract not maker. The liquidation can be activated as we are over collateralised. I assumed that the vault is 0% because from a risk point of view we are better off with dai instead of ctoken. Don\u2019t confuse things the liquidation issue is a protocol issue not this vault issue. The cUsdc have a liability to usdc and usdc to usd. I agree it is a level up. I really don\u2019t see any legal issue on it, if you look at share, company can issue share and lend them. Found can issue share and hegde their found against it by selling or buying it. Regarding the legal, first we need to find the legal attached it. Which country for example. I also believe that doesn\u2019t really matter at this point as a concurrent state currency is highly prohibited in most countries. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.160416666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#24",
+                    "likes": "0",
+                    "time": "02/02/2021-21:00:49",
+                    "content": "    alexis:  I really don\u2019t see any legal issue on it, if you look at share, company can issue share and lend them. Found can issue share and hegde their found against it by selling or buying it.   Sure but in my opinion we should be getting a CPA, lawyer, or some other authoritative entity to make that determination. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.075
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#25",
+                    "likes": "0",
+                    "time": "02/02/2021-21:14:48",
+                    "content": "As I said I believe we first need to determinate on which legislation we are standing on. The overall system is in my opinion more an issue. I would be very interested to see what a layer say. For example in France issuing your own money is punishable by a sentence of death the same way as a tentative of state coup if I remember correctly. Is it legal in Colombia? Also PSM is deployed and has probably same issue. It is probably a global topic not really linked to MIP35 I believe. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#26",
+                    "likes": "0",
+                    "time": "02/02/2021-21:59:34",
+                    "content": "    alexis:  For example in France issuing your own money is punishable by a sentence of death the same way as a tentative of state coup if I remember correctly.   Quite sure we no longer do that. It\u2019s still forbidden to lend money if you are not a bank. And issuing money quite likely as well (while there are a lot of local currencies which are allowed if they don\u2019t seek to be successful). That kind of stops the debate anyway. I still don\u2019t understand what the issue is. In the financial market, I can borrow a share, sell it, use the proceed to borrow another one, sell it, and so on until my broker stops me. We have seen with GME that the short interest can be above 100%. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.2250000000000005
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#28",
+                    "likes": "0",
+                    "time": "05/02/2021-03:30:43",
+                    "content": "    SebVentures:  I still don\u2019t understand what the issue is. In the financial market, I can borrow a share, sell it, use the proceed to borrow another one, sell it, and so on until my broker stops me. We have seen with GME that the short interest can be above 100%.   That is bc when you borrow a share there is no lien on that share, so you can do whatever you want to with it. When Maker issues dai to buy an asset there is a lien on that asset through the DAI that was issued to buy it so getting rid of the asset to let compound invest it for you leaves you exposed. Obviously IMO this isn\u2019t the best idea. Personally I think maker should be looking for ways to get USDC off the books not try to pass it along to compound as an investment. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#29",
+                    "likes": "0",
+                    "time": "05/02/2021-04:15:00",
+                    "content": "These damn Americans and their \u201claws\u201d amirite? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/zenithlight",
+                    "index": "#30",
+                    "likes": "0",
+                    "time": "05/02/2021-05:44:55",
+                    "content": "I think Maker as a protocol ideally makes money by taking appropriately compensated risks. I don\u2019t know if we can get all the USDC off the books without harming the peg, so in lieu of the pretty big uncompensated risk we are taking on our USDC position, we should at least be getting paid for it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.35
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#31",
+                    "likes": "2",
+                    "time": "05/02/2021-08:48:36",
+                    "content": "    Andy_McCall:  When Maker issues dai to buy an asset there is a lien on that asset through the DAI   That\u2019s the part I don\u2019t understand. When I deposit a $1 bill (1 USDC) on a bank I get a $1 bank deposit (1 DAI). The bank can do whatever it wants with the $1 bill. With PSM we don\u2019t say you will get the USDC back, you will get $1 of assets at ES, nothing more like all DAI holders. When people use a Maker Vault it\u2019s custody and we don\u2019t do anything with the collateral (because we don\u2019t own it). PSM is not like that. MakerDAO owns the PSM-USDC vault. What makes you think there is a lien? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#32",
+                    "likes": "0",
+                    "time": "05/02/2021-09:49:57",
+                    "content": "    SebVentures:  PSM is not like that. MakerDAO owns the PSM-USDC vault.   Yes this seems to make sense to me. Indeed this is the source of our risk concerns. The PSM-USDC is ours (MakerDAO), not of the users! We are bagholders. It is true that the DAI generated with the PSM (from USDC), and introduced in the DeFi ecosystem, is backed only as long as we have the USDC or anything worth at least as much. But as @SebVentures said, our only responsibility as MakerDAO is to keep all DAIs backed. So we should, potentially, be able to invest the USDC in the PSM. If we screw up (e.g., yesterday\u2019s yEarn hack), we will have to print MKR to compensate for that. But we are free to do whatever we want with the USDC in the PSM, as far as I understand. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#33",
+                    "likes": "0",
+                    "time": "05/02/2021-10:36:39",
+                    "content": "The contract owns the debt not maker. It is a smart contract, we can\u2019t wipe it is debt we can\u2019t manipulate it unless we pass via admin command like any other vault. We opened a facility for the contract with 0% rate, in exchange the contract return all incomes to us. Which is a good deal, in general we take a fees and the other side contract take the income it generates. Lot of vaults are managed by smart contract we don\u2019t assume they are us. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.773809523809524
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#34",
+                    "likes": "0",
+                    "time": "05/02/2021-12:21:15",
+                    "content": "And what about cropjoin? Crop join does it with users fund. If we screw up we need to pay them back. Same thing. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#35",
+                    "likes": "0",
+                    "time": "05/02/2021-13:43:35",
+                    "content": "    SebVentures:  When people use a Maker Vault it\u2019s custody and we don\u2019t do anything with the collateral (because we don\u2019t own it). PSM is not like that. MakerDAO owns the PSM-USDC vault. What makes you think there is a lien?   Bc maker didn\u2019t \u201cbuy\u201d it using any money it already had. It issued a new liability to buy the USDC in the first place, so in a sense maker doesn\u2019t own any of the USDC in the PSM either. The \u201clien\u201d is the DAI it issued in order to purchase the USDC in the first place. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.836363636363636
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#36",
+                    "likes": "0",
+                    "time": "05/02/2021-14:59:21",
+                    "content": "@Aaron_Bartsch @SebVentures @alexis @zenithlight I threw out my counter-proposal for this idea here:     Pre-MIP discussion: PSM flapper Proposal Ideas       There is currently a discussion going on in MIP35 that would see maker lend assets purchased via the PSM to compound in order to gain some interest.  I would posit that a better decision for maker to would be to try and get the USDC off of its books outright.  so the TLDR of everything below is: auction off USDC to buyback MKR instead  There are basically 3 motivations behind this in my mind:   In order for the PSM to do its job there needs to be sufficient room between the current liabilities a\u2026     Take a look and tell me what you think. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip35-peg-stability-module-compound-mixed-exposure-with-farming/6024"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#37",
+                    "likes": "0",
+                    "time": "05/02/2021-16:26:32",
+                    "content": "@alexis Is there a need for the cDai urn? I mean if someone deposits DAI we can just repay the DAI debt of the USDC urn to release the corresponding USDC to be sent to the buyer. Nothing wrong with the design itself, but it makes things more complicated and links our cUSDC exposure with cDAI exposure. I think it\u2019s better to have out cDAI exposure managed by something else. The proposal could also be improved if we can set a limit to the amount converted as cUSDC. Managing out USDC exposure and the cUSDC one should be separated. For instance, if we have too much cUSDC we might pressure the USDC lending/borrowing rate on compound which might have bad implications. I\u2019m fully behind the idea to put those assets at work, just think that we are not yet at the implementation phase. But it can be an experimentation if that doesn\u2019t take too much SC time. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.4375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#38",
+                    "likes": "0",
+                    "time": "05/02/2021-16:32:29",
+                    "content": "I really like this idea of experimenting/taking risks with different vault/technology implementations. Similar to having low DC UniLP vaults we could quickly roll out a lot of these ideas with small caps and then audit before doing a full roll-out. Would make us a lot more competitive and innovative while still staying safe. Hope we can start bringing in more manpower to implement some of these ideas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 6.196969696969696
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#39",
+                    "likes": "0",
+                    "time": "05/02/2021-18:05:56",
+                    "content": "First thanks for this feedback. Regarding the line, it is actually a good idea. I currently have a cage() - flag instead of a limit - which is not yet in this spec. I will remove it and add the line parameter which is more flexible than an on/off. the cage is on the sell only as we want to allow the unwinding in good order. There is still a possibility to un-auth the PSM from the join in case of bad event. Regarding the mix cDai and cUsdc I can see at least 3 reasons - for reference my first idea was to plug it to the PSM directly, but it evolved, I will explain why. but before, the join is generic and can be plug on a normal PSM (probably need to redeploy the existent one as we can\u2019t change the join on it) or be used like the usdc join if we remove the auth. So the reasons are : 1 - We can\u2019t have market gap on Dai to Dai so we can\u2019t have a sort of automation to fill up cDai with a Dai to Dai exchange. To fill up the usdc we use the market gap between Usdc and Dai. By plugin them in serie we use the usdc/dai market gap to fill up cDai. 2 - It gives us more diversification and cDai looks actually a better assert to have. 3 - Probably the most important one and also more complex to explain. With the normal PSM we create a marginal trading line around both limit. 1.01 or 9.99. Currently as soon as the USDC at 0% will be removed or empty we will have the Dai going up or down to one of the lines and margin trading won\u2019t let it go. the Dai will peg to 1.01 or 0.99. As you can buy and sell to this limit. What happen with margin trading in this case is you buy 1000200 and you sell 1000000 but that doesn\u2019t move the price, it just trim it . The difference here is for 1usdc bought we inject 2dai, it creates a pressure so you can\u2019t just sell, buy sell buy around the limit. Now what happen with this PSM, you will trim the top and inject 1 million into the market indirectly which will push the peg down and in theory de-peg the 1.01 or 0.99 limit. I am not too sure we don\u2019t need it to be honest, but I also believe we don\u2019t need it right-now. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.979423868312757
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#40",
+                    "likes": "0",
+                    "time": "05/02/2021-20:09:42",
+                    "content": "    alexis:  with a Dai to Dai exchange   Can you expand on that? I don\u2019t get Dai on Dai exchange. I thought it was a typo in the original post (Dai to cDai). I understand the third point at 50% only. Again, I like the idea, but I\u2019m 100% it will no longer be used in 2021. But if the dev time makes sense for using it 6/12 months. Fine by me. Let\u2019s experiment and learn. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.989583333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#41",
+                    "likes": "0",
+                    "time": "05/02/2021-20:42:57",
+                    "content": "You can\u2019t have a market variation between the same assert. 1 dai is everytime equal at 1 Dai. 1 USD = 1USD There is market variation between two different assert. As we return Dai we can\u2019t have an exchange Dai to Dai. Usdc to dai works because they are not the same assert. Third point, the market benefit to be on one side or on the other is very high as you can hedge your position with the PSM, the market will go to the PSM limit. It is what happen with the usdc at 4% the market hedged it to the 4% decrease over time. That is fine with me too, as far as we are ready with a solution in case of this situation happen again, without waiting 9 months. I am happy to park it. But I believe that the SC team should look at it to get comfortable with it and start to highlight potential issue. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.769102564102564
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#42",
+                    "likes": "0",
+                    "time": "07/02/2021-10:49:13",
+                    "content": "Hi, I have updated the code to add the line parameter and remove the cage. I have also updated the specification with this new parameter. I have added the classic function to the spec too. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.757575757575757
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#43",
+                    "likes": "0",
+                    "time": "14/05/2021-19:33:15",
+                    "content": "@alexis Is the case the same with this MIP as MIP44?Can we mark this proposal withdrawn and archive it? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#44",
+                    "likes": "1",
+                    "time": "31/05/2021-20:07:00",
+                    "content": "Yes please could you archive this one too. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "3078"
+}

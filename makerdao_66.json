@@ -1,0 +1,88 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/polling-results-algorithm/10177",
+            "title": "Polling results algorithm ",
+            "index": 10177,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "polls"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/tmierzwa",
+                    "index": "#1",
+                    "likes": "10",
+                    "time": "06/09/2021-11:36:07",
+                    "content": "Some time ago we realized that our voting dataset (MCDGov.info) shows wrong results for finished polls. By \u2018wrong\u2019 we mean being different from the official voting portal. We started the search for the root cause of this problem and we realized that it all starts with the different understanding of the algorithm used to count the final results. This algorithm turned out to be undocumented and very difficult to understand. That\u2019s why we spent some time with the DUX team to properly define and describe the rules. It is still work in progress and any feedback is greatly appreciated.  Voters In the governance processes there is a distinction between \u2018voter\u2019 and \u2018address\u2019. Every user can create a Vote Proxy (see below) to define a link between their hot and cold wallet. In this case Vote Proxy contract address, hot wallet address and cold wallet address are considered a single voter. So for example if a user with a Vote Proxy makes a vote with their cold wallet, and then with their hot wallet, both are considered as made by the same voter and only the latest valid vote is counted. Vote Proxies Vote Proxy is a smart contract that enables users to vote either with their hot or cold wallet. A Vote Proxy is considered active if it is the last Vote Proxy to be created with the voter\u2019s address as either the hot or cold wallet and the proxy link was not broken (breaking a Vote Proxy link causes a Vote Proxy to become inactive). Currently there are two Vote Proxy Factories:  VoteProxyFactory 1.1: 0x868ba9aeacA5B73c7C27F3B01588bf4F1339F2bC  VoteProxyFactory 1.2: 0x6FCD258af181B3221073A96dD90D1f7AE7eEc408   Valid votes A vote in a poll is considered valid if:  a Vote event is emitted by either the PollingEmitter or BatchPollsEmmiter contract  PollingEmitter: 0xF9be8F0945acDdeeDaA64DFCA5Fe9629D0CF8E5D  Batch PollingEmitter: 0xD3A9FE267852281a1e6307a1C37CDfD76d39b133    vote was made between the start time and end time of the poll  DSChiefs deposits To vote for Executive Proposals users have to stake their MKR tokens in the governance contract (DSChief). It can be done directly or indirectly via a Vote Proxy. This deposit is also counted for polls using the following rules:  If there are any MKR tokens deposited in the latest DSChief 1.2 they are counted and any deposits in other versions are omitted MKR tokens deposited in the DSChief 1.1 are counted only if there are no MKR tokens deposited in DSChief 1.2 DSChief 1.0 is not used anymore and MKR tokens deposited there are never counted  Chiefs\u2019 Mainnet addresses:  DSChief 1.0: 0x8E2a84D6adE1E7ffFEe039A35EF5F19F13057152  DSChief 1.1: 0x9eF05f7F6deB616fd37aC3c959a2dDD25A54E4F5  DSChief 1.2: 0x0a3f6849f78076aefaDf113F5BED87720274dDC0   Voting power Voting power (expressed in MKR tokens) can be checked for every voter for any point in time. It is based on the total MKR balance of the voter and is calculated with the following assumptions: If the voter has an active Vote Proxy, sum up the following balances:  MKR tokens stored in the hot wallet MKR tokens stored in the cold wallet (unless cold wallet is the same as hot wallet) MKR tokens deposited into DSChiefs directly by their hot wallet MKR tokens deposited into DSChiefs by their active Vote Proxy MKR tokens stored in the Vote Proxy contract (this should be 0, since any MKR sent directly to a Vote Proxy is unrecoverable, but sh**t happens  ) MKR tokens deposited into DSChiefs directly by their cold wallet are not counted   If the voter does not have an active Vote Proxy, sum up the following balances:  MKR tokens stored in the address MKR tokens directly deposited into DSChiefs by the address  Delegates There are no special rules for a delegate contract. When a delegate contract votes in a poll, the contract itself is the one that votes. Since a delegate contract can\u2019t have a Vote Proxy, the voting power of a delegate contract is its MKR in DSChiefs (plus MKR in the delegate contract itself, which should be 0, since any MKR sent directly to a delegate contract is unrecoverable). Polling results Final voting results for a poll are calculated with the following steps:  The final list of valid votes is determined at the block when the poll ends. If there are many valid votes from the same voter (see the previous point) only the last one is taken into account. The option selected by the voter is specified in the relevant Vote event. The sum of voting power associated with every valid vote is calculated for each option.  To make this definition even more strict we have prepared the public repo with sample Python code, that can be used by anyone to independently check results of any poll by looking at the raw on-chain data. It is available here. Special thanks to Tyler Sorensen, Payton Rose and the whole DUX CU team. Token Flow team (@piotr.klis, @tmierzwa) ",
+                    "links": [
+                        "https://vote.makerdao.com/polling?network=mainnet",
+                        "https://docs.makerdao.com/smart-contract-modules/proxy-module/vote-proxy-detailed-documentation",
+                        "https://etherscan.io/address/0x868ba9aeacA5B73c7C27F3B01588bf4F1339F2bC#code",
+                        "https://etherscan.io/address/0x6FCD258af181B3221073A96dD90D1f7AE7eEc408#code",
+                        "https://etherscan.io/address/0xF9be8F0945acDdeeDaA64DFCA5Fe9629D0CF8E5D#code",
+                        "https://etherscan.io/address/0xD3A9FE267852281a1e6307a1C37CDfD76d39b133#code",
+                        "https://etherscan.io/address/0x8E2a84D6adE1E7ffFEe039A35EF5F19F13057152#code",
+                        "https://etherscan.io/address/0x9eF05f7F6deB616fd37aC3c959a2dDD25A54E4F5#code",
+                        "https://etherscan.io/address/0x0a3f6849f78076aefaDf113F5BED87720274dDC0#code",
+                        "https://github.com/TokenFlowInsights/gov-tools",
+                        "https://forum.makerdao.com/u/tyler",
+                        "https://forum.makerdao.com/u/prose11",
+                        "https://forum.makerdao.com/t/dux-post-mortem-poll-vote-calculation-discrepancy/10313",
+                        "https://forum.makerdao.com/t/maker-governance-review-september-2021/10645",
+                        "https://forum.makerdao.com/t/sourcecred-distribution-for-week-ending-september-12th-2021/10296",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-september-3rd-9th/10241",
+                        "https://forum.makerdao.com/t/mip39c2-sp22-adding-data-insights-core-unit-din-001/10208"
+                    ],
+                    "GPT-summary": "The post explains the algorithm used to count the final results of a voting dataset and how it differs from the official voting portal. The author seeks feedback on the algorithm and provides details on how to check the results of any poll using sample Python code. The post also includes information on Vote Proxies, valid votes, DSChiefs deposits, voting power, and delegates. The post may be of interest to those interested in voting processes and blockchain technology.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.944663843101343
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Arran",
+                    "index": "#2",
+                    "likes": "7",
+                    "time": "07/09/2021-07:07:35",
+                    "content": "    tmierzwa:  To make this definition even more strict we have prepared the public repo with sample Python code, that can be used by anyone to independently check results of any poll by looking at the raw on-chain data. It is available here .   Just adding quickly that Token Flow Insights has open sourced this code under an extremely permissive \u201cUnlicence\u201d, so that it is available for community members to use in any way that they see fit, and most importantly for anyone to be able to directly verify votes shown on any front-end ",
+                    "links": [
+                        "https://forum.makerdao.com/t/sourcecred-distribution-for-week-ending-september-12th-2021/10296"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.134844322344323
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Tru_Greg",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "07/09/2021-12:10:08",
+                    "content": "Great work! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "07/12/2021-18:10:10",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

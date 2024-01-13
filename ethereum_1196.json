@@ -1,0 +1,252 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-3155-create-evm-trace-specification/5007",
+            "title": "EIP-3155: Create EVM Trace Specification ",
+            "index": 5007,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MariusVanDerWijden",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "07/12/2020-15:46:27",
+                    "content": "Discussion for EIP-3155 which can be found here: https://github.com/ethereum/EIPs/pull/3155 It tries to formalize the de-facto standard for tracing during state tests and move it to a more visible place s.th. it will be picked up by more implementations ",
+                    "links": [],
+                    "GPT-summary": "The post is a discussion about EIP-3155, which aims to formalize the standard for tracing during state tests and make it more visible to increase its implementation. The author is explaining the proposal, while third parties are giving constructive criticism and asking questions about it.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "07/12/2020-16:43:59",
+                    "content": "I added some in-line comments in the EIP.  Generally summarized as  The CUT should not be part of the EIP, the standard is useful outside of just fuzz testing (the rpc debug_standardTraceBadBlocks for example) field types need to be specified (what\u2019s a hex string and what\u2019s a json number, and unit for time, for example) de-facto standard -> common format.  I think Parity\u2019s trace is more of a de-facto standard as we have many users asking for it.  Mostly because of the internal transaction and state handling.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.704545454545454
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MariusVanDerWijden",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "07/12/2020-19:04:55",
+                    "content": "Thank you very much for the comments! They are very helpful, I will insert them tomorrow. Sorry about the misnomer of the common format, didn\u2019t want to step on anyones toes with that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.65625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "15/12/2020-17:41:30",
+                    "content": "Some nitpicks:   Hex-String data type perhaps could be better described as \u201chex-encoded byte array\u201d.   It\u2019s not clear what exactly returnStack is, please provide an example where it\u2019s not empty.   Please provide an example where error is not empty.    Clients SHOULD output the fields in the same order as listed in this EIP.    According to the JSON spec \u201can object is an unordered set of name/value pairs\u201d, so strictly speaking this requires something not supported by JSON.    The CUT MUST NOT output a line for the STOP operation if an error occurred: Example:    The example following this does in fact output STOP operation, so it\u2019s contradictory, or an example for something else.     {\"stateRoot\":\"0xd4c577737f5d20207d338c360c42d3af78de54812720e3339f7b27293ef195b7\",\"output\":\"\",\"gasUsed\":\"0x3\",\"successful\":\"true\",\"time\":141485}   This example of a summary contains successful field not mentioned in the spec. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.325000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "21/01/2021-14:23:25",
+                    "content": "My experience is limited to some knowledge about tracing implementations inside EVMs  and using tracing for debugging convoluted state tests. The most confusing part of the current tracing is that it reports a kind of \u201cin progress\u201d state of an instruction execution if you consider precondition-checking a part of the execution. I.e. it reports the gas cost of the instruction (hopefully total gas cost but that was not the case in Aleth; does it also report total CREATE and CALL costs?) but not the execution result. In one of my prototypes I changed that. The tracing there was reporting the state after instruction execution. This was in my opinion much more DevEx friendly. Moreover, I also focused on limiting the amount data transferred from EVM. Together these provided additional nice options:   Instead of dumping whole EVM stack, you can always dump only the top item. It can be noticed that an instruction pushes at most one value to the stack so the \u201cstack top dump\u201d is also the instruction execution result. {\"opName\":\"PUSH1\", \"stackTop\":\"0x02\"} {\"opName\":\"DUP1\", \"stackTop\":\"0x02\"} {\"opName\":\"ADD\", \"stackTop\":\"0x04\"}    Instead of full memory dump, you can only report the modifiedMemory: the memory area where the instruction has written to. It can be noticed that an instruction may at most modify single continuous memory area. This also can be seen as the instruction execution result. If you report the instruction before execution the \u201cmodified memory\u201d has no meaning. {\"opName\":\"MSTORE\", \"modifiedMemoryOffset\":\"0x20\", \"modifiedMemory\":\"0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}    It is enough to just report gasLeft after the execution. The instruction gas cost can be easily computed from the gasLeft of the previous instruction.   An error code can be meaningfully added to an instruction trace. Is this the meaning of the error field? However, this only make sense for the last instruction in a call as other instructions must be successful. {\"opName\":\"POP\", \"error\":\"stack underflow\"}    Lastly, the \u201cnew\u201d tracing should provide the same information as the \u201clegacy\u201d tracing. Therefore, the \u201clegacy\u201d tracing format can be emulated by a statefull wrapper. If that is not the case, consider this a bug. Many of these options have variants and alternatives. At this moment I only want to present an overview. Let me know if this direction is something you would like to explore. References   EVMC tracing prototype (and introducing PR) \u2014 never fully utilized by any EVM and finally removed from EVMC.  Aleth implementation of the EVMC tracing prototype.  ",
+                    "links": [
+                        "https://github.com/ethereum/evmc/pull/32",
+                        "https://github.com/ethereum/aleth/pull/5065"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.996031746031746
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "21/01/2021-14:26:25",
+                    "content": "    chfast:  In one of my prototypes I changed that. The tracing there was reporting the state after instruction execution. This was in my opinion much more DevEx friendly.   ethereumjs-vm reports I think both, because different use cases required the different versions. Maybe I remember it wrongly, and it was only discussed as an issue and one of the options was not merged. In any case I think getting input from both ethereumjs and the Remix team would be very valuable. Ping @yann300 and @jochem-brouwer (I could not find any other ethereumjs dev here). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.28125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "22/01/2021-14:49:04",
+                    "content": "    chfast:  Instead of dumping whole EVM stack, you can always dump only the top item.   I\u2019d prefer the 5-6 topmost items. Then you don\u2019t have to backtrack up to (potentially) infinity lines to see what the inputs to an op were.     chfast:  Instead of full memory dump, you can only report the modifiedMemory: the memory area where the instruction has written to.   Clever!     chfast:  It is enough to just report gasLeft after the execution   Not sure about that. In a call, the gasCost was the cost of the call. The gasLeft is what you have available in this new execution frame. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.702134986225895
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "22/01/2021-14:59:07",
+                    "content": "Although, in general, your comments makes a presumptive traceviewer (such as my traceview: https://github.com/holiman/goevmlab#traceview ) forced to be come more stateful. In order to provide a memory dump, it needs to iterate through all the ops leading up to the point in question, if we only ever provide snippets. Same with stack, but I already mentioned that. So yes, it\u2019ll make the trace(s) smaller, but it\u2019ll also increase the complexity at the parsing/analysis side a whole lot. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.28125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "22/01/2021-17:15:48",
+                    "content": "Assuming that we mean by \u201cEVM traces\u201d the step event which the VM fires, then we only report the state of the VM before execution of an operation. We do not report the state right after running an operation. I think that @chfast raises a very good point that there are essentially \u201ctwo\u201d events happening: the first is the state of the VM before the operation runs, and the other is the state after the operation runs. A very notable situation where this is important is if you invoke any CALL operation. In the stepBefore, we have the gas available before we run the CALL. Then afterStep, we deduct the call gas. But, the beforeStep in our new environment (new address), not only will the operation be different which we evaluate, but also our gas could have changed (since we have the 63/64 max forwarded gas rule). I think it would make sense to add both these events in cases where it makes sense (it does not make sense to use beforeStep and afterStep just for a PUSH* operation). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.975336270871985
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "07/05/2021-11:49:45",
+                    "content": "    holiman:      chfast:  Instead of dumping whole EVM stack, you can always dump only the top item.   I\u2019d prefer the 5-6 topmost items. Then you don\u2019t have to backtrack up to (potentially) infinity lines to see what the inputs to an op were.   Ok, for that we can dump the exact number of the stack items which will be consumed by the to-be-executed instruction. Any idea how to resolved some of the alternatives to single specification? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the other topics listed match."
+                    ],
+                    "Sentiment": 5.98469387755102
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "07/05/2021-12:17:01",
+                    "content": "    chfast:  Ok, for that we can dump the exact number of the stack items which will be consumed by the to-be-executed instruction.   But wait, what if it\u2019s an invalid instruction? Or, what if it\u2019s something that does not consume, anything \u2013 we still want to be able to see what the last op pushed on the stack. So I\u2019d say display at minimum the top item on the stack, even if it consumes zero. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "18/05/2021-08:11:52",
+                    "content": " New set of proposed changes  Wrap calls with \u201ccall start\u201d and \u201ccall summary\u201d entries. This will extend \u201ctx summary\u201d and allow easier internal call identification. With the change the \u201cdepth\u201d can be moved to the \u201ccall start\u201d - no need to repeat it on every instruction. Similarly \u201cerror\u201d can be moved to \u201ccall summary\u201d. I\u2019m not able to compute \u201cgasCost\u201d before execution without big additional effort because gas calculation is mixed with instruction execution. Can this field be optional? I propose to change the type of \u201cgas\u201d, \u201cgasUsed\u201d and \u201cgasCost\u201d to Number. These values are at most 64-bit and even 52-bits are unlikely. Using Number is much easier to read. I\u2019m not able to compute \u201cstateRoot\u201d.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.918181818181818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "19/05/2021-20:15:32",
+                    "content": "I have implemented the trimmed stack output with the rules that at most the instruction number of arguments in dumped but not less than 1. If trimming happens the additional \"...\" indicator is added. {\"pc\":380,\"op\":91,\"opName\":\"JUMPDEST\",\"gas\":999330,\"stack\":[\"0x0\",\"...\"]} {\"pc\":381,\"op\":147,\"opName\":\"SWAP4\",\"gas\":999329,\"stack\":[\"0x0\",\"0xa0\",\"0x0\",\"0x0\",\"0x199\",\"...\"]} {\"pc\":382,\"op\":146,\"opName\":\"SWAP3\",\"gas\":999326,\"stack\":[\"0x199\",\"0xa0\",\"0x0\",\"0x0\",\"...\"]} {\"pc\":383,\"op\":80,\"opName\":\"POP\",\"gas\":999323,\"stack\":[\"0x0\",\"...\"]} {\"pc\":384,\"op\":80,\"opName\":\"POP\",\"gas\":999321,\"stack\":[\"0xa0\",\"...\"]} {\"pc\":385,\"op\":80,\"opName\":\"POP\",\"gas\":999319,\"stack\":[\"0x0\",\"...\"]} {\"pc\":386,\"op\":86,\"opName\":\"JUMP\",\"gas\":999317,\"stack\":[\"0x199\",\"...\"]} {\"pc\":409,\"op\":91,\"opName\":\"JUMPDEST\",\"gas\":999309,\"stack\":[\"0x0\",\"...\"]} {\"pc\":410,\"op\":133,\"opName\":\"DUP6\",\"gas\":999308,\"stack\":[\"0x0\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"0x0\",\"0xa0\",\"...\"]} {\"pc\":411,\"op\":82,\"opName\":\"MSTORE\",\"gas\":999305,\"stack\":[\"0xa0\",\"0x0\",\"...\"]} {\"pc\":412,\"op\":97,\"opName\":\"PUSH2\",\"gas\":999302,\"stack\":[\"0x0\",\"...\"]} {\"pc\":415,\"op\":132,\"opName\":\"DUP5\",\"gas\":999299,\"stack\":[\"0x1a9\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"0x0\",\"...\"]} {\"pc\":416,\"op\":96,\"opName\":\"PUSH1\",\"gas\":999296,\"stack\":[\"0x0\",\"...\"]} {\"pc\":418,\"op\":131,\"opName\":\"DUP4\",\"gas\":999293,\"stack\":[\"0x20\",\"0x0\",\"0x1a9\",\"0x0\",\"...\"]} {\"pc\":419,\"op\":1,\"opName\":\"ADD\",\"gas\":999290,\"stack\":[\"0x0\",\"0x20\",\"...\"]} {\"pc\":420,\"op\":137,\"opName\":\"DUP10\",\"gas\":999287,\"stack\":[\"0x20\",\"0x0\",\"0x1a9\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"0x0\",\"0xa0\",\"0x0\",\"0xa0\",\"...\"]} {\"pc\":421,\"op\":97,\"opName\":\"PUSH2\",\"gas\":999284,\"stack\":[\"0xa0\",\"...\"]}  We can also add \"stackSize\" field. {\"pc\":380,\"op\":91,\"opName\":\"JUMPDEST\",\"gas\":999330,\"stack\":[\"0x0\",\"...\"],\"stackSize\":14} {\"pc\":381,\"op\":147,\"opName\":\"SWAP4\",\"gas\":999329,\"stack\":[\"0x0\",\"0xa0\",\"0x0\",\"0x0\",\"0x199\",\"...\"],\"stackSize\":14} {\"pc\":382,\"op\":146,\"opName\":\"SWAP3\",\"gas\":999326,\"stack\":[\"0x199\",\"0xa0\",\"0x0\",\"0x0\",\"...\"],\"stackSize\":14} {\"pc\":383,\"op\":80,\"opName\":\"POP\",\"gas\":999323,\"stack\":[\"0x0\",\"...\"],\"stackSize\":14} {\"pc\":384,\"op\":80,\"opName\":\"POP\",\"gas\":999321,\"stack\":[\"0xa0\",\"...\"],\"stackSize\":13} {\"pc\":385,\"op\":80,\"opName\":\"POP\",\"gas\":999319,\"stack\":[\"0x0\",\"...\"],\"stackSize\":12} {\"pc\":386,\"op\":86,\"opName\":\"JUMP\",\"gas\":999317,\"stack\":[\"0x199\",\"...\"],\"stackSize\":11} {\"pc\":409,\"op\":91,\"opName\":\"JUMPDEST\",\"gas\":999309,\"stack\":[\"0x0\",\"...\"],\"stackSize\":10} {\"pc\":410,\"op\":133,\"opName\":\"DUP6\",\"gas\":999308,\"stack\":[\"0x0\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"0x0\",\"0xa0\",\"...\"],\"stackSize\":10} {\"pc\":411,\"op\":82,\"opName\":\"MSTORE\",\"gas\":999305,\"stack\":[\"0xa0\",\"0x0\",\"...\"],\"stackSize\":11} {\"pc\":412,\"op\":97,\"opName\":\"PUSH2\",\"gas\":999302,\"stack\":[\"0x0\",\"...\"],\"stackSize\":9} {\"pc\":415,\"op\":132,\"opName\":\"DUP5\",\"gas\":999299,\"stack\":[\"0x1a9\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"0x0\",\"...\"],\"stackSize\":10} {\"pc\":416,\"op\":96,\"opName\":\"PUSH1\",\"gas\":999296,\"stack\":[\"0x0\",\"...\"],\"stackSize\":11} {\"pc\":418,\"op\":131,\"opName\":\"DUP4\",\"gas\":999293,\"stack\":[\"0x20\",\"0x0\",\"0x1a9\",\"0x0\",\"...\"],\"stackSize\":12} {\"pc\":419,\"op\":1,\"opName\":\"ADD\",\"gas\":999290,\"stack\":[\"0x0\",\"0x20\",\"...\"],\"stackSize\":13} {\"pc\":420,\"op\":137,\"opName\":\"DUP10\",\"gas\":999287,\"stack\":[\"0x20\",\"0x0\",\"0x1a9\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"0x0\",\"0xa0\",\"0x0\",\"0xa0\",\"...\"],\"stackSize\":12} {\"pc\":421,\"op\":97,\"opName\":\"PUSH2\",\"gas\":999284,\"stack\":[\"0xa0\",\"...\"],\"stackSize\":13}  The \"...\" seems to confuse traceview. Besides, the trimming works nice for instructions like DUP or SWAP. For other instruction this seems to introduce some additional mess - it is difficult to track how values are \u201cmoved\u201d on the stack when some variadic number of items is presented, especially for cases with single top value. The minimum presented number of values should be higher, maybe 3. {\"pc\":380,\"op\":91,\"opName\":\"JUMPDEST\",\"gas\":999330,\"stack\":[\"0x0\",\"0xa0\",\"0x0\",\"...\"],\"stackSize\":14} {\"pc\":381,\"op\":147,\"opName\":\"SWAP4\",\"gas\":999329,\"stack\":[\"0x0\",\"0xa0\",\"0x0\",\"0x0\",\"0x199\",\"...\"],\"stackSize\":14} {\"pc\":382,\"op\":146,\"opName\":\"SWAP3\",\"gas\":999326,\"stack\":[\"0x199\",\"0xa0\",\"0x0\",\"0x0\",\"...\"],\"stackSize\":14} {\"pc\":383,\"op\":80,\"opName\":\"POP\",\"gas\":999323,\"stack\":[\"0x0\",\"0xa0\",\"0x0\",\"...\"],\"stackSize\":14} {\"pc\":384,\"op\":80,\"opName\":\"POP\",\"gas\":999321,\"stack\":[\"0xa0\",\"0x0\",\"0x199\",\"...\"],\"stackSize\":13} {\"pc\":385,\"op\":80,\"opName\":\"POP\",\"gas\":999319,\"stack\":[\"0x0\",\"0x199\",\"0x0\",\"...\"],\"stackSize\":12} {\"pc\":386,\"op\":86,\"opName\":\"JUMP\",\"gas\":999317,\"stack\":[\"0x199\",\"0x0\",\"0x0\",\"...\"],\"stackSize\":11} {\"pc\":409,\"op\":91,\"opName\":\"JUMPDEST\",\"gas\":999309,\"stack\":[\"0x0\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"...\"],\"stackSize\":10} {\"pc\":410,\"op\":133,\"opName\":\"DUP6\",\"gas\":999308,\"stack\":[\"0x0\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"0x0\",\"0xa0\",\"...\"],\"stackSize\":10} {\"pc\":411,\"op\":82,\"opName\":\"MSTORE\",\"gas\":999305,\"stack\":[\"0xa0\",\"0x0\",\"0x0\",\"...\"],\"stackSize\":11} {\"pc\":412,\"op\":97,\"opName\":\"PUSH2\",\"gas\":999302,\"stack\":[\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"...\"],\"stackSize\":9} {\"pc\":415,\"op\":132,\"opName\":\"DUP5\",\"gas\":999299,\"stack\":[\"0x1a9\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"0x0\",\"...\"],\"stackSize\":10} {\"pc\":416,\"op\":96,\"opName\":\"PUSH1\",\"gas\":999296,\"stack\":[\"0x0\",\"0x1a9\",\"0x0\",\"...\"],\"stackSize\":11} {\"pc\":418,\"op\":131,\"opName\":\"DUP4\",\"gas\":999293,\"stack\":[\"0x20\",\"0x0\",\"0x1a9\",\"0x0\",\"...\"],\"stackSize\":12} {\"pc\":419,\"op\":1,\"opName\":\"ADD\",\"gas\":999290,\"stack\":[\"0x0\",\"0x20\",\"0x0\",\"...\"],\"stackSize\":13} {\"pc\":420,\"op\":137,\"opName\":\"DUP10\",\"gas\":999287,\"stack\":[\"0x20\",\"0x0\",\"0x1a9\",\"0x0\",\"0x6745230100efcdab890098badcfe001032547600c3d2e1f0\",\"0x40\",\"0x0\",\"0xa0\",\"0x0\",\"0xa0\",\"...\"],\"stackSize\":12} {\"pc\":421,\"op\":97,\"opName\":\"PUSH2\",\"gas\":999284,\"stack\":[\"0xa0\",\"0x20\",\"0x0\",\"...\"],\"stackSize\":13}  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 1.9517954722872755
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "21/05/2021-19:11:04",
+                    "content": "Initial implementation in evmone with comments to the spec and set of proposed changes.  github.com/ethereum/evmone         Instruction tracing with EIP-3155 JSONL output   ethereum:master \u2190 ethereum:instruction_trace            opened 03:17PM - 14 May 21 UTC               chfast             +238 -11       Implementation of EVM tracing following the [EIP-3155](https://eips.ethereum.org\u2026/EIPS/eip-3155) (draft). It outputs log line with JSON (jsonl) for every instruction to standard error output.  Differences from the spec: 1. All calls start with non-standard \"start call\" log:     ```json    {\"kind\":\"call\",\"static\":false,\"depth\":0,\"rev\":\"Berlin\"}    ``` 2. All calls end with non-standard \"end call\" log as a replacement for single _summerical info_ at the end of transaction execution.    ```json    {\"error\":null,\"gas\":964766,\"gasUsed\":35234,\"output\":\"da39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\"}    ```    - the `\"stateRoot\"` is omitted as there is no way to compute it,    - the `\"error\"` is taken from the instruction trace log, replaces `\"pass\"` or `\"successful\"`. 3. The `\"gasCost\"` is omitted. This is difficult to compute as \"dynamic\" gas cost is calculated together with execution but the spec forces these to be separated. 4. The `\"depth\"` is omitted as already presented in \"start call\". 5. The `\"returnData\"` is not implemented. This is doable, but seems unnecessary because this is available in `\"output\"` in \"end call\". 6. The `\"refund\"` is omitted, currently not doable. 7. The `\"memory\"` was initially implemented, then removed because makes traces huge. It is recommended to enabled it with a flag. This is easy to implement in future.  Example (SHA1): ```json {\"kind\":\"call\",\"static\":false,\"depth\":0,\"rev\":\"Berlin\"} {\"pc\":0,\"op\":96,\"opName\":\"PUSH1\",\"gas\":1000000,\"stack\":[],\"memorySize\":0} {\"pc\":2,\"op\":96,\"opName\":\"PUSH1\",\"gas\":999997,\"stack\":[\"0x80\"],\"memorySize\":0} {\"pc\":4,\"op\":82,\"opName\":\"MSTORE\",\"gas\":999994,\"stack\":[\"0x40\",\"0x80\"],\"memorySize\":0} {\"pc\":5,\"op\":52,\"opName\":\"CALLVALUE\",\"gas\":999982,\"stack\":[],\"memorySize\":96} {\"pc\":6,\"op\":128,\"opName\":\"DUP1\",\"gas\":999980,\"stack\":[\"0x0\"],\"memorySize\":96} {\"pc\":7,\"op\":21,\"opName\":\"ISZERO\",\"gas\":999977,\"stack\":[\"0x0\",\"0x0\"],\"memorySize\":96} {\"pc\":8,\"op\":97,\"opName\":\"PUSH2\",\"gas\":999974,\"stack\":[\"0x1\",\"0x0\"],\"memorySize\":96} {\"pc\":11,\"op\":87,\"opName\":\"JUMPI\",\"gas\":999971,\"stack\":[\"0x10\",\"0x1\",\"0x0\"],\"memorySize\":96} {\"pc\":16,\"op\":91,\"opName\":\"JUMPDEST\",\"gas\":999961,\"stack\":[\"0x0\"],\"memorySize\":96} {\"pc\":17,\"op\":80,\"opName\":\"POP\",\"gas\":999960,\"stack\":[\"0x0\"],\"memorySize\":96}  ...  {\"pc\":1207,\"op\":23,\"opName\":\"OR\",\"gas\":964862,\"stack\":[\"0xda39a3ee5e6b4b0d3255bfef0000000000000000\",\"0x9560189000000000\",\"0xafd80709\",\"0xda39a3ee005e6b4b0d003255bfef009560189000afd80709\",\"0x40\",\"0x0\",\"0xa0\",\"0x0\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1208,\"op\":23,\"opName\":\"OR\",\"gas\":964859,\"stack\":[\"0xda39a3ee5e6b4b0d3255bfef9560189000000000\",\"0xafd80709\",\"0xda39a3ee005e6b4b0d003255bfef009560189000afd80709\",\"0x40\",\"0x0\",\"0xa0\",\"0x0\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1209,\"op\":96,\"opName\":\"PUSH1\",\"gas\":964856,\"stack\":[\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709\",\"0xda39a3ee005e6b4b0d003255bfef009560189000afd80709\",\"0x40\",\"0x0\",\"0xa0\",\"0x0\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1211,\"op\":27,\"opName\":\"SHL\",\"gas\":964853,\"stack\":[\"0x60\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709\",\"0xda39a3ee005e6b4b0d003255bfef009560189000afd80709\",\"0x40\",\"0x0\",\"0xa0\",\"0x0\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1212,\"op\":148,\"opName\":\"SWAP5\",\"gas\":964850,\"stack\":[\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0xda39a3ee005e6b4b0d003255bfef009560189000afd80709\",\"0x40\",\"0x0\",\"0xa0\",\"0x0\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1213,\"op\":80,\"opName\":\"POP\",\"gas\":964847,\"stack\":[\"0x0\",\"0xda39a3ee005e6b4b0d003255bfef009560189000afd80709\",\"0x40\",\"0x0\",\"0xa0\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1214,\"op\":80,\"opName\":\"POP\",\"gas\":964845,\"stack\":[\"0xda39a3ee005e6b4b0d003255bfef009560189000afd80709\",\"0x40\",\"0x0\",\"0xa0\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1215,\"op\":80,\"opName\":\"POP\",\"gas\":964843,\"stack\":[\"0x40\",\"0x0\",\"0xa0\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1216,\"op\":80,\"opName\":\"POP\",\"gas\":964841,\"stack\":[\"0x0\",\"0xa0\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1217,\"op\":80,\"opName\":\"POP\",\"gas\":964839,\"stack\":[\"0xa0\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1218,\"op\":145,\"opName\":\"SWAP2\",\"gas\":964837,\"stack\":[\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0xa0\",\"0xd6\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1219,\"op\":144,\"opName\":\"SWAP1\",\"gas\":964834,\"stack\":[\"0xd6\",\"0xa0\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1220,\"op\":80,\"opName\":\"POP\",\"gas\":964831,\"stack\":[\"0xa0\",\"0xd6\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":1221,\"op\":86,\"opName\":\"JUMP\",\"gas\":964829,\"stack\":[\"0xd6\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":214,\"op\":91,\"opName\":\"JUMPDEST\",\"gas\":964821,\"stack\":[\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":215,\"op\":96,\"opName\":\"PUSH1\",\"gas\":964820,\"stack\":[\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":217,\"op\":128,\"opName\":\"DUP1\",\"gas\":964817,\"stack\":[\"0x40\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":218,\"op\":81,\"opName\":\"MLOAD\",\"gas\":964814,\"stack\":[\"0x40\",\"0x40\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":219,\"op\":107,\"opName\":\"PUSH12\",\"gas\":964811,\"stack\":[\"0xa0\",\"0x40\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":232,\"op\":25,\"opName\":\"NOT\",\"gas\":964808,\"stack\":[\"0xffffffffffffffffffffffff\",\"0xa0\",\"0x40\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":233,\"op\":144,\"opName\":\"SWAP1\",\"gas\":964805,\"stack\":[\"0xffffffffffffffffffffffffffffffffffffffff000000000000000000000000\",\"0xa0\",\"0x40\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":234,\"op\":146,\"opName\":\"SWAP3\",\"gas\":964802,\"stack\":[\"0xa0\",\"0xffffffffffffffffffffffffffffffffffffffff000000000000000000000000\",\"0x40\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":235,\"op\":22,\"opName\":\"AND\",\"gas\":964799,\"stack\":[\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0xffffffffffffffffffffffffffffffffffffffff000000000000000000000000\",\"0x40\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":236,\"op\":130,\"opName\":\"DUP3\",\"gas\":964796,\"stack\":[\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x40\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":237,\"op\":82,\"opName\":\"MSTORE\",\"gas\":964793,\"stack\":[\"0xa0\",\"0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\",\"0x40\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":238,\"op\":81,\"opName\":\"MLOAD\",\"gas\":964790,\"stack\":[\"0x40\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":239,\"op\":144,\"opName\":\"SWAP1\",\"gas\":964787,\"stack\":[\"0xa0\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":240,\"op\":129,\"opName\":\"DUP2\",\"gas\":964784,\"stack\":[\"0xa0\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":241,\"op\":144,\"opName\":\"SWAP1\",\"gas\":964781,\"stack\":[\"0xa0\",\"0xa0\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":242,\"op\":3,\"opName\":\"SUB\",\"gas\":964778,\"stack\":[\"0xa0\",\"0xa0\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":243,\"op\":96,\"opName\":\"PUSH1\",\"gas\":964775,\"stack\":[\"0x0\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":245,\"op\":1,\"opName\":\"ADD\",\"gas\":964772,\"stack\":[\"0x20\",\"0x0\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":246,\"op\":144,\"opName\":\"SWAP1\",\"gas\":964769,\"stack\":[\"0x20\",\"0xa0\",\"0x1605782b\"],\"memorySize\":512} {\"pc\":247,\"op\":243,\"opName\":\"RETURN\",\"gas\":964766,\"stack\":[\"0xa0\",\"0x20\",\"0x1605782b\"],\"memorySize\":512} {\"error\":null,\"gas\":964766,\"gasUsed\":35234,\"output\":\"da39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000\"} ```  [sha1.txt](https://github.com/ethereum/evmone/files/6524230/sha1.txt)       ",
+                    "links": [
+                        "https://github.com/ethereum/evmone/pull/325",
+                        "https://github.com/chfast",
+                        "https://github.com/ethereum/evmone/pull/325/files",
+                        "https://github.com/ethereum/evmone/pull/325"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.685531135531135
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "19/07/2021-16:36:09",
+                    "content": "Hi there, some points which are not mentioned in the EIP, which I want to note based upon the current Geth implementation. They are either not mentioned, or they are not consistent, so I have some suggestions. But before opening a PR to the EIP to fix these, I\u2019d rather discuss them first.  If current gas limit is less than the base fee of an opcode, or the memory expansion overflows, then the reported gas is the base fee (is the base fee of each operation defined unambiguously?). Note the defer function which handles these errors. If an invalid opcode is reached, the previous gas cost is reported. (cost variable is not updated) If any calculation of the dynamic gas part of an opcode runs into an error (stack underflow, out of gas, etc.) then the dynamic gas part will return 0, and thus the reported gas for that step is still the base fee. For *CALL* opcodes, the gas cost is the dynamic gas cost + base fee of the call, but this is added to the gas sent to the next call frame (so the calculated gas limit of the call) However, for CREATE* opcodes, the gas supplied to the next frame is not added to the base fee + dynamic cost of the operation.  Discussion  Should be added to the EIP This is inconsistent. Since invalid operations consume all gas, the cost of this operation is thus the current gas left. I am not sure here, since these errors consume all gas, is this inconsistent? I think it would make more sense to also report \u201cconsume all gas\u201d here as cost, instead of just reporting the base fee. This should be added to the EIP. This makes sense; this gas is sent to the next call frame and could thus all be consumed. At this point it is unknown how much it will cost in the end, but at this point we don\u2019t care. This is not very consistent with (4), I\u2019d say this should also report the gas limit that is sent to the next frame (so 63/64 of current gas left in almost all forks, or the 100% of the gas limit in historical forks)  ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum/blob/f05419f0fb8c5328dca92ea9fb184d082300344a/core/vm/interpreter.go#L221",
+                        "https://github.com/ethereum/go-ethereum/blob/f05419f0fb8c5328dca92ea9fb184d082300344a/core/vm/interpreter.go#L237",
+                        "https://github.com/ethereum/go-ethereum/blob/f05419f0fb8c5328dca92ea9fb184d082300344a/core/vm/interpreter.go#L169",
+                        "https://github.com/ethereum/go-ethereum/blob/f05419f0fb8c5328dca92ea9fb184d082300344a/core/vm/interpreter.go#L199",
+                        "https://github.com/ethereum/go-ethereum/blob/f05419f0fb8c5328dca92ea9fb184d082300344a/core/vm/interpreter.go#L247",
+                        "https://github.com/ethereum/go-ethereum/blob/94451c2788295901c302c9bf5fa2f7b021c924e2/core/vm/gas_table.go#L297",
+                        "https://github.com/ethereum/go-ethereum/blob/94451c2788295901c302c9bf5fa2f7b021c924e2/core/vm/gas_table.go#L357",
+                        "https://github.com/ethereum/go-ethereum/blob/94451c2788295901c302c9bf5fa2f7b021c924e2/core/vm/gas_table.go#L299"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.104114971050455
+                }
+            ]
+        }
+    ],
+    "group_index": "1196"
+}

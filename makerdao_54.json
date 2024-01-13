@@ -1,0 +1,70 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/total-protocol-utilization-rate-above-100-in-some-dates/10134",
+            "title": "Total protocol utilization rate above 100% in some dates? ",
+            "index": 10134,
+            "category": [
+                "Miscellaneous"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/morgansawerr",
+                    "index": "#1",
+                    "likes": "0",
+                    "time": "02/09/2021-18:53:29",
+                    "content": "Hi there! I\u2019m looking some hisotrical data of loans vs deposits. Some days in july, I\u2019m seeing a rate that is above 100%. How is this possible? Anything I\u2019m missing here? Thank you! ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.583333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "02/09/2021-20:38:44",
+                    "content": "Sounds like those few days when we couldn\u2019t mint any more DAI because we were over total utilization. Basically because we set a few vaults to 0 Debt Ceiling to prevent more minting from them (USDC-A being the main culprit), the sum of the total debt ceilings was less than the total DAI following some big mints and a decrease in some other DC\u2019s through our Debt Ceiling Instant Access Module (a module that allows anyone to call a function that will return the overall DC to it\u2019s Target Available Debt amount). So basically due to the artificially low total debt ceiling, combined with stability fees being generated and automatic decreases in some debt ceilings we ended up with more DAI than our total debt ceiling for a few days. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/morgansawerr",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "02/09/2021-21:48:36",
+                    "content": "Hey Payton, thanks for this! Appreciate it. I\u2019m not 100% familiarized with the Maker mechanics (doing some further reading there at the moment), but if I understand correctly: -Protocol was close or at total utilization (in theory it should never be above, no? As that would cause a liquidation event that avoids it?) -Why did you have to set vaults to 0 debt ceiling? Shouldn\u2019t this mechanism happen automatically? -So, you artificially set it lower, resulting in a ratio that shows that there is less collateral than there is, but at the same time DAI was still being minted. My question here again: How? Shouldn\u2019t there have been liquidation events to prevent this? Is this common? Seeing it only happened in july last year appreciate it! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.591666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "03/09/2021-10:04:17",
+                    "content": "I\u2019m not actually 100% sure this event is what you\u2019re referring to. It might help if you could share the data you\u2019re looking at. That might make it easier to explain what\u2019s going on. Only realized that after I\u2019d written the below though, so here it is anyway  I think we\u2019re confusing a few different mechanics of the Maker Protocol here. The Global Debt Ceiling is the parameter that caused the issue in July, this has nothing to do with the collateralization ratio, liquidation, or anything to do with DAI backing. This parameter just limits the maximum amount of DAI that can be minted by users of the protocol - it can be set to any value. Under normal circumstances, it is always higher than the current amount of DAI minted. What we did previously was to set the Global Debt Ceiling to the sum of all the individual debt ceilings of each vault-type. So ETH-A + ETH-B + WBTC-A, etc. However, this caused a problem when we set some of the vault type\u2019s debt ceilings to zero when they still had outstanding debt - bit of an oversight on our part, but largely harmless. Basically some of the inputs to the SUMOF function were negative, which meant that the total was not as high as it should have been. This in turn led us to hit the Global Debt Ceiling, and prevented DAI being minted from any vaults until we\u2019d fixed the problem. The total DAI outstanding can still increase when a debt ceiling (global or vault-type specific) is hit, because the accumulation of fees continues, and these fees are gathered via adding to the debt of the vault.      morgansawerr:  Protocol was close or at total utilization (in theory it should never be above, no? As that would cause a liquidation event that avoids it?)   Yes, in theory we should never hit the Global Debt Ceiling (but only because it\u2019s a horrible UX because no one can borrow DAI, not because it makes DAI unbacked.) But no, this doesn\u2019t cause liquidation events, as described above, these are separate mechanisms.     morgansawerr:  Why did you have to set vaults to 0 debt ceiling? Shouldn\u2019t this mechanism happen automatically?   Maker Goverance does this when we want to retire a vault-type. For example USDC-A which was superceded by PSM-USDC-A. It can\u2019t be automatic because it\u2019s an intentional action.     morgansawerr:  So, you artificially set it lower, resulting in a ratio that shows that there is less collateral than there is, but at the same time DAI was still being minted. My question here again: How? Shouldn\u2019t there have been liquidation events to prevent this?   Yeah, this question reflects a misunderstanding of the system. Setting debt ceilings has no bearing on the collateral ratio or backing of DAI. If stability fees push a vault over the line into liquidation, then it is just liquidated. If the price of a collateral asset decreases, it might push a vault into liquidation. But yeah, not the debt ceiling.     morgansawerr:  Is this common? Seeing it only happened in july last year   Nope, it was an oversight that was obvious in retrospect. Very unlikely to reoccur now that it\u2019s on everyone\u2019s radar. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.844993894993895
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/morgansawerr",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "03/09/2021-15:42:04",
+                    "content": "Hey there! Thanks for the thorough explanations; allow me to let them sink in before further inquiring. For reference, the data is coming from here: Dune Analytics Maybe it could also be an issue that its outdated and not capturing all the deposit contracts in the platform? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.666666666666667
+                }
+            ]
+        }
+    ]
+}

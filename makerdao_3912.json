@@ -1,0 +1,142 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/sourcecred-onchain-technical-design/9324",
+            "title": "SourceCred Onchain Technical Design ",
+            "index": 9324,
+            "category": [
+                "Discontinued Categories",
+                "Misc Discontinued"
+            ],
+            "tags": [
+                "technical-summary",
+                "sourcecred"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#1",
+                    "likes": "13",
+                    "time": "13/07/2021-16:42:34",
+                    "content": " Bringing SourceCred Onchain This post is intended to provide deeper detail on the \u201cSourceCred Feature Development\u201d mentioned in GovAlpha\u2019s Q3 Budget Request. I will be quoting heavily from the Technical Design Proposal we requested from @s_ben and @topocount of SourceCred.  Executive Summary We plan to spend an additional 36,000 DAI (as detailed in our budget) to implement SourceCred distributions and cred calculations completely onchain. Currently, only the payments themselves are verifiable onchain, and require manual distribution. In addition to simplifying the weekly distribution process, this will also make distributions \u201ctrustless\u201d by removing the human labor of running the scores and distributing funds. It is our goal that this will be finished at the end of the Q3 (start of October). @topocount (Kevin) from SourceCred is the lead dev on this project, with support from @s_ben. GovAlpha will be playing the role of project manager.  Benefits We expect these benefits from implementation in addition to those listed above:  This design will provide greater transparency over the SourceCred system, providing greater trust in the Cred scores. This \u201cfirst step\u201d increases the likelihood that SourceCred parameters could be controlled by executive votes in the future. Greater resiliency will be provided to the SourceCred distribution process.   What is changing? Under the current system, someone from the SourceCred team (usually @s_ben) has to run the SourceCred algorithm locally and then submit a Pull Request to Github to update the distribution amounts every week. Funds are then sent out according to the monthly totals by SourceCred\u2019s treasury, funded by DAI monthly from the GovAlpha Multi-Sig. There are many dependencies here and in general the system represents a lot of labor that could be automated. To help understand what is changing here\u2019s a quote from the technical design proposal:  SourceCred will develop new components that enables a third party (i.e. a \u201cCred oracle\u201d) to publish signed, verifiable data to a Maker oracle feed\u2026 Funds will be distributed via a smart contract implementing a merkle distribution, allowing contributors to claim their DAI balance at any time. A time delay will be implemented between the calculation of distribution amounts and on-chain distribution of funds. This will allow on-chain distributions to be challenged/blocked in the event Cred oracles cannot reach consensus, indicating system failures or malicious behavior.  This implementation represents a few major changes to how we currently incentivize forum participation. Most notably, funds will no longer be distributed once a month, but rather claimable anytime by the forum participant. As mentioned by the proposal, this necessitates a time delay, similar to the GSM Pause Delay used on Executive Votes in the Maker Protocol. While this is a potential attack vector to the funds allocated to SourceCred, we believe this system is preferable to the current state of affairs. This risk could be compared with the current custody risk of the DAI sent to SourceCred and the trust placed in the person running the algorithm.  What needs to be done? First, @topocount will need to design an entirely new plugin to interface with the SourceCred algorithm. Again borrowing a concise explanation from the technical design proposal:  The new plugin model will have distinct components, the Fetcher, DataProvider and DataArchive.    Fetcher: This component will periodically fetch a snapshot of Discourse\u2019s data, which the DataProvider then stores in the DataArchive. DataProvider: This component will convert API responses into structured data for storage, and store successful responses persistently to a DataArchive. It will also provide a read-only interface for the structured data needed to calculate Cred scores. DataArchive: This component is a platform or package in which mirrored data is stored.   While a little complex, the problem at this stage is pretty simple, the system needs a way to grab and store data that isn\u2019t a person running the SourceCred algorithm locally. The accompanying diagram from the proposal helps illustrate the technical complexity of the solution:  To help understand what\u2019s happening linearly, @s_ben added this visual explanation:  This plugin and database system to preserve the information represent the bulk of the work needed in this proposal. Originally, the final step of distributions was going to be completed with the Keg, but with the Protocol Engineering team favoring DssVest, we will likely be completing the distributions with DssVest instead. As we get closer to the completion of this project a decision will need to be made if we make this distribution available on Layer 2 or Mainnet. Since the end-user will be paying the gas fees to claim their SourceCred distribution, this decision does carry some weight. That cost must be balanced with the additional knowledge required to claim funds on an L2 and move them to Mainnet. Luckily from a technical perspective, there is little difference for implementation.  Timeline and Deliverables It is expected that this project will take the full quarter to achieve. Deliverables have been broken down into three sections, each taking approximately one month to complete (again, from the proposal):  The components laid out in the Implementation section can be grouped into three main deliverables:    Trusted Fetcher : Implement a Discourse version of the Fetcher and scripts to periodically fetch snapshots of the Maker forum, sign, and publish snapshots to customized DataArchive (decentralized storage) and DataProvider interface. Updated Discourse Plugin: update existing plugin to fetch snapshotted data, generate Cred scores and DAI distributions, and enable persistent verifiability of DAI distributions. Timelocked Merkle Distribution: Implement smart contract that implements merkle distribution that allows community members to claim DAI distributed from the Maker protocol. Implement timelock to add ability to \u201cfreeze\u201d questionable distributions.   GovAlpha will take the project management role for this project, with a focus on keeping the community updated on the progress and any deviations from what has been laid out in this post.  Why focus on this? SourceCred was designed to be rather simple for any administer of a protocol to run the figures and distribute funds. While this open-source approach is super effective for bringing the technology to many different groups, it adds administrative work that does not scale well with a project of Maker\u2019s size. To cope with this, Maker has been leaning on SourceCred for implementation. Although there have not been any major issues with this set up, there is a severe continuity risk. On both the Maker and SourceCred sides of the equation, the departure of a key figure could lead to a pause or even complete stoppage of the SourceCred incentive for Maker forum participants. I believe that the only way to truly stamp out this risk is to get the entire project onchain and governed by Maker. While this project does represent a decent chunk of the GovAlpha budget, it is relatively small compared to the amount we are already spending on SourceCred. It is my view that SourceCred is a vital tool in recruiting talent and participation on the Maker Forum, so making that incentive structure more resilient is DAI well spent. ",
+                    "links": [
+                        "https://gnosis-safe.io/app/#/safes/0x01D26f8c5cC009868A4BF66E268c17B057fF7A73",
+                        "https://community-development.makerdao.com/en/learn/governance/param-gsm-pause-delay",
+                        "https://forum.makerdao.com/t/mip34-keg-streaming-payments-module/6013",
+                        "https://forum.makerdao.com/t/mip-54-dssvest/8025",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-150-thursday-july-15-17-00-utc/9331/4",
+                        "https://forum.makerdao.com/t/govalpha-weekly-update-2021-07-22/9485",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-150-thursday-july-15-17-00-utc/9331/3",
+                        "https://forum.makerdao.com/t/maker-relay-ep-54-en-espanol/9476",
+                        "https://forum.makerdao.com/t/maker-relay-ep-54/9437",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/42",
+                        "https://forum.makerdao.com/t/govalpha-weekly-update-2021-08-26/10034",
+                        "https://forum.makerdao.com/t/govalpha-weekly-update-2021-07-15/9364"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.4804737854737855
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#2",
+                    "likes": "4",
+                    "time": "13/07/2021-19:44:48",
+                    "content": "This is neat\u2013automation, love it\u2013thank you @GovAlpha-Core-Unit , thank you @s_ben  and thank you to the rest of the SourceCred Team.     prose11:  a decision will need to be made if we make this distribution available on Layer 2 or Mainnet   Personally I would prefer to keep in on Mainnet (L1). Not sure if oDAI (optimism DAI) to DAI might incur a \u201creportable\u201d tax event\u2013one asset to another. Also, how would that work on optimism since oDAI needs to get burn when crossing the bridge back over to Mainnet. BTW I believe the DAI bridge won\u2019t be ready until Q4. Assuming it is not ready\u2013initially we will all go thru the seven (7) day delay experience. Hence, why IMO we should keep it on the most secure chain, Ethereum L1. @prose11 can you please make the second visual a little larger?  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.651041666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#3",
+                    "likes": "3",
+                    "time": "13/07/2021-20:07:49",
+                    "content": "    flipflopflapdelegate:  @prose11 can you please make the second visual a little larger?    Yeah sorry about that can\u2019t seem to blow it up while keeping readable, have reached out to @s_ben to see if there\u2019s a larger one at the Source! Otherwise will draw up a cheap imitation tomorrow. Thanks for laying in on the L2 debate, I think in general I would like to keep it on Mainnet as well, perhaps we can just increase the distribution a few percent to help combat the gas fees. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.8314393939393945
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/g_dip",
+                    "index": "#4",
+                    "likes": "4",
+                    "time": "13/07/2021-20:35:50",
+                    "content": "I\u2019m not an accountant, but I\u2019m pretty sure the receipt of the Dai is the taxable event regardless of which layer it\u2019s on. If the l2 is trustless (e.g optimism) it\u2019s probably a good long term strategy to deploy on there. It\u2019s also great dogfooding for the Maker optimism bridge. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.199999999999999
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "13/07/2021-21:03:38",
+                    "content": "    g_dip:  If the l2 is trustless (e.g optimism) it\u2019s probably a good long term strategy   It was released a few hours ago (optimism for Uniswap) and it looks like the Alpha version is a bit centralized. For now, and understandable:   twitter.com    Lefteris Karapetsas | Hiring for @rotkiapp @LefterisJP  @optimismPBC @Uniswap Congrats on the launch.  What does \"history may reset\" mean for those who are not familiar with the tech details of your approach but understand EVM and ethereum?  Does that means that recalling/accounting for older trades before the reset will be impossible? https://t.co/CLuEaWiIdN   8:07 PM - 13 Jul 2021           9            ",
+                    "links": [
+                        "https://twitter.com/LefterisJP/status/1415040176569692163",
+                        "https://twitter.com/LefterisJP/status/1415040176569692163",
+                        "https://twitter.com/optimismPBC",
+                        "https://twitter.com/Uniswap",
+                        "https://t.co/CLuEaWiIdN",
+                        "https://twitter.com/LefterisJP/status/1415040176569692163"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.607142857142857
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/s_ben",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "13/07/2021-21:09:08",
+                    "content": "    prose11:      flipflopflapdelegate:  @prose11 can you please make the second visual a little larger?    Yeah sorry about that can\u2019t seem to blow it up while keeping readable, have reached out to @s_ben to see if there\u2019s a larger one at the Source! Otherwise will draw up a cheap imitation tomorrow.   @flipflopflapdelegate, here\u2019s high res version. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.855092592592593
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ejbarraza",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "13/07/2021-22:46:52",
+                    "content": "Send it! I especially look forward to MakerDAO getting on Optimism and using the DAI bridge for L1 instant withdrawals basically cross selling L2 and DAI. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Alefcripto",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "14/07/2021-02:31:42",
+                    "content": "Excellent approach guys, to continue growing, it seems to me that the gas issue is fair, so you save a lot on that. I prefer to keep the withdrawals in L1.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 9.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AL0YSI0US",
+                    "index": "#9",
+                    "likes": "4",
+                    "time": "12/08/2021-10:31:46",
+                    "content": "    prose11:  Currently, only the payments themselves are verifiable onchain, and require manual distribution.     Decentralize @s_ben !!! Super stoked about the onchain present to future happenings being discussed here. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "11/11/2021-16:32:37",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

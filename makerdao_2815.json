@@ -1,0 +1,489 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/liquidations-2-0-technical-summary/4632",
+            "title": "Liquidations 2.0: Technical Summary ",
+            "index": 4632,
+            "category": [
+                "Governance",
+                "Proposal Ideas"
+            ],
+            "tags": [
+                "auctions",
+                "mips",
+                "liquidation-system",
+                "liq-20",
+                "liquidations"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#1",
+                    "likes": "17",
+                    "time": "07/10/2020-20:56:25",
+                    "content": "Liquidations 2.0: Technical Summary Background Previously, a high-level summary of the design for the new auction and liquidation system was presented for feedback. Now that a significant portion of the code has been implemented and open-sourced (still a work-in-progress, however!), the SC Domain Team would like to invite public feedback at this early stage from all interested stakeholders. The rest of this post will describe the technical features of the new design in normal language, highlighting where it departs from the current system (referred to as \u201cLiquidations 1.2\u201d). Vault Liquidation https://github.com/makerdao/dss/blob/liq-2.0/src/dog.sol In the context of the Maker protocol, a \u201cliquidation\u201d is the seizure of collateral from an insufficiently collateralized Vault, along with the transfer of that Vault\u2019s debt to the protocol. In both the current liquidation contract (the Cat) and the 2.0 version (the Dog), an auction is started immediately to sell the collateral for DAI in an attempt to cancel out the debt now assigned to the protocol. This makes the behavior of the new contract very similar to that of the current one, but there are some important differences, explained below. Partial versus Total Liquidations In the current system, in each call to the liquidation function (Cat.bite) transfers a fixed amount of debt (the dunk) from the affected Vault, along with a proportional amount of the Vault\u2019s collateral to the protocol. For example, if 50% of a Vault\u2019s debt is taken, then half of its collateral is taken as well. If the Vault\u2019s debt is less than the dunk, then all debt and collateral is taken. In 2.0, all debt is taken when the liquidation function (Dog.bark) is called, and no analogue of the dunk parameter exists. The reasoning behind this change is that because the new auctions allow partial purchases of collateral, the liquidity available to a participant no longer limits their ability to participate in auctions, so instead the total number of auctions should be minimized. Limits on DAI Needed to Cover Debt and Fees of Active Auctions In situations involving large amounts of collateral at auction, the current and new designs modify the behavior described in the previous section. Both liquidations 1.2 and 2.0 implement a limit on the total amount of DAI needed to cover the summed debt and liquidation penalty associated with all active auctions. Whenever the maximum possible addition to this value is less than the amount of debt+fees that would otherwise be sent to auction, a partial liquidation is performed so as not to exceed this amount. In the current system there is only a global limit; in 2.0, in addition to the global limit, there is also a per-collateral limit as well. This ensures that typical trading depth against DAI can be taken into account on a per-collateral basis by those determining risk parameters. An Open Question In this design, there is less incentive to liquidate Vaults than in the current system, because there is no inherent advantage obtained by doing so. In contrast, the current auction system grants the account triggering a liquidation the privilege of making the first bid in the resulting auction. It is unclear whether this matters significantly in practice, or whether some stronger incentive should be added (for example, a small DAI reward paid to liquidators). Feedback is particularly appreciated on this matter. UPDATE: Liquidation Incentive Mechanism After discussion in the above section (\u201cAn Open Question\u201d), it was decided that an incentive mechanism should be added for liquidators. The final chosen form for the incentive was, on a per-collateral type basis, a constant amount of DAI plus an amount of DAI that scales linearly with the amount of debt associated with the liquidation. Either contribution can be set to zero. The reasoning behind these choices is as follows:  The reward is set per-collateral to give maximum flexibility to include not just per-collateral risk parameters like mat (collateralization ratio) and chop (liquidation penalty) in its setting, but also to allow for unique market conditions that might only apply to one or a few collateral types. The component of the reward that increases linearly with the total Vault debt is intended to be used to reward liquidators for reducing risk to the system, as risk itself scales with the size of undercollateralized Vaults\u2014a Vault that is twice as big as another represents twice the risk of bad debt accrual. Or viewed another way, liquidating two vaults of size X represents the same risk reduction as liquidating one Vault of size 2X\u2014thus the reward to a liquidator ought to be similar. Further, the system can afford to pay more for larger liquidations, because the liquidation penalty is also proportional to the amount of debt outstanding for a given Vault. The constant component of the reward can be used to cover gas costs (which are per-Vault for liquidators) or to allow MKR holders to effectively pay Keepers to clear small Vaults that would otherwise not be attractive for liquidation.  These parameters must be set extremely carefully, lest it be possible to exploit the system by \u201cfarming\u201d liquidation rewards (e.g. creating Vaults with the intention of liquidating them and profiting from the too-high rewards). Generally, the liquidation reward should remain less than the liquidation penalty by some margin of safety, at least to ensure the system is not accruing a deficit from liquidations. Liquidators should also be made aware of this feature, lest they be unable to extract the DAI they are awarded due to liquidating via a custom contract. Collateral Auctions https://github.com/makerdao/dss/blob/liq-2.0/src/clip.sol As discussed previously, collateral auctions are being changed from English to Dutch style. The current auction functionality is described in the official Maker documentation; here, we will focus on the new Dutch design, and only reference some contrasting points relative to the current design. Auction Initiation The auction initiation function (Clipper.kick) performs several actions:  increments a counter and assigns a unique numerical id to the new auction inserts the id into a list tracking active auctions creates a structure to record the parameters of the auction; this includes:  it\u2019s position in the active auctions list the target amount of DAI to raise from bidders (tab) the amount of collateral available for purchase (lot) the Vault that was liquidated to create this auction (allows return of collateral if not all of it is sold) the timestamp of the auctions creation (as a Unix epoch) the initial price of collateral in the auction (top)    The initial price is set by reading the current price in the corresponding Oracle Security Module (OSM) and multiplying by a configurable percentage (the buf parameter). Note that the current OSM price is between one and two hours delayed relative to the actual market price. Bidding (Purchasing) Important Contrasts With Current System Instant Settlement Unlike the current English auctions, in which which DAI bids are placed, with a participant\u2019s capital remaining locked until they are outbid or until the auction terminates, Dutch auctions settle instantly. They do so according to a price calculated from the initial price and the time elapsed since the auction began. Price versus time curves are discussed more later. The lack of a lock-up period mitigates much of the price volatility risk for auction participants and allows for faster capital recycling. Partial Settlement Also unlike the current auctions, Dutch auctions allow for only a portion of an auction\u2019s assigned collateral to be purchased during a bidding action (discussed earlier in the section on partial versus total liquidations). This means there is no minimum DAI liquidity requirement for the sale of collateral on a per-participant basis. Flash Lending of Collateral This feature, enabled by instant settlement, eliminates any capital requirement for bidders (excepting gas)\u2014in the sense that even a participant with zero DAI (and nothing to trade for DAI) could still purchase from an auction by directing the sale of the auction\u2019s collateral into other protocols in exchange for DAI. Thus, all DAI liquidity available across DeFi can be used by any participant to purchase collateral, subject only to gas requirements. The exact mechanics are discussed below, but essentially a participant needs to specify a contract (which conforms to a particular interface), and calldata to supply to it, and the auction contract will automatically invoke whatever logic is in the external contract. Detailed Overview of a Purchase of Collateral The purchasing function (Clipper.take) behaves as follows: The caller supplies five arguments:  the numerical id of the auction to bid on the maximum amount of collateral to buy (amt)\u2014a purchase behaves like a limit order the maximum acceptable price in DAI per unit collateral (max) address that will receive the collateral and have its (internal to the protocol) DAI balance debited (who) an arbitrary bytestring (if provided, the address who is assumed to be a contract with an interface as described below, to which this data is passed)  Once a call has been made, several initial checks are performed:  a reentrancy check to ensure the function is not being recursively invoked that the auction id corresponds to a valid auction that the auction does not need to be reset, either due to having experienced to large a percentage decrease in price, or having existed for too long of a time duration that the caller\u2019s specified maximum price is at least the current auction price  Then, the amount of collateral to attempt to purchase is computed as the minimum of the collateral left in the auction (lot) and the caller\u2019s specified quantity (amt)\u2014the resulting value is the slice. This value is then multiplied by the current price of the auction to compute the DAI owed in exchange (owe). If owe exceeds the DAI collection target of the auction (tab), then owe is adjusted to be equal to tab, and slice is set to tab / price (i.e. the auction will not sell more collateral than is needed to cover debt+fees from the liquidated Vault). Once the collateral to buy and corresponding DAI owed are determined, a check is done to ensure that the remaining DAI collection target either exceeds a minimum amount or is zero; if not, the function reverts. Callers should be aware of this possibility and account for it when possible. Next, collateral is transferred (within the protocol\u2019s accounting module) to the who address provided by the caller. If the caller provided a bytestring with greater than zero length, an external call is made to the who address, assuming it exposes a function, follow Solidity conventions, with the following signature: clipperCall(uint256 /*owe*/, uint256 /*slice*/, bytes calldata)  The first argument is the DAI owed (as a 45 decimal digit fixed-precision integer, or rad), the second argument is the collateral being purchased (as an 18 decimal digit fixed-precision integer, or wad), regardless of the precision of the external token contract), and the last argument is identical to what bytestring the caller originally supplied to the purchase function. As mentioned earlier, a locking mechanism prevents reentry into the purchase function during this external call for security reasons. After the external call completes (or immediately following the transfer of collateral, if no external call was executed), DAI is transferred (internally, within the core accounting module) from who to the protocol. Lastly, various values are updated to record the changed state of the auction: the DAI needed to cover debt and fees for outstanding auctions, and outstanding auctions of the given collateral type, are reduced (via a callback to the liquidator contract) is reduced by owe, and the tab (DAI collection target) and lot (collateral for sale) of the auction are adjusted as well. If all collateral has been drained from an auction, all its data is cleared and it is removed from the active auctions list. If collateral remains, but the DAI collection target has been reached, the same is done and excess collateral is returned to the liquidated Vault. Price as a Function of Time https://github.com/makerdao/dss/blob/liq-2.0/src/abaci.sol Price versus time curves are specified through an interface that treats price at the current time as a function of the initial price of an auction and the time at which it was initiated. How to determine the most effective price curve for a given collateral is still an active area of research; some initial options (linear and stairstep exponential) have been implemented for research purposes. Other candidates besides these include a piecewise linear curve and a piecewise exponential curve. Feedback or suggestions are particularly welcome in this area. Resetting an Auction As mentioned above, auctions can reach a defunct state that requires resetting for two reasons:  too much time has elapsed since the auction started (controlled by the tail governance parameter) the ratio of the current price to the initial price has fallen below a certain level (specified by the cusp governance parameter).  The reset function, when called, first ensures that at least one of these conditions holds. Then it adjusts the starting time of the auction to the current time, and sets the starting price in exactly the same way as is done in the initialization function (i.e. the current OSM price increased percentage-wise by the buf parameter). This process will repeat until all collateral has been sold; contrast this behavior with the current auctions, which reset until at least one bid is received. Stakeholder Meeting There will be a community stakeholder meeting on Wednesday, October 14, 2020 17:00:00 UTC.  If you\u2019re a community stakeholder interested in the outcome of LIQ-2.0 and have questions, comments, or concerns, please bring them to this meeting. ",
+                    "links": [
+                        "https://github.com/makerdao/dss/tree/liq-2.0",
+                        "https://github.com/makerdao/dss/blob/liq-2.0/src/dog.sol",
+                        "https://github.com/makerdao/dss/blob/liq-2.0/src/clip.sol",
+                        "https://docs.makerdao.com/smart-contract-modules/oracle-module/oracle-security-module-osm-detailed-documentation",
+                        "https://docs.makerdao.com/smart-contract-modules/core-module/vat-detailed-documentation",
+                        "https://docs.makerdao.com/smart-contract-modules/core-module/vat-detailed-documentation",
+                        "https://github.com/makerdao/dss/blob/liq-2.0/src/abaci.sol",
+                        "https://forum.makerdao.com/t/agenda-discussion-liq-2-0-stakeholder-discussion-wednesday-october-14-2020-1700-utc/4631",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-114-thursday-october-15-16-00-utc/4657/2",
+                        "https://forum.makerdao.com/t/small-vaults-liquidations-incentives/5166",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-113-thursday-october-8-16-00-utc/4505/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-pt-br-portugues/4722",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-en-espanol/4719",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16/4710",
+                        "https://forum.makerdao.com/t/week-19-dai-distributions-sourcecred-trial/4707",
+                        "https://forum.makerdao.com/t/agenda-discussion-collateral-onboarding-call-11-wednesday-october-14-17-00-utc/4629/4",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-113-thursday-october-8-16-00-utc/4505/5",
+                        "https://forum.makerdao.com/t/mip45-liquidations-2-0-liq-2-0-liquidation-system-redesign/6352",
+                        "https://forum.makerdao.com/t/a-maker-community-2020-summary/5848",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21-en-espanol/5199",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21/5181"
+                    ],
+                    "GPT-summary": "The post provides a technical summary of the new auction and liquidation system called Liquidations 2.0, which is being developed for the Maker protocol. The post explains the technical features of the new design and highlights where it departs from the current system. The author invites public feedback at this early stage from all interested stakeholders. The post also discusses an open question regarding the incentive mechanism for liquidators and provides an overview of the purchasing function for collateral auctions. The post concludes with an announcement of a community stakeholder meeting for those interested in the outcome of LIQ-2.0.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.267716824399004
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Hasu",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "07/10/2020-21:58:07",
+                    "content": "Can keepers bid with Dai generated from a new CDP within the same transaction? I.e. open a CDP, deposit collateral, draw Dai, use the Dai to bid in an auction, atomically? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.227272727272727
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#3",
+                    "likes": "4",
+                    "time": "07/10/2020-22:02:02",
+                    "content": "Yes, but depending on what keepers want to do, this won\u2019t be necessary.  There is also the flash mint module MIP25 that would allow for the flash mining of DAI to cover an auction.  But most importantly, one can flash loan the collateral from the auction to obtain DAI on any market including putting collateral together with a little of the keeper\u2019s collateral to make a Vault and payback the DAI.  It\u2019s almost more appropriate to ask, what can\u2019t LIQ-2.0 do? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.427083333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "07/10/2020-22:04:59",
+                    "content": "    cmooney:  It\u2019s almost more appropriate to ask, what can\u2019t LIQ-2.0 do?   Can it do FLAPs and FLOPs? It\u2019s named liquidations 2.0, so I assume not. But wanted to clarify. Also you provided a good opening  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.833333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/latetot",
+                    "index": "#5",
+                    "likes": "6",
+                    "time": "08/10/2020-00:32:32",
+                    "content": "Re rewards for triggering liquidations:  I strongly support this.  I ran a keeper for a while and noticed that there was a very small number of addresses (i.e 2 or 3) that were triggering liquidations as it required running software with much more overhead. Furthermore, gas cost was high and didn\u2019t provide any real advantage for winning the auction- so very few people had any reason to do it and I assumed that the foundation was running these bots.  I think if we don\u2019t incentivize with a small reward, it could become a security liability for the protocol and we should cover the gas costs and small payment for running the software. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.393518518518519
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jiecut",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "08/10/2020-01:06:55",
+                    "content": "Any rough estimates for the gas cost of kick() for Liquidations 2.0. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#7",
+                    "likes": "3",
+                    "time": "08/10/2020-02:11:08",
+                    "content": "It\u2019s just collateral auctions for now, as that\u2019s the highest priority. If the model proves itself, surplus and debt auctions are a natural extension. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#8",
+                    "likes": "2",
+                    "time": "08/10/2020-02:17:36",
+                    "content": "We haven\u2019t done gas profiling yet, but I\u2019d expect that the cost is on the same order of magnitude as that of the current system (due to having a similar number of storage operations). Note that we may add an incentive of some sort for kicking. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-26/6291",
+                        "https://forum.makerdao.com/t/weekly-mips-update-25/6092",
+                        "https://forum.makerdao.com/t/weekly-mips-update-24/6052",
+                        "https://forum.makerdao.com/t/weekly-mips-update-23/5914",
+                        "https://forum.makerdao.com/t/weekly-mips-update-22/5416"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.84375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#9",
+                    "likes": "2",
+                    "time": "12/10/2020-13:40:47",
+                    "content": "    cmooney:  It is unclear whether this matters significantly in practice, or whether some stronger incentive should be added (for example, a small DAI reward paid to liquidators).   If this is relatively easy and safe to implement, then we should implement it with the initial incentive set to zero DAI which is adjustable by governance. If auctions are not triggered in a timely manner, then we can increase the incentive until they are.     cmooney:  Once the collateral to buy and corresponding DAI owed are determined, a check is done to ensure that the remaining DAI collection target either exceeds a minimum amount or is zero; if not, the function reverts. Callers should be aware of this possibility and account for it when possible.   Why is there a minimum amount which causes the call to revert?     cmooney:  Price as a Function of Time Feedback or suggestions are particularly welcome in this area.   I had some thoughts about this. I was imagining an inverse S-curve with an initial starting point ~50% (maybe overkill, 25% or 33% might be plenty) above the oracle price for volatile assets. I spent a little time modelling this so it\u2019s easier to understand what I\u2019m talking about: image875\u00d7596 37.3 KB  This would mean that the auction starts at above the reported price, it hopefully reduces losses in cases where we see a decrease then a subsequent increase. However we decrease quickly at the start in case the actual price is already lower than the reported OSM price. At that point we decrease fairly linearly until ~50% of the value, at which point we give up on getting a reasonable price and get whatever we can. X axis is time normalized from 0-1. Y axis is auction price in percentage terms of the OSM price at auction start (assumed to start at 150%)  Going to note that this is pretty speculative, and may just be worse than something simple like a linear or exponentially decreasing curve. Someone should definitely think about it a lot more about it before adopting this (or any other curve.)     cmooney:  Resetting an Auction   Do auctions that are valid to be reset still count towards the litter? Are tail and cusp set per-collateral?  I note there is nothing specifically about stablecoin collateral here. How do you imagine that would fit into this system? Could we set a flat \u2018curve\u2019 with no tail or cusp parameters and hold them in liquidation indefinitely? What would the downsides of doing this be? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.59672619047619
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#10",
+                    "likes": "1",
+                    "time": "13/10/2020-05:32:59",
+                    "content": "What are the plans regarding end.sol? do you plan to deploy a new end contract? Will end.cat point to dog? We are a project that going live next week and rely on end.cat.ilks().chop to read the liquidation penalty, so we would really like to no your plans about that. It seems that skip function at end would break if you just change cat to dog, but it is not clear if it is really needed. Will appreciate an answer on your intent soon, as our system is not upgradable, and rely on the end contract to handle changes in makerdao configurations. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.518939393939394
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#11",
+                    "likes": "3",
+                    "time": "13/10/2020-06:21:12",
+                    "content": "Regarding the incentives to liquidators, working on keeper bots in the past, and currently working on a project that aims to solve the incentive problem for liquidators (including over makerdao), my view is that without giving a quantifiable incentives, liquidators will only build simple liquidation systems, that will work only if market conditions are convenient. We already work with few keepers and you can read their thoughts here. We guide them on the makerdao integration, and from the feedback we get, they would never have spend that effort without any soft guarantee on a potential profit. Without having keepers building non trivial systems, you end up with a stop-loss order mechanism, where liquidations are just being dumped on the market. Which is better than nothing, but does not give rise to a strong backstop. A problem with blockchain protocols that quantifiable incentives will end up going to the miners, and this is a serious issue and the project i work on tries to prevents it. So I cannot think of a simple change in the dog implementation to solve it. ",
+                    "links": [
+                        "https://medium.com/b-protocol/the-genesis-backstop-b-protocol-brings-new-players-to-defi-liquidations-74619b11486e"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0576923076923075
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#12",
+                    "likes": "3",
+                    "time": "13/10/2020-17:59:10",
+                    "content": "This is one of the last pieces being hammered out, but the high-level is that yes, we\u2019ll need to replace the End. We should have more information within a couple days. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#13",
+                    "likes": "1",
+                    "time": "13/10/2020-18:46:42",
+                    "content": "If it is not too late, would you consider one of the following requests:  having a getChop(bytes32 ilk) in the dog and/or end contracts. Or even better, in some persistent contract that the dao will regularly maintain. have the address of the end contract in some persistent contract. Or more practically have ways to identify contracts in a trust-less way. E.g.,  the dog function will have isDog() boolean that returns true. And then projects that integrate could assume that if contract X returns true for isDog AND vat.wards(X) == 1, then this is the dog contract.  Regarding the planned change, would appreciate a spoiler on whether the new end will have a dog() function. Our strategy to fetch chop would be:  if a contract X has cat() function and vat.wards(x)==1, then return X.cat().ilks().chop. else, if a contract X has dog() then return it with dog.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.960227272727272
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#14",
+                    "likes": "2",
+                    "time": "13/10/2020-21:41:46",
+                    "content": "To the point about trustless identification of contracts: there\u2019s an on-chain contract registry in the works, probably coming out within a few weeks (cc @brianmcmichael). As for chop, I guess the difficulty is that since it\u2019s a struct member, it\u2019s not necessarily so straightforward to read it without knowing exactly the code? I don\u2019t think it hurts anything to have a getChop (preferably on the liquidation contract), so we can add that. I\u2019d say with very high probability the new End will have a dog() function. The only way I see it not having that is if we decide to re-use the Cat name (current thinking is that since the new liquidator contract is somewhat specialized to the new auctions, it should have a different name to avoid confusion). There should be a PR for this within the next 2 weeks. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.217995867768595
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/amyjung",
+                    "index": "#15",
+                    "likes": "2",
+                    "time": "14/10/2020-17:16:22",
+                    "content": "Call is happening now: [Agenda/Discussion] LIQ-2.0 Stakeholder Discussion - Wednesday, October 14, 2020 17:00:00 UTC ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 1.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "15/10/2020-13:29:44",
+                    "content": "pinging to ask if there is more info about that. Also @brianmcmichael if there is new info/timelines for the registry. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.590909090909091
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#17",
+                    "likes": "0",
+                    "time": "16/10/2020-01:06:24",
+                    "content": "Not quite yet; @wil is working on it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#18",
+                    "likes": "3",
+                    "time": "25/10/2020-19:09:44",
+                    "content": "Is there anywhere to follow along with developments for this? Changing the End contract would mean that Yield Protocol would not be able to shutdown in the event of an Emergency Shutdown. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.46875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#19",
+                    "likes": "4",
+                    "time": "27/10/2020-02:19:49",
+                    "content": "I\u2019d say that at the moment, following the forums probably is the best way. There\u2019s a lot of noise here though, so if you depend on the Maker protocol in a big way, it\u2019s probably prudent to get in touch with someone involved w/development directly and explain exactly what your dependency is, what things you\u2019d ideally like to see, etc. I think a lesson here is that for future upgrades we should make the design public sooner and overcommunicate potentially breaking changes. We may also need to think about using upgradability patterns that preserve addresses, although I don\u2019t know that we could ever promise complete ABI immutability. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.175000000000001
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#20",
+                    "likes": "5",
+                    "time": "10/11/2020-15:51:32",
+                    "content": "The smart contracts team has added a new section to the technical summary entitled UPDATE: liquidation Incentive Mechanism.  I\u2019ve included the text here for further review and discussion: UPDATE: Liquidation Incentive Mechanism After discussion in the above section (\u201cAn Open Question\u201d), it was decided that an incentive mechanism should be added for liquidators. The final chosen form for the incentive was, on a per-collateral type basis, a constant amount of DAI plus an amount of DAI that scales linearly with the amount of debt associated with the liquidation. Either contribution can be set to zero. The reasoning behind these choices is as follows:  The reward is set per-collateral to give maximum flexibility to include not just per-collateral risk parameters like mat (collateralization ratio) and chop (liquidation penalty) in its setting, but also to allow for unique market conditions that might only apply to one or a few collateral types. The component of the reward that increases linearly with the total Vault debt is intended to be used to reward liquidators for reducing risk to the system, as risk itself scales with the size of undercollateralized Vaults\u2014a Vault that is twice as big as another represents twice the risk of bad debt accrual. Or viewed another way, liquidating two vaults of size X represents the same risk reduction as liquidating one Vault of size 2X\u2014thus the reward to a liquidator ought to be similar. Further, the system can afford to pay more for larger liquidations, because the liquidation penalty is also proportional to the amount of debt outstanding for a given Vault. The constant component of the reward can be used to cover gas costs (which are per-Vault for liquidators) or to allow MKR holders to effectively pay Keepers to clear small Vaults that would otherwise not be attractive for liquidation.  These parameters must be set extremely carefully, lest it be possible to exploit the system by \u201cfarming\u201d liquidation rewards (e.g. creating Vaults with the intention of liquidating them and profiting from the too-high rewards). Generally, the liquidation reward should remain less than the liquidation penalty by some margin of safety, at least to ensure the system is not accruing a deficit from liquidations. Liquidators should also be made aware of this feature, lest they be unable to extract the DAI they are awarded due to liquidating via a custom contract. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.115291571173924
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/g_dip",
+                    "index": "#21",
+                    "likes": "1",
+                    "time": "10/11/2020-18:31:21",
+                    "content": "I\u2019m having a bit of trouble following. Could you give an example of a hypothetical liquidation? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/swakya",
+                    "index": "#22",
+                    "likes": "0",
+                    "time": "10/11/2020-22:57:50",
+                    "content": "I\u2019m confused, liquidation penalty is a % so isn\u2019t the linear component of the reward easily made safe? And  you\u2019re opening yourself up for farming with the fixed component, for not much gain: if a vault is not worth it it\u2019s not worth it, no? (And gas costs are just the usual costs of doing stuff on the chain). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.989583333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#23",
+                    "likes": "2",
+                    "time": "11/11/2020-03:07:56",
+                    "content": "The linear component is generally safe if kept well below chop, yes. The constant component might be useful e.g. if for some reason the protocol ends up with a lot of dusty Vaults and wants to incentivize Keepers to clean them up\u2013otherwise these accrue fees that look like surplus but aren\u2019t, and if not dealt with could threaten the backing of DAI. It could also be useful to respond to increasing gas prices\u2013gas cost to liquidate is independent of Vault size, so it would be inefficient for the protocol to increase the percent-wise component in response\u2013this would overpay for liquidations of large Vaults (and might underpay for ones that are too small). So long as dust and chop are considered in setting the constant component, farming can be avoided here, too. Either component can just be set to zero if not needed. Governance might very well decide not to use one or the other, but currently the thinking is that there are enough hypothetical use cases it\u2019s worth having them both, since upgrades of smart contracts are disruptive and risky. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.491732804232804
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#24",
+                    "likes": "1",
+                    "time": "11/11/2020-03:11:59",
+                    "content": "Let\u2019s say %-wise reward is 2%, constant reward is 5 DAI. Liquidate a Vault with 1,000 DAI in debt, receive (0.02 * 1,000) + 5 = 25 DAI. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#25",
+                    "likes": "4",
+                    "time": "08/01/2021-23:25:47",
+                    "content": "Further to the discussion on the dust parameter in liquidation 1.2, there is an implicit assumption among the community that liquidation 2.0 mechanism will allow Maker to support lower dust parameter as the tip mechanism will incentives users to call bite (in 2.0 bark). In 1.2 bite currently cost $50 in gas (for 100 gwei gas price), and bark does not seem to be much cheaper. Looking at the code, I see that the chop parameter is fixed for all debt sizes. Hence, in order for the tip not to exceed the liquidation penalty, a minimum debt size of roughly $500-1500 is needed (depends on the target gas price). This is not very different than the current state in 1.2. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/informal-poll-creating-a-bite-rebate-contract-for-keepers-acting-on-small-vaults/5979/18",
+                        "https://forum.makerdao.com/t/signal-request-increasing-dust-parameter/5963/38"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.142857142857142
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/smaugho",
+                    "index": "#26",
+                    "likes": "1",
+                    "time": "10/01/2021-01:39:44",
+                    "content": "Thank you very much @yaronvel for noting this point. Much more reason for us to look for other mechanism like the one discussed in [Informal Poll] Creating a Bite-Rebate Contract for Keepers Acting on Small Vaults ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.385
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#27",
+                    "likes": "1",
+                    "time": "10/01/2021-02:20:46",
+                    "content": "Yup\u2013looking forward to @Kurt_Barry @brianmcmichael @cmooney  providing the community their take on Yaron\u2019s post.  Thank you in advance Gentleman. Y\u2019all are some real MVP\u2019s to the community. And I don\u2019t mean as in \u201cminimum viable product\u201d\u2013more like Michael Jordan  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.71875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#28",
+                    "likes": "0",
+                    "time": "11/01/2021-17:19:35",
+                    "content": "I didn\u2019t find any timeline regarding liquidatons 2.0. What\u2019s the current status and when can we expect it to be finished (winter/spring/summer)? Is it still in the blueprint/design phase? Any code written so far? Sorry for my ignorance. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.333333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/brianmcmichael",
+                    "index": "#29",
+                    "likes": "3",
+                    "time": "11/01/2021-18:04:00",
+                    "content": "    yaronvel:  Hence, in order for the tip not to exceed the liquidation penalty, a minimum debt size of roughly $500-1500 is needed (depends on the target gas price).   This is a real possibility. Ultimately the primary goal of liquidations 2.0 is to improve overall access to market liquidity for Dai and remove the effective requirement that keepers must run an expensive external process and archive node. We\u2019re still going to be constrained by the economic realities of the gas market. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.444444444444444
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#30",
+                    "likes": "3",
+                    "time": "11/01/2021-18:20:35",
+                    "content": "I opened an issue suggesting to add the tip to the tab. Imo it could solve the issue. But idk if it is too late in terms of timelines. Either way, if liquidation 2.0 will not solve it, then it should be pointed out clearly in the current discussions regarding the dust level. I am under the impression many believe it will be fixed in 2.0. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.4
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/akirillo",
+                    "index": "#31",
+                    "likes": "1",
+                    "time": "05/02/2021-21:34:06",
+                    "content": "Hey all, quick question - is liquidations 2.0 running on any testnets yet? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/CodeForcer",
+                    "index": "#32",
+                    "likes": "0",
+                    "time": "07/06/2021-08:34:55",
+                    "content": "Hey everyone, just echoing the questions here. Has liquidations 2.0 been scheduled? Has any code been written yet - or has this idea been abandoned? I\u2019m building an integration product for MakerDAO and some clarity on this could save us a lot of developer hours. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Cassius",
+                    "index": "#33",
+                    "likes": "1",
+                    "time": "07/06/2021-08:55:58",
+                    "content": "It was built, deployed, and performed impressively during the crash a few weeks back. https://security.makerdao.com/liquidations-2.0 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lollike",
+                    "index": "#34",
+                    "likes": "2",
+                    "time": "07/06/2021-09:44:33",
+                    "content": "    CodeForcer:  Hey everyone, just echoing the questions here. Has liquidations 2.0 been scheduled? Has any code been written yet - or has this idea been abandoned? I\u2019m building an integration product for MakerDAO and some clarity on this could save us a lot of developer hours.   As @Cassius says, LIQ 2.0 is live for all collateral types where flip auctions used to be enabled. In order to integrate I would suggest reading the docs here: Liquidation 2.0 Module - Maker Docs ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 5.681818181818182
+                }
+            ]
+        }
+    ]
+}

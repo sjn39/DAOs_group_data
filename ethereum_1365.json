@@ -1,0 +1,145 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/simple-non-address-length-extending-address-periods/6536",
+            "title": "Simple non-address-length-extending address periods ",
+            "index": 6536,
+            "category": [
+                "Working Groups",
+                "Ethereum 1.x Ring"
+            ],
+            "tags": [
+                "address-space"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "24/06/2021-15:07:33",
+                    "content": "State expiry requires a notion of address periods, new spaces which addresses can live in of which one opens up roughly once per ~year long period. Addresses with address period > 0 must be clearly distinguishable from addresses with address period 0 (which, in these proposals, includes all present-day existing addresses). The current proposals do this by extending addresses from 20 to 32 bytes (simultaneously increasing their collision resistance from 80 to 100+ bits). This is a proposal that goes in the opposite direction. We choose a 4-byte prefix (eg. 0x04030201, if it\u2019s admissible) that has not yet been used by any address. All address-producing functions (EOA, or CREATE, or CREATE2) are modified such that if they output an address with that prefix, set address = xor(address, 0x010000...00) to move it outside the prefix. When address periods are introduced, we use the space covered by that 4-byte prefix for the address periods: the first 2 bytes are the address period number, and the remaining 14 bytes are the hash. This completely sacrifices the goal of collision resistance: the cost of finding a collision reduces to 2**56, making counterfactual-address usecases and similar usecases where users need to trust not-yet-published contracts created by other people explicitly nonviable. However, preimage resistance remains at a secure 2**112, so addresses continue to be secure enough for regular usecases. ",
+                    "links": [
+                        "https://notes.ethereum.org/@ipsilon/address-space-extension-exploration",
+                        "https://ethereum-magicians.org/t/types-of-resurrection-metadata-in-state-expiry/6607"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.366978609625669
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Shymaa-Arafat",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "24/06/2021-16:23:51",
+                    "content": "    vbuterin:  All address-producing functions (EOA, or CREATE, or CREATE2) are modified such that if they output an address with that prefix, set address = xor(address, 0x010000...00) to move it outside the prefix.   What if their regular output address was one with that prefix??? I mean output that equals a previously modified  address resulted from this XOR formula??? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.520833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "24/06/2021-16:24:45",
+                    "content": "If A starts with that prefix, it\u2019s mathematically impossible for A xor 0x01000...00 to start with that prefix. Or did you mean something else? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.552083333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Shymaa-Arafat",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "24/06/2021-16:26:54",
+                    "content": "I mean if the resulting address originally contained 1 in its last hexa bit (its prefix is 0x14030201) -So it is not going to be XOR-ed, but it could equal a previous output of the XOR step ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.895833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "24/06/2021-18:03:06",
+                    "content": "Ah I see. Yes, there is that theoretical possibility. But that doesn\u2019t introduce any new issues; for example, there\u2019s already the possibility that two different ECDSA pubkeys will have hashes where the last 20 bytes are the same but the first 12 bytes differ, and the pubkey \u2192 address hash-and-crop algorithm would make them resolve to the same address. To make this even clearer, notice that if two address sources (pubkeys or code+salt+sender) do not lead to the same address today, but lead to the same address in my proposed scheme, that implies that they share their last 19.5 bytes, so they would also collide in a version of today\u2019s status quo where addresses were 19.5 bytes long instead of 20. So my proposal doesn\u2019t introduce any new address-collision issues for existing accounts that we don\u2019t basically have in almost the same form already. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.181818181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "25/06/2021-12:37:26",
+                    "content": "I think a prefix or suffix has the problem that it is possible to easily grind collisions, if the prefix/suffix is not sufficiently long enough. See all the vanity addresses we have, for example for chai (to fit less bytes for condensing the gastoken), and ENS and the deposit contract, which have a lot of leading zeroes. The XOR idea works well for new contract creations, but I\u2019m not convinced it is viable for EOAs (or even for commitments to CREATE2). What happens if someone used a conflicting address as a commitment (for example in counterfactual) already? If we start introducing address restrictions, these old, but currently valid, commitments are broken. (Unless we introduce some kind of translation/exception fallback for these cases ) If there was the requirement that an account is only valid if it exists in the state (such as in EOS), then it would be \u201ceasy\u201d to enforce new rules. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.540909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "25/06/2021-13:02:00",
+                    "content": " What happens if someone used a conflicting address as a commitment (for example in counterfactual) already? If we start introducing address restrictions, these old, but currently valid, commitments are broken.  The argument is that the probability that such a commitment exists already is small. For example, if there are 1m counterfactual addresses, then there\u2019s a probability of only 1/4294 that one of them will be hit. If we want to be even more sure, we can increase the prefix length to 5 bytes, reducing that probability to 1/1099511, though at the cost of reducing preimage security from 112 bits to 104 (still acceptable imo). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.28125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/_pm",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "26/06/2021-02:57:58",
+                    "content": " This is a proposal that goes in the opposite direction. We choose a 4-byte prefix (eg. 0x04030201 , if it\u2019s admissible) that has not yet been used by any address  This won\u2019t work. As soon as someone publishes the eip draft with \u201cunused prefix\u201d, it will get used. Creating a vanity address is pretty easy, even for 8 bytes. Consider GPUs. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.138888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "26/06/2021-13:42:50",
+                    "content": "    _pm:  This won\u2019t work. As soon as someone publishes the eip draft with \u201cunused prefix\u201d, it will get used. Creating a vanity address is pretty easy, even for 8 bytes. Consider GPUs.   The intention of the proposal if that if they do that, they\u2019re screwed and that\u2019s their fault (much like, say, deliberately sending 1000 ETH into a contract where withdrawing it requires calling 0x000\u202609 and getting a zero answer for some contrived reason right before an EIP adding a precompile to that address goes live). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.671176046176046
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/_pm",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "26/06/2021-23:50:00",
+                    "content": "Ah, right. That should work then. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.428571428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "13/07/2021-12:06:00",
+                    "content": "With @jwasinger we are conducting some analysis and found plenty of 3-byte prefixes, and now trying to find 2-byte prefixes. I\u2019m still worried about existing not-in-state accounts (such as in token balances) as mentioned in Simple non-address-length-extending address periods - #6 by axic.  Likely a \u201crecovery\u201d mechanism like the ones we discussed under the address space extension calls would be relevant here too. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "15/07/2021-21:03:50",
+                    "content": "    axic:  now trying to find 2-byte prefixes.   It seems there are no free 2-byte prefixes left. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.5
+                }
+            ]
+        }
+    ],
+    "group_index": "1365"
+}

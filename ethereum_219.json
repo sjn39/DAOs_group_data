@@ -1,0 +1,56 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/parallel-txs-processing-with-chunked-merkle-patricia-trie-s/11744",
+            "title": "Parallel txs processing with chunked Merkle Patricia Trie(s) ",
+            "index": 11744,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ihomoliak",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "15/11/2022-14:19:02",
+                    "content": "I assume just a single shard with one global account state represented by one Merkle-Patricia Trie (MPT), as originally proposed in the yellow paper. I am aware of Verkle tries, and this idea seems orthogonal to it. Also, I am pretty familiar with Aleph C++ implementation (currently deprecated), while I checked geth only very briefly. Idea The global state as an instance of MPT is a data structure with exclusive access - meaning that only a single tx can be processed at one time. Processing of a single tx is expensive regarding storage/memory accesses - descending to a leaf node with an account state to update it might require several storage accesses (even though the caching might help to some extent) + the same number of write modifications. From some of my experiments made within a small research project Aquareum , this looked as the biggest bottleneck of EVM execution. Anyway, I was thinking why not to replace a single exclusive MPT by a number of independent MPTs that would enable parallel processing of txs, while all these small MPTs could be aggregated by a standard binary Merkle tree after all txs of a block have been processed in EVM already - root hash would be stored in a header instead of MPT root, so light clients would not lose any integrity information. Details The number of such MPT should respect requirements for parallelization (no. of cores/threats, distribution of no. of txs modifying more account states, etc). For example, it could consume 3 nibbles of the original key to a single global MPT, representing 2^12 = 4096 small MPTs, while the path in small MPTs would start addressing from the 4th nibble of the key. In this way, txs modifying just a single account state could be heavily parallelized but txt modifying more than 1 account state would need a lock on all account states being modified. They could be known beforehand (w/o executing tx), in which case the planning should be trivial but in some cases, they might be known only dynamically (while executing tx\u2019s code). In the latter, dynamic synchronization primitives of process scheduling could be used and probably it would involve some small overhead which, however, should be compensated for still interesting parallelization. Original post: https://ethresear.ch/t/parallel-txs-processing-with-chunked-merkle-patricia-trie-s/13926 ",
+                    "links": [
+                        "https://ethresear.ch/t/parallel-txs-processing-with-chunked-merkle-patricia-trie-s/13926"
+                    ],
+                    "GPT-summary": "The author proposes replacing a single exclusive Merkle-Patricia Trie (MPT) with a number of independent MPTs to enable parallel processing of transactions. The proposal includes details on the number of MPTs required, how they would be aggregated, and how transactions modifying multiple account states would be handled. A third party provides constructive criticism and asks questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Interoperability and Scalability",
+                        "Smart contract updates",
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.161525974025975
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "16/11/2022-01:48:58",
+                    "content": "Tons of prior art on this from the sharding days. I don\u2019t think we\u2019ll ever make this change in the core protocol because it is invasive and is essentially what is happening with L2s. They are posting data to the L1 chain and maintaining their own trie separately. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0
+                }
+            ]
+        }
+    ],
+    "group_index": "219"
+}

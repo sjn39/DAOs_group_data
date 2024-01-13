@@ -1,0 +1,252 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/dschief-1-2-flash-loan-protection-for-maker-governance/5115",
+            "title": "DsChief 1.2: Flash Loan Protection for Maker Governance ",
+            "index": 5115,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "govsec-module",
+                "voting",
+                "security",
+                "meta-governance",
+                "flash-loans",
+                "dschief",
+                "governance-portal"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#1",
+                    "likes": "20",
+                    "time": "12/11/2020-22:01:41",
+                    "content": "Background The current Maker governance contract (DsChief) design allows flash-borrowed MKR to be used to vote on proposals. This design led to a flash loan being used to pass the October 23, 2020 executive proposal. A number of short-term mitigations to limit the risk of flash loans in governance have already been introduced in the October 30, 2020 executive:  The governance delay was increased to 72 hours giving additional time to remove maliciously-elected proposals. Governance has also remove the ability to instantly freeze oracles and disable liquidations. This prevents a flash loan attacker from damaging the system by triggering either of these mechanisms inappropriately.  In the medium-term the goal is to prevent the usage of flash loans in voting, while re-enabling the ability to instantaneously freeze oracles and disable liquidations, as these protections were added initially as defense mechanisms against other threats.  This post presents an option for achieving these goals and outlines a transitional process to a new DsChief. Recommended Solution: DsChief 1.2 By migrating the system to a new DsChief, voting via a flash loan would be rendered impossible.  Once in place, we would safely re-enable the ability of governance to vote on instantaneous oracle freezes and liquidation activation/deactivation.  This upgrade is referred to as DsChief 1.2, as this would be the second upgrade to the original DsChief design.  Upgrading the DsChief has a number of benefits. Draft code changes: https://github.com/makerdao/ds-chief/pull/1 Flash loans cannot be used to pass proposals On every call to lock() MKR in the new chief, we would record the current block number, while at the same time ensuring that any corresponding call to free() happens in a different block.  The ability to call lock() and free() in the same block is what allows for flash loans to be used with DsChief, by preventing these calls from happening in the same block, we are in turn preventing flash loans from being used with DsChief. Raises the barrier for governance attacks By preventing flash loans, governance mitigates governance attacks that require no capital or skin-in-the-game.  While this does not prevent all types of governance attacks, it ensures certain economic barriers are in place that significantly increase the difficulty of such attacks. Low-risk code changes This fix is easy to understand at only 18 new lines of code in DsChief.  The low complexity and lack of new attack surface remove the need for time-consuming audits and increase confidence in this approach. Governance attacks via flash loans are completely resolved prior to DssGov Every time engineering teams are randomized onto emergency issues, it delays the rest of their roadmap.  This delays collateral onboarding, liquidations 2.0, and the future DssGov upgrade.  There are a number of important governance features coming in the future DssGov upgrade, and since flash loan prevention is one of the new features of DssGov, any engineering time spent backporting that solution is duplicate work.  Some of the other solutions we explored were mitigations that could still interrupt engineering timelines.  Because this solution isn\u2019t just a flash loan risk reduction, as past solutions were, but rather prevents flash loans entirely, we can be assured that engineering, and other, teams won\u2019t be randomized onto other governance flash loan attack vectors. The governance delay can be safely bypassed as needed From time-to-time governance may require instant, albeit limited, access to change the Maker Protocol.  This is achieved through emergency access modules that can bypass the GSM delay, called Moms.  Replacing the Chief preserves maximum flexibility for freezing subsets of oracles or triggering circuit breaker subsets.  The existing OsmMom and FlipperMom can be safely reenabled once the Chief is replaced, restoring the full emergency module functionality that had been disabled due to flash loan concerns.  Further, this solution allows us to follow the same methodology in the future, creating new Moms as needed. Upgrading DsChief also comes with a number of concerns All solutions have some drawbacks.  Upgrading DsChief is no exception and comes with the following risk considerations:   DsChief must include an activation threshold (a minimum amount of MKR must be staked to a particular address to allow the Chief to exercise authority over the system - this is to make the migration safer to accomplish). Maker governance must migrate from the current DsChief to the new DsChief - this implies a period of time during which no governance action can be taken (due to the activation threshold in new Chief). Requires UI/UX work. MKR holders must take action (multiple TXs required to migrate).  Migration Considerations Due to the aforementioned activation threshold, there will be a period of time during which governance actions cannot be taken at all (between casting the spell to switch to the new Chief and sufficient MKR migrating to it). Below, the exact sequence of steps is described, and possible risks of the migration (and their mitigations) are considered. Migration Steps  Deploy the new DsChief. Write and deploy a spell that switches the authority for all relevant contracts (the Pause, the MkrAuthority, the OsmMom, and the FlipperMom) from the old DsChief to the new DsChief.  MKR holders vote the spell in as the hat.  MKR is kept on the hat during the governance delay period. This ensures no other spells are scheduled before the old DsChief is disabled, either by flash loans or normal voting. The spell is cast, switching authority to the new DsChief, and rendering the old DsChief powerless.  MKR holders migrate to the new Chief and vote on a pre-designated activation hat (likely 0x0). By performing this step after the current DsChief has been disabled, the risk of a dangerous reduction in MKR on the active hat is avoided. Once sufficient MKR has been migrated, the new DsChief is activated and begins governing the system.  Timeline  code review complete: November 13, 2020 (Friday the 13th)  kovan spell complete: November 19, 2020   kovan deploy of DsChief 1.2: November 20, 2020   kovan testing: November 20, 2020  governance poll: November 23, 2020   mainnet spell complete: November 24, 2020   mainnet executive of DsChief 1.2: November 27, 2020  execution and migration to DsChief 1.2: November 27, 2020 -> December 3, 2020   ",
+                    "links": [
+                        "https://vote.makerdao.com/executive/5f9c141dd88e93001a107a6a?network=mainnet#proposal-detail",
+                        "https://github.com/makerdao/ds-chief/pull/1",
+                        "https://github.com/makerdao/ds-chief/pull/1/files#diff-2b0cca81c8ecf6081f985ebcb50d99ca6aca12d7cdebb793b40be84e545c903bR68",
+                        "https://github.com/makerdao/ds-chief/pull/1/files#diff-2b0cca81c8ecf6081f985ebcb50d99ca6aca12d7cdebb793b40be84e545c903bR79",
+                        "https://github.com/makerdao/ds-chief/pull/1",
+                        "https://github.com/makerdao/ds-chief/pull/1/files#diff-2b0cca81c8ecf6081f985ebcb50d99ca6aca12d7cdebb793b40be84e545c903bR55-R63",
+                        "https://github.com/makerdao/ds-chief/pull/1/files#diff-2b0cca81c8ecf6081f985ebcb50d99ca6aca12d7cdebb793b40be84e545c903bR55-R63",
+                        "https://forum.makerdao.com/t/week-24-dai-distributions-sourcecred-funding-mip13c3-sp6/5223",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21-en-espanol/5199",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21/5181",
+                        "https://forum.makerdao.com/t/signal-request-lower-the-stablecoin-vault-fees/5131",
+                        "https://forum.makerdao.com/t/maker-relay-ep-22-en-espanol/5290",
+                        "https://forum.makerdao.com/t/maker-relay-ep-23/5419",
+                        "https://forum.makerdao.com/t/maker-governance-review-november-2020/5453",
+                        "https://forum.makerdao.com/t/collateral-onboarding-and-mip-updates-2020-12-11/5661",
+                        "https://forum.makerdao.com/t/maker-relay-ep-25/5671",
+                        "https://forum.makerdao.com/t/maker-relay-ep-25-en-espanol/5680",
+                        "https://forum.makerdao.com/t/maker-relay-episode-22/5288",
+                        "https://forum.makerdao.com/t/dschief-1-2-proteccion-contra-los-flash-loans-para-la-gobernanza-maker/5270",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-119-thursday-november-19-16-00-utc/5112/2",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/6",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-119-thursday-november-19-16-00-utc/5112/5",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-118-thursday-november-12-16-00-utc/5008/2"
+                    ],
+                    "GPT-summary": "The post explains the current design of the Maker governance contract and the risks associated with it. It proposes a solution to prevent flash loans from being used in voting and outlines the benefits of upgrading to DsChief 1.2. The post also discusses the concerns and risks associated with the upgrade and provides a timeline for the migration process. A 3rd party could provide constructive criticism or audit the proposal.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.280570446994865
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#3",
+                    "likes": "4",
+                    "time": "13/11/2020-12:04:12",
+                    "content": "Having spoken to @cmooney a bit about this. We aren\u2019t confident that the migration will be complete in time for a regular executive on the 4th of December. This means that next weeks executive (20th November), might be the last one where we can make changes until the 11th of December. Given this is the case we\u2019re going to try to expedite some of the currently active signal requests so that we have a chance to make changes on the 20th. I\u2019ll post on the relevant threads with the details. I\u2019m also going to speak to @Primoz to coordinate any risk or rates related changes that we may want to poll on next week. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/signal-request-increasing-dust-value/5122/7"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.3939393939393945
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "13/11/2020-15:37:23",
+                    "content": "Hey @cmooney I have followed discussions on DSSChief upgrade and have a post with questions on the DSSChief2.0 upgrades.   I know you guys have read the whole MKR seasoning idea I proposed to mitigate a lot of these \u2018instant\u2019 attacks (flash loan or otherwise).     MKR seasoning proposal for system control access       Greetings Maker community.  There is a lot going on and my apologies to add but I wanted to get this idea off my plate for risk-governance consideration as well as community consideration.  There has been a lot of discussion about attack vectors in the Maker system.  I have in my own analysis identified two primary attack vectors that I outline quickly below.    General governance attack via obtaining sufficient MKR.   The first line of defense for the MCD here that has been recently enacted is \u2026     Is there some reason why we just don\u2019t make people pay up front by having to hold MKR for some amount of time before it can enter the system to do things?    I keep thinking at some point if the system is large enough that the ES becomes an attack vector and from what I can tell all the work on DSSChief may not apply to stopping an ES.  I think the proposed code changes are straightforward and I loath to add any time to someone who is working has ass off to keep on top of implementing the vast majority of smart contract changes to answer questions about why this approach (already done for the most part is better than another not done or worse already ruled out for some reason).   I am not married to any solutions here I just wondered why what I would consider a simpler approach to nailing the Flash Loan protection using Seasoning at the lock() by rejecting MKR that isn\u2019t seasoned was ruled out - and why we wouldn\u2019t want to force anyone wanting to do anything to have held their MKR for some amount of time before being allowed to do ANYTHING in the system governance or otherwise? I know @LongForWisdom has remarked that it is better to have MKR doing something be locked in the system so those doing bad things have to take on some MKR pricing risk.   I agree with this sentiment, but then I am back to the ES being a wide open attack vector here.  25M or so to lock approximately 2B worth of collateral and cause some market chaos is getting cheaper every day. Anyway I wanted to thank you for all the hard work on all of this and look forward to seeing the upgrades. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.714047619047619
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#5",
+                    "likes": "3",
+                    "time": "17/11/2020-14:59:26",
+                    "content": "@cmooney is coming on the first half of the community call today to talk about DSChief 1.2 join us at 12pm EST at the event page below:    Crowdcast    The MakerDAO Community Call: DSChief 1.2 with Chris Mooney - Crowdcast Register now for Maker's event on Crowdcast, scheduled to go live on Tuesday November 17, 2020 at 12:00 pm EST.      ",
+                    "links": [
+                        "https://www.crowdcast.io/e/the-makerdao-community-20"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party advertising proposal"
+                    ],
+                    "Sentiment": 5.366161616161617
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#6",
+                    "likes": "3",
+                    "time": "17/11/2020-16:27:00",
+                    "content": "I\u2019m in favor of seasoning in theory, but I am concerned that any implementation might add so much friction it would prevent participation.  When I start thinking about how some MKR holders vote today, it\u2019s clear that they pull the MKR off markets to vote on issues they care about.  Once those executives pass, they go back to providing liquidity (also a useful and needed function for a healthy Maker Protocol).  I\u2019m not convinced that we can thread this needle. For example, polls are the place where MKR holders can express much more granular preference about what goes in the executive, one would expect this to mean more participation, but instead we see extremely low participation in polls.  Why is that? I\u2019m concerned that the lack of participation in polls comes from the fact that one must have their MKR in the chief or their wallet at the exact moment of the snapshot.  DssGov will have a similar snapshot feature, and I am already concerned that this is too much friction. The real answer is, I don\u2019t think any of us know what seasoning would do to participation.  I can see an argument for adding seasoning to DssGov, and then slowly increasing that seasoning amount to see what impact on voting it might have.  We don\u2019t have to use seasoning, but it could be an important feature to stop governance/economic attacks in the future. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.79296875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "17/11/2020-20:34:36",
+                    "content": "Dang it I did not know DSSChief was topic for todays CC.  WIth work schedule change it would have been hard to participate anyway.     I already put in about 1-1.5hrs on LFWs doc - making my own version until I can settle down the ideas/details on things.     cmooney:  I\u2019m in favor of seasoning in theory, but I am concerned that any implementation might add so much friction it would prevent participation. When I start thinking about how some MKR holders vote today, it\u2019s clear that they pull the MKR off markets to vote on issues they care about. Once those executives pass, they go back to providing liquidity (also a useful and needed function for a healthy Maker Protocol). I\u2019m not convinced that we can thread this needle.   Yeah I totally understand this.  I think it is going to be hard as hell to offer incentives for MKR to stay in governance that competed with LP returns.  Aligning incentives idea should help.   Unfortunately too many people think I want to add MKR as the only reward.  I want it ON TOP of DAI as a kind of bonus including people who already are paid by foundation or grants, you included.  It is a bonus on top for everyone so all players here have a growing and strong incentive to burn MKR. What I am surprised about is no-one talking about how burning MKR basically removes MKR from the possible pool to be in governance.     Pre-MIP discussion: Incentives to align interests of Maker workers with MKR holders around burning MKR Proposal Ideas       This is a Pre-MIP discussion and poll to gauge interest\u2026  I have posted elsewhere the core concepts of this basic idea which is pretty simple.    Take some portion of the MKR slated to burn via a flap and use it as an additional reward to align interests of those doing the hard work of Maker with shareholders around improving MKR burn.  The mechanics of the idea are straightfoward.   Determine some percentage of the MKR flap to set aside in another account via a MIP14_subMKR transfer to an accou\u2026     I generally agree with you barriers to DSSChief can hurt governance but hell I think we are so low in terms of participation we can only go up from here with some careful thought.  I also have ideas of some additional governance metrics I want us to have to go with incentives/changes. I feel like I need to get myself up to speed on HAT mechanics BTW:  Thanks for the reply @cmooney I know you are busy as crap and once I get some more time plan to hammer down details of concrete ideas regarding incentives  to reward MKR to be active in governance.   I keep feeling I really need to understand the underlying HAT mechanics to give the best input on DSSChief so I may take some time to digest that with @LongForWisdom  before firming up anything concrete.  I know our timelines are tight so have this as top priority over anything else here ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.581450956450956
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "18/11/2020-07:33:20",
+                    "content": "    cmooney:  When I start thinking about how some MKR holders vote today, it\u2019s clear that they pull the MKR off markets to vote on issues they care about. Once those executives pass, they go back to providing liquidity (also a useful and needed function for a healthy Maker Protocol). I\u2019m not convinced that we can thread this needle.   I have noticed this behavior as well. Major accounts are cycling MKR in and out of the governance contract, but it does not appear these go back to liquidity providing. Instead the MKR just makes a roundabout through different accounts before the MKR goes back into the governance contract some time (weeks) later. The cause for this behavior might not be related to Maker governance. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.481249999999999
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#9",
+                    "likes": "8",
+                    "time": "25/11/2020-23:10:05",
+                    "content": "Updated migration timing Hi all, an update from the governance portal dev team: we are unfortunately pushing back the release of the Chief1.2 executive vote a few days, to Wednesday December 2nd due to some additional UI and testing work that is required. Due to the 72hr delay and office hours it seems reasonable to expect the proposal to be executed for migration on or around December the 7th (if approved by the governance community). Having discussed with a number of mandated actors, I do not believe this will push out any planned December executive votes. In the coming days I will be sharing a forum post with the UI steps and expected user flows for migrating from the old chief to the new chief. Apologies for the delay. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/governance-security-module-gsm-adjustment/5421"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.693181818181818
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "28/11/2020-21:34:48",
+                    "content": "@cmooney Any chance we can get a vote to decrease the GSM? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#11",
+                    "likes": "2",
+                    "time": "30/11/2020-17:57:26",
+                    "content": "The SC domain team is going to just take action here to reduce this down to 48 hours.  We will make a post shortly.  At some point in the future, once we can lay out all the arguments, we can have a more granular poll of options that layout the risks we\u2019re balancing.  FWIW, no one I\u2019ve spoken to thinks that, after we remove flash loan risk, we should keep the GSM delay at 72 hours. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.444444444444444
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "30/11/2020-18:31:50",
+                    "content": "When do you think 24 hours would be sufficient? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#13",
+                    "likes": "4",
+                    "time": "30/11/2020-18:59:40",
+                    "content": "I am in favor of 24 hours at the moment.  But in the case of a governance attack, how confident do we feel in that being long enough to organize a response to drop any malicious actions or possibly trigger ES?  I like 24 hours only because I think protocol intervention risk is a bit greater.  I think it would be a tall order to both respond to a governance attack and align MKR holders in 24 hours.  Especially in the case of ES.  MKR holders would need to feel assured they would get their investment back if they burned it for ES, otherwise they may just cut their losses and market sell.  48 hours is way more time to help orchestrate this response. The reason I like 24 hours once flash loan governance attacks are mitigated, is that I think it\u2019s considerably more likely the protocol misbehaves in some way that requires and upgrade or intervention we have not considered yet.  This could be a bug or configuration problem.  Having to wait any amount of time is bad. So you can see we are really balancing two risks that have us setting this parameter in completely opposite directions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.517857142857143
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "30/11/2020-19:26:50",
+                    "content": "So 36 hours it is! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#15",
+                    "likes": "3",
+                    "time": "01/12/2020-04:09:35",
+                    "content": "    Governance Security Module (GSM) Adjustment Updates       Introduction The Governance delay period (GSM) was designed to give the MKR token holders a chance to review any changes that will go into the Maker Protocol and act accordingly if those changes are deemed malicious. The current governance delay period is set to 72 hours. This period was established to allow the community to take more time to mitigate technical errors, oracle malfunctions, or deal with sophisticated attacks on the system.  The Smart Contracts Domain team has determined that a go\u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.214285714285714
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "14/12/2020-03:07:16",
+                    "content": "",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#17",
+                    "likes": "0",
+                    "time": "15/03/2021-09:07:18",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

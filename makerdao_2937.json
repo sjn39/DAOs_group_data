@@ -1,0 +1,443 @@
+{
+    "poll_list": [
+        {
+            "title": "Inclusion Poll for CropJoin - Farmable cUSDC Adaptor (MIP30)- January 11, 2021",
+            "index": "5163",
+            "option": "Yes",
+            "supporting_mkr": "90,887",
+            "highest_fraction": 1.0
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip30-farmable-cusdc-adapter-cropjoin/5163",
+            "title": "MIP30: Farmable cUSDC Adapter (CropJoin) ",
+            "index": 5163,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "mips",
+                "mip-accepted"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#1",
+                    "likes": "28",
+                    "time": "15/11/2020-21:56:01",
+                    "content": "MIP30: Farmable cUSDC Adapter (CropJoin) Preamble MIP#: 30 Title: Farmable cUSDC Adapter (`CropJoin`) Author(s): Lev Livnev (@equivrel), \ufffc\ud83c\udf27\ufe0f McRainface Contributors: n/a Type: Technical Status: Formal Submission Date Proposed: 2020-11-16 Date Ratified: <yyyy-mm-dd> Dependencies: n/a Replaces: n/a License: AGPL3+  References  The proposed CropJoin implementation  Sentence summary This is a proposal for the technical implementation of a USDC collateral type which would allow a CDP user to benefit from the COMP \u201cfarming\u201d reward, by depositing the collateral into Compound and optimising its COMP yield through \u201ctactical resupply\u201d. Paragraph summary COMP farming offers an attractive yield on USDC with very little risk, and the ability to receive additional leverage from a CDP is likely to present an attractive opportunity for a yield-seeking investor, so this collateral type could be expected to produce very high dai issuance, while generating significantly higher fees for MakerDAO than what is currently collected on MakerDAO\u2019s significant stablecoin exposure. We propose a new USDC based collateral adapter that performs COMP farming on behalf of depositors. Component summary MIP30c1: Proposed code: contains snippet of proposed implementation. MIP30c2: Test cases: lists existing test cases, including integration tests MIP30c3: Security considerations: comments on the security implications of using CropJoin MIP30c4: Economic / Governance considerations: discusses insolvency and liquidity risks, governance and example parameters MIP30c5: Formal verification/audit information: comments on the amenability of the proposed code to formal verification, even though formal specification, audit, or code review have yet to be conducted. MIP30c6: Licensing: states the license under which the proposal and code are distributed. Motivation Background Since Black Thursday, the MakerDAO governance community has faced issues with managing the supply and demand of dai, with dai trading on the market consistently above the target price of $1.00. In July, the market demand for dai began to increase significantly, due to dai becoming the dominant asset for \u201cCOMP farming\u201d. Further to that, other \u201cfarming\u201d/\u201cliquidity mining\u201d schemes emerged, similarly boosting dai demand. With interest rates near the zero lower bound, governance was left with limited options for scaling supply to meet the new demand. Measures that have been considered to address this problem have included:  the addition of fiat stablecoin collateral types, with collateralisation ratios close to 100% open market operations to buy stablecoins with DAI, aka PSM the implementation of negative interest rates using TPAM, aka Vox accelerating the timeline for real-world assets using MIP 21 and MIP 22   with the first of these being the current status quo policy (at the time of writing there is around 406MM DAI issued against USDC-A, 57MM against TUSD-A, and 21MM against PAX-A). The case for farmable collateral Since July, dai supply has struggled to keep up with the seemingly insatiable demand created by yield farming opportunities in Defi. One way to think of the effect this has on the dai market is to consider the farming yields as an artificial, \u201cexogenous DSR\u201d which is very high, (perceived to be) low risk, and beyond the control of MakerDAO governance, which has the expected effect of exerting a strong positive influence on dai demand. Another way to view the problem is that a large portion of the dai supply is locked away, and taken off the market by contracts offering depositors an attractive yield for depositing their dai. Most prominently:  363MM DAI sitting inside Compound 197MM DAI in the Uniswap ETH/DAI pool (though the liquidity mining incentive is expected to end on the 17th of November) 34MM DAI deposited in Curve  Currently, collateral tokens (such as USDC) that are deposited in a CDP to generate dai cannot be further deployed to generate yield for the system or for the user. This means that users borrowing dai against USDC collateral are subject to a significant opportunity cost by forgoing yield on USDC, which decreases the incentive to sell the dai on the market (and it is only when dai is sold on the market that increasing supply has the desired effect on the peg). As a result, stablecoin collateral types are now only effective due to their very low collateral requirement, with the 101% collateral ratio acting as an effective ceiling on the DAI/USD premium, by arbitrage. If instead the CDP user could benefit from a farming yield on their deposited collateral, then dai borrowing could present an attractive way to lever up on that yield and generate an attractive carry. For example, if a yield farm is currently paying 10% APY on USDC deposits, and a CDP can be used to borrow DAI at 5% against those deposits, up to a 110% collateralisation, then a user can earn (10 - 5) * 11 = 55% APY at maximum leverage. In doing so, they would have borrowed and sold onto the market 10 DAI for every 1 USDC they deposit, and the system would be earning a material interest rate of 5% on this DAI issuance. We believe that the introduction of farmable collateral types presents the most effective avenue in the short term for scaling up DAI supply in a way which rewards the system adequately for risk taking, by directly leveraging the underlying source of the dai demand. The case for farmable cUSDC The technical implementation underlying this proposal aims to support arbitrary collateral rehypothecation, meaning that in the future it could be adapted to deploy farming collateral adapters for yield farms other than Compound. Compound is currently the largest \u201cyield farm\u201d on the market, and probably also the one perceived to carry the lowest risk for depositors. Indeed, depositors who simply deposit and borrow USDC face no price risk, liquidation risk (provided the position is prudently managed) or \u201cimpermanent loss\u201d risk, and the Compound platform has been live with very large amounts of locked capital for a long period of time, having undergone numerous audits. The MIP6 for cUSDC collateral has already been decisively green-lit by governance. Additional reasons to start with cUSDC farming include:  Compound is arguably the most well respected, battle-tested, and thoroughly-audited smart contract system that offers yield farming MakerDAO already has significant exposure to USDC, and it is the collateral asset with the largest amount of DAI issued Compound currently sets the COMP yield on each asset proportionally to the total amount borrowed, meaning there is a 2nd order effect by which an increase in USDC farming would reduce the COMP yield on DAI farming, potentially helping to reduce DAI demand  Farmable cUSDC collateral can be viewed as an alternative to other solutions which involve fiat stablecoin exposure (such as the current stablecoin collateral types, or the PSM), and compared directly from a risk, reward, and effectiveness perspective. Specification MIP30c1: Proposed code See crop.sol for the core adapter implementation, and wind.sol for the Compound leverage optimisation. Rewards distribution In CropJoin we implement a general purpose farming rewards adapter, that distributes income from a given token proportionally. This adapter can be used for a variety of income generating tokens, e.g. cTokens, UNI-LP, SNXRewards, and will also distribute income from direct token transfers. To specialise to a given token, a single method must be overridden to implement the claim logic for the given token (e.g. .getReward(), .claimComp(...)). Existing approaches to this problem were considered (e.g. SNXRewards aka UniPool, and Sushi\u2019s MasterChef), but were unsuitable due to reliance on specified reward rates and Maker contract idiosyncrasies. In particular, designing a reward contract for Maker requires solving the \u201cdouble reward\u201d problem posed by Maker collateral always being transferable within the system (see the crop README for more information). Levered COMP Farming COMP rewards are determined by the total assets that a user has supplied and borrowed from Compound. Effective COMP farming requires \u201cleverage\u201d: a cToken is supplied, and the underlying is then borrowed and resupplied again. This is repeated to maximise the total amount that a user has supplied / borrowed, up to four times the initial amount in the case of USDC\u00b9.  This repeated supply / borrow method is in use by the majority of large Compound Dai deposits today, and is the reason why the total supply of cDai greatly exceeds the real supply of Dai. \u00b9 The upper limit of supply s = s0 / (1 - cf), where cf is the maximum utilisation allowed by Compound (e.g. cf=0.75 for USDC, i.e. s = 4 * s0). In wind.sol we extend the rewards adapter described above, specialising it to receiving COMP rewards for supplying / borrowing cUSDC, via an iterative method with optional user-provided loans. There are two methods:   wind supplies adapter USDC to Compound and maximises leverage up to a given target.  unwind reduces leverage when over the target, and allows for USDC to be redeemed from Compound prior to user exit.  MIP30c2: Test cases Tests can be found in crop.t.sol. The basic rewards adapter is covered for a mock token reward and this base is extended to test against mock and real Compound behaviour (via RPC). The effect of flash loans on gas costs and collateral reachability is explored, and a number of more complex scenarios are tested against on-chain Compound, e.g. interest accumulation, liquidation, and arbitrary seizure. The mathematical behaviour of Compound is considered in depth in the documentation and tests. MIP30c3: Security considerations Security risks of cUSDC-CROP include: Compound technical risk Errors or security vulnerabilities in the Compound system could cause the cUSDC-CROP adapter to behave unexpectedly, or could result in the underlying USDC deposits to be lost or stolen.  CropJoin implementation technical risk In addition to the technical risk inherent to Compound, the adapter implementation itself is non-trivial and could increase the attack/error surface. Due to the design of multi-collateral DAI, worst-case losses should be limited to the collateral deposited in the adapter, and the debt ceiling should be set with this in mind. MIP30c4: Economic / Governance considerations MIP30c4A: Economic risks It is fair to say that cUSDC-CROP collateral inherits the risks of USDC, and includes the following additional risks, as a minimum: Compound insolvency contagion risk If the value of collateral/outstanding borrows in the Compound system drops/rises (respectively) too quickly before collateral can be liquidated to cover debts, it is possible for the system to become insolvent (similarly to how underwater CDPs in MakerDAO can exhaust the surplus buffer and eventually lead to insolvency). In that case, users of this adapter may take a loss, and if the loss is great enough, cUSDC-CROP CDPs may become underwater too, resulting in Compound insolvency spreading to MakerDAO. Compound liquidity risk Even if the Compound system is solvent, there is no theoretical guarantee that it is possible at any time to withdraw a supplied asset, since the reserves of the supplied asset may be tied up in outstanding borrows. In that case, it may be impossible to withdraw USDC from the adapter until a USDC reserve is accumulated in the contract, either through repaid borrows or additional supply. In order to prevent illiquidity events, Compound adjusts supply and borrow rates dynamically based on utilisation, incentivising supply and repayment with very high interest rates when reserves run low. Historically, the Compound platform has been successful at managing liquidity with this technique. MIP30c4B: Governance considerations In order for the cUSDC-CROP collateral type to stay competitive relative to other Defi yield opportunities, while maximising returns for MakerDAO, it may be necessary to periodically adjust the stability fee to reflect prevailing market rates and the Compound COMP-adjusted yield on USDC. In the future, the same mechanism can be used to  deploy adapters for leveraging other \u201cyield farming\u201d schemes. MIP30c4C: Example parameters n.b. see predictions.exchange or stat.farm for useful COMP-adjusted yield calculators At the time of writing, a \u201clevered\u201d Compound USDC deposit (with LTV of 67.4%) yielded a COMP-adjust APY of about 14.6%. We consider some example risk parameters to illustrate the economics: with a liquidation ratio of 110%, and stability fee of 10%, a user maintaining a collateral ratio of 111% will have levered up around 10x on their net interest of 14.6% - 10.0%, earning a net carry of around 46% APY. From the perspective of the user, this is well above the USDC yield on most established \u201cyield farms\u201d. From the perspective of MakerDAO, the stability fee is much higher than that of any existing major collateral type, and the high collateralisation ratio of 110% allows liquidations to be initially disabled (similarly to the status quo with USDC-A) with interest still being effectively collectable for at least one year following the opening of a CDP. MIP30c5: Formal verification/audit information The proposed contract is written in a way which is amenable to formal specification and verification, in accordance with the style and practices of the core multi-collateral DAI contracts, though it has not been formally specified. Full formal specification would be a challenge due to the dependence on Compound supply / borrow / reward logic, which is non-trivial compared to a simple token transfer as it would require modelling of much of Compound. No audit or code review has taken place yet. MIP30c6: Licensing  AGPL3+  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/upcoming-comp-farming-change-could-impact-the-dai-peg/2965",
+                        "https://forum.makerdao.com/t/peg-stabilization-modules-a-pre-mip-discussion/3045",
+                        "https://forum.makerdao.com/t/mip20-target-price-adjustment-module-vox/3196",
+                        "https://forum.makerdao.com/t/mip21-real-world-assets-off-chain-asset-backed-lender/3917",
+                        "https://forum.makerdao.com/t/mip22-centrifuge-direct-liquidation-module/3930",
+                        "https://forum.makerdao.com/t/cusdc-mip6-collateral-onboarding-application/4135",
+                        "https://github.com/rainbreak/crop/blob/main/src/crop.sol",
+                        "https://github.com/rainbreak/crop/blob/main/src/wind.sol",
+                        "https://github.com/rainbreak/crop/blob/main/README.md#tack",
+                        "https://github.com/rainbreak/crop/blob/main/src/wind.sol",
+                        "https://github.com/rainbreak/crop/blob/main/src/test/crop.t.sol",
+                        "https://www.predictions.exchange/compound/%5B%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'400\\',%20\\'300\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D%5D",
+                        "https://stat.farm",
+                        "https://www.predictions.exchange/compound/%5B%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'307\\',%20\\'207\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D,%20%5B\\'0\\',%20\\'0\\'%5D%5D",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/maker-relay-ep-27-en-espanol-feliz-2021/6035",
+                        "https://forum.makerdao.com/t/maker-relay-ep-27-happy-2021/6016",
+                        "https://forum.makerdao.com/t/signal-request-adjust-the-surplus-buffer/5767/30",
+                        "https://forum.makerdao.com/t/weekly-mips-update-23/5914",
+                        "https://forum.makerdao.com/t/a-maker-community-2020-summary/5848",
+                        "https://forum.makerdao.com/t/brainstorm-2021-mission-and-objectives/5809",
+                        "https://forum.makerdao.com/t/maker-relay-ep-26-en-espanol/5768",
+                        "https://forum.makerdao.com/t/maker-relay-ep-26/5759",
+                        "https://forum.makerdao.com/t/maker-relay-ep-25-en-espanol/5680",
+                        "https://forum.makerdao.com/t/maker-relay-ep-25/5671",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-120-thursday-december-3-16-00-utc/5357/4",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24-en-espanol/5574",
+                        "https://forum.makerdao.com/t/know-your-mip-kym-02-mip30-farmable-cusdc-adapter-cropjoin-monday-december-7th-17-00-utc/5464/3",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24/5534",
+                        "https://forum.makerdao.com/t/know-your-mip-kym-02-mip30-farmable-cusdc-adapter-cropjoin-monday-december-7th-17-00-utc/5464",
+                        "https://forum.makerdao.com/t/maker-governance-review-november-2020/5453",
+                        "https://forum.makerdao.com/t/maker-relay-ep-23-en-espanol/5442",
+                        "https://forum.makerdao.com/t/maker-relay-ep-23/5419",
+                        "https://forum.makerdao.com/t/weekly-mips-update-22/5416",
+                        "https://forum.makerdao.com/t/maker-relay-ep-22-en-espanol/5290",
+                        "https://forum.makerdao.com/t/week-25-dai-distributions-sourcecred-funding/5289",
+                        "https://forum.makerdao.com/t/maker-relay-episode-22/5288",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-119-thursday-november-19-16-00-utc/5112/2",
+                        "https://forum.makerdao.com/t/weekly-mips-update-21/5222",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21-en-espanol/5199",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21/5181",
+                        "https://forum.makerdao.com/t/maker-relay-ep-29/6214",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-126-thursday-january-28-17-00-utc/6149/5",
+                        "https://forum.makerdao.com/t/weekly-mips-update-26/6291",
+                        "https://forum.makerdao.com/t/maker-governance-review-january-2021/6296",
+                        "https://forum.makerdao.com/t/maker-relay-ep-30/6303",
+                        "https://forum.makerdao.com/t/technical-overview-of-the-sushiswap-variant-of-the-cropjoin-adapter-sushijoin/8122",
+                        "https://forum.makerdao.com/t/lets-talk-liquidity-rewards-that-maker-is-entitled-to-but-we-arent-collecting/9624/3",
+                        "https://forum.makerdao.com/t/maker-relay-ep-28/6118",
+                        "https://forum.makerdao.com/t/weekly-mips-update-25/6092",
+                        "https://forum.makerdao.com/t/weekly-mips-update-24/6052"
+                    ],
+                    "GPT-summary": "The post is a formal submission of a proposal for a new USDC based collateral adapter that performs COMP farming on behalf of depositors. The proposal aims to support arbitrary collateral rehypothecation and presents the most effective avenue in the short term for scaling up DAI supply in a way which rewards the system adequately for risk-taking. The post includes a detailed specification of the proposed code, test cases, security considerations, economic/governance considerations, and licensing. The post is open to constructive criticism, collaboration, and auditing.",
+                    "GPT-proposal-categories": [
+                        "Token economics",
+                        "Smart contract updates",
+                        "Grants, Funding and resource allocation",
+                        "Privacy, Security and risk management",
+                        "Law and regulations"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.544201374527807
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "15/11/2020-22:16:09",
+                    "content": "@equivrel love the detail of work on this right to the code.  You are a beast on these because of that one quality. Two questions:     equivrel:  Compound insolvency contagion risk If the value of collateral/outstanding borrows in the Compound system drops/rises (respectively) too quickly before collateral can be liquidated to cover debts, it is possible for the system to become insolvent (similarly to how underwater CDPs in MakerDAO can exhaust the surplus buffer and eventually lead to insolvency).   At some point compound was considering limiting the borrow to some % of deposits did this ever happen or can the borrow still approach 100%? In the case that cUSDC can\u2019t be redeemed is there a thought what trying to auction cUSDC would look like in this case.  I have never seen that cUSDC or other cToken markets have gotten any significant liqjuidity.   What is the thinking about selling cUSDC assets in liquidation here vs. just keeping them on the books until compound gets liquidity for redemptions? What is the thinking on cUSDC oracle price with this? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.855654761904762
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#3",
+                    "likes": "4",
+                    "time": "15/11/2020-22:28:32",
+                    "content": "Can you walk me through the UX from the end user? So lets say I go to oasis and deposit USDC into this new vault type. Would I then receive DAI and COMP over time? How would my COMP rewards be presented? Simply put, what would my output be after inputing USDC and how would I interact with it? Thanks. PS. Great work, this looks very exciting. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 6.526363636363637
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mario",
+                    "index": "#4",
+                    "likes": "4",
+                    "time": "16/11/2020-02:25:32",
+                    "content": "I really like the idea, however what worries me is that we are really entering into new kinds of risks not seen before. The debt ceiling must be determined in basis of any compound risks not having a material impact on us, with that in mind we could not be talking of any substantial debt ceiling and if we were, if anything significant were to happen within compound the impact would make black thursday look like a sunny afternoon. Having said that I\u2019m no developer so I don\u2019t know the likelyhood of that event (only that if it does happen probabilities are irrelevant). Just even though it is a really tempting and well written proposal I\u2019m frankly worried of the potential risks if things go south. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.247053872053872
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#5",
+                    "likes": "7",
+                    "time": "16/11/2020-08:43:44",
+                    "content": "The UX for the adapter is pretty similar to the UX for COMP-farming on Compound. After the user deposits USDC in the adapter, any time that they again interact with the adapter they will receive the COMP reward accrued since the last interaction. The COMP reward is paid directly to the user, in-kind (in COMP) and not converted to DAI or USDC, etc. It is possible to simply deposit into the adapter and earn the COMP reward, but most users will probably want to borrow DAI against their deposited USDC, and use it to buy more USDC to deposit into the adapter to multiply their yield. As they do this, they will be selling DAI on the market for USDC which of course helps with the supply side of the peg. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#6",
+                    "likes": "4",
+                    "time": "16/11/2020-10:54:47",
+                    "content": "Great proposal @equivrel and Rain. I\u2019m happy to see you making good use of the motivation section. You lay out some strong arguments. I do have some questions around liquidations and emergency shutdown.  Is it possible to liquidate these vaults? Do they need to be unwound first? Who pays the gas cost for this? How do these behave in emergency shutdown? What token do DAI Holders receive from these vaults when redeeming DAI against the collateral portfolio? What happens if you need to unwind these vaults and are not able to due to Compound liquidity?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.726851851851851
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "16/11/2020-11:18:27",
+                    "content": "    LongForWisdom:  Is it possible to liquidate these vaults? Do they need to be unwound first? Who pays the gas cost for this?   I also have questions of this kind. In particular because I think (but I could be wrong) that, unlike Uniswap or Curve, Compound does not have guaranteed liquidity/withdraw, right? Source: https://compound.finance/documents/Compound.Whitepaper.pdf ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.6686507936507935
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rain",
+                    "index": "#8",
+                    "likes": "5",
+                    "time": "16/11/2020-14:47:21",
+                    "content": "@LongForWisdom @MakerMan liquidations could be disabled for this collateral type, with the same justification as USDC-A. The collateral here is more risky, but follows a very predictable and slow interest accumulation on the compound side. You can think of this as a USDC adapter with an added investment strategy, cUSDC is just an implementation detail. Auction participants deal in internal Maker collateral balances, rather than the external asset. The winner of an auction would have an internal collateral balance which they would have to exit to real collateral, likely preceded by an unwind to make the liquidity available, just like any other holder of balances in this adapter. Available compound liquidity is a risk, as noted in the MIP. The oracle price is given by nps * usdc_price, the net assets per internal collateral unit multipled by the usdc/dai price (currently 1, as in USDC-A). The code for this will be added soon. Emergency shutdown is the same as for other collateral types - we reason in terms of internal collateral balances, with a price given at the time of ES. Holders of this collateral after ES then have to unwind and exit via this adapter. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.128947368421053
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#9",
+                    "likes": "2",
+                    "time": "16/11/2020-15:52:34",
+                    "content": "    rain:  liquidations could be disabled for this collateral type   Yep, I read this in the MIP, which is fine. I think it makes sense. I\u2019m more concerned that people might let them drop below the ratio, at which point we need to liquidate manually. In this situation, what does the liquidation process look like?     rain:  Auction participants deal in internal Maker collateral balances, rather than the external asset. The winner of an auction would have an internal collateral balance which they would have to exit to real collateral   I guess my question is what does the internal collateral balance represent in this case? A share of the recycled USDC position on Compound? I guess I don\u2019t understand how this position is divided, it doesn\u2019t have it\u2019s own token, right? cUSDC represents the supplied portion, but not the recycled borrows? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.901190476190477
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rain",
+                    "index": "#10",
+                    "likes": "3",
+                    "time": "16/11/2020-16:08:14",
+                    "content": "There wouldn\u2019t be anything special about the liquidation. It would be the same as if USDC-A liquidations were to occur. However, we can just have liquidation enabled from the outset. The internal collateral balance represents your share of the net asset valuation of the adapter. The nav is given by the outstanding Compound supply less the outstanding Compound borrows, plus any unused USDC in the adapter. The value of your adapter balance will change over time, depending on the Compound borrow-supply spread. Usually the nav will slowly decrease in terms of USDC, although sometimes (like now) it can increase if Compound is paying more for supply than it is taking for borrowing. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.570238095238096
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#11",
+                    "likes": "0",
+                    "time": "16/11/2020-16:13:10",
+                    "content": "    rain:  There wouldn\u2019t be anything special about the liquidation.   Okay, am I correct in assuming that the auction winner would be the one to unwind the vault and claim the USDC collateral (leaving some for the owner, assuming the auction performs well enough)?     rain:  The internal collateral balance represents your share of the net asset valuation of the adapter.   Okay, so in an ES situation at redemption an entity would presumably accumulate a reasonable amount of the collateral share for this collateral, and then call unwind on the vault so they could access their share of the USDC? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.112244897959184
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rain",
+                    "index": "#12",
+                    "likes": "1",
+                    "time": "16/11/2020-16:18:17",
+                    "content": " Okay, am I correct in assuming that the auction winner would be the one to unwind the vault and claim the USDC collateral (leaving some for the owner, assuming the auction performs well enough)?  Yes, there is an exit_ argument to unwind, which lets them specify exactly how much USDC should be released from Compound, for them to then exit with.  Okay, so in an ES situation at redemption an entity would presumably accumulate a reasonable amount of the collateral share for this collateral, and then call unwind on the vault so they could access their share of the USDC?  I\u2019m not sure what you mean by \u201creasonable\u201d, but they would want to have at least enough to make the gas fees worth it and then unwind with an appropriate exit_ as above. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.610576923076923
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "16/11/2020-16:28:22",
+                    "content": "    rain:  I\u2019m not sure what you mean by \u201creasonable\u201d, but they would want to have at least enough to make the gas fees worth it and then unwind with an appropriate exit_ as above.   Hah, this is what I meant. Perhaps reasonable was a poor choice of words. An amount that makes it net-beneficial to pay the gas fees. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.854166666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rain",
+                    "index": "#14",
+                    "likes": "5",
+                    "time": "16/11/2020-16:39:45",
+                    "content": "I\u2019ll note here that the gas costs of using this adapter can be substantial, due to the Compound interactions. Worst case, which would be exiting a huge position with no loan support, wind and unwind can cost 1.9M and 2.3M gas each. More normally we could expect 800k / 1M. The wind cost doesn\u2019t matter so much as callers can wait until there is sufficient collateral to be worth calling, but the unwind cost is intrinsic to the cost of exiting. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.303571428571429
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#15",
+                    "likes": "0",
+                    "time": "18/11/2020-11:46:50",
+                    "content": "Is this vault to be plug to the PSM? ",
+                    "links": [
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-119-thursday-november-19-16-00-utc/5112/5"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#16",
+                    "likes": "3",
+                    "time": "18/11/2020-11:59:11",
+                    "content": "This vault type is entirely separate from the PSM. You can view farmable assets as desirable collateral much like ETH / BTC where people will primarily be using it for leverage. These are assets we can continue to charge Stability Fees on. The PSM on the other hand should be viewed as a safety net to keep the peg in line. We would prefer these other assets, but worst case we still want the peg to be stable. That being said, we could use a farmable join adapter like this on the PSM as well to earn revenue for the protocol. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.535714285714286
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#17",
+                    "likes": "1",
+                    "time": "18/11/2020-12:28:19",
+                    "content": "Yes sorry, I meant convert USDC to CUSDC in the PSM on the gemToDai using the Cusdc vault. and in return CUSDC to USDC on daiToGem. Compound contract : function mint(uint mintAmount) external returns (uint) {} function redeem(uint redeemTokens) external returns (uint) {} The only issue here is to get the exact amount on the redeem. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Paperliss",
+                    "index": "#18",
+                    "likes": "0",
+                    "time": "24/11/2020-05:08:11",
+                    "content": "Why not use YFI instead? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#19",
+                    "likes": "7",
+                    "time": "07/12/2020-21:07:11",
+                    "content": "I don\u2019t think anyone else mentioned it, but the proposed crop.sol breaks compatibility of API behavior. Applications that are using the low level vat.flux, will have to add vat.tack in some cases (otherwise they will not be able to call gemjoin.exit(). Take DssProxyActions as a very simple example, the freeGem would revert if a malicious actor sent 1 wei of cUSDC to the user CDP (via the vat system) prior to the call (and/or while the tx is pending). It is not unthinkable that others dapps at the very least will not be able to support the new collateral without a change in their smart contract code, even in the absence of a malicious actor. In some cases it might even cause dapp funds to get stuck, but this is just a speculation.  Given cUSDC is not an existing collateral in any current dapp, maybe it is not a deal breaker, but maybe something worth noticing.  ** I only took a quick look at the code, I could be wrong. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.368827561327562
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#20",
+                    "likes": "11",
+                    "time": "04/01/2021-21:58:19",
+                    "content": "I am formally submitting MIP30 (CropJoin) for the January governance cycle. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#21",
+                    "likes": "1",
+                    "time": "12/01/2021-18:31:03",
+                    "content": "    yaronvel:  I don\u2019t think anyone else mentioned it, but the proposed crop.sol breaks compatibility of API behavior. Applications that are using the low level vat.flux, will have to add vat.tack in some cases (otherwise they will not be able to call gemjoin.exit(). Take DssProxyActions as a very simple example, the freeGem  would revert if a malicious actor sent 1 wei of cUSDC to the user CDP (via the vat system) prior to the call (and/or while the tx is pending). It is not unthinkable that others dapps at the very least will not be able to support the new collateral without a change in their smart contract code, even in the absence of a malicious actor. In some cases it might even cause dapp funds to get stuck, but this is just a speculation.  Given cUSDC is not an existing collateral in any current dapp, maybe it is not a deal breaker, but maybe something worth noticing.  ** I only took a quick look at the code, I could be wrong.   I didn\u2019t see a reply to this.   Is the above an issue or no?   At the moment considering voting no on this one just because the above is still unresolved as far as I can tell. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.335134078884078
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#22",
+                    "likes": "3",
+                    "time": "12/01/2021-18:54:18",
+                    "content": "Thanks for bringing this up. This issue is addressed at a high level in the readme, however you are right that the specific implications for libraries like DssProxyActions should be mentioned too. At the moment, it is inevitable that integrations using this ilk would have to be specialised, to some degree, to ensure compatibility. Note that even setting aside the tack issue, a user of the CropJoin has to be able to call specialised functions like unwind and flee in some circumstances, meaning that a generic support contract would not be sufficient. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.818367346938775
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#23",
+                    "likes": "2",
+                    "time": "12/01/2021-19:36:14",
+                    "content": "Yeah I thought about it and voted no just because I don\u2019t like to see incompatibilites that could hamper 3rd party access implementations.  I think that is bad policy to break something and make someone else fix it unless it is really \u2018necessary\u2019. To be clear I want something like this farming adapter. I have some mixed feelings around some of the issues discussed but think we want things like this generally. When there is clarity on implementation etc.  I am a yes to this. Thanks for the quick reply. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.114583333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#24",
+                    "likes": "2",
+                    "time": "12/01/2021-20:54:51",
+                    "content": "I\u2019ve spent some time trying to come up with alternative implementations that remove the tack() requirement, but from what I can see this is the most non-invasive way to do it. Happy to be proven wrong, but it\u2019s either we don\u2019t have farm tokens or we have to deal with this api ugliness. Personally I think the trade off is worth it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/spin",
+                    "index": "#25",
+                    "likes": "1",
+                    "time": "12/01/2021-21:06:02",
+                    "content": "I agree with you. I believe the extra effort for API compatibility would come at a great cost (smart contract complexity, therefore cost & risk). In addition given we\u2019re not breaking any existing APIs, I think adding this is better than not adding any support for farm-able collateral. We can always improve on the design later and upgrade the collateral type if we see that this is a bigger issue than expected. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 6.0102040816326525
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Akiva",
+                    "index": "#26",
+                    "likes": "0",
+                    "time": "12/01/2021-21:58:12",
+                    "content": "Is the unusual APIs for keepers mostly? If someone is doing programmatic vault creation does it also cause issues? Assuming the program has been hardcoded as per vanilla ilks ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#27",
+                    "likes": "1",
+                    "time": "03/02/2021-22:56:33",
+                    "content": "This mip was accepted 01/28/21 with the Jan MIPs bundle ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "2937"
+}

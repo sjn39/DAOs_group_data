@@ -1,0 +1,141 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-6601-evm-modular-arithmetic-extensions-evmmax/13168",
+            "title": "EIP-6601: EVM Modular Arithmetic Extensions (EVMMAX) ",
+            "index": 13168,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "evm",
+                "cryptography"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "05/03/2023-04:30:16",
+                    "content": "This is the discussion thread for EIP 6601 (viewable EIP markdown here).  This is an iteration on the previous proposal: EIP 5843. Differences between 6601 and 5843 at a high level:  6601 introduces a new EOF section type which stores modulus, precomputed Montgomery parameters, the number of values which will be used (runtime-configurable modulus is still supported). 6601 uses a separate memory space for EVMMAX values with new load/store opcodes to move values between EVM<->EVMMAX memory. 6601 supports operations on moduli up to 4096 bits (tentative limit as noted in the EIP).  ",
+                    "links": [
+                        "https://github.com/jwasinger/EIPs/blob/evmmax-2/EIPS/eip-6601.md",
+                        "https://ethereum-magicians.org/t/eip-5843-evm-modular-arithmetic-extensions",
+                        "https://ethereum-magicians.org/t/eip-6690-evm-modular-arithmetic-extensions-evmmax-decoupled-from-eof/13322",
+                        "https://ethereum-magicians.org/t/cancun-network-upgrade-meta-thread/12060"
+                    ],
+                    "GPT-summary": "The post is an explanation of the EIP-6601 proposal, which is an iteration on the previous proposal EIP-5843. The post highlights the differences between the two proposals and introduces new features of EIP-6601. The post also invites discussion and feedback on the proposal, and a 3rd party is asking questions and providing constructive criticism.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.332575757575757
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "07/03/2023-02:29:24",
+                    "content": "  I\u2019d like to see some narrative before each code section so I don\u2019t have to play guess what the code snippet intends. Code segments are great for conformance but only code segments are bad for design reviews.  Especially the gas sections.   I\u2019d also like the gas target for gas calculation to be off of a 50Mgps (20ns) standard, not 40Mgps (25ns). Whatever the standard is will be a ceiling on performance, as speedups in other opcodes will be tied down by a block consisting of only modx calls. If the BLS precompiles are chosen in lieu of or in addition to this I will also push for a 50 instead of the 35Mgps (29ns) it was benchmarked against years ago.   At the interop summit there was a discussion about removing observable side effects.  Can we have the load and store go to a separate MAX memory that is not observable outside of LOADX and STOREX?  i.e. not allow the matthew\u2019s interim data to be visible to EVM execution in the frame memory?  My concern here is zkEVMs that may be able to do such math \u201cnatively\u201d and requiring them to \u201cshow work\u201d would make the circuits larger. It is also possible some languages and systems may have faster mechanism than a manual matthews multiply.   What validation needs to be done for the setup section (section_kind=3)?  Can invalid params be specified (even modulus)?  Can malicious params be specified that would cause slower execution?   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.106481481481482
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "07/03/2023-18:24:08",
+                    "content": " Can we have the load and store go to a separate MAX memory that is not observable outside of LOADX and STOREX?  This is how it works in 6601.  When calling SETUPX and specifying a setup section that hasn\u2019t previously been used in the current call-frame, a separate memory space is allocated that is associated with that setup section for the duration of the call frame.  LOADX/STORE move values from/to EVM memory and the memory space of the currently active modulus state (whose parameters are specified in last setup section set with SETUPX).   I\u2019d also like the gas target for gas calculation to be off of a 50Mgps (20ns) standard, not 40Mgps (25ns). Whatever the standard is will be a ceiling on performance, as speedups in other opcodes will be tied down by a block consisting of only modx calls. If the BLS precompiles are chosen in lieu of or in addition to this I will also push for a 50 instead of the 35Mgps (29ns) it was benchmarked against years ago.   I chose the gas rate based on results of benchmarks of the ecrecover precompile in Geth on my machine. I don\u2019t follow the argument that speedups in other opcodes will be tied down by a block consisting of only *MODX calls.  I don\u2019t see why the costs chosen for EVMMAX opcodes would prevent repricing of other unrelated opcodes.   What validation needs to be done for the setup section (section_kind=3)? Can invalid params be specified (even modulus)? Can malicious params be specified that would cause slower execution?   No even modulus.  Afaict there are not parameters that could cause slower execution.  This is something that should be verified and documented in the rationale perhaps. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.6478174603174605
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "07/03/2023-21:44:14",
+                    "content": "Btw I have an implementation of the MiMC hash function using EVMMAX (GitHub - jwasinger/mimc-evmmax).  Compared to the circomlib implementation which uses 17460 gas, the EVMMAX implementation only uses 3915 gas. So EVMMAX can give huge cost reductions for MiMC and other zk-friendly hash functions (like Poseidon which has a proposal for a precompile). ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-5988-add-poseidon-hash-function-precompile/11772"
+                    ],
+                    "GPT-discussion-categories": [
+                        "None"
+                    ],
+                    "Sentiment": 5.458333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "08/03/2023-05:50:53",
+                    "content": " I chose the gas rate based on results of benchmarks of the ecrecover precompile in Geth on my machine.  That should have been the standard then \u201c40 Mgps, which is the speed of ECRecover on a 2013 Intel Mac Pro\u201d, because processing gets faster and 25ns on a M2 mac is way different from 25ns on a RasPi4 or a 2013 Intel Mac Pro, or an amiga. Perhaps an amazon cloud instance such as t3 would be a good reference. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "08/03/2023-05:53:32",
+                    "content": " No even modulus. Afaict there are not parameters that could cause slower execution. This is something that should be verified and documented in the rationale perhaps.  We should enumerate what they are and what happens if they are wrong, there has got to be more than just even modulus.  For an EOF embedded it can be to make the whole program invalid, and for dynamic allocaiton\u2026 exceptional halt? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.866666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "08/03/2023-17:08:01",
+                    "content": "For context, my machine has a 2015 i7-6500U CPU (2.50GHz) with turbo-boost disabled.  As far as processors go, it\u2019s fairly underpowered which makes me think that it\u2019s a fair system to use as an initial benchmark reference. One issue with using (certain) cloud VMs for benchmarking is that they are burstable.  So that can skew the results. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.261904761904762
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "08/03/2023-17:32:15",
+                    "content": "Afaict, the validation rules in the EIP are comprehensive and should prevent the deployment of invalid contracts.  But of course, this needs more eyes on it and ideally, the nod from cryptographers that my assumptions are correct regarding validation rules.  dynamic allocation  The maximum memory size that can be allocated by an EVMMAX contract is known at deployment time and EVMMAX contracts that would exceed the limit (EVMMAX_MAX_MEM) are rejected. When SETUPX allocates memory space, it expands memory calculating the size from setup section parameters, and charging the modified memory expansion cost function (EVM memory expansion cost function which considers memory size to be the sum of EVM memory size and all active/previously-active modulus state memory spaces allocated by SETUPX in the current call frame). Any exceptional behavior ends execution and immediately returns to the calling frame (without consuming all call gas). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 7.066666666666666
+                }
+            ]
+        }
+    ],
+    "group_index": "385"
+}

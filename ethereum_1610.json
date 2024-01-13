@@ -1,0 +1,215 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/expandable-onchain-svg-images-storage-structure/8330",
+            "title": "Expandable Onchain SVG Images Storage Structure ",
+            "index": 8330,
+            "category": [
+                "Tokens"
+            ],
+            "tags": [
+                "nft",
+                "onchain",
+                "svg"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Soohan-Park",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "16/02/2022-10:11:00",
+                    "content": "Hey, Ethereum Magicians  How are you all doing? Spring is slowly approaching in South Korea.  Anyway, as you can see from the title and the content of the Abstract below, I have envisioned an Expandable Onchain NFT Images Storage, and based on this, I\u2019m preparing an EIP. And I\u2019d like to know what you guys think about this.  Finally, I am always happy to get to your feedback, such as the possibility of adopting the EIP and comments on further improvements. So everyone, be careful of COVID-19, and have a good day today!   Simple Summary It is a Expandable Onchain SVG Images Storage Structure Model on the Ethereum.   Abstract This standard proposal is a Expandable Onchain SVG Images Storage Structure Model on the Ethereum that permanently preserves images and prevents tampering, and can store larger-capacity images furthermore. It is a structure designed to store SVG images with a larger capacity by distributed SVG images in units of tags on Ethereum.  The structure presented by this EIP consists of a total of three layers as shown below.  Structure Diagram781\u00d7321 22.4 KB    Storage Layer \u2500 A contract layer that stores distributed SVG images by tags. Assemble Layer \u2500 A contract layer that creates SVG images by combining tags stored in the Storage Layer\u2019s contract. Property Layer \u2500 A contract layer that stores the attribute values for which SVG tag to use.    It is designed to flexibly store and utilize larger capacity SVG images by interacting with the above three layer-by-layer contracts each other.  Also, you can configure the Onchain NFT Images Storage by adjusting the Assemble Layer\u2019s contract like below.  A storage with expandability by allowing additional deployment on Storage Layer\u2019s contracts A storage with immutability after initial deployment   Additionally, this standard proposal focuses on, but is not limited to, compatibility with the EIP-721 standard.   Motivation Most NFT projects store their NFT metadata on a centralized server rather than on the Ethereum. Although this method is the cheapest and easiest way to store and display the content of the NFT, there is a risk of corruption or loss of the NFT\u2019s metadata.  To solve this problem, most NFT metadata is stored on Ethereum. However, it can only be expressed as a simple shape such as a circle or a rectangle, since one contract can be distributed 24KB size for maximum.  We propose this model \u2500 a more secure way to store NFT metadata \u2500  to create and own high-quality of NFT metadata.   Reference Implementation  Proxy Layer pragma solidity ^0.8.0;  import {ERC721} from \"@openzeppelin/contracts/token/ERC721/ERC721.sol\"; import {IAssembleContract} from \"./IAssembleContract.sol\";  /**  * @title PropertyContract  * @author   * @notice A contract that stores property values.  */ contract PropertyContract is ERC721 {     /**      * @notice A variable that stores the object of `AssembleContract`.      */     IAssembleContract public assembleContract;      // Storing property values corresponding to each number of storage. (tokenId -> attr[])     mapping(uint256 => uint256[]) private _attrs;      /**      * @dev `name_` and `symbol_` are passed to ERC-721, and in case of `assembleContractAddr_`, the `setAssembleContract` function is used.      */     constructor(string memory name_, string memory symbol_, address assembleContractAddr_) ERC721(name_, symbol_) {         setAssembleContract(assembleContractAddr_);     }      /**      * @dev See {IAssembleContract-getImage}      */     function getImage(uint256 tokenId_) public view virtual returns (string memory) {         return assembleContract.getImage(_attrs[tokenId_]);     }      /**      * @param newAssembleContractAddr_ Address value of `AssembleContract` to be changed.      * @dev If later changes or extensions are unnecessary, write directly to `constructor` without implementing the function.      */     function setAssembleContract(address newAssembleContractAddr_) public virtual {         assembleContract = IAssembleContract(newAssembleContractAddr_);     }      /**      * @param tokenId_ The token ID for which you want to set the attribute value.      * @dev Set the attribute value of the corresponding `tokenId_` sequentially according to the number of asset storage.      */     function _setAttr(uint256 tokenId_) internal virtual {         for (uint256 idx=0; idx < assembleContract.getStorageCount(); idx++) {             uint256 newValue = 0;              /// @dev Implement the property value setting logic.              _attrs[tokenId_].push(newValue);           }     } }    Assemble Layer pragma solidity ^0.8.0;  /**   * @title IAssembleContract  * @author   */ interface IAssembleContract {     /**      * @notice For each `StorageContract`, get the corresponding SVG image tag and combine it and return it.      * @param attrs_ Array of corresponding property values sequentially for each connected contract.      * @return A complete SVG image in the form of a String.      * @dev It runs the connected `StorageContract` in the registered order, gets the SVG tag value and combines it into one image.      * It should be noted that the order in which the asset storage contract is registered must be carefully observed.      */     function getImage(uint256[] memory attrs_) external view returns (string memory);      /**      * @notice Returns the count of connected Asset Storages.      * @return Count of Asset Storage.      * @dev Instead of storing the count of storage separately in `PropertyContract`, get the value through this function and use it.      */     function getStorageCount() external view returns (uint256); }   pragma solidity ^0.8.0;  import {IAssembleContract} from \"./IAssembleContract.sol\"; import {IStorageContract} from \"./IStorageContract.sol\";  /**  * @title AssembleContract  * @author   * @notice A contract that assembles SVG images.  */ contract AssembleContract is IAssembleContract {      /**      * @dev Asset storage structure. Stores the contract address value and the corresponding object.      */     struct AssetStorage {         address addr;         IStorageContract stock;     }      AssetStorage[] private _assets;      /**      * @dev Register address values of `StorageContract`. Pay attention to the order when registering.      */     constructor (address[] memory assetStorageAddrList_) {         for (uint256 i=0; i < assetStorageAddrList_.length; i++) {             addStorage(assetStorageAddrList_[i]);         }     }      /**      * @dev See {IAssembleContract-getImage}      */     function getImage(uint256[] memory attrs_) external view virtual override returns (string memory) {         string memory imageString = \"\";          imageString = string(abi.encodePacked(imageString, \"<svg version='1.1' xmlns='http://www.w3.org/2000/svg'>\"));          for (uint256 i=0; i < attrs_.length; i++) {             imageString = string(                 abi.encodePacked(                     imageString,                     _assets[i].stock.getAsset(attrs_[i])                 )             );         }          imageString = string(abi.encodePacked(imageString, '</svg>'));          return imageString;     }      /**      * See {IAssembleContract-getStorageCount}      */     function getStorageCount() external view virtual override returns (uint256) {         return _assets.length;     }      /**      * @param storageAddr_ Address of `StorageContract`.      * @dev If later changes or extensions are unnecessary, write directly to `constructor` without implementing the function.      */     function addStorage(address storageAddr_) public virtual returns (uint256) {         _assets.push(AssetStorage({             addr: storageAddr_,             stock: IStorageContract(storageAddr_)         }));         return _assets.length-1; // index     } }    Storage Layer pragma solidity ^0.8.0;  /**  * @title IStorageContract  * @author   * @dev A contract that returns stored assets (SVG image tags). `setAsset` is not implemented separately.  * If the `setAsset` function exists, the value of the asset in the contract can be changed, and there is a possibility of data corruption.  * Therefore, the value can be set only when the contract is created, and new contract distribution is recommended when changes are required.  */ interface IStorageContract {     /**      * @notice Returns the SVG image tag corresponding to `assetId_`.      * @param assetId_ Asset ID      * @return A SVG image tag of type String.      */     function getAsset(uint256 assetId_) external view returns (string memory); }   pragma solidity ^0.8.0;  import {IStorageContract} from \"./IStorageContract.sol\";  /**  * @title StorageContract  * @author   * @notice A contract that stores SVG image tags.  * @dev See {IStorageContract}  */ contract StorageContract is IStorageContract {      // Asset List     mapping(uint256 => string) private _assetList;      /**      * @dev Write the values of assets (SVG image tags) to be stored in this `StorageContract`.      */     constructor () {         // Setting Assets such as  _assetList[1234] = \"<circle ...\";     }      /**      * @dev See {IStorageContract-getAsset}      */     function getAsset(uint256 assetId_) external view override returns (string memory) {         return _assetList[assetId_];     } }     Additionally, there is one thing I would like to ask you for your opinion on this EIP! When I first conceived this EIP, it was designed so that the contract that stores assets of the storage layer can be replaced. However, while materializing the proposal, I thought that REPLACEABLE would go against the immutability of the blockchain, so I excluded it from the current version of the proposal. I\u2019d like to get opinions on whether it\u2019s better to not have REPLACEABLE like the current version, or a replaceable version is better in your opinion. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-721"
+                    ],
+                    "GPT-summary": "The author is proposing an Expandable Onchain SVG Images Storage Structure Model on the Ethereum and is seeking feedback on the proposal. The proposal aims to store NFT metadata on Ethereum in a more secure way and to create and own high-quality NFT metadata. The post also includes a reference implementation and a question for feedback on whether the contract that stores assets of the storage layer should be replaceable or not.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.426078385899814
+                }
+            ]
+        },
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-4841-expandable-onchain-svg-images-storage/8410",
+            "title": "ERC-4841: Expandable Onchain SVG Images Storage ",
+            "index": 8410,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft",
+                "storage",
+                "onchain",
+                "svg"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Soohan-Park",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "24/02/2022-00:18:08",
+                    "content": "  github.com/ethereum/EIPs         EIP-4841: Expandable Onchain SVG Images Storage   ethereum:master \u2190 Soohan-Park:master            opened 08:07AM - 23 Feb 22 UTC               Soohan-Park             +611 -0       We proposal an EIP, **Expandable Onchain SVG Images Storage**  ---  When ope\u2026ning a pull request to submit a new EIP, please use the suggested template: https://github.com/ethereum/EIPs/blob/master/eip-template.md  We have a GitHub bot that automatically merges some PRs. It will merge yours immediately if certain criteria are met:   - The PR edits only existing draft PRs.  - The build passes.  - Your GitHub username or email address is listed in the 'author' header of all affected PRs, inside <triangular brackets>.  - If matching on email address, the email address is the one publicly listed on your GitHub profile.        I\u2019d like to know what you guys think about this and I am always happy to get to your feedback, such as the possibility of adopting the EIP and comments on further improvements   ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/4841",
+                        "https://github.com/Soohan-Park",
+                        "https://github.com/ethereum/EIPs/pull/4841/files",
+                        "https://github.com/ethereum/EIPs/pull/4841"
+                    ],
+                    "GPT-summary": "The author of the post is proposing an EIP for Expandable Onchain SVG Images Storage and is asking for feedback and comments on further improvements. The post also includes information on how to submit a new EIP and the criteria for automatic merging of pull requests. A third party can give constructive criticism or ask questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Not a proposal"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.821892393320964
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "25/03/2022-21:47:31",
+                    "content": "I think this proposal is useful, but I don\u2019t think it needs to be an ERC (or if it does, it needs to make the case for that better in the Motivation section.) Instead, I think it would be useful as a library or framework. At minimum, I think it\u2019ll need a way to indicate to NFT marketplaces that the image is available somewhere else. Could maybe be a special scheme in the return value of getURI? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.857142857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Soohan-Park",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "06/04/2022-02:28:30",
+                    "content": "First of all, thank you for agreeing with our proposal. After reading your feedback, we realized what we wrote didn\u2019t fully explain what we were trying to explain. So, we are working on improvement the overall content now. (Please refer to the GitHub pull request comments ) Based on your feedback, we improved on the Motivation section like below. (We are in the process of requesting proofreading, so we got help from Google. If there is something you do not understand, please feel free to leave a comment!)  Most NFT projects keep their NFT content on centralized servers, not on Ethereum. Although this method is the cheapest and easiest way to manage the content of an NFT, there is a risk of damage or loss. In addition, even in the case of IPFS, tampering can be prevented with the Content-addressing, but there is a possibility of data loss if there is no node storing the contents of the NFT. One of the ideal ways to solve this problem is to store the content of the NFT on Ethereum in SVG image format. However, since the maximum size that can be distributed in one contract is about 24 kB, there is a problem that only small, simple SVG images can be saved. Therefore, to solve this problem, we devised a storage model consisting of three hierarchical structures: Storage, Assemble, and Property. With this storage model,  XML \u200b\u200btags composing SVG images are distributed and stored in multiple contracts, and when SVG images are needed later, saved tags can be combined to obtain large-capacity SVG images. By dividing the storage into three independent tiers, you can ensure the ease of management and the flexibility of storage. For example, if the logic for assembling XML tags in the Assemble Layer needs to be changed, there is no need to re-record the values \u200b\u200bstored in the Storage Layer or Property Layer in the block chain, only the contract of the layer that needs to be modified is newly distributed. Extensibility can be secured based on an independent hierarchical structure. If you want to add the configuration of SVG, you just need to distribute the contract to the Storage Layer and connect it with the Assemble Layer.  We would like to propose a scalable storage model that stores large, high-quality SVG images on Ethereum.  Like Motivation above, we thought that this proposal could contribute to the Ethereum ecosystem based on three main advantages. Therefore, we would like to propose this proposal as a standard, and if there are any shortcomings to become a standard, we would be grateful if you could tell us what is it.  In addition, ERC is defined as below among the contents of EIP-1, so we judged that it is suitable for the ERC category even if the contents we want to propose are close to the framework. If we are misunderstood, please let us know     ERC: application-level standards and conventions, including contract standards such as token standards (EIP-20), name registries (EIP-137), URI schemes, library/package formats, and wallet formats.   Thanks for all always, guys. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-1",
+                        "https://eips.ethereum.org/EIPS/eip-20",
+                        "https://eips.ethereum.org/EIPS/eip-137"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.719844549390004
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "4",
+                    "likes": "2",
+                    "time": "06/04/2022-13:13:15",
+                    "content": "Hey! Thanks for taking the time to write a detailed reply  Like I said, I really do see the benefit of splitting up SVGs into multiple contracts. I\u2019ve encountered the contract size limit before with my NFT projects. What I\u2019m asking is: why does the method of splitting up SVGs need to be standardized into an ERC? If my token splits them up using method A, and your token uses method B, is that a problem? I can certainly see the case for standardizing a replacement interface for tokenURI that marketplaces (like OpenSea) can use to retrieve the assembled image, but the interface shouldn\u2019t depend on how the image is stored. I would be happy to be convinced otherwise though! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.678571428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Soohan-Park",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "16/05/2022-06:18:28",
+                    "content": "@SamWilsn We apologize for the very late reply due to our original work. After receiving the feedback, we\u2019ve been thinking a lot about the EIP. We sympathize with the content of the feedback, and we have recognized that the method of storing data is difficult to establish as a standard. And we don\u2019t have any special ideas to replace tokenURI, so we\u2019re going to close this EIP and this thread. (@everyone If anyone has a good idea, it would be great to develop this EIP together!) Thanks a lot for your feedback and interest. And we will come back with better ideas for improving Ethereum  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.962337662337662
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/IronMan_CH",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "13/07/2022-04:59:26",
+                    "content": "@Soohan-Park In my opinion, the tokenURI format of on-chain image format is vacant, so why can\u2019t we just continue this EIP with standard tokenURI format of on-chain image. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "22/07/2022-17:37:23",
+                    "content": "One option might be to combine EIP-4804 with tokenURI? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/buoynous",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "28/07/2022-05:23:30",
+                    "content": "Sorry in advance but I want to ask a potential dumb question. The data size we want to store within our contract is not a problem is it? gas - How much data can I store in a smart contract, what is the cost and how it is implemented? - Ethereum Stack Exchange I am under the impression that all you need to worry about is the one time gas cost you have to pay to have this data stored within the contract during mint of an NFT. OR Is the concern here that if we want to store a large SVG image but having this live within the contract to deploy exceeds the 24KB threshold? It is probably the latter, but just want to confirm. And final question, not really related to this but still relevant. Technically we could pass in this SVG image via call data to the mint function but in this case the gas cost will be too high for Ethereum. But for a chain like Polygon this shouldn\u2019t be a problem right? I guess it isn\u2019t sustainable because it is dependent on the fact that Polygon will always stay this cheap but does that make sense? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.378549783549783
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Soohan-Park",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "02/08/2022-06:06:59",
+                    "content": "@IronMan_CH @SamWilsn Well, actually I hope to keep running to make a standard this idea  But, when I was wrote the last comment, I thought \u201cEIP is a standard. This idea, EIP-4841, is one way of storing data but it is not proper to be a STANDARD.\u201d. Because, I agreed with @SamWilsn\u2019s opinion that the method of storing data is difficult to be standard, and there was no point like tokenURI.     SamWilsn:  What I\u2019m asking is: why does the method of splitting up SVGs need to be standardized into an ERC? If my token splits them up using method A, and your token uses method B, is that a problem?   However, sometimes I wonder if I may have rushed to close this issue. I really wanna know what you guys think about this EIP suggestion\u2026! could this suggestion be an EIP\u2026? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.84375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Soohan-Park",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "02/08/2022-06:32:55",
+                    "content": "Hi @buoynous      buoynous:  The data size we want to store within our contract is not a problem is it?    \u2192 Yeah, it was a problem and it was the reson why I suggest this EIP. In this EIP, it try to solving through divide & conquer. Such as SVG Image format can be seperated to some bunch of tags, as you already know. So, this idea use the property to solve the problem.     buoynous:  Is the concern here that if we want to store a large SVG image but having this live within the contract to deploy exceeds the 24KB threshold?    \u2192 Right.     buoynous:  And final question, not really related to this but still relevant. Technically we could pass in this SVG image via call data to the mint function but in this case the gas cost will be too high for Ethereum. But for a chain like Polygon this shouldn\u2019t be a problem right? I guess it isn\u2019t sustainable because it is dependent on the fact that Polygon will always stay this cheap but does that make sense?    \u2192 Absolutely agreed that. When this EIP was first proposed, an implementation of this EIP was created and tested. The cost of storing large-sized data was also high, but the cost was higher as the data was divided and stored. (At the time, when testing 301 KB of SVG image storage, approximately 8 ETH was consumed. Of course, it is my fault for not optimizing!  ) As you said, it would be a better model for low-cost networks like Polygon or Klaytn. Of course, there is no guarantee that the network will be permanently cheap! However, the reason this EIP is proposed as Ethereum is because it is the largest and more durable network. (And, there are many magicians here!) And, looking at the community of other networks based EVM, many people, including myself, are using the EIP standard in that network. Therefore, if this proposal becomes a standard in Ethereum, I think it will be propagated to other EVM-based networks. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.923415584415585
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/IronMan_CH",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "16/08/2022-09:46:33",
+                    "content": "Feel free to close this issue. Also agree with @SamWilsn 's opinion. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1610"
+}

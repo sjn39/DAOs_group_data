@@ -1,0 +1,245 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/proposed-verkle-tree-scheme-for-ethereum-state/5805",
+            "title": "Proposed Verkle tree scheme for Ethereum state ",
+            "index": 5805,
+            "category": [
+                "Working Groups",
+                "Ethereum 1.x Ring"
+            ],
+            "tags": [
+                "trie"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "25/03/2021-20:20:40",
+                    "content": " Proposed Verkle tree scheme for Ethereum state Edit 2021.06.07: edited the leaf structure to fit account headers and code and a few storage slots together This document describes a proposal for how concretely the Ethereum state can be represented in a Verkle tree. See Verkle trie for Eth1 state - HackMD for notes of how Verkle tries work.  Desiderata  Short witness length for accounts or storage, even under \u201cattack\u201d. This necessitates:  An \u201cextension node\u201d-like scheme where the bulk of an address or storage key can be stored as part of a single node, instead of always going 32 layers deep Hashing account addresses and storage keys to prevent attackers from filling the storage in locations that are close enough to each other that branches to them become very long without doing a very large amount of brute force computation   Maximum simplicity. Particularly, it would be ideal to be able to describe the result as a single Verkle tree Forward-compatibility (eg. ability to add more objects into an account header in the future) Code for an account should be stored in one or a few subtrees, so that a witness for many code chunks can be minimally sized Frequently-accessed values (eg. balance, nonce) should be stored in one or a few subtrees, so that a witness for this data can be minimally sized Data should be by default reasonably distributed across the entire state tree, to make syncing easier  An updated proposal, which puts account data closer together to reduce the witness size per-account-access:  The proposed scheme can be described in two different ways:  We can view it as a \u201ctrie of commitments\u201d, with two additional simplifications:  Only leaf nodes containing extended paths, no \u201cinternal\u201d extension nodes The leaves of the top trie are only commitments (that are Kate commitments of the same type as the commitments used in the trie), and not \u201ca hash pointing to a header which contains two values, a bytearray and a tree\u201d as is the status quo today   We can view it as a single tree, where there are internal extension nodes but they can only extend up to the 31 byte boundary (tree keys MUST be 32 bytes long)  These two perspectives are completely equivalent. We will focus on (2) for the rest of the description, but notice that if you take perspective (1) you will get a design where each account is a subtree. The Verkle tree structure used, from the first perspective, will be equivalent to the structure described here . From the second perspective, it would be equivalent to the structure described in that document, except that instead of (key, value) leaf nodes, there would be intermediary nodes that extend up to the 31 byte boundary. We define the spec by defining \u201ctree keys\u201d, eg. if we say that the tree key for storage slot Y of account X is some value f(X, Y) = Z, that means that when we SSTORE to storage slot Y in account X, we would be editing the value in the tree at location Z (where Z is a 32-byte value). Note also that when we \u201cstore N at position P in the tree\u201d, we are actually storing hash(N) % 2**255. This is to preserve compatibility with the current 32-byte-chunk-focused storage mechanism, and to distinguish \u201cempty\u201d from \u201czero\u201d (which is important for state expiry proposals).  Parameters     Parameter Value     VERSION_LEAF_KEY 0   BALANCE_LEAF_KEY 1   NONCE_LEAF_KEY 2   CODE_KECCAK_LEAF_KEY 3   CODE_SIZE_LEAF_KEY 4   HEADER_STORAGE_OFFSET 64   CODE_OFFSET 128   VERKLE_NODE_WIDTH 256   MAIN_STORAGE_OFFSET 256**31    It\u2019s a required invariant that VERKLE_NODE_WIDTH > CODE_OFFSET > HEADER_STORAGE_OFFSET and that HEADER_STORAGE_OFFSET is greater than the leaf keys. Additionally, MAIN_STORAGE_OFFSET must be a power of VERKLE_NODE_WIDTH.  Header values The tree keys for this data are defined as follows: def get_tree_key(address: Address, tree_index: int, sub_index: int):     # Asssumes VERKLE_NODE_WIDTH = 256     return (         hash(address + tree_index.to_bytes(32, 'big'))[:31] +         bytes([sub_index])     )      def get_tree_key_for_version(address: Address):     return get_tree_key(address, 0, VERSION_LEAF_KEY)      def get_tree_key_for_balance(address: Address):     return get_tree_key(address, 0, BALANCE_LEAF_KEY)      def get_tree_key_for_nonce(address: Address):     return get_tree_key(address, 0, NONCE_LEAF_KEY)  # Backwards compatibility for EXTCODEHASH     def get_tree_key_for_code_keccak(address: Address):     return get_tree_key(address, 0, CODE_KECCAK_LEAF_KEY)      # Backwards compatibility for EXTCODESIZE def get_tree_key_for_code_size(address: Address):     return get_tree_key(address, 0, CODE_SIZE_LEAF_KEY)   Code def get_tree_key_for_code_chunk(address: Address, chunk_id: int):     return get_tree_key(         address,         (CODE_OFFSET + chunk) // VERKLE_NODE_WIDTH,         (CODE_OFFSET + chunk)  % VERKLE_NODE_WIDTH     )  Chunk i contains a 32 byte value, where bytes 1\u202631 are bytes i*31...(i+1)*31 - 1 of the code (ie. the i\u2019th 31-byte slice of it), and byte 0 is the number of leading bytes that are part of PUSHDATA (eg. if part of the code is ...PUSH4 99 98 | 97 96 PUSH1 128 MSTORE... where | is the position where a new chunk begins, then the encoding of the latter chunk would begin 2 97 96 PUSH1 128 MSTORE to reflect that the first 2 bytes are PUSHDATA).  Storage def get_tree_key_for_storage_slot(address: Address, storage_key: int):     if storage_key < (CODE_OFFSET - HEADER_STORAGE_OFFSET):         pos = HEADER_STORAGE_OFFSET + storage_key     else:         pos = MAIN_STORAGE_OFFSET + storage_key     return get_tree_key(         address,         pos // VERKLE_NODE_WIDTH,         pos % VERKLE_NODE_WIDTH     )   Note that storage slots in the same size VERKLE_NODE_WIDTH range (ie. a range the form x*VERKLE_NODE_WIDTH ... (x+1)*VERKLE_NODE_WIDTH-1) are all, with the exception of the HEADER_STORAGE_OFFSET special case, part of a single commitment. This is an optimization to make witnesses more efficient when related storage slots are accessed together. If desired, this optimization can be exposed to the gas schedule, making it more gas-efficient to make contracts that store related slots together (however, Solidity already stores in this way by default). Additionally, storage slots 0 ... (CODE_OFFSET - HEADER_STORAGE_OFFSET - 1) are stored in the first commitment (so you can think of them as \u201ceditable extra header fields\u201d); this is a further optimization and allows many simple contracts to fully execute by loading only a single commitment. ",
+                    "links": [
+                        "https://notes.ethereum.org/_N1mutVERDKtqGIEYc-Flw",
+                        "https://hackmd.io/@vbuterin/state_expiry_paths",
+                        "https://ethereum-magicians.org/t/add-opcode-to-access-storage-trie-root-hash-for-account/6142/2"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.495365216793788
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pipermerriam",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "25/03/2021-21:33:24",
+                    "content": "    vbuterin:  Note also that when we \u201cstore N at position P in the tree\u201d, we are actually storing hash(N) % 2**255. This is to preserve compatibility with the current 32-byte-chunk-focused storage mechanism, and to distinguish \u201cempty\u201d from \u201czero\u201d   I don\u2019t understand this part.  This seems to suggests that we are not storing the value but the hash of the value?  Which is confusing to me since hashing implies we can\u2019t recover the original value? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.975
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "25/03/2021-23:05:08",
+                    "content": "IIUC, we would logically store the hash in the tree for the purposes of generating the verkle commitment, but we would in practice store the original value in whatever on-disk key/value store is used. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "25/03/2021-23:34:04",
+                    "content": "This is exactly correct. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "26/03/2021-20:21:30",
+                    "content": "So calling SELFDESTRUCT would take O(num_used_slots) to clear them all out. The cleanest resolution to that problem is to say that we should disable SELFDESTRUCT before verkles go live. (which I\u2019m in favor of doing anyway) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.590909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "26/03/2021-20:58:53",
+                    "content": "There\u2019s a way to do it without that: have a \u201cnumber of times self-destructed\u201d counter in the state and mix it in with the address and storage key to compute the tree path. But that\u2019s ugly in a different way, and yes, we should just disable SELFDESTRUCT. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.8333333333333335
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pipermerriam",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "27/03/2021-15:22:55",
+                    "content": "So it seem like we either:  Get rid of SELFDESTRUCT which based on some recent discussion in ACD looks like it may be complex due to the interplay with CREATE2 and \u201cupgradeable\u201d contracts. Keep SELFDESTRUCT but replace the actual state clearing with an alternate mechanism that just abandons the state.  When combined with the state expiration schemes, this is effectively like deleting it since it will become inaccessible and eventually expire. Keep SELFDESTRUCT and determine how we can clear the state in a manner that doesn\u2019t have O(n) complexity.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.196428571428572
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "9",
+                    "likes": "3",
+                    "time": "27/03/2021-20:44:37",
+                    "content": "Right, those are basically the three choices. My preference is strongly toward the first, and we acknowledge that upgradeable contracts through a full-reset mechanism were a mistake. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.615079365079365
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "31/03/2021-01:36:56",
+                    "content": "    vbuterin:  and we acknowledge that upgradeable contracts through a full-reset mechanism were a mistake.    \u2026 and if DELEGATECALL isn\u2019t appealing enough as an upgrade mechanism, let\u2019s figure out how to improve that. (rather than how to keep in-place contract morphing via SELFDESTRUCT). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dankrad",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "07/04/2021-16:17:01",
+                    "content": "    vbuterin:  Data should be by default reasonably distributed across the entire state tree, to make syncing easier   I don\u2019t quite understand how this proposal achieves this. The initial 3 bytes are taken directly from the account address. So if an account has a 1 GB storage tree, then the subtree starting with those three bytes will store that 1 GB of data, much more than 100 GB / 2^24 = ~ 6 kB that an average subtree at that level stores. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.464285714285715
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poemm",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "07/04/2021-16:40:46",
+                    "content": "As you know, address[:3] guarantees deduplicatation of an account\u2019s the first 3 witness chunks. So I think the motivation is to optimize witness size. So just a clever trick. I was wondering: is there any reason not to do address[:2] or address[:4]? More generally, what is the motivation for the \u201creasonably distributed\u201d property (edit: how does it make syncing easier edit2: and how does it trade-off with the \u201cshort witness length\u201d property)? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.972222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poemm",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "07/04/2021-19:39:17",
+                    "content": "    vbuterin:  Frequently-accessed values (eg. balance, nonce) should be stored in one or a few subtrees, so that a witness for this data can be minimally sized   It is clever to use hash(same thing) + bytes([i]), chunk_lo, or s_key_lo to keep related values as neighbors in the tree. A further optimization: the account version/balance/nonce/codehash/codesize commitment can also store, for example, the first ~100 code chunks and the smallest ~100 storage keys. But this optimization adds complexity, so I won\u2019t push it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.097222222222221
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gballet",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "12/04/2021-15:17:55",
+                    "content": "    vbuterin:  def get_storage_slot_tree_key(address, storage_key):     s_key_hi = (storage_key // 256).to_bytes(32, 'big')     s_key_lo = bytes([storage_key % 256])     return address[:3] + hash(address + b'\u0002' + s_key_hi)[:28] + s_key_lo    Is there a reason for s_key_hi to be a 32-byte integer? The most significant byte is always \u0000, so it seems that it could be omitted. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.15625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "14/04/2021-01:37:39",
+                    "content": "@dankrad @poemm I\u2019m not super attached to address[:3] specifically. There\u2019s a tradeoff: address[:4] makes witnesses slightly smaller, but it makes data less well-distributed, as then it would be a 1/2**32 slice instead of a 1/2**24 slice that could have a large number of keys. Meanwhile address[:2] slightly reduces the witness size advantage, at the cost of improving distribution. It\u2019s possible that the optimal thing to do is to just abandon the address[:x] thing entirely; it would not be that bad, because in a max-sized block the first ~1.5 bytes are saturated anyway, and it would make the even-distribution property very strong (only deliberate attacks could concentrate keys). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.921645021645022
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "14/04/2021-01:38:45",
+                    "content": "    gballet:  Is there a reason for s_key_hi to be a 32-byte integer? The most significant byte is always \u0000, so it seems that it could be omitted.   No big reason. I guess making it a 32-byte integer is slightly more standardized, as we have plenty of 256-bit ints but no other 248-bit ints. It doesn\u2019t make a significant difference either way. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.510416666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/g11in",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "08/05/2021-12:49:19",
+                    "content": "    vbuterin:  Note that the header and code of a block are all part of a single depth-2 commitment tree; this is an optimization to make code witnesses more efficient, as transactions that access an account always   I guess we mean account here instead of block? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.193452380952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/g11in",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "08/05/2021-13:16:39",
+                    "content": "    vbuterin:  Note that storage slots in the same size-65536 range (eg. 0\u202665536, 131072\u2026196607) are all part of a single commitment;   So account\u2019s basic data (header + code) is chunked into 256*32 byte chunks for generating a commitment per chunk and storage chunked into 65536 * 32 bytes i.e. basic data\u2019s leaf is Commitment of poly that take these 256 evaluations i.e. Commitment(P| P(w^0)=Hash(0th 32 byte)... P(w^255)=Hash(255th 32 Byes) i.e. commitment of  some P= 255 max degree poly in w and storage data\u2019s leaf is  a poly which takes these 65536 valuations i.e. Commitment(P| P(w^0)=Hash(0th 32 byte).... P(w^655355)= Hash (65535th 32 byte) i.e. commitment of some P= 65535 max degree poly in w ? and rest of the commitments in the verkel tree corresponding to polys which take 256 max evaluations (hence 256 max degree) of their children. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.910714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/storc",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "23/06/2021-06:18:26",
+                    "content": "Sorry it\u2019s late in my timezone and I\u2019m too tired to connect a few concepts I haven\u2019t touched in a few years. Any reason why you\u2019ve ruled out using a trie instead? It sounds like there\u2019s a concern for an attacker to build out an imbalanced tree and debilitate ease of access. What about a self-balancing trie where rebalancing process includes a random/pseudo-random hash that would limit predictability of structure on rebalance. This seems nice because you keep sub-trees, search is almost always optimal (or can be reconfigured based on assembly), AND assembly of the tree itself is quick (meaning the rebalancing act isn\u2019t too expensive) I also like that with deterministic locations \u2026you could jump without having to traverse from the beginning (so even quicker) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.270833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Shymaa-Arafat",
+                    "index": "21",
+                    "likes": "2",
+                    "time": "24/06/2021-13:39:19",
+                    "content": "    storc:  Any reason why you\u2019ve ruled out using a trie instead?   Ethereum uses Tries from the very beginning I think those 2 can give u an idea about the status quo, and the problem of proof size  Ethereum Improvement Proposals   EIP-2584: Trie format transition with overlay trees Details on Ethereum Improvement Proposal 2584 (EIP-2584): Trie format transition with overlay trees         blog.ethereum.org    The Burden of Proof(s): Code Merkleization A note about the Stateless Ethereum initiative: Research activity has (understandably) slowed in the second half of 2020 as all contributors have adjusted to life on the weird timeline. But as the ecosystem moves incrementally closer to Serenity and...      This new Verkle Tree/Trie I haven\u2019t complete reading yet, but has the augmented tree property where u can get the proof only from nodes along the path without the need to fetch all siblings along the path ( Kate Commitments r associative functions)     g11in:  Note3.3: [] (applying Elliptic Curve) is a linear operator i.e. [x]+[y]=[x+y].also a[x]=[ax] Note3.5: Commitment of f(x): C(f)=[f(s)] is also a linear operator i.e. C(f+g)=C(f)+C(g)   . Anyways, I believe this is a shorter to the point note about the data structure part, if u can\u2019t read all of the above at once (like me)  vitalik.ca    Verkle trees      ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-2584",
+                        "https://blog.ethereum.org/2020/11/30/the-1x-files-code-merkleization/",
+                        "https://blog.ethereum.org/2020/11/30/the-1x-files-code-merkleization/",
+                        "https://vitalik.ca/general/2021/06/18/verkle.html",
+                        "https://vitalik.ca/general/2021/06/18/verkle.html"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.459848484848485
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Shymaa-Arafat",
+                    "index": "22",
+                    "likes": "2",
+                    "time": "06/07/2021-14:28:20",
+                    "content": "Have u read this old thread from 2017 I think? https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2017-May/014337.html I know it\u2019s about Bitcoin, but maybe it can add some useful insight about the Cryptographic merits of the idea  IMG_20210706_131230720\u00d71600 217 KB   IMG_20210706_130634720\u00d71600 223 KB  . I don\u2019t know,  could be I\u2019m wrong & they\u2019re not related methodologies?         ",
+                    "links": [
+                        "https://ethereum-magicians.org/uploads/default/original/2X/8/8d084c857e9a8a4ecced13167ce65ae3a5878541.jpeg",
+                        "https://ethereum-magicians.org/uploads/default/original/2X/e/e12f508205a8a3b45bf6c71d0c70900d51384a28.jpeg"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/storc",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "12/07/2021-22:01:02",
+                    "content": "Thanks Shymaa! Appreciate your respectful answer and the resources you condensed for me to be brought up to speed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.875
+                }
+            ]
+        }
+    ],
+    "group_index": "1283"
+}

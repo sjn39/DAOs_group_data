@@ -1,0 +1,43 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/gusd-institutional-rewards-technical-solution-risk-assessment-and-deployment-details-for-receiving-payments-of-rewards/19055",
+            "title": "GUSD Institutional Rewards Technical Solution/Risk Assessment and Deployment Details - For Receiving Payments of Rewards ",
+            "index": 19055,
+            "category": [
+                "Collateral Onboarding"
+            ],
+            "tags": [
+                "ces-001",
+                "psm-gusd-a",
+                "ces-domain-work",
+                "gusd-a"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/CES_CU",
+                    "index": "#1",
+                    "likes": "6",
+                    "time": "05/12/2022-20:35:19",
+                    "content": " Introduction This document details the deployment of a technical solution for MakerDAO to receive GUSD institutional rewards onchain. The GUSD & MakerDAO Partnership Announcement details how MakerDAO can receive institutional rewards paid out in GUSD based on the amount of GUSD deposited in the GUSD PSM. However, in order to receive the GUSD rewards, MakerDAO must provide Gemini a destination to send the GUSD. This document details the implementation of a smart contract that can receive GUSD, convert it to Dai using the GUSD PSM, and automatically deposit the Dai into the Maker surplus buffer. The technical risk of the proposed setup is considered low, due to it utilizing existing contracts live in production, that do not have any direct authorizations on any Maker Protocol contract.  Deployed Addresses For This Implementation The deployed addresses for this implementation are:  RwaJar.sol - 0xf2e7a5b83525c3017383deed19bb05fe34a62c27  RwaSwapInputOutputConduit2.sol - 0x6934218d8B3E9ffCABEE8cd80F4c1C4167Afa638   GUSD Rewards should be sent to the RwaSwapInputOutputConduit2.sol contract at this ethereum mainnet address: 0x6934218d8B3E9ffCABEE8cd80F4c1C4167Afa638  Solution Overview The solution for MakerDAO to receive GUSD rewards from Gemini reuses existing functionality used in RWA deals to facilitate fee payments to the surplus buffer. The main contracts are the RwaSwapInputConduit2, and RwaJar. In the  setup (see diagram below),   Gemini will send GUSD rewards to the RwaSwapInputConduit2 contract.   The function push in the RwaSwapInputConduit2 can then be permissionlessly called by anyone, to trigger a conversion of GUSD to Dai through the GUSD PSM, and in the same instance, transfer the generated Dai to the RwaJar contract. This contract is wired such that Dai can only be sent to the specified RwaJar, and nowhere else.   Once the Dai is in the RwaJar contract, anyone can call the function void to transfer Dai to the surplus buffer (vow), as the function invokes the join method in the DaiJoin contract.   Thus, the RwaSwapInputConduit2 contract acts as the destination for GUSD rewards, and handles the conversion to Dai and subsequent transfer to the RwaJar contract. The RwaJar contract then ultimately facilitates the transfer of Dai to the surplus buffer. All Gemini needs to do is therefore to send GUSD to the RwaSwapInputConduit2, and the rest can be automatically managed by MakerDAO through Keepers. Furthermore, these contracts have been deployed and configured without the need of a governance vote or executive spell. Management of the contracts, e.g. to change the PSM address can be done through an executive spell. Both of these contracts have been previously reviewed, and are live in production, so the risk of reusing these contracts for this specific purpose is considered low.  922\u00d7762 42.9 KB   Deployment Parameters   Deploy RwaJar   Constructor parameters:  chainlog: 0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F      Deploy RwaSwapInputConduit2   Constructor parameters:   _dai: 0x6B175474E89094C44Da98b954EedeAC495271d0F   _gem (GUSD): 0x056Fd409E1d7A124BD7017459dFEa2F387b6d5Cd   _psm (GUSD PSM): 0x204659B2Fd2aD5723975c362Ce2230Fba11d3900   _to: RwaJar contract address from step 1 once deployed.     Rely DsPauseProxy 0xBE8E3e3618f7474F8cB1d074A26afFef007E98FB   Deny deployer address.      Smart Contract Deep Dive  RwaSwapInputConduit2 Source code RwaSwapInputConduit2 is based on the RwaSwapInputConduit used in the RWA007 Monetalis vault. Changes from the RwaSwapInputConduit:   push() and push(uint256 amt) have been made permissionless.  The RwaSwapInputConduit2 contract handles GUSD routing and automatic swapping with Dai using the PSM. RwaSwapInputConduit2 has one main function: push(). The push function holds transitory funds, that upon being called will swap all GUSD deposited in the contract to Dai using the PSM before transferring the Dai to the to address (in this case, the RwaJar contract). In case the GUSD PSM is full a function push(uint256 amt) can be utilized to \u201cpush\u201d a specific partial amount of the GUSD. In this instance the quit function will not be utilized, and the quitTo parameter not initialized, thus this function can be ignored for this setup. A permissioned \u201cescape hatch\u201d function yank can be called by Maker Governance in an executive spell to retrieve GUSD from the contract in case they are stuck due to a full GUSD PSM, migration to a new contract is needed or other operational issues.  RwaJar Source Code The RwaJar contract is a permissionless contract containing the following relevant function: The function void which will transfer any Dai balance contained in the contract to the designated vow address immutably set on contract deployment. The DaiJoin and Vow addresses are set in the constructor of the contract and are immutable, so they cannot be changed post deployment. This ensures that Dai deposited in this contract can only be transferred to the surplus buffer, and nowhere else. If the vow contract for whatever reason changes, a new RwaJar contract can be deployed.  Conclusion This technical implementation allows Gemini to easily and trustlessly send GUSD institutional rewards directly to the MakerDAO surplus buffer, by allowing them to simply send GUSD rewards to the specific Ethereum address of the \u201cdeposit contract\u201d. Furthermore, the setup ensures that MakerDAO can then automatically trigger the conversion of GUSD to Dai, and transfer of Dai to the surplus buffer in a permissionless way. Furthermore the contracts can be deployed and initiated without the need of an executive spell. This implementation reuses existing contracts that are live in production, which do not have any authorizations on the Maker Protocol and are considered simple in nature, and the main reason why the technical risk is considered to be low. ",
+                    "links": [
+                        "https://etherscan.io/address/0xf2e7a5b83525c3017383deed19bb05fe34a62c27",
+                        "https://etherscan.io/address/0x6934218d8b3e9ffcabee8cd80f4c1c4167afa638#code",
+                        "https://github.com/makerdao/mip21-toolkit/blob/master/src/conduits/RwaSwapInputConduit2.sol",
+                        "https://github.com/makerdao/mip21-toolkit/blob/master/src/conduits/RwaSwapInputConduit.sol",
+                        "https://github.com/makerdao/mip21-toolkit/blob/e646870a31f1ca94c59330cb40baeb9b9f9498a9/src/conduits/RwaSwapInputConduit2.sol#L230",
+                        "https://github.com/makerdao/mip21-toolkit/blob/e646870a31f1ca94c59330cb40baeb9b9f9498a9/src/conduits/RwaSwapInputConduit2.sol#L238",
+                        "https://github.com/makerdao/mip21-toolkit/blob/master/src/jars/RwaJar.sol",
+                        "https://forum.makerdao.com/t/weekly-forum-recap/16247/35",
+                        "https://forum.makerdao.com/t/makerburn-jar-deposit-question/19239/2"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.329519058177594
+                }
+            ]
+        }
+    ]
+}

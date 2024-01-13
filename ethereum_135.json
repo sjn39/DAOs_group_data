@@ -1,0 +1,108 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-5719-signature-replacing-for-smart-contract-wallets/11059",
+            "title": "ERC-5719 - Signature replacing for smart contract wallets ",
+            "index": 11059,
+            "category": [
+                "Wallets"
+            ],
+            "tags": [
+                "wallet",
+                "signatures"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "26/09/2022-17:17:57",
+                    "content": "This is an extension proposal to EIP-1271, it addresses the issue of smart contract wallet signatures becoming invalidated and breaking certain dapps. For example: Assume a multisig smart contract wallet with signers X and Y, you use signer X to list some assets on opensea, 2 weeks later you replace signer X for a new signer, Z. Without any additional measures, the listing becomes invalidated. Using this EIP the wallet can use signer Z to re-sign the message, and the dapp can non-interactively fetch the signature as a replacement.   github.com/ethereum/EIPs         Add EIP-5719: Signature replacing for smart contract wallets   ethereum:master \u2190 Agusx1211:patch-3              opened 04:43PM - 26 Sep 22 UTC                 Agusx1211               +86 -0           ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/5719",
+                        "https://github.com/Agusx1211",
+                        "https://github.com/ethereum/EIPs/pull/5719/files"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.031076066790353
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PhABC",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "29/09/2022-18:53:17",
+                    "content": "It would be helpful if the rationale section included why a fully on-chain solution was not chosen. It\u2019s stated that URI can be used with both centralized and decentralized systems, but not why URI is a better choice over a fully on-chain system. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "04/10/2022-15:44:15",
+                    "content": "This solution won\u2019t work for contracts that forward the signature. For example, you could have an approve-transfer batch contract (using something like Dai\u2019s permit.) The off-chain application might have no idea a signature is being used in a subcall, and so won\u2019t know that it needs to retry. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "04/10/2022-21:13:08",
+                    "content": "The top-level caller should still be able to detect the signature is stale and do the replacing. Maybe the EIP should specify that all signatures should first be validated using EIP-1271 (and replacing if needed), even if that signature is going to be used for something other than direct validation.     SamWilsn:  The off-chain application might have no idea a signature is being used in a subcall, and so won\u2019t know that it needs to retry.   Is this a common thing? if a signature is used internally then it\u2019s most likely an input of the top-level caller, a contract that stores signatures could lead to the scenario, but I haven\u2019t seen that pattern out there. This scenario is hard to cover because the smart contract wallet doesn\u2019t have that information on-chain (otherwise it could just accept the digest and ignore the signature), but at least the edge case reverts back to the status-quo (the stale signature fails). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.682539682539683
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "25/11/2022-18:52:54",
+                    "content": "I just noticed that you don\u2019t define which algorithm to use for _digest. Probably should do that.  Have you considered using an EIP-1155 style URI format, where the client is expected to substitute {digest} in the returned string with the digest value? If there\u2019s some technical reason why that wouldn\u2019t work, might be good content for the Rationale section. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "25/11/2022-19:05:11",
+                    "content": "    SamWilsn:  I just noticed that you don\u2019t define which algorithm to use for _digest. Probably should do that.   My bad, digest is meant to be the hash as defined by EIP-1271. That can be a little bit confusing, I will update the EIP so it uses the same nomenclature.      SamWilsn:  Have you considered using an EIP-1155 style URI format, where the client is expected to substitute {digest} in the returned string with the digest value?   This is an interesting idea, the biggest benefit is that a client wouldn\u2019t need to call the contract to fetch every replacement URL. I think this makes more sense on metadata (because you usually need to fetch N tokens), Signature replacement is only triggered when a signature is found to be invalid, so a 1 by 1 basis. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.701388888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "25/11/2022-19:08:12",
+                    "content": "    Agusx1211:  the biggest benefit is that a client wouldn\u2019t need to call the contract to fetch every replacement URL   I was thinking that it would save code space in the contract wallet, instead of having to convert a bytes32 to hex. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "25/11/2022-19:16:12",
+                    "content": "We\u2019re trying a new process where we get a volunteer peer reviewer to read through your proposal and post any feedback here. Your peer reviewer is @abhinavmir! If any of this EIP\u2019s authors would like to participate in the volunteer peer review process, shoot me a message!  @abhinavmir please take a look through EIP-5719 and comment here with any feedback or questions. Thanks! ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-5719"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.157670454545454
+                }
+            ]
+        }
+    ],
+    "group_index": "135"
+}

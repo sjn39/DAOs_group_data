@@ -1,0 +1,179 @@
+{
+    "poll_list": [
+        {
+            "title": "Ratification Poll for D3M to Spark Lend (MIP116) - March 13, 2023",
+            "index": "19732",
+            "option": "Yes",
+            "supporting_mkr": "95,071",
+            "highest_fraction": 0.84
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip116-d3m-to-spark-lend/19732",
+            "title": "MIP116: D3M to Spark Lend ",
+            "index": 19732,
+            "category": [
+                "Maker Improvement Proposals",
+                "Formal Submission"
+            ],
+            "tags": [
+                "mips",
+                "impact-:-high",
+                "spark-protocol",
+                "spark-lend"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/PhoenixLabs",
+                    "index": "#1",
+                    "likes": "8",
+                    "time": "08/02/2023-17:02:52",
+                    "content": " MIP116: D3M to Spark Lend Please note this MIP will be overridden by the Stability and Liquidity Scope Framework + Decentralized Collateral Scope Framework if they pass governance.  Preamble MIP#: 116 Title: D3M to Spark Lend Author(s): @PhoenixLabs Contributors: Tags: D3M Type: General Status: Formal Submission Date Proposed: 2023-02-08 Date Ratified:  Dependencies: MIP50 Replaces: N/A Forum URL: https://forum.makerdao.com/t/mip116-d3m-to-spark-lend/19732 Ratification Poll URL:    Sentence Summary Phoenix Labs proposes a D3M be instantiated to provide DAI liquidity to Spark Lend at 0xC13e21B648A5Ee794902342038FF3aDAB66BE987.  Paragraph Summary Phoenix Labs proposes a D3M be instantiated to provide DAI liquidity to Spark Lend at 0xC13e21B648A5Ee794902342038FF3aDAB66BE987. This MIP details the proposed pool/plan adapters and associated parameters.  Component Summary MIP116c1: D3MAaveV3Pool - Aave V3 Adapter Smart Contract MIP116c2: D3MAaveBufferPlan - Aave Buffer Plan Smart Contract MIP116c3: Debt Ceiling & Fee Structure - Details of parameters and interest rate strategy MIP116c4: Treasury Details - Details of the smart contract holding any revenue MIP116c5: Liquidation Details - Details of Maker Core liquidation scenario  Motivation Phoenix Labs is a research and development company created to introduce new decentralized products into the Maker Ecosystem by helping MakerDAO grow and innovate in the decentralized realm. With this, Phoenix Labs wants to support the evolution of the Endgame by introducing the Spark Protocol. Spark Protocol will amplify the features of MakerDAO by enabling a liquidity market for supplying and borrowing scalable crypto assets and having DAI as a core element. To achieve this, Phoenix Labs proposes a D3M be instantiated to provide DAI liquidity to the Spark Lend, the first product of Spark Protocol.  Specification / Proposal Details  MIP116c1: Pool - Aave V3 Adapter Source: https://github.com/makerdao/dss-direct-deposit/blob/aave-v3-support/src/pools/D3MAaveV3Pool.sol The Aave V3 pool adapter will be used with king configured to be the surplus buffer (vow).  MIP116c2: Plan - Aave Buffer Adapter Source: https://github.com/makerdao/dss-direct-deposit/blob/aave-buffer-plan/src/plans/D3MAaveBufferPlan.sol This adapter will enforce a fixed liquidity buffer on the DAI Pool. As an example, if there are 200m in outstanding DAI borrows on Spark Lend, and the buffer is set to 100m, then this plan will make sure the DAI market on Spark Lend is 200m borrows + 100m dai liquidity for a total market size of 300m. The actual amount deposited is subject to Maker max debt ceilings, auto-line temporary debt ceilings, etc.  MIP116c3: Debt Ceiling & Fee Structure A special interest rate strategy contract is proposed for the DAI market: https://github.com/phoenixlabsresearch/sparklend/blob/master/src/DaiInterestRateStrategy.sol The above interest strategy will set the base rate equal to the Dai Savings Rate * Base Rate Conversion factor. The DAI market borrow rate will be that base rate + borrow spread. The DAI market supply rate (the amount that goes to Maker) will be the base rate + supply spread, but only applied to any amount beyond the performance bonus value. This is to seed the SubDAO treasury (and the SubDAO treasury in the future) with results-driven income as Phoenix Labs recommends keeping borrow rates as low as possible to capture market share. Examples of likely scenarios:  maker-spark-revenue-perf-bonus2162\u00d72126 372 KB  This means that users can borrow DAI at a predictable rate (unless Maker needs to liquidate, which will be covered below). Due to the below-market interest rate pricing, this market will likely only be filled by the Maker D3M and, along with the fixed buffer plan, it effectively makes this an on-demand borrow market similar to Maker Core. IE liquidity is added/removed from the pool more or less when users want to borrow/repay it. To seed liquidity and capture market share Phoenix Labs proposes the following parameters: Vat / Auto-line Params maxLine: 200m gap: 50m ttl: 8 hours D3M General Params tau: 7 days Specific Params king: Pause Proxy buffer: 30m Interest Rate Params baseRateConversion: 1 / 90% - as set by the Stability and Liquidity Scope Frame borrowSpread: 0 supplySpread: 0 maxRate: 75% performanceBonus: 100m  MIP116c4: Treasury Details All revenue earned by Spark Protocol will be deposited into an Ecosystem Actor treasury contract located here: 0xb137E7d16564c81ae2b0C8ee6B55De81dd46ECe5 Maker Governance will be the administrator of all contracts and the treasury. The treasury will accumulate funds that will serve as first-loss capital for Spark Protocol and will be converted into a SubDAO Treasury if and when the SubDAO Governance accepts the product. An exit mechanism includes a one-time exit path that allows the owner(s) of an anon-multisig at address 0x8076807464DaC94Ac8Aa1f7aF31b58F73bD88A27 the ability to exit to an Ecosystem Actor permanently. This trigger is not expected to be used but is in place as a safety mechanism in case things go wrong. A golden parachute is included in this exit mechanism to compensate Phoenix Labs for their work by sending the funds earned to the treasury up to that point to the multisig. If this exit mechanism is invoked, then Phoenix Labs forfeits the right to workforce compensation SubDAO tokens.  prelaunch-treasury1920\u00d7775 52.3 KB   MIP116c5: Liquidation Details  spark-lend-unwinding1920\u00d72112 103 KB  The interest rate module for the DAI market above is also aware of the ratio of D3M vault debt to vat debt ceiling. While the debt ceiling is above the vault debt, the rate will remain flat at the DSR + borrow spread amount. If the vault debt is larger than the debt ceiling (IE Maker wants to liquidate), then the DAI market borrow rate will asymptotically approach the maximum borrow rate (set to 75% APR above). Both supply and borrow rates will spike to allow for immediate liquidity relief from 3rd party DAI suppliers. This forces users to close their debt positions if Maker needs to free up liquidity for whatever reason. Once the vault debt drops below the debt ceiling again, the flat rate resumes. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip104-the-decentralized-collateral-scope-framework/19685",
+                        "https://github.com/makerdao/dss-direct-deposit/blob/aave-v3-support/src/pools/D3MAaveV3Pool.sol",
+                        "https://github.com/makerdao/dss-direct-deposit/blob/aave-buffer-plan/src/plans/D3MAaveBufferPlan.sol",
+                        "https://github.com/phoenixlabsresearch/sparklend/blob/master/src/DaiInterestRateStrategy.sol",
+                        "https://forum.makerdao.com/t/mip55c3-sp16-phoenix-labs-spark-lend-launch/19734",
+                        "https://forum.makerdao.com/t/announcing-phoenix-labs-and-spark-protocol/19731",
+                        "https://forum.makerdao.com/t/weekly-mips-update-126/19881",
+                        "https://forum.makerdao.com/t/weekly-mips-update-130/20226",
+                        "https://forum.makerdao.com/t/acreinvest-delegate-platform/11943/106",
+                        "https://forum.makerdao.com/t/mhonkasalo-teemulau-delegate-platform/15473/67",
+                        "https://forum.makerdao.com/t/weekly-mips-update-129/20172",
+                        "https://forum.makerdao.com/t/weekly-mips-update-128/20070",
+                        "https://forum.makerdao.com/t/mip55c3-sp15-phoenix-labs-initial-funding-spf/19733/3",
+                        "https://forum.makerdao.com/t/mip55c3-sp16-phoenix-labs-spark-lend-launch/19734/8",
+                        "https://forum.makerdao.com/t/weekly-mips-update-127/20001",
+                        "https://forum.makerdao.com/t/codeknight-delegate-platform/16806/69",
+                        "https://forum.makerdao.com/t/weekly-mips-update-125/19812"
+                    ],
+                    "GPT-summary": "Phoenix Labs proposes a D3M be instantiated to provide DAI liquidity to Spark Lend, the first product of Spark Protocol. The proposal includes details of the pool/plan adapters, associated parameters, and treasury details. The proposal aims to support the evolution of the Endgame by introducing the Spark Protocol, which will enable a liquidity market for supplying and borrowing scalable crypto assets and having DAI as a core element.",
+                    "GPT-proposal-categories": [
+                        "Token economics",
+                        "Smart contract updates",
+                        "Grants, Funding and resource allocation",
+                        "Interoperability and Scaleability",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.140744671994673
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/GovAlphaBot",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "09/02/2023-05:06:57",
+                    "content": "This is a summary of this proposal and its impact, from GovAlpha\u2019s perspective:  MIP116 proposes the instantiation of a D3M that will provide DAI liquidity to the Spark Lend Protocol for Spark Lend. Lend Spark \u2014the first product in the Spark Protocol by Phoenix Labs\u2014 is a lending market with a front end. With Dai as its core element, it will enable a liquidity market for supplying and borrowing scalable crypto assets. The Aave V3 pool adapter will be configured so that the rewards will go to the Surplus Buffer. The adapter will enforce a fixed liquidity buffer on the DAI Pool while being subject to debt ceilings and other checking parameters. The revenue earned by the Spark Protocol will be deposited in an Ecosystem Actor treasury contract controlled by Maker Governance; this will be the first-loss capital. When/if the Spark Protocol becomes a subDAO, it will become part of that subDAO\u2019s treasury. Specific parameters and interest rates can be found in the proposal. Phoenix Labs is simultaneously proposing two related SPFs: MIP55c3-SP15: Phoenix Labs Initial Funding and MIP55c3-SP16: Phoenix Labs-Spark Lend Launch. This proposal has been assigned High-Impact based on the methodology listed here.  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip55c3-sp16-phoenix-labs-spark-lend-launch/19734",
+                        "https://forum.makerdao.com/t/introducing-impact-estimations/14267"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.041666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Patrick_J",
+                    "index": "#3",
+                    "likes": "3",
+                    "time": "15/02/2023-13:09:53",
+                    "content": "Hi @PhoenixLabs, could you make the necessary changes to get this MIP into the correct format please? I\u2019ve added the relevant headings and listed them as TBD. Could you also split the Specification into relevant components? @MIP-Editors can help with this, if required. (cc: @hexonaut) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/PhoenixLabs",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "16/02/2023-00:11:19",
+                    "content": "We\u2019ve updated the relevant sections. Please let us know if any other changes are needed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/GFXlabs",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "21/02/2023-11:25:21",
+                    "content": "    PhoenixLabs:  maxLine: 200m   We think this needs to be revised. As written, this MIP would immediately inject up to 200 million DAI into a brand new protocol backed by as-yet-undetermined assets. Consider communicating an intent to scale to 200,000,000 DAI, but with a much smaller initial allocation and parameters that will be guided by recommendations from the @Risk-Core-Unit. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.227272727272727
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#6",
+                    "likes": "7",
+                    "time": "26/02/2023-20:27:16",
+                    "content": " Spark Feedback Below is the Risk CU\u2019s initial feedback on the Spark Lend protocol mechanisms and proposed D3M. We are generally very positive on Spark Lend and look forward to supporting its launch and further development. Below comments are intended to improve long term scalability and alignment of the Spark<>Maker core relationship, ensuring that the protocol has the greatest possible opportunity for success. Comments are split into a few sections:  Spark Risk Parameters Maker D3M Parameters and Rate Model General Comments   Spark Risk Parameters Maximum LTV cannot be relied upon as a firm risk constraint Aave\u2019s \u201cmaximum LTV\u201d parameter prevents users from borrowing more than this ratio when opening positions, but does not limit their ability to withdraw collateral down all the way to the collateral\u2019s liquidation threshold. So, it is possible for users to circumvent the max LTV parameter via flashloans or manual withdrawals, and it mostly serves as a guardrail against users accidently creating unsafe positions that can be liquidated. Liquidation threshold parameters must be set conservatively enough to prevent bad debt, without relying on max LTV as a firm risk mitigation factor. Spark risk parameters can be set conservatively and then scaled up over time As a new protocol, it would help alleviate risk concerns to start with relatively conservative parameters (maximum LTV, liquidation threshold, liquidation penalty, etc) at launch, and then scale these parameters to increase capital efficiency over time after the existing parameters have proven safe. While the risk mechanisms are fundamentally similar to existing Ethereum Aave v3, it may still take some time to develop an active keeper ecosystem and sufficient market liquidity to achieve similar levels of safety to Aave. Aave liquidation thresholds for stablecoins may be higher than optimal As a fork of the Aave v3 mechanism, it is natural to benchmark initial risk parameters to the upstream deployment. However, we\u2019ve seen in the past that Aave\u2019s high stablecoin liquidation thresholds can present a risk of short positions becoming insolvent (eg. aCRV bad debt situation last year). While Spark is not planning to list high risk assets at launch, it may still make sense to start with lower liquidation thresholds and max LTV specifically for stablecoin assets to prevent risk from short positions or potential for market manipulation. Spark should utilize borrow and supply caps to limit risk Similar to Aave v3, Spark will have many risk management capabilities including borrow and supply caps. Thorough use of these mechanisms can reduce risk to the protocol and Maker\u2019s DAI deposits. For example, setting a WBTC supply cap could help limit the maximum damage from cases where Bitgo custody is compromised. Similar benefits can be gained from caps on wstETH or other liquid staking tokens. Borrow caps can also be used across collateral assets (particularly those that are infrequently borrowed like wstETH or WBTC) to limit maximum potential damage from a critical incident.  Maker D3M Parameters and Rate Model Maker should scale up D3M exposure over time Although Spark is a fork of Aave v3, which is fairly battle tested, there are new code elements such as a new interest rate model, D3M targeting mechanism, oracles, and governance. And on top of this, Spark would start out with no internal capital or token backstop, meaning Maker would be directly exposed to any potential loan losses. These factors indicate that D3M exposure to Spark should start small, and scale up over time. The proposed D3M debt ceiling line should be viewed as a medium term target rather than immediately approved for deployment upon the MIP passing. This has been noted previously in the Spark announcement discussion thread. Maker should consider overall Chainlink risk exposure when determining appropriate D3M limits Maker already has some degree of Chainlink exposure, through the LINK-A vault type (indirect) and existing Aave and Compound v2 D3Ms (direct). While Chainlink failure can be considered unlikely, Maker should avoid existential levels of risk from this 3rd party protocol. It may make sense to wait to scale up exposure to high levels until redundancy features (e.g. Chronicle oracle integration, Uniswap TWAP sanity checks) are in place, as described in the Spark roadmap. The proposed Spark interest rate model combines disparate goals, which may be more suitable to unbundle Rather than using a standard reserve factor model from Compound or Aave, where a percent of borrow revenue is retained by the protocol, Spark primarily retains revenue through a performanceBonus parameter that retains all revenue from the DAI market up to a preset amount of DAI borrowed (in the proposal, the first 100 million DAI borrowed). At a high level, the proposed Spark rate model and reserve accrual mechanism allocates funding towards three disparate goals:  Yield for DAI deposits, to compensate Maker core for risk, liquidity, and cost of capital Spark protocol retained revenue to bootstrap future subDAO treasury Golden parachute clause to protect Spark contributors  While Spark is technically owned by Maker core, there is an exit mechanism where Phoenix Labs could claim retained funds as a golden parachute. Given this access, Maker should not consider these funds to be earned by the DAO until such time as multisig exit capabilities are surrendered or funds are remitted to Maker\u2019s sole control. The result is, Maker would be providing all of the risk capital up until the hurdle rate but not earning an assured return. In this case, Maker may not be adequately compensated for risk and cost of capital unless total borrowing volume significantly exceeds the hurdle rate.   Source: Spark Notes - Google Sheets The above charts show various measures of Maker yield based on proposed parameters, with the top chart showing just earnings going to Maker\u2019s sole control and bottom chart including revenue retained by Spark protocol as well. If the multisig exit path / golden parachute element is removed, DAI retained by Spark would be wholly controlled by Maker and could be considered to be earned at the protocol level. Various yield measures are broken down as follows:   Yield / D3M supply: interest revenue, divided by total DAI supplied to Spark by the D3M at the given borrowing level; this is useful for making cross comparisons against supply yield earned from other D3Ms  Yield / maximum DAI at risk: interest revenue, divided by maximum amount of DAI that could be lost in a tail risk event, inclusive of currently deployed funds and additional deposits that could be made via DC-IAM before MakerDAO governance can intervene to disable the D3M; this is useful to assess if Maker is earning adequate compensation for possible tail risks  Yield / DAI liquidity used: interest revenue, divided by total amount of DAI that has entered circulation attributable to Maker\u2019s D3M deposit; this is useful to assess whether Maker core is earning enough to account for cost of capital of DAI in circulation (eg DSR costs and similar)  A traditional reserve factor style revenue generation model, where Spark retains a consistent percent of borrower interest paid irrespective of total amount borrowed (or alternatively a model similar to Compound v3, where reserved revenue percentage depends on utilization rather than absolute amount borrowed), would more closely align Maker revenues with cost of capital and risk, while still allowing for steady growth of Spark treasury. Adjustments to the performanceBonus mechanism or revision of the interest rate model as a whole could also help address this concern. For example, if the performanceBonus was reduced from 100 million to 20 million DAI, this would significantly improve Maker\u2019s revenue profile vs previous examples using proposed parameters.  Any additional treasury bootstrapping required, along with golden parachute protection for contributors, could be addressed in separate proposals rather than being bundled into the initial rate model. Maker protocol as \u201csole depositor\u201d may not be desirable The introductory post for Spark noted Maker would serve as \u201csole supplier of DAI on the protocol\u201d. While it is not certain whether this would be the case, it seems likely due to the relatively low returns available to 3rd party DAI suppliers (particularly when total amount borrowed is below the performanceBonus parameter) and availability of sDAI as an alternative collateral asset. Providing an outsize share (potentially up to 100%) of supply would increase liquidity risk, as Maker would need to wait for Spark borrowers to repay their positions or new liquidity to be provided if it needed to reduce exposure for monetary policy or risk related reasons. The incentives for outstanding loans to be repaid are fairly strong, but incentives for 3rd party users to deposit new funds may be less effective because supply rates would quickly fall back to low levels once Maker\u2019s exposure decreased to target Participation of third party DAI suppliers in the market can help mitigate this risk; there would be a buffer of user provided liquidity, and new suppliers could also enter the market in response to high utilization and supply rates as Maker withdraws. Broad participation can be encouraged by supplying idle funds to the DSR (for Maker\u2019s own supplied assets the revenue and cost from DSR would cancel each other out, but 3rd parties would have greater incentive to supply funds), as well as by utilizing a more traditional reserve factor accrual model and modifying or eliminating the performanceBonus feature to ensure competitive supply rates across various levels of liquidity utilization and total amounts borrowed.  General Feedback Utility of separate sDAI market is unclear Listing a separate, non borrowable sDAI market allows users to participate in Spark and collateralize positions in a stablecoin, without needing to account for the unique Spark rate model and face lending risk on their collateral. However, as discussed above, guiding these users to participate in the standard DAI market could benefit Maker core by reducing liquidity risk to the D3M. It may be preferable to align rate models such that suppliers in the DAI market always earn at least as much as sDAI holders. This could be accomplished by depositing idle funds into the DSR, and ensuring borrower interest flowing through to suppliers is always at least as equal to the DSR. Listing sDAI could still be beneficial in this case as some users may prefer to avoid exposure to lending risk while collateralizing positions. This is ultimately a strategic consideration to be left to the Spark team and broader Maker community. Proposed fixed rate borrowing mechanism may be suboptimal The initial proposed mechanism for fixed rate borrowing has a few drawbacks that may make it less suitable over the long term. To enable borrowing fixed using PTs on Spark, it seems that each supported maturity date from each supported fixed rate protocol must be listed as a Spark asset pool. This introduces significant complexity as pools could have to be periodically added and then deprecated, and is generally not scalable from a management perspective. It is proposed that Maker would be the primary provider of PTs through a D3M, and the PT market would bear a 0% yield at any utilization rate (with the borrower\u2019s fixed rate being determined by selling the PT on the market at a discount). This means that Maker would hold the YTs and lend out the PTs at no additional cost. Assuming the underlying yield source is Spark lend itself Maker would be earning no more than it would by directly depositing into the variable rate DAI market, but could bear more liquidity risk. This does not seem to offer a fair level of risk compensation, and might not align with the stability and liquidity scope. On the other hand, if the underlying fixed rate protocol yield source is not the Spark DAI market, this would need to be independently reviewed to assess risk. If Maker is able to ratchet up rates on PT markets by lowering PT D3M debt ceiling below current exposure (similar to proposed rate model and liquidation process for Spark DAI market), then this would reduce users\u2019 assurance of rate remaining fixed and could reduce the value proposition of the PT markets. If this liquidation mechanism (or similar) is not available, then Maker\u2019s level of liquidity risk would be significantly increased, potentially to unacceptable levels unless accompanied by a higher rate of return vs DAI market D3M deposits. Efficiency mode of PTs could constrain rate changes Significant increase in Maker and/or Spark rates would cause the net present value of PTs to fall, which might push PT collateralized positions into insolvency depending on levels of permitted leverage. If the pricing mechanism for borrowed PTs uses market price rather than fixed maturity value (eg 1 DAI per PT), then significant reductions in Maker and/or Spark rates could lead to increases in PT value, pushing PT borrow positions into insolvency. This effect is more pronounced for positions with long maturity dates, as they have higher duration and therefore greater sensitivity to interest rates. Maximum permitted leverage for potential PT efficiency modes should be carefully calibrated to ensure that they can accommodate reasonably expected rate changes (and corresponding changes in PT value). Borrowed PTs should ideally be priced based on redemption value, while PT collateral could use a discounted price based on market value or implied discount based on interest rates. Alternative \u201cstable\u201d rate mechanism Historically stablecoin investors have preferred the liquidity benefits of demand deposits vs fixed term instruments (which have liquidity costs to buy/sell as well as duration risk). Maker may be the most suitable buyer of PTs, as it has significant balance sheet flexibility to engage in maturity transformation. On the other hand, stablecoin borrowers seeking stable (nearly fixed) rates could be seen as the natural buyers of YTs, which could hedge changes in variable rates. To achieve stable rates, a borrower could borrow from the Spark variable rate market, then supply the borrowed DAI to a splitting protocol (Element, Sense, etc) to generate YTs and PTs, and sell the PTs on the open market. Assuming external market demand for PTs is relatively low, this would result in a large discount and yield to maturity for PT markets, which presents an opportunity for Maker to directly purchase these PTs to access attractive fixed rates of return. Maker would have greater risk compensation and control over duration and liquidity risk with this sort of stable rate schema. This mechanism could also reduce Spark market complexity, as borrowers themselves would simply manage variable rate positions and externally hold YTs, with no need to list multiple PT markets on Spark. Note that this stable rate mechanism is most efficient with low spreads between supply and borrow rates, as this determines the degree of hedging offered by pairing variable rate borrow positions with YTs. Borrow-supply spreads are lowest when borrow utilization is high, protocol take rates (reserve factor) are low, and the interest rate model \u201cslope\u201d (difference between base borrow rate and optimal rate) is relatively small.  Summary Conservative launch sequence Both Spark Lend risk parameters and Maker D3M risk parameters should ideally start out conservative, and then support greater capital efficiency and increased scale over time. Increased exposure and more accommodative parameters can align with time in production, implementation of safeguard features, growth of keeper ecosystem, and increases in external user participation or market size. Rate models and value accrual Risk CU generally prefers more traditional interest rate models rather than the proposed Spark rate model. It should still be possible to achieve a fairly stable, near-fixed realized borrow rate on Spark via parameterization of a standard D3M mechanism (eg. setting somewhat lower gap and much shorter ttl within a standard, borrow rate targeting D3M). Benefits of a traditional rate model include more consistent compensation to Maker core for risk and capital cost, as well as greater potential for participation of 3rd party DAI suppliers which reduces liquidity risk. These goals may also be possible to achieve by revising the performanceBonus mechanism, while keeping the core of the Spark rate model unchanged (eg flat interest rate model, alongside D3M targeting available liquidity rather than borrow rate). Worthy goals of providing for subDAO treasury bootstrapping and contributor security could still be addressed, but potentially through other mechanisms and proposals. Simplifying mechanisms Changes to interest rate model and fixed rate strategy could allow Spark to maintain a more simple structure while still achieving key user experience goals. Avoiding complexity of managing multiple redundant or expiring markets would keep contributor and governance focus on higher value protocol improvements such as additional asset listings, new products, and subDAO development. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/announcing-phoenix-labs-and-spark-protocol/19731/21",
+                        "https://forum.makerdao.com/t/risk-core-unit-month-in-review-february-2023/20011"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "3rd party asking questions about proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.5749709831231575
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#7",
+                    "likes": "2",
+                    "time": "07/03/2023-15:14:47",
+                    "content": "@MIP-Editors we have updated addresses for this one. Please note this is not a material change to the proposal and this does not invalidate the frozen period, but we should reflect the change in the MIPs portal before this goes to vote to prevent any undue confusion. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Gala",
+                    "index": "#8",
+                    "likes": "3",
+                    "time": "07/03/2023-16:08:39",
+                    "content": "The MIPs portal has now been updated to include these changes. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/PhoenixLabs",
+                    "index": "#9",
+                    "likes": "4",
+                    "time": "08/03/2023-16:18:41",
+                    "content": "@MIP-Editors, we are submitting this proposal for March. We are aware that if the Constitution MIP Set passes, it would supersede this proposal, and this proposal would not be actioned. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.25
+                }
+            ]
+        }
+    ],
+    "group_index": "2160"
+}

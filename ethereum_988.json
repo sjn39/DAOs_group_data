@@ -1,0 +1,678 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-2470-singleton-factory/3933",
+            "title": "ERC-2470: Singleton Factory ",
+            "index": 3933,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "create2",
+                "erc-2470"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "15/01/2020-20:30:06",
+                    "content": "  github.com   status-im/EIPs/blob/singleton-factory/EIPS/eip-2470.md --- eip: 2470 title: Singleton Factory author: <@3esmit> discussions-to: https://ethereum-magicians.org/t/erc-2470-singleton-factory/3933 status: Draft type: Standards Track category: ERC created: 15-01-2020 requires: 1014 ---  ## Simple Summary  A permissionless factory for deploy of deterministic contracts addresses based on its bytecode.   ## Abstract  Some contracts are designed to be Singletons which have the same address no matter what chain they are, which means that should exist one instance for all, such as [EIP-1820] and [EIP-2429]. These contracts are usually deployed using a method known as [Nick]'s method, so anyone can deploy those contracts on any chain and they have a deterministic address. This standard proposes the creation of a CREATE2 factory using this method, so other projects requiring this feature can use this factory in any chain with the same setup, even in development chains.         This file has been truncated. show original      I am writing a project that needs a singleton, I seen that there was no standard about it so I am creating one. The idea is that a factory can create one deterministic address per byte-code, so everyone knows what to use and it can be deployed in any chain. This factory would be using also nick\u2019s method, so it would also be deployable in any chain, which then would always generate the same addresses for that bytecode, regardless of chain. Any suggestions? ",
+                    "links": [
+                        "https://github.com/status-im/EIPs/blob/singleton-factory/EIPS/eip-2470.md",
+                        "https://github.com/status-im/EIPs/blob/singleton-factory/EIPS/eip-2470.md"
+                    ],
+                    "GPT-summary": "The author is proposing a new standard, ERC-2470, for creating a permissionless factory for deploying deterministic contracts. The proposal suggests using a CREATE2 factory that can create one deterministic address per byte-code, which can be deployed in any chain. The author is asking for suggestions and feedback on the proposal. A third party could give constructive criticism or ask questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Not a proposal"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "16/01/2020-09:37:26",
+                    "content": "This already exist:  factory.kistune-wallet.eth (on mainnet) 0xFaC100450Af66d838250EA25a389D8Cd09062629 (on all networks) Available on mainnet, ropsten, rinkeby, goerli, kovan, lukso, \u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "16/01/2020-09:38:28",
+                    "content": "Salt is needed for people to deploy multiple instance of a contract that is only differenciated through initialisation (like proxies) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "16/01/2020-09:42:35",
+                    "content": "Also, have a look at my code, the callback mechanism is really important for some contracts. For example, ownable contracts will be owned by the factory, an we need the user to tell the factory to transfer ownership to him. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "16/01/2020-10:57:59",
+                    "content": "Hi, thanks for the interest in this EIP. I presume you want to join this effort?     Amxx:  This already exist:   Does it exists as an EIP/ERC? I searched it there and didnt founded any standarization on that.     Amxx:  factory.kistune-wallet.eth (on mainnet) 0xFaC100450Af66d838250EA25a389D8Cd09062629 (on all networks)   I noticed that you hold the private key of the address that deploys 0xFaC100450Af66d838250EA25a389D8Cd09062629, which is not ideal, for 2470 we want to use keyless.     Amxx:  Salt is needed for people to deploy multiple instance of a contract that is only differenciated through initialisation (like proxies)   I think that if the instance is being deployed, the unique address would be obtained by the constructor parameters.     Amxx:  Also, have a look at my code, the callback mechanism is really important for some contracts. For example, ownable contracts will be owned by the factory, an we need the user to tell the factory to transfer ownership to him.   That would work, but IMO this is not ideal, because is possible to encode the correct behavior into the constructor. If the contract is intended to be deployed and have its owner to the factory caller, it should be handled by the initialization data. if you use this design, it won\u2019t be deterministic anymore based only on initialization condition. Contracts that are constructed by the Singleton Factory MUST not use msg.sender as Owner or Controller, instead they MUST be designed to accept the \u201cController\u201d or \u201cOwner\u201d address into it\u2019s constructor, so their initialization data (including constructor data) defines the deterministic address, not salt. Otherwise, if the factory allowed to send a message to the created contract as part of initialization, but without changing the resulting address, the same address could be initialized with different initialization state, therefore not guaranteeing the \u201cSingleton\u201d Property. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.028846153846153
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "16/01/2020-12:47:50",
+                    "content": "    Amxx:  ownable contracts will be owned by the factory, an we need the user to tell the factory to transfer ownership to him.   For example, using this is not correct: contract BadSingletonExample {     address public owner = msg.sender;      function setOwner(address _owner) external {         owner = _owner;     } }  If in the case we use GenericFactory.sol to create the above contract, I could deploy it on different chains the same address with different owner. Thats why I am against this for the \u201cSingletonFactory\u201d EIP. The equivalent version would be this: contract SingletonExample {     address public owner;      constructor(address _owner) public {         owner = _owner;     }      function setOwner(address _owner) external {         owner = _owner;     } }  and the intended owner would be encoded in the initialization code (not in the msg.sender). Some contracts wont work in SingletonFactory, and this is intended by design, using msg.sender in contract constructor should only be used to read the factory address (if this have any use). However they just need to do a small change (replace msg.sender in constructor by parameter) and it would work better. If you really need to use msg.sender with SingletonFactory to decide the owner, you could wrap another factory around and use SingletonFactory.deploy(abi.encode(Contract.creationCode, msg.sender), _salt); ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.173076923076923
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "16/01/2020-19:26:51",
+                    "content": "I never thought it was worth being an ERC. It\u2019s just a small hack I made one night (took me less then 30min) \u2026 But if that is what it takes to have people be aware of it and not reinvent the weel then so be it. Your approach is only focussed on singleton, so you it makes sens to you to have a fixed salt. I wanted to support any contract. My first objective was to help developper deploy any contract at the same address on multiple blockchain\u2026 And if you want singletons, then just use my approach with salt = 0. You could even build a singleton deployer that, given the contract code, calls my factory with salt = 0. And you could deploy the singleton deployer using my factory (and salt = 0) to make sure it has the same address on all blockchain. Same goes for the callback mechanism. I understand that if you want to singleton, you should not use it, and you should build your contract in a way that prevents that. But some people could just want to use a \u201cstandard\u201d contract that inherits from openZeppelin\u2019s ownable, without having to modify and recompile the code, and deploy it on multiple blockchain at the same address. It\u2019s just more flexible. \u2192 Now that I think about it, I could have used keccak256(encode.packed(_salt, _callback) as a salt. Would have ensure singleton even with callbacks. I\u2019m putting that in the v2 It\u2019s true that I own the private key. I was thinking that if I gave the private key away, trools could do useless transaction with it on some blockchain, preventing the factory from ever being deployed at the right address to these blockchain. I\u2019m thinking about what would be the best way to give signed transaction for any chainid, without disclosing the private key. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.596119929453263
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "17/01/2020-21:48:40",
+                    "content": "Hey, It needs to be an ERC for properly being reused in other ERCs. I added salt to help deploy of vanity addresses, I did this because it is fairly easy to change a bit in comments and it changes the hash included in the bytecode, so why not make things easier, then harder, when there is no reason for. Salt keeps singleton, as is fixed behavior, after deploy, nothing is done, no variables, all fixed - if the same address - the same (initial) behavior.  I don\u2019t understand why I want to deploy it on chainId 2470? Why not using pre EIP-155, so its valid on any chain? If you want to be really generic on your contract you should use msg.value at create2 value, instead of 0, and obviously also marking the deploy function as payable. You should not give the private key, you should have used a keyless method, which not even you have the key. Learn more here https://medium.com/@weka/how-to-send-ether-to-11-440-people-187e332566b7 Nick helped with DAO rescue where he neede to proof he didnt owned the private key of the addresses, but still deploy a contract from there. So he did that. This was used as basis for EIP-2470, EIP-1820 and EIP-820. So I need that keyless deploy for EIP-2429, but then instead of making it once just for that, I made EIP-2470 for using in EIP-2429 or any other EIPs, all will inherit the keyless property of 2470 (anyone can deploy on anychain and noone knows the private key).  If you see, in ERC2470 the r,s of EC deploy signature are both 0x247000...0002470\u2026 Impossible for me to know what PK creates a signature to deploy that content with this r,s values\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.027777777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "18/01/2020-10:48:26",
+                    "content": "    3esmit:  I don\u2019t understand why I want to deploy it on chainId 2470? Why not using pre EIP-155, so its valid on any chain?   Sorry I missunderstood your past question. I\u2019ll have to check pre EIP-155 has I am not familiar with it   If you want to be really generic on your contract you should use msg.value at create2 value, instead of 0, and obviously also marking the deploy function as payable.   That is a really big no! The origin of this factoryis the deployment of musisig wallets/proxys. I wanted to make sure you can have the same multisig at the same address on multiple network to avoid the issue of funds sent to a adress that is valid on another network but not on this. If you put msg.sender you either:  prevent semone else to deploy a wallet at an address were funds have already been sent to from deploying it when he needs to interact with. Trust someone will do the deployment and give it the possibility of sensoring the deployment.  The payable part if a really good idea!   You should not give the private key, you should have used a keyless method, which not even you have the key. Learn more here https://medium.com/@weka/how-to-send-ether-to-11-440-people-187e332566b7 Nick helped with DAO rescue where he neede to proof he didnt owned the private key of the addresses, but still deploy a contract from there. So he did that. This was used as basis for EIP-2470, EIP-1820 and EIP-820. So I need that keyless deploy for EIP-2429, but then instead of making it once just for that, I made EIP-2470 for using in EIP-2429 or any other EIPs, all will inherit the keyless property of 2470 (anyone can deploy on anychain and noone knows the private key).   I\u2019ll have to check that out. The only method I know is to prepare the transaction, and then put a random value in the signature, resulting in a random sender that you have to fund to do the deployment. This is great for a single blockchain, but I don\u2019t know how to apply that method in a way that will produce the same address on all blockchains. I\u2019ll definitelly check that out. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.104052197802198
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "14",
+                    "likes": "1",
+                    "time": "18/01/2020-16:31:31",
+                    "content": " That is a really big no!  What?  I wanted to make sure you can have the same multisig at the same address on multiple network to avoid the issue of funds sent to a adress that is valid on another network but not on this.  GerenricFactory allows Bob to initialize and set themsselves as owners of the wallet at chain 1, and allows Alice to initialize and set themselves as owners of the same wallet of Bob, but at chain id 2. Isn\u2019t this bad?  The payable part if a really good idea!  Maybe for Generic Factory, but not for Singleton Factory, as the msg.value can interfere on how the contract is initialized.  This is great for a single blockchain, but I don\u2019t know how to apply that method in a way that will produce the same address on all blockchains.  I can assure it work in all blockchains, with the exact same signature, see: https://ropsten.etherscan.io/address/0x247087a9061f30de86a9E63B68B4e7d8ebf4A51a https://rinkeby.etherscan.io/address/0x247087a9061f30de86a9E63B68B4e7d8ebf4A51a ",
+                    "links": [
+                        "https://rinkeby.etherscan.io/address/0x247087a9061f30de86a9E63B68B4e7d8ebf4A51a"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.590561224489797
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "18/01/2020-22:49:26",
+                    "content": "    3esmit:  GerenricFactory allows Bob to initialize and set themsselves as owners of the wallet at chain 1, and allows Alice to initialize and set themselves as owners of the same wallet of Bob, but at chain id 2. Isn\u2019t this bad?   This is bad. And it\u2019s not possible if the initialisation is part of the constructor (which it is for my multisigs). It can only happen if the owner selection is part of the callback, which I\u2019ve corrected in version 2 : https://etherscan.io/address/0xfac2006166c5b88a9e0a320e933a75813ccc7ecd#code   Maybe for Generic Factory, but not for Singleton Factory, as the msg.value can interfere on how the contract is initialized.   If you include the msg.value in the way the salt is generate then there is no risk. Also, ether can be sent to the address BEFORE the contract is created, so this kind of interferance will always be possible. I\u2019m still convinced a well designed generic factory is much more powerfull then a singleton factory.   I can assure it work in all blockchains, with the exact same signature, see:   I\u2019ve just read about EIP155, I didn\u2019t know there was something before that. I though I had read the yellowpaper carefully but I must have missed it. It there any tooling for creating this kind of transaction? I think this kind of deployment is really cool, but it means the sender address (and thus the factory address) is directly link to the deploy bytecode:  We should really focus on one exact code for the factory + on exact compiler version to fix the transaction once and for all. Knowing this is possible, do we need singleton factory at all? The approach used to deploy the factory sounds easy enough that it can be used for any singleton.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5724637681159415
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "19/01/2020-00:03:56",
+                    "content": "First of all, you should stop calling this \u201ccallback\u201d, because its not a callback, is an \u201cadditional call\u201d to the freshly created contract. I don\u2019t think that the design you suggest is good, because the constructor is the \u201cembedded additional call\u201d of ethereum while creating a smart contract.     Amxx:  But some people could just want to use a \u201cstandard\u201d contract that inherits from openZeppelin\u2019s ownable, without having to modify and recompile the code, and deploy it on multiple blockchain at the same address. It\u2019s just more flexible.   The account contracts that you mention uses msg.sender in constructor to set owner, are therefore not designed for factories in general. OpenZeppelin should provide contracts for being used with factories, not using additional calls, this is bad design. If a developer want to use EIP2470, they must be aware of what they are coding. Also, you don\u2019t want to give the responsibility to users that have no idea of solidity to deploy their own account contracts - this is clear to go wrong. Users would be scared away of having to decide in account contracts and factories and standards, I don\u2019t see the use case for that, seems like you pushing forward a legacy support for nonexistent use case? So I am against adding additional complexity in this standard to support smart contract not designed to be used with factory, the additional complexity don\u2019t bring any benefit and this is not a Backwards Compatibility issue, so including this would not be an improvement, as its only giving option to developers keep using a bad design.     Amxx:  It\u2019s just more flexible.   If you give me an use case that is not possible to use the constructor, then I would reconsider it for this EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.468045112781955
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "19/01/2020-00:53:20",
+                    "content": "BTW, your GenericFactory is a type of Singleton, so you can use EIP-2470 to inherit the keyless property. if you want a GenericFactory that always have the same address in any ethereum chain possible and no one controls the keys to this process (becoming part of ethereum infra), you can simply say the bytecode of its deploy and then point it to EIP-2470. Or you could follow Nick method and go to all this effort yourself\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "19/01/2020-19:32:02",
+                    "content": "You are saying openzeppelin\u2019s contract are bad by design, and dev should not use them and rather implement something of their own with the right pattern. This is something have been fighting for years. Feature duplication is causing bugs that this community cannot afford. The \u201cconstruct then initialize\u201d pattern is an old one that has been working long before solidity was even here. Sure it\u2019s not perfect. Sure we would rather not have to rely on it. But i\u2019ll rather make sure to include the possibility then dictate how people should refactor their code. I\u2019ve been pushing for \u201cinitialized through constructor\u201d proxies but most people use the regular zos proxies that are initialized after the fact. Upgradeability is (IMO) a great feature and making the most used framework for it not compatible would (again IMO) not be the way to go. And yes, solidity developers have to be carefull of what they do. I don\u2019t see it changing anytime soon ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.167582417582418
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "19/01/2020-19:34:22",
+                    "content": "You can do you very limited singleton factory, and then expect people to use it to deploy more generic factories. And I\u2019ll be the first one to admit that it\u2019s unlikelly we will build the perfect factory on the first try. But I think it\u2019s forth it to try get as much features (that do not compromise security) in the \u201croot\u201d factory. I also think it would be nice to have additional opinions beside ours. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.691964285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "19/01/2020-19:47:46",
+                    "content": "Also, I\u2019m still convinced this doesn\u2019t need to be an ERC. we obviously have different visions of what this could/should be. What usually happens is that a bunch of project build their own solution, use them, share the code/address, and then a some point some actors like openzeppelin makes a mix of all existing solution that answers most people needs and becomes the de-facto standard. I believe this is a much better process then arguing over potential usecases. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.84375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "21",
+                    "likes": "1",
+                    "time": "19/01/2020-20:59:37",
+                    "content": "    Amxx:  You are saying openzeppelin\u2019s contract are bad by design,   Not the contract themselves, but using it with factory that then set the owner. This is not a really huge problem, but is inherently a bad design as its waste of gas and there is a better way of doing it. If they are supposed to be used with a factory, they should have been designed for that.  But i\u2019ll rather make sure to include the possibility then dictate how people should refactor their code.  That\u2019s the case, I don\u2019t want to include the possibility of doing bad things, and if they want to use a factory, they should refactor it - or use some factory who don\u2019t care.  You can do you very limited singleton factory, and then expect people to use it to deploy more generic factories.  Yes, that can be a point, as I mentioned, an factory that support msg.value or other behavior might be interesting for you or other. In the case of account contracts, a singleton factory could be used, but might not be the best behavior for it, another factory that controls the deploy based on a signed message would be wiser, so we dont allow anyone init other people accounts\u2026  still convinced this doesn\u2019t need to be an ERC  I need it as ERC because it will be used in other ERCs. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.970982142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "20/01/2020-10:00:20",
+                    "content": "    3esmit:   still convinced this doesn\u2019t need to be an ERC  I need it as ERC because it will be used in other ERCs.   Fair point!  I\u2019ve seen you added a salt to the EIP   The deploy transaction includes 100Gwei. Do we really need such a high value? I get it\u2019s a one-time thing but it still feels unecessarily high.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.058333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "20/01/2020-18:38:04",
+                    "content": " salt  Yes, I enabled salt because it didn\u2019t made sense to hide it, as it was very easy to switch one insignificant bit (such the ones in the source hash) on the initCode. Salt can be used as wanted by project, but for Singleton the only use I see is \u201cvanity address\u201d.  100gwei  This is to ensure that it will be deployed on any chain no matter the gas cost. Its 100gwei and with the gas used it costs 0.027 to deploy. With 10gwei I might not have a deploy in some cases, and it would cost 0.0027 ETH. I also hate to waste my precious gas to leave it there in a keyless address, but is not much, and this will save ETH in my other projects that also need keyless deploy (and are singletons), where the contracts are much bigger and using 100gwei would cost a lot. These singletons will use  any gas price  so we have to waste only a high amount in the Singleton Factory deploy. This 100gwei value decisions was copied from ERC-820 and ERC-1820, which I found were plausible, instead of making everything very tight \u201cgasLimit exactly the cost of deploy\u201d and \u201cgasPrice at a low price\u201d, but then it wont be guaranteed to work in every situation. For example, I don\u2019t plan to deploy this on ETC, simply because I don\u2019t own any ETC, but it might happen in future that some DApp gets ported to there and uses this ERC, so it will be guaranteed to work in ETC, even if they changed opcode costs and the gas market is competitive. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.24110275689223
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "20/01/2020-22:11:52",
+                    "content": "    3esmit:  For example, I don\u2019t plan to deploy this on ETC, simply because I don\u2019t own any ETC, but it might happen in future that some DApp gets ported to there and uses this ERC, so it will be guaranteed to work in ETC, even if they changed opcode costs and the gas market is competitive.   Completelly unrellated, but does ETC have create2? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "20/01/2020-22:37:42",
+                    "content": " but does ETC have create2  I have no idea, the only blockchain I know about is Ethereum. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "23/01/2020-02:33:25",
+                    "content": "Regarding \u201cGenericFactory2\u201d, it\u2019s still clearly possible to collide addresses. I created for you a contract that enables what \u201cGenericFactory\u201d does, but it\u2019s guaranteed to not have colliding addresses, and allows payable! I named it \u201cInitializerFactory\u201d because it seemed more proper to what it does, however, I didn\u2019t deployed or tested (just mentally), and I am releasing here under CC0, feel free to use it or take it for inspiration to fix \u201cGenericFactory\u201d. /**  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)  * @notice Allows Creation of contracts that require one call after creation.   */ contract InitializerFactory {     /**      * @notice Deploys a deterministic address based on `_initCode`, `msg.value`, `_initCall`, `_salt`.      * @param _initCode Initialization code.      * @param _initCall Calldata to be made to created contract       * @param _salt Arbitrary value to modify resulting address.      * @return Created contract address.      */     function deploy(bytes memory _initCode, bytes memory _initCall, bytes32 _salt)         public         payable         returns (address payable createdContract)     {         bytes32 actualSalt = keccak256(abi.encodePacked(msg.value, _initCall, _salt));         assembly {             createdContract := create2(msg.value, add(_initCode, 0x20), mload(_initCode), actualSalt)         }         if(_initCall.length > 0){             (bool success, bytes memory reason) = createdContract.call(_initCall);             require(success, string(reason));         }     } }  If you are satisfied with the contract you can deploy ERC-2470 on mainnet and use it to deploy this factory. Or you can give me the code and I deploy the GenericFactory3 with 2470. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "23/01/2020-02:49:53",
+                    "content": "Perhaps this would be the fixed \u201cConterfactualFactory\u201d: contract CounterfactualFactory {         constructor() internal {}  \tfunction _create2(bytes memory _code, bytes32 _salt, uint256 _value, bytes memory _initCall) \tinternal returns(address) \t{ \t\tbytes memory code = _code; \t\tbytes32      salt = keccak256(abi.encodePacked(_salt, _value, _initCall)); \t\taddress      addr; \t\t// solium-disable-next-line security/no-inline-assembly \t\tassembly \t\t{ \t\t\taddr := create2(_value, add(code, 0x20), mload(code), salt) \t\t\tif iszero(extcodesize(addr)) { revert(0, 0) } \t\t}                 if(_initCall.length > 0){                         (bool success, bytes memory reason) = addr.call(_initCall);                         require(success, string(reason));                 } \t\treturn addr; \t}  \tfunction _predictAddress(bytes memory _code, bytes32 _salt, uint256 _value, bytes memory _initCall)  \tinternal view returns (address) \t{ \t\treturn address(bytes20(keccak256(abi.encodePacked( \t\t\tbytes1(0xff), \t\t\taddress(this), \t\t\tkeccak256(abi.encodePacked(_salt, _value, _initCall)), \t\t\tkeccak256(_code) \t\t)) << 0x60)); \t} }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "23/01/2020-18:39:29",
+                    "content": "    3esmit:  Regarding \u201cGenericFactory2\u201d, it\u2019s still clearly possible to collide addresses.   How? The code you proposed is really similar to mine. The only difference I see is you made the function payable and put the msg.value in the actualSalt. I see that you put the msg.value in the constructor (I would have put it in the .call(). It that something you plan to include in ERC2470? I\u2019ve never seen payable constructor but who knows, it might be a thing \u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "24/01/2020-01:43:29",
+                    "content": "    Amxx:  How?   You left open the direct _salt of create2 exposed, while in the other function you wrap around the parameters of callback. This means that in one chain one contract could have been initialized with the callback function, and other chain the same address could have been initialized without callback just by passing directly the same salt used in the other function/chain. Therefore, if there is no callback, it should even hash it against an empty callback. I don\u2019t plan to include msg.value or payable in ERC2470, it don\u2019t seem to be a Singleton use-case to initialize a contract with funds, however in Ethereum that possible, and as you intent to support any type of contract, I imagine you want to have payable in the constructor call too. To be honest, I never seen a contract using a payable constructor. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.135416666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "30",
+                    "likes": "2",
+                    "time": "24/01/2020-01:43:35",
+                    "content": "ERC2470 was done for other developers don\u2019t have to replicate what ERC820 and ERC1820 every-time they need a key-less contract deploy. I have other plans for ERC2470 and development chains as well, so these infrastructure contracts, such as ERC2470 and the ones derived from it could be initialized at genesis of ganache development chains, for example. After create2, this was not possible, but now as is possible, it seems a useful piece to have available for building Ethereum infrastructure of Singleton. As you might now due your prior research on this topic. this also solves the problem of who gets to deploy a trustless contract, which technically is anyone, but in the case of ERC2470, a contract exists based on it\u2019s code. Other great advantage of ERC2470 is the vanity generator for ERC2470, in past, creating a vanity contract was complicated, usually involved brute-forcing key generation until found a nonce 0 contract that does the starting bytes desired, however for key-less deploys that greatly increases complexity. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.222222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "31",
+                    "likes": "1",
+                    "time": "30/03/2020-23:13:17",
+                    "content": "  Ethereum Improvement Proposals    EIP 2470: Singleton Factory Details on Ethereum Improvement Proposal 2470 (EIP 2470): Singleton Factory      https://etherscan.io/address/0xce0042B868300000d44A59004Da54A005ffdcf9f#code ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-2470",
+                        "https://etherscan.io/address/0xce0042B868300000d44A59004Da54A005ffdcf9f#code"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "32",
+                    "likes": "2",
+                    "time": "03/09/2020-16:01:29",
+                    "content": "I recommend checking out GitHub - Zoltu/deterministic-deployment-proxy: An Ethereum proxy contract that can be used for deploying contracts to a deterministic address on any chain..  I (and others) have been using that for deterministic deployments of contracts for over a year now.  It has the advantage of letting you just do a normal deployment transaction but set the to field on the transaction to the deployment proxy address.  It also has the nice property that the deployment proxy deployment code is very tiny, so it can be inlined easily into say another EIP.   The reason I didn\u2019t create an EIP is because I don\u2019t think there is significant value in standardizing it.  Anyone can deploy with whatever mechanisms they want.  I can use my deployer and you can use your deployer and everything works just as well as if we both used the same deployer. Something being a good idea, or a good design pattern doesn\u2019t mean it needs to be standardized.  There are many good design patterns that are not also standards, but end up widely used because they are good ideas.  Generally, a standard should exist if you he a many to many relationship of actors who need to communicate with each other. You have indicated that you plan to refer to this in other standards.  The only place I can think of where this would make sense is a standard for a central registry.  In such a case you can simply define the deployment process in that standard, like how EIP 1820 did, but in this case it would be a bit simpler as the steps are just \u201csend this data to this contract address, if no contract exists at that address then send ETH to this address and then submit this transaction\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.082465277777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "10/10/2020-07:53:51",
+                    "content": "    MicahZoltu:  deterministic deployments of contracts   ERC-2470 uses this yes, but it\u2019s not only this, but also the \u201ckeyless deployment\u201d. No one control any keys that are related to the deployment of ERC-2470 or it\u2019s children.     MicahZoltu:  in this case it would be a bit simpler as the steps are just \u201csend this data to this contract address, if no contract exists at that address then send ETH to this address and then submit this transaction\u201d.   Exactly, so instead of everyone that needs this feature of \u201cdeterministic keyless deploy\u201d, don\u2019t have to redo the process. they can just use ERC-2470. Also, they don\u2019t have to mention about how to deploy the 2470 contract, because it would be described in the 2470 document. I see that this is interesting to have as an EIP, so dev tools can integrate this behavior, so everyone uses the same thing instead of each one using a different or own implementation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.964285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "10/10/2020-12:42:15",
+                    "content": "    3esmit:  ERC-2470 uses this yes, but it\u2019s not only this, but also the \u201ckeyless deployment\u201d. No one control any keys that are related to the deployment of ERC-2470 or it\u2019s children.   Perhaps I\u2019m misunderstanding, but the deterministic-deployment-proxy I linked above also supports \u201ckeyless deployment\u201d?  That is, anyone can deploy the contract from any address and it will end up deployed at the same address on all chains no matter who the deployer is. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "35",
+                    "likes": "1",
+                    "time": "10/10/2020-15:48:36",
+                    "content": "Ah, I see now, you also did the keyless deploy of the factory. Yes, it exactly the same thing. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "10/10/2020-16:14:37",
+                    "content": "Seems like the only difference is that in 2470 the salt of create2 is exposed. This was done to make easier to create vanity addresses. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "22/10/2020-11:31:26",
+                    "content": "Also the yul implementation reverts if create2 fails, which the current eip 2470 implementation doesn\u2019t. I would recommend to add this else quite some tools cannot properly estimate the transaction. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "22/10/2020-12:04:12",
+                    "content": "Hey, I would like to test this behavior before implement it. Can you give me an example of a tool/contract that fails to estimate the create2? I never experienced that with Singleton Factory, maybe it depends on what constructor is doing? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 2.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "39",
+                    "likes": "1",
+                    "time": "22/10/2020-12:41:38",
+                    "content": "truffle fails on this you can tests this with https://github.com/gnosis/delegate-registry/commit/1a181e5aacca33a743cc3f51e7473728a8a063be Also I find it very unexpected that the transaction doesn\u2019t revert if the deployment fails. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.55
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "22/10/2020-23:58:48",
+                    "content": "Thanks for reporting this issue. I see the issue with the gas estimator. It looks like everytime create2 is used the check must be done, or the gas estimator should be fixed. I ran the script you linked but there I had no issues, I just had issues when using it with Metamask directly on the etherscan dapp. I\u2019ve had other problems with gas estimator, like in GnosisMultisig, when the last confirmation is supposed to execute something, or even calling execute. As the execution failed generates an event informing the fail instead of reverting, its the \u201cless gas cost\u201d path the estimator finds. Personally I think that this is not a issue with SingletonFactory contract, but with the gas estimator should be fixed for all cases, as this is not only affecting this case, but other systems as well. For working around the issue, there are 3 paths forward for this:  Creating a new singleton factory that reverts if deploy failed a. redeploying from a keyless deploy b. deploying in top of current singleton factory. Creating a wrapper contract around singleton factory that does this check. Using a custom gas calculation for this issue.  For  1,2, I\u2019ll provide a version with that feature. For 3.: Can you see if this workaround works for you? in migrations/utils/singleton_factory.js line 74:     const blockGasLimit = (await web3.eth.getBlock('latest')).gasLimit     const txGasLimit = await new web3.eth.Contract(SINGLETON_FACTORY_ABI, SINGLETON_FACTORY).methods.deploy(bytecode, salt).estimateGas({from: deployer, gas: blockGasLimit});     const { tx } = await factory.deploy(bytecode, salt, { from: deployer, gas: txGasLimit });  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.63903743315508
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "41",
+                    "likes": "1",
+                    "time": "23/10/2020-00:17:10",
+                    "content": "Calling estimateGas will not fix this (that is what truffle does under the hood). We encountered that issues on multiple machines when deploying to mainnet, rinkeby and kovan. Adding a wrapper contract will increase the deployment costs (especially since there is discussion around increasing the gas costs for internal calls). Currently I work around by checking before deployment that the call succeeds (expected address is returned) when the estimated gas limit is set. I also wrote a js lib for that (it supports also @MicahZoltu version):  https://github.com/gnosis/singleton-deployer there you can see that I do some checks for the gas limit before deployment: https://github.com/gnosis/singleton-deployer/blob/main/packages/core/src/factory.ts#L36 ",
+                    "links": [
+                        "https://github.com/gnosis/singleton-deployer/blob/main/packages/core/src/factory.ts#L36"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "23/10/2020-00:37:20",
+                    "content": "Estimate gas don\u2019t works even if defining the gas parameter to block gas limit? Where is the best place to report this issue? https://web3js.readthedocs.io/en/v1.3.0/web3-eth-contract.html#id38 as I understand, the gas parameter should aid on cases like this. The intent of not checking the deploy was that this could be done externally, and the factory would just try to deploy with the gas provided. I agree the wrapper contract is the worst way to go on this solution. I liked you workaround I think that, if we are unable to have a fix for gas estimate, than the best is to make a new keyless deploy. This might take some time as I will let the script find an address that contains as many zeros as possible. What way you recommend of checking the contract deploy worked? Just check if address returned is not zero? Or also check if extcodesize is greater than zero? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.118181818181818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "23/10/2020-06:35:31",
+                    "content": "So if I set the Gaslimit for the deployment tx to the block gas limit it would work. The estimateGas always tries to find the lowest value where the ethereum transaction is \u201csuccessful\u201d (aka not reverting). Maybe I would say it is just unexpected, if described in the eip that you need to pay attention to the gas as the factory does not enforce success I don\u2019t see an immediate need to fix it. Checking that the returned value is != 0 should be enough, afaik that is how success is defined in the eip for create2. I would collect more feedback before a redeploy. (E.g. add the fallback behaviour that is used in the yul implementation). I agree that estimations are still annoying, especially for gas intensive, nested calls \u2026 Which deployment of a contract via factory is. Not sure should \u201cfix\u201d this  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.069444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "23/10/2020-14:10:51",
+                    "content": "I opened an issue in ethereum-go: https://github.com/ethereum/go-ethereum/issues/21746 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "25/10/2020-05:17:20",
+                    "content": "I submitted a fix to the eth_estimateGas on go-ethereum https://github.com/ethereum/go-ethereum/pull/21751 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "46",
+                    "likes": "1",
+                    "time": "29/10/2020-02:02:31",
+                    "content": "@rmeissner so this is what you suggest? contract ERC2470 {      fallback() external payable {         deploy(msg.data, 0);     }      function deploy(bytes memory _initCode, bytes32 _salt)         public         payable         returns (address payable createdContract)     {         assembly {             createdContract := create2(callvalue(), add(_initCode, 0x20), mload(_initCode), _salt)         }         require(createdContract != address(0), \"ERC2470: CREATE2 failed\");     }  }  Anything else you want to add? This seems wrong, because with \u201cpayable\u201d creations some contracts might deploy something different, however this can already be achieved by using other transaction parameters like gas limit or gas price. So I might allow this and just add to security considerations that when a contract accepts value at creation, it should also work when msg.value is zero, or execute the same procedure regardless of value in constructor. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.196428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/saurik",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "04/12/2020-21:19:49",
+                    "content": "So, the 100 gas bid for this contract feels \u201chigh\u201d, but in practice isn\u2019t high enough :(. In fact, it is below the minimum gas bid for Avalanche, and so this contract cannot be deployed to their C-chain at all. It is sadly too late to fix this EIP over this, but I\u2019m going to assert the bid should have been 500, with the argument that geth actually used to (and sort of still does?) have a maximum gas suggestion limit of 500, which makes this that schilling point for \u201ca lot of gas\u201d. (This also happens to be greater than the weirdly-hardcoded gas limit on Avalanche C-chain, which is 470. FWIW, I do not consider Avalanche\u2019s design here reasonable, and have an issue filed at https://github.com/ava-labs/coreth/issues/40; but, even so, I am still sad that EIP2470 went with what feels like an arbitrary 100 instead of seeing the existing 500 limit, particularly as the gas bid on Ethereum itself was up towards 500 for quite a bit of time this year.) What I\u2019m currently intending to do is to deploy a variant of EIP2470 to all of the chains I\u2019m working with that uses the exact same transaction as the one in EIP2470 but with 500 instead of 100 as the gas bid (as I figure that that is the schilling point for such a contract, given the further existence of EIP2470; this is of course throwing away the 00s optimization, but it isn\u2019t even clear to me what that was gaining us, as the non-0s in that address don\u2019t cost anything, right?). That said, I actually ended up coming to this thread because of a link I found in that issue that was filed about gas cost estimation, so I\u2019m guessing that I should probably deploy that deterministic-deployment-proxy project instead, if it is in fact fixing that issue. (Sadly, I see it is also using 100 Gwei. Is there something I\u2019m missing for why 100 Gwei is considered firmly \u201cenough a-lot-of-gas that the idea that a currency would need more would be preposterous\u201d?) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.80703933747412
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "23/02/2021-20:08:30",
+                    "content": "    saurik:  Is there something I\u2019m missing for why 100 Gwei is considered firmly \u201cenough a-lot-of-gas that the idea that a currency would need more would be preposterous\u201d   What we should have used? gasPrice at 1000 Gwei? In ETH chain, currently there are times where you could deploy it. The reason 100 was choosen is because 1820 used it, and 1820 probably choosed it because the normal gas prices at that time were like 10gwei. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/saurik",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "01/04/2021-09:12:06",
+                    "content": " What we should have used? gasPrice at 1000 Gwei?  I made an explicit argument\u2013seemingly ignored ;P\u2013that the schelling point (which to me is a very useful way of analyzing this question) is \u201c500 Gwei\u201d due to what as-far-as-I-know continues to be a soft cap (and which certainly used to be a pretty hard cap) in geth at that value (and, in the few months since my writing that, I\u2019ve only become more convinced of this based on actually seeing the weird behavior that happens as the network pushes up towards 500 Gwei). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.153463203463203
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "05/04/2021-16:26:46",
+                    "content": "Do you have any idea on how to let this fee open? I can update the EIP to use 500 gwei for the final interation, but I am not sure if there wont be another new chain or new situation where 500 gwei wont work  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.022727272727273
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/saurik",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "06/04/2021-01:05:27",
+                    "content": " Do you have any idea on how to let this fee open?  FWIW, I (at least) don\u2019t: techniques surrounding hacks on top of CREATE and CREATE2 seem to fundamentally require predicting the future, as the gas bid has to be signed. I don\u2019t think this is quite \u201chopeless\u201d to do \u201cpretty well\u201d, as if the price of gas is going up typically the price of the coin will go up as well, seeing that the primarily utility of the coin is to pay for gas; and I think that the common standard of 10^18 decimals combined with psychological price points surrounding new coin launches caps the low end of gas fees somewhat. But it is of course still easy to come up with mechanisms and scenarios where any \u201creasonable price\u201d\u2013which is maybe at least vaguely important to consider: Orchid paid thousands of dollars to deploy the aforementioned Gnosis contract on RSK, as the coin on their chain is Bitcoin, now at ~$50k (so, fwiw, if anyone wants to use a factory across a number of chains: I have one for you to use, and we will even help deploy it places)\u2026 but if it had been hundreds or even tens of thousands, we probably would not have ;P\u2013is going to just not be workable. I do have a suggestion, though! One might argue that, to the extent to which this is considered functionality the platform \u201cshould have\u201d\u2013and the existence of EIP-1820, which developers currently are unable to deploy on Avalanche, as even their \u201clower as of last week\u201d minimum gas price of 225 nanoAVAX is too high, seems to argue for given that it is a dependency of other standards\u2013the platform needs to provide a guaranteed way to do this: it should either be specified as a hardcoded address or as a new CREATE3 instruction. In the world where this is CREATE3, it should be pretty clear how it would work\u2026 but it would now require getting implementation buy in from all of the chains to add it\u2013and it is kind of feeling like the ship has sailed as of mid-2020: new feature are going to be hard to rely upon\u2013but, in a world where it were a hardcoded address, then Nick\u2019s method could merely be a fallback. Like, AFAIK nothing prevents there from being a special case on (for example) Avalanche to have this factory\u2019s creation be either a one-off special case or even a built-in. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.2888961038961035
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/flockonus",
+                    "index": "53",
+                    "likes": "1",
+                    "time": "02/03/2023-04:29:09",
+                    "content": "Hey @3esmit this EIP is quite interesting, any update to it, OR do you know of Singleton Factory that we can use today has been deployed across the majority of chains? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 7.5
+                }
+            ]
+        }
+    ],
+    "group_index": "988"
+}

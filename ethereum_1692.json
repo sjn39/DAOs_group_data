@@ -1,0 +1,65 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/cft-collaborative-fungible-token/8896",
+            "title": "CFT - Collaborative Fungible Token ",
+            "index": 8896,
+            "category": [
+                "Primordial Soup"
+            ],
+            "tags": [
+                "token",
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mukas",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "11/04/2022-16:16:29",
+                    "content": "I propose a new type of token, CFT - Collaborative Fungible Token It consists of a token that is created between different members of the community, each one will contribute a grain of sand or portion of the token and together a whole will be formed. There are 2 types of owners:   The owner or owners of the CFT, who will have the power to decide what to do with it, for example put it up for sale or exchange it.   The monetary owners of the pixels/percentage/shares that will be able to exchange them individually and receive the royalties that correspond to them.   I give you an example based on the mural r/place of Reddit, imagine a mural of 1000 by 1000 pixels, each user or address will have permission to paint one or more pixels in one color, once they are all painted the mural or Token will be complete and it will belong to all the users who participated in its creation, each user will own a percentage that will depend on their involvement, that is, if you painted 2 pixels, you own twice as much as whoever painted 1. I am currently working on a simple demo version of how to form a CFT, it is deployed on the BSC Testnet. If you\u2019re interested in me being on other testnets, let me know. TokenizedPixel I present to you the draft of a CFT, I have treated the portions of the CFT as pixels, I hope you find it interesting and help me improve it // SPDX-License-Identifier: GPL-3.0  pragma solidity >=0.7.0 <0.9.0;  contract CFTPixel     // CFT = Collaborative Fungible Token {     address[30][30] private owners;     string[30][30] private colors;     uint[30][30] private prices;      // Token functions      function buyPixel(uint coordX, uint coordY) payable external         //  Buy Pixel     {         require(msg.value >= prices[coordX][coordY] && prices[coordX][coordY] != 0, \"Very low quantity or is it not for sale\");         payable(owners[coordX][coordY]).transfer(msg.value);         owners[coordX][coordY] = msg.sender;         prices[coordX][coordY] = 0;     }      function sellPixel(uint price, uint coordX, uint coordY) external         //  Sell Pixel     {         require(owners[coordX][coordY] == msg.sender, \"You are not the owner\");         prices[coordX][coordY] = price*100000;     }      function cancelSellPixel(uint coordX, uint coordY) external         // Cancel the sale of a pixel     {         require(owners[coordX][coordY] == msg.sender && prices[coordX][coordY] >= 1, \"You are not the owner\");         prices[coordX][coordY] = 0;     }      function setNewColor(string memory color, uint coordX, uint coordY) external         //  The owner can change the color of his pixel     {         require(owners[coordX][coordY] == msg.sender, \"You are not the owner\");         colors[coordX][coordY] = color;     }      function drawPixel(string memory color, uint coordX, uint coordY) external         //  Color a pixel, and save data like the owner, and the color     {         require(checkPixel(coordX, coordY) == false && coordX < 30 && coordY < 30, \"Token Complete\");         owners[coordX][coordY] = msg.sender;         colors[coordX][coordY] = color;      }      function checkPixel(uint coordX, uint coordY) private view returns(bool)         //  Check if there is any pixel without owner, if not, block the modifications         //  This way of ending the CFT can be changed to a time limit for example     {         if(owners[coordX][coordY]==address(0)){             return false;         }         return true;     }      function checkIsComplete() external view returns(bool)         //  Check if there is any pixel without owner, if not, block the modifications         //  This way of ending the CFT can be changed to a time limit for example     {         for(uint i=0; i<30; i++){             for(uint j=0; j<30; j++){                 if(owners[i][j]==address(0)){                     return false;                 }             }         }         return true;     }      // Getters      function getOwners() external view returns(address[30][30] memory)         // Returns the array of pixel owners     {         return owners;     }      function getColors() external view returns(string[30][30] memory)         // Returns the color matrix of the CFT         // This is the function that should be called to build the CFT     {         return colors;     }      function getPrices() external view returns(uint[30][30] memory)         // Returns the prices matrix of the CFT     {         return prices;     }      function getOwnPixels(address owner) external view returns(uint)         // Returns the number of pixels that msg.sender has     {         uint cont=0;         for(uint i=0; i<30; i++){             for(uint j=0; j<30; j++){                 if(owners[i][j]==owner){                     cont++;                 }             }         }         return cont;     }  }  ",
+                    "links": [
+                        "https://autotoken.tech/TokenizedPixel/index.php"
+                    ],
+                    "GPT-summary": "The author is proposing a new type of token called CFT - Collaborative Fungible Token. The token is created between different members of the community, each contributing a portion of the token. The proposal is explained in detail, including the two types of owners and how the token functions. The author is currently working on a demo version of the CFT and is open to feedback. A third party could give constructive criticism or ask questions about the proposal.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.413697788697789
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Luomoneros",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "21/04/2022-18:09:56",
+                    "content": "This could be an interesting development, however it\u2019s a bit like tokenizing a token\u2026 I think that with a fungible token it is not possible: how do you identify that 10 pixels are mine? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mukas",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "21/04/2022-21:24:11",
+                    "content": "Exactly, it is like a tokenized token, but more like a shared NFT, the difference is in being able to treat it as a whole. There are 2 types of owners:   The owner or owners of the CFT, who will have the power to decide what to do with it, for example put it up for sale or exchange it.   The monetary owners of the pixels/percentage/shares that will be able to exchange them individually and receive the royalties that correspond to them.   The owner is known by the coordinates (as well as the price), owners[i][j] = pixels[i][j] = prices[i][j], also now reading your comment I realize that this surely it can be improved. I hope to finish the smart contract as soon as possible to be able to make everything much clearer, thanks for your comment, greetings ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.4851190476190474
+                }
+            ]
+        }
+    ],
+    "group_index": "1692"
+}

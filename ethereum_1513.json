@@ -1,0 +1,59 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/safetransferfrom-can-be-called-by-anyone-once-setapprovalforall-has-been-granted-on-one-address/7554",
+            "title": "safeTransferFrom can be called by Anyone once setApprovalForAll has been granted on one address ",
+            "index": 7554,
+            "category": [
+                "Primordial Soup"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/JosephF",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "24/11/2021-14:48:55",
+                    "content": "The OpenZeppelin ERC721 Contract Library (I am using the Upgradeable version, but I assume that the behaviour should be the same in the \u201cstandard\u201d non-apgradeable version) has the setApprovalForAll function, which enables an NFT owner to grant an operator to sell any of his Tokens on his behalf. I have used this function in one of my projects, whereby NFT owners grant (solely) my Smart Contract address, the ability to sell their Tokens on their behalf. I have noticed however, that once the setApprovalForAll function has been called by an owner, anyone could call the safeTransferFrom function and not only my Smart Contract or the Owner. This could constitute a major vulnerability in some existing smart contracts, in which the developer would expect that once the setApprovalForAll function has been called, that it would grant only the addresses found in the corresponding mapping to have the ability to call the safeTransferFrom function, but it actually grants anyone this ability. To reproduce this vulnerability, I have implemented the following: I have the following function in my ERC721 Smart Contract, which itself calls the safeTransferFrom function: function tokTransfer(address payable from, address to, uint256 tokenId, uint256 price) external payable {    require(msg.value >= price);    this.safeTransferFrom(from, to, tokenId);    ... }  Token owners have called the setApprovalForAll on my Smart Contract, granting it authorisation to sell their tokens on their behalf. However, I am able to call this function directly in Truffle with the following statement (using the Purchaser account (i.e. accounts[2]) as the \u201cfrom\u201d parameter (i.e. _msgSender)): instance.tokTransfer(accounts[1], accounts[2], 1001, '2500000000', {from: accounts[2], value: '2500000000'})  I can actually call my function, which itself calls the safeTransferFrom OpenZeppelin function, while the Sender (_msgSender) of the Transaction does not satisfy the require statement in the function below (found in the OpenZeppelin Library).  function safeTransferFrom(     address from,     address to,     uint256 tokenId,     bytes memory _data  ) public virtual override {     require(_isApprovedOrOwner(_msgSender(), tokenId), \"ERC721: transfer caller is not owner nor approved\");     _safeTransfer(from, to, tokenId, _data);  }  I have used the account (accounts[2]), which corresponds to the purchaser in the transaction above to make it clear and to emphasise on the vulnerability, but any account could be used for the \u201cfrom\u201d parameter. Also, please note that I am testing this using Ganache, just in case that this issue does not exist on the public Testnets or the Main Blockchain (I haven\u2019t tested it on these yet), although I would expect it to behave the same. Thank you. Joseph F ",
+                    "links": [],
+                    "GPT-summary": "The author of the post discusses a vulnerability in the OpenZeppelin ERC721 Contract Library, where anyone can call the safeTransferFrom function once setApprovalForAll has been granted on one address. The author provides an example of how this vulnerability can be exploited and suggests that this could be a major vulnerability in some existing smart contracts. The post is a call for attention to this issue and a request for feedback or review.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.416790674603175
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "24/11/2021-20:26:11",
+                    "content": "Probably more a question for the openzepplin forum or solidity forum. I didn\u2019t look into it in detail, but one thing to note: when you call a function of a the contract with this. it will trigger an internal transaction and therefore msg.sender in the called method will be the contract itself. Therefore it doesn\u2019t matter what sender actually called your tok method. Edit: Tgis behavior is for example mentioned in this section of the solidity docs: Contracts \u2014 Solidity 0.8.10 documentation ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/JosephF",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "24/11/2021-23:10:00",
+                    "content": "Thank you a millions times @rmeissner You are absolutely right. The \u201cthis\u201d keyword was messing up everything. After removing it, everything works as expected and unauthorised accounts are no longer able to call the transfer function. Regarding posting this post on this Forum, I had actually reported the issue on the OpenZeppeling Forum, but they were the ones who had actually suggested me to bring it up here (perhaps because of a potential vulnerability). Again, thank you very, very much and have a wonderful day! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.2160714285714285
+                }
+            ]
+        }
+    ],
+    "group_index": "1513"
+}

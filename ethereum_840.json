@@ -1,0 +1,87 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-712-standards-clarification-primarytype-as-domaintype/3286",
+            "title": "EIP-712 Standards Clarification (primaryType as DomainType) ",
+            "index": 3286,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "eip-712"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SilentCicero",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "17/05/2019-12:06:53",
+                    "content": "Is there any reason why I couldn\u2019t set the primaryType to the EIP712Domain type? It seems that would still be congruent to EIP712, but would allow me to specify the typing / data in the way I want, which is highly gas sensitive for deployment / verification (thus constructing only a single type and not 2 would be ideal). Yes, I have replay protection covered on all fronts. The type data for a eth_signTypedDataV3 request to metamask would be as follows: const typedData = {   types: {     EIP712Domain: [       { name: \"chainId\", type: \"uint256\" },       { name: \"verifyingContract\", type: \"address\" },       { name: \"nonce\", type: \"uint256\" },       { name: \"destination\", type: \"address\" },       { name: \"gasLimit\", type: \"uint256\" },       { name: \"data\", type: \"bytes\" },     ],   },   domain: {     chainId: 1,     verifyingContract,     nonce,     destination,     gasLimit,     data,   },   primaryType: \"EIP712Domain\",   message: {}, };  Can this be clarified @fulldecent @danfinlay? I believe this to be standard, even if it\u2019s a slight misuse of EIP712 intentions. I just don\u2019t like being constrained to two hash productions if I don\u2019t absolutely need it. And in this case, it would be great to get all the typed data work done in the domain than in the message / secondary data. The change to the current EIP712 library would be as follows, as is extremely minimal:   github.com/MetaMask/eth-sig-util       Allow `primaryType` to be `EIP712Domain`     by SilentCicero   on 12:19PM - 17 May 19 UTC   1 commits   changed 1 files   with 3 additions   and 1 deletions.        ",
+                    "links": [
+                        "https://github.com/SilentCicero",
+                        "https://github.com/MetaMask/eth-sig-util/pull/51",
+                        "https://github.com/SilentCicero",
+                        "https://github.com/MetaMask/eth-sig-util/pull/51"
+                    ],
+                    "GPT-summary": "The author of the post is proposing a change to the EIP-712 standard and is asking for feedback on whether setting the primaryType to the EIP712Domain type would still be congruent to EIP712. The author explains that this change would allow them to specify the typing/data in the way they want, which is highly gas sensitive for deployment/verification. The author also provides an example of the type data for an eth_signTypedDataV3 request to metamask and suggests a minimal change to the current EIP712 library. A 3rd party could provide constructive criticism or ask questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Privacy, Security and risk management",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 4.538095238095238
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "22/05/2019-16:35:57",
+                    "content": "Thanks for posting, will try to look closer soon. To add context, you also sent me this example MultiSig wallet as part of your reason for wanting this to work:   github.com   SilentCicero/MultiSignatureWallet/blob/master/MultiSignatureWallet_Draft.yul /**   * @title MultiSignatureWallet   * @author Nick Dodson <thenickdodson@gmail.com>   * @notice 312 byte Weighted EIP712 Signing Compliant Delegate-Call Enabled MultiSignature Wallet for the Ethereum Virtual Machine   */ object \"MultiSignatureWallet\" {   code {     // constructor: uint256(signatures required) + address[] signatories (bytes32 sep|chunks|data...)     codecopy(0, 312, codesize()) // setup constructor args: mem positon 0 | code size 280 (before args)      for { let i := 96 } gt(mload(i), 0) { i := add(i, 32) } { // iterate through signatory addresses, address > 0         sstore(mload(i), 1) // address => 1 (weight map     }      sstore(1, mload(0)) // map contract address => signatures required (moved ahead of user initiated address => weight setting)      datacopy(0, dataoffset(\"Runtime\"), datasize(\"Runtime\")) // now switch over to runtime code from constructor     return(0, datasize(\"Runtime\"))   }   object \"Runtime\" {     This file has been truncated. show original      ",
+                    "links": [
+                        "https://github.com/SilentCicero/MultiSignatureWallet/blob/master/MultiSignatureWallet_Draft.yul",
+                        "https://github.com/SilentCicero/MultiSignatureWallet/blob/master/MultiSignatureWallet_Draft.yul"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.4375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bitpshr",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "22/05/2019-16:52:45",
+                    "content": "This should be fine based on the standard as-written, and I also think this strategy can be a big win in certain contexts in terms of gas. Based on the PR, it looks like it can be implemented in a backwards-compatible manner with the existing implementation. I can\u2019t think of a reason why reducing hashing in this type of case would ever be detrimental. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.430952380952382
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "28/05/2019-17:52:43",
+                    "content": "Published as eth-sig-util@2.2.0 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "840"
+}

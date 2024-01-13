@@ -1,0 +1,82 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/limiting-dark-pools-and-mev-in-ethereum/6634",
+            "title": "Limiting dark pools and MEV in Ethereum ",
+            "index": 6634,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/karim",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "12/07/2021-10:26:54",
+                    "content": " Motivation I\u2019m thinking about ways to limit the existence of dark pools and information asymmetry between miners and the rest of the ecosystem and I would like to get your feedback on a possible future EIP that could severely hinder MEV. I consider this idea to be quite controversial because it sort of reverses some of the 1559 changes and requires more processing power from the nodes.  Proposal   Let\u2019s consider that we are already in the PoS world, there we have the process of \u201cattestation\u201d. At least 128 validators are required to attest to each shard block \u2013 this is known as a \u201ccommittee.\u201d   The committee is chosen randomly so there is little chance that they all will come from the same organization/actor.   Each transaction goes through two phases: First it is submitted to the public txpool, then a member of the committee will pick up that transaction, and dry-run it on the state that reflects the latest block (as if it was the only transaction in the newly simulated block). The result of this attestation is: a. A signature of the attester, proving that they \u201csaw\u201d the transaction. b. An access list of storage addresses they observed during their dry-run (EIP-2930). c. an estimate of the gas used during the transaction execution. d. Transactions that run out of gas will not be attested.   Repeat step 3 for the same transaction and accumulate N attestations that confirm the exact same outcomes from N different members of the committee for that validation time-slot. For now I\u2019m arbitrary proposing N to be something like 3-5 attestations.   Only transactions that has collected enough attestations/witnesses will be eligible for inclusion in the next block.   On top of that, apply the idea proposed in EIP-3378 (EIP-3378: Ordered Blocks - HackMD) to randomize the order of those transactions within a block. I believe that this direction could eliminate:  dark pools to a large extend MEV sandwich, frontrunning and backrunning attacks (because you can\u2019t insert arbitrary txs before or after that are not attested by N other nodes, and you can\u2019t predict the order at all [because out of gas txs also don\u2019t get attestations, and they are randomized -3378]).    To incentivise the attesting committee to spend time witnessing and attesting mempool transactions, the base fee would be in part transfered to those attesters instead of being burned. 1st attester gets 50% of the base fee, second attester 20%, third 10%, forth 10% and fifth 10%. For each given transaction.    Request For Feedback This proposal is early and quite rough. Constructive feedback would be very much appreciated. Have at it! ",
+                    "links": [],
+                    "GPT-summary": "The author proposes a future EIP to limit dark pools and information asymmetry between miners and the rest of the ecosystem in Ethereum. The proposal involves attestation by a committee of validators for each shard block, with transactions requiring a certain number of attestations to be eligible for inclusion in the next block. The proposal also includes incentivizing the attesting committee by transferring part of the base fee to them. The author is asking for feedback on the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Privacy, Security and risk management",
+                        "Token economics",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.969735621521336
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/norswap",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "13/07/2021-02:17:11",
+                    "content": "I\u2019ve been thinking a little bit about this as well. One criticism I have seen levered against proposals for ordering the transactions is that it causes searchers to flood the network with transactions to maximize their chances to be picked (for a liquidation for instance). At first glance it looks like this proposal suffers from the same issue, or am I wrong here? Another question I have is what the benefits of letting members of the commitee pick transactions if you are going to shuffle them anyway? One potential reason I see is that if you just shuffle (and the shuffle has enough \u201cavalanche\u201d that you can craft your transactions to insert them strategically \u2013 which doesn\u2019t seem to be the case in EIP-3378?), you can still sandwich by (1) emitting very little transactions and (2) adapting your transactions until the order is what you want. You can even bypass (1) by stuffing with a lot of no-op transactions. Is that what you had in mind? In general, I don\u2019t think it\u2019s a good plan to try to eliminate MEV entirely. For profitable liquidations, for instance, it\u2019s only fair to have a bidding contest (in fact, in the long term it wouldn\u2019t be surprising if the miners are the ones that always liquidate). I wonder if  (1) shuffling most transactions pseudo-randomly and (2) introducing a new typed transaction for \u201cprioritized transactions\u201d that are not shuffled and are executed first (essentially they work like transactions do currently) is not a better idea. It prevents most sandwiches, unless it\u2019s so damn profitable that it\u2019s worth not including any other transactions in the block. Front-running is still possible, but not back-running. This seems fine, front-running is generally about racing for some public opportunity anyway (at least as far as I know - and I don\u2019t pretend to know a lot, so I\u2019d love counter-examples). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.482796717171717
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/karim",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "13/07/2021-12:45:00",
+                    "content": " Another question I have is what the benefits of letting members of the commitee pick transactions if you are going to shuffle them anyway?  This is to eliminate dark pools and the information asymmetry between miners and the rest of the ecosystem. A transaction cannot be eligible for inclusion unless it is seen and signed by few random validator nodes. That also prevents miners from crafting transactions and inserting them into a block without having them being seen and signed by \u201cthe public\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.5833333333333335
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "4",
+                    "likes": "2",
+                    "time": "13/07/2021-13:37:43",
+                    "content": "    karim:  On top of that, apply the idea proposed in EIP-3378 (EIP-3378: Ordered Blocks - HackMD ) to randomize the order of those transactions within a block.   The number 3378 seems to be used by another pull request on the EIP repository. I would suggest not using that here to avoid confusion, perhaps you also want to submit that EIP as a pull request to secure a number for it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 7.25
+                }
+            ]
+        }
+    ],
+    "group_index": "1382"
+}

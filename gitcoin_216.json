@@ -1,0 +1,81 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://gov.gitcoin.co/t/sybil-defence-ideas-for-gitcoin-and-grant-owners/11611",
+            "title": "Sybil Defence Ideas for Gitcoin and Grant Owners ",
+            "index": 11611,
+            "category": [
+                "\\xf0\\x9f\\xa7\\x99 \\xf0\\x9f\\xa7\\x99\\xe2\\x80\\x8d\\xe2\\x99\\x80\\xef\\xb8\\x8f Ideas and Open Discussion"
+            ],
+            "tags": [
+                "sybil",
+                "FDD",
+                "community"
+            ],
+            "content": [
+                {
+                    "author_link": "https://gov.gitcoin.co/u/Momonosukke",
+                    "index": "#1",
+                    "likes": "7",
+                    "time": "05/10/2022-21:32:16",
+                    "content": "Hey everyone, This post contains a series of arguments and suggestions aimed at improving Gitcoin\u2019s sybil resistance. It is informed by our own experience and investigation of some of the networks of sybil accounts that have targeted the Gitcoin platform as a whole, and individual grants more specifically. We have a strong appreciation for how important this problem is because we were recently put in a position where our own motivations were questioned. Our grant was attacked by fraudulent donations and it put us in a position where we had to prove our own innocence. The burden of proof should never be on a victim of an uncontrollable external event they were harmed by. The first contribution we would like to make is open sourcing a tool for on-chain sybil analysis. Many of the addresses behind the sybil accounts donating to our grant on Gitcoin were conducting most of their activities on Zksync, which is a relatively new L2 with technical properties that can be helpful to malicious actors conducting automated sybil attacks. This tool helped us aggregate data from different blockchains and analyse them. We hope that it can help others, especially grant owners, that may want to take a proactive role in Gitcoin sybil resistance, by starting with their own grant: GitHub - fileverse/sybil-analysis We are confident that if we were able to find so many connections between networks of sybil accounts with the limited data and resources we had, these connections will be even clearer using a larger dataset and by crowdsourcing the analysis. Recommendations: By analysing our own sybil attackers we were able to discover some important patterns of attack that can be prevented by changing certain verification and account management features on the gitcoin platform. We focus on five areas of intervention:  Targeting of Grant Discovery of Grant Automation Evolving Sybil Behaviour  [Targeting a Grant] Capping the number of donations that can be made to a particular grant based on the trust score. Eg: Anyone donating more than 10 times to a particular grant should have a trust score of 100+ on the gitcoin passport. [Targeting a Grant] Allowing grants to flag sybil behaviour on their grant - similar to flag grant function. [Targeting a Grant] Give grant owners the ability to reject QF matching tied to a specific donors\u2019. Because donations come directly to grant addresses, what grant owners can at least do is identify malicious actors and put them in a category of \u201cnot to be counted for QF matching\u201d. This is useful on many levels. First, it allows GitcoinDAO to see that a grant being targeted is actively fighting off the attackers. Second, it creates a quick response mechanism that leads to faster identification of attackers and a safer, fairer round. Third, it allows for corroboration to occur. For example, you will be able to see that of the top 10 grants\u2019 owners, 7 of them have reported at least 60% of the same accounts. Grant owners are the best front line you have, given the appropriate tools, to create a sybil resistant Gitcoin platform. [Discovery of Grant] For the \u201ctrending\u201d category only using the donations made from the users that have a trust score greater than 100. [Automation] Add some value to the trust score automatically by checking the activity / age of the github account. [Automation] Add recaptcha score to each transaction made from the gitcoin platform. [Evolving Sybil Behaviour] Real time sybil flagging engine (see below). Real Time Sybil Flagging System This system relies on the assumption that parts of sybil networks are automated systems and exist to manipulate the Gitcoin platform in ways which might not be obvious to someone looking from the outside. This is an attempt to design an adaptive system that can take advantage of external analysis and FDD teams investigators. Participation from the FDD Team and community members is a very important factor for its success.  In the above graph A and B Node transfer some money to C which then donates that money to some grant. In our case and of some other grants this pattern was followed:  We analysed donations made to our and others\u2019 grants and found that the addresses associated with potential sybil accounts were all donating to us by following the same script / pattern of transactions which we describe below:  Retrieve money from the same bridge. Do the similar type of transactions prior to the donation (do some token swaps and/or mint some NFT). Donate on low nonce, below nonce 15. Donate to one grant only. Return the rest of the money back into the bridge. Stop all activity once nonce 15 is reached or before. Rarely have any activity on the ethereum blockchain.  Finding from this that formed the base of assumption for the proposed system:  There is always a source of funds in the sybil Sybil addresses usually interact with similar services (bridges, mixers, DEX, CEX) Sybil usually do txns among their accounts to keep the total cost of doing the sybil attack low  A more proactive system:  Penalise all the other nodes interacting with the known sybil nodes in realtime Penalise all the other nodes using services used by known sybil nodes for cycling of funds. This assumes that there are unique mixers or other smart contracts being used by sybil nodes that would be very unlikely to be used by regular users. Take the input from community and FDD team of known sybil accounts in real time  Output of this system is the likelihood with which any given input account is a sybil node. Using sybil node score in real time matching calculation. How it works:  Start with a known sybill set that might expand or contract Keep a list two sets - one hop, two hop from the sybil set nodes Any donation is received by a grant. Get all the nodes that are one hop away from the node. Both in and out txns. Check if there are matches in this from the sybil set(1), sybil set hop 1(0.5) and sybil set hop 2(0.25). Depending on the match, add all the values. To get the sybil score   In this case drop off per hop is \u00bd, and can be tweaked depending on the performance of the system in real time.   Keep the min and max values of sybil score to map this value on that spectrum and get a percentage. Can use different ways to get the percentage.  If any account doing the donation has a high sybil score above sybil threshold \u2192 reduce their impact on the grant donation matching metric calculation. Areas of Improvement:  Include hops on different networks for generating one hop and two hop of known sybil set for step 2. Include hops on different networks for step 3. Tweak the sybil threshold depending on grant\u2019s reputation Tweak the sybil threshold depending on rounds progression  0.1 on day 1 0.2 on day 2 0.4 on day 3 \u2026 so on   FDD keeps adding nodes to sybil set during the round from their independent analysis Independent analysis of sybils flagged by the grant and their addition to sybil set  The above system is not a \u2018one stop solution\u2019, but a way to increase the attack cost involved with the sybil attacks as we can catch basic patterns from this. In most cases systems get attacked frequently by bots because it\u2019s easy to do so and has low or no penalty. The parameters should be tweaked to reflect the situation at hand and sophistication of the sybil attackers. Hope this post is useful to anyone out there trying to solve sybil resistance. ",
+                    "links": [
+                        "https://gov.gitcoin.co/t/gr15-fraud-analysis/11609/2"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.686833642547928
+                },
+                {
+                    "author_link": "https://gov.gitcoin.co/u/connor",
+                    "index": "#2",
+                    "likes": "7",
+                    "time": "05/10/2022-23:24:15",
+                    "content": "I really appreciate you writing all this up, sharing your Sybil analysis on Github, and more! This is very well written. And at the end of the day, it is indeed very hard to tell and prove whether a grant owner is involved in their Sybil donations. From what I\u2019ve seen there are two main categories of attackers:   Users Sybil attacking their own grant to significantly increase their matching (often fake/made-up projects)   Users farming possible future airdrops by Sybil attacking specific grants they are not associated with but have reason to believe might do an airdrop in the future   The problem has seemingly gotten worse with more big projects like Optimism airdropping to Gitcoin donors, ZKsync rumors, etc. There are also now tons of posts and threads like this one that speculate on grants to donate to (Fileverse is often included) and many of the grants in these lists end up getting the most donations:   twitter.com    olimpio.eth \u26a1\ufe0f @OlimpioCrypto  AIRDROP STRATEGY \ud83e\ude82  14Birds1Stone, Gitcoin edition v2  What is the Strategy? Choose your favourite causes on Gitcoin, donate, help out web3 expansion, and maybe get airdrops in the future  A curated list of 14 Gitcoin birds \ud83e\uddd9\u200d\u2642\ufe0f  \ud83e\uddf5   10:30 PM - 10 Sep 2022           1.7K                600            Hopefully once the Grants Protocol launches, and Passport is built out, there will be a much higher barrier to entry for creating multiple/fake profiles ",
+                    "links": [
+                        "https://twitter.com/OlimpioCrypto/status/1568728742494875648",
+                        "https://twitter.com/OlimpioCrypto/status/1568728742494875648",
+                        "https://twitter.com/OlimpioCrypto/status/1568728742494875648"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.871527777777778
+                },
+                {
+                    "author_link": "https://gov.gitcoin.co/u/ccerv1",
+                    "index": "#3",
+                    "likes": "6",
+                    "time": "06/10/2022-11:49:19",
+                    "content": "Thank you for this post \u2013 and for the helpful ideas on improving Sybil defense!     Momonosukke:  This tool helped us aggregate data from different blockchains and analyse them. We hope that it can help others, especially grant owners, that may want to take a proactive role in Gitcoin sybil resistance, by starting with their own grant: GitHub - fileverse/sybil-analysis   You should consider packaging this into a submission for the Gitcoin hackathon that\u2019s happening right now. I\u2019d love to see this tool be adopted as a new sybil scoring lego, both for FDD and the wider Ethereum community! ",
+                    "links": [
+                        "https://gitcoin.co/issue/29389"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.111549165120593
+                },
+                {
+                    "author_link": "https://gov.gitcoin.co/u/vijaykrishnavanshi",
+                    "index": "#4",
+                    "likes": "3",
+                    "time": "19/10/2022-15:52:27",
+                    "content": "Hey @connor, Indeed, sybil resistance is a very hard problem to solve in decentralised systems and we see Gitcoin trying its best to tackle it by crowdsourcing solutions and appreciate it. I prefer thinking of sybil attacks and resilience in terms of actors trying to exploit a system using the parameters it\u2019s based on. Focusing on the motives of the attackers and solving the problem based on motives can get quite complicated as the sybil networks evolve. System parameters on the other hand are known at all times. And although stopping the sybil attacks is the ideal outcome, a good second goal to have is tweaking the system parameters so that it doesn\u2019t lose its purpose or value because of ongoing sybil attacks. For the time being that is why we suggested some checks and balances that can be implemented in the short term to not have such scenarios in the future grant rounds. And also an adaptive system for long term defence. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.702651515151516
+                },
+                {
+                    "author_link": "https://gov.gitcoin.co/u/ZER8",
+                    "index": "#5",
+                    "likes": "2",
+                    "time": "05/11/2022-10:26:03",
+                    "content": "Just my 2 cents, but ideally Gitcoin should try to gain advantage of these airdrop farmers(because they are really unstoppable) and \u201cconvert then into regens without them knowing it\u201d(I think you actually used this sentence).  Some complex reverse engineering techniques may help achieve this goal. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                }
+            ]
+        }
+    ],
+    "group_index": "216"
+}

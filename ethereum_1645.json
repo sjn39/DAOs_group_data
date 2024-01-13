@@ -1,0 +1,702 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4895-beacon-chain-withdrawals-as-system-level-operations/8568",
+            "title": "EIP-4895: Beacon chain withdrawals as system-level operations ",
+            "index": 8568,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "shanghai-candidate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "10/03/2022-18:02:57",
+                    "content": "Discussions for Beacon chain withdrawals as system-level operations by ralexstokes \u00b7 Pull Request #4895 \u00b7 ethereum/EIPs \u00b7 GitHub follow: ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/shanghai-core-eip-consideration/10777/7"
+                    ],
+                    "GPT-summary": "The post is a pull request for EIP-4895 proposing discussions for Beacon chain withdrawals as system-level operations. The author is explaining the proposal and a third party is giving constructive criticism and asking questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "21/03/2022-13:50:13",
+                    "content": "On execution layer, the ETH comes \u201cout of thin air\u201d I assume? We can\u2019t withdraw from the ETH2 deposit contract since if a lot of addresses withdraw we can get negative balance? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "21/03/2022-14:18:27",
+                    "content": "Yeah, this EIP specifies an unconditional balance increase with no source, just like how the coinbase reward works. While it could be nice from an accounting standpoint to try to match withdrawals to deposits in the deposit contract, we would run into an issue as we (likely) end up with more ETH on the beacon chain than started in the deposit contract (due to validation rewards). So you could end up with some kind of negative balance in the deposit contract in the limit. I\u2019d also push back against addressing the deposit contract balance in this EIP to keep the scope smaller. I know @axic has thought some about the accounting here and he may have more to say. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.986111111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/OisinKyne",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "24/03/2022-20:00:32",
+                    "content": "Hey all, I have an ask about this specific requirement:  The withdrawals in a block are processed after any user-level transactions are applied.  Is there a definitive reason why these withdrawals need to be processed after the normal transactions? The reason I highlight it is cross-slot MEV. There are already serious concerns about BLS withdrawal keys that have been compromised, and best-effort out of protocol methods to mitigate this are being worked on, specifically focusing on the 0x00 to 0x01 change message feature being added. My concern relates to an EVM EOA being compromised, which is probably a smaller impact than the number of BLS keys that have been compromised, but still should be considered all the same. If an 0x01 recipient is compromised, and two actors hold the private key. They can be expected to bribe block producers for inclusion to sweep the rewards to a secure address. This bribe could theoretically approach 100% of the exited validator rewards, which at 16 exits per block could reach 512+ ether. My concern is, if we process this balance change after all of the regular transactions, the funds cannot be swept until the next block, and could leave 500+ ether in limbo, which I fear could encourage bad behaviour like DoS\u2019ing block producers. However, if we process these withdrawals before we process the standard transactions, the funds can be swept the same block that they become accessible. I think this could be cleaner, and might reduce the stress that would be put on the network/BPs versus spreading this unfortunate situation across multiple slots. What do people think? ",
+                    "links": [
+                        "https://github.com/ethereum/consensus-specs/pull/2855"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.8032407407407405
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "24/03/2022-22:22:28",
+                    "content": "Hi @OisinKyne, this is an interesting scenario\u2026 there is currently not any principled reason to choose processing withdrawals before vs. after the other transactions in a block and a strong argument one way or the other could change the route we go here. Prior versions of this work had the withdrawals before and I wrote 4895 to say after as it felt a bit more right; but, only for keeping w/ the symmetry of the block subsidy paid to the block\u2019s coinbase which is applied after the other transactions. It also seems to make MEV searching a bit easier as you don\u2019t also need to bother with withdrawal simulation on top of all the other things you want to do when searching (as you can just use the prior block\u2019s post-state as your starting state, without having to get some intermediate state of post-state + withdrawals.) Now, I definitely don\u2019t think we should cater to searchers if we can think of a good argument one way or the other, but I do personally find weight to the \u201csymmetry\u201d argument, if only to reduce the complexity of what you have to remember when reasoning about the protocol. This all being said, I have some questions about your specific scenario:  However, if we process these withdrawals before we process the standard transactions, the funds can be swept the same block that they become accessible.  If I can DoS proposers to capture the ether \u201cin limbo\u201d via after execution (by waiting until we get to a \u201cmalicious\u201d proposer I control), can\u2019t I also DoS them if we move to before execution and wait until we get to the same proposer under my control? It seems that this decision doesn\u2019t really change the outcome here, so I would still argue for after execution via the symmetry arguments I made at the start. Do you see it differently? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.551739926739927
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/OisinKyne",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "24/03/2022-23:01:32",
+                    "content": "Thanks for a quick response  So I do agree that there can be DoSing in both scenarios, but if balances are updated before, I believe the situation can be over and done with in one slot. If its after, it is at least two slots. As for whether either approach would result in a meaningfully different outcome, I have no idea, I also agree that at the end is more \u2018natural\u2019 for a tidy up system operation, and feels sensible. The reason I am averse to spreading MEV across slots is because I have a fear that that can be centralising. Obviously in this case I hope what I am describing is an extremely rare phenomenon, and won\u2019t ever meaningfully impact returns, but previously I have been concerned that contiguous block production being in the hands of one party can allow them to cause harm to systems that were built with assumptions from the PoW era, where no one could reliably control consecutive blocks. (Uniswap TWAPs being the obvious target imo) I wrote this blog post nearly a year ago that I never ended up publishing, and it is not 100% accurate anymore considering 0x01 and PBS, but I guess I just want to highlight where my concern is coming from and why I am chewing on whether withdrawal processing before or after normal transactions could mitigate or exacerbate the situation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.934523809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "25/03/2022-21:58:13",
+                    "content": " previously I have been concerned that contiguous block production being in the hands of one party can allow them to cause harm to systems that were built with assumptions from the PoW era  I think with the existence of mining pools, the situation here is not that different moving from PoW to PoS and in fact may improve as the barrier to entry as a \u201csolo staker\u201d is much  lower than being a \u201csolo miner\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.055555555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "02/04/2022-04:04:53",
+                    "content": "Usually we separate consensus change EIPs from networking change EIPs.  In this case, the consensus change is the addition of the withdrawal root to the header.  The networking change is the addition of the withdraw data to the block body. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 3.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "02/04/2022-04:07:38",
+                    "content": "This EIP shouldn\u2019t reference EIPs that won\u2019t make it to final, and the motivation isn\u2019t the right section for describing alternative options. In the motivation, remove the references to \u201calternative EIPs\u201d and instead in the rationale very briefly describe the other options (a sentence or two is usually fine) and why they weren\u2019t chosen. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.5773809523809526
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "02/04/2022-04:11:21",
+                    "content": "Recommend removing the reference to EIP-3675 and the empty ommers list.  This EIP could be implemented even if the ommers list isn\u2019t empty, so there is no dependency and if we change our minds on emptying the ommers list for some reason then we would want this EIP to not suddenly become incorrect. Also, it is unnecessary information to readers of this EIP and shorter is better where possible. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.916666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poojaranjan",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "12/04/2022-13:16:01",
+                    "content": "EIP-4895: Beacon chain push withdrawals as operations with @ralexstokes     ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bbuddha",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "03/06/2022-20:09:00",
+                    "content": "Are there any resources on how the withdrawal flow works and the plans to trigger withdrawals from contracts? In this model, if contracts want to do accounting based on withdrawals, are they expected do delayed accounting by proving withdrawals against the withdrawal root of a previous block header? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.333333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "31/08/2022-06:40:40",
+                    "content": "I have some questions and remarks regarding this EIP, especially now it is CFI\u2019d for Shanghai.  Beginning with the execution timestamp FORK_TIMESTAMP  Should I read this as > or >=? def compute_trie_root_from_indexed_data(data):     trie = Trie.from([(i, obj) for i, obj in enumerate(data)])     return trie.root  block_header.withdrawals_root = compute_trie_root_from_indexed_data(block.withdrawals)  For clarification, is this a trie where the keys are hashed, or not? block_header_rlp = RLP([   parent_hash,   ommers_hash,   coinbase,   state_root,   txs_root,   receipts_root,   bloom,   difficulty,   number,   gas_limit,   gas_used,   time,   extradata,   mix_hash,   nonce,   withdrawals_root, ])  Base fee field is missing.  The withdrawals in a block are processed after any user-level transactions are applied.  What if there\u2019s a SELFDESTRUCT? Does the clearing of the destructed account happen before or after processing the withdrawals? (So: if it is after the withdrawals, one could blackhole the withdrawn ETH) \u2192 I just realized that selfdestruct clearing happens after each tx, so this is part of the spec already. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.333333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "31/08/2022-18:32:46",
+                    "content": " Should I read this as > or >= ?  >=  For clarification, is this a trie where the keys are hashed, or not?  as written I\u2019d say there is no additional hashing layer, I don\u2019t see a reason to add it; e.g. the transactions trie doesn\u2019t have hashing like the main state trie  Base fee field is missing.  nice catch, I\u2019ll make a note to update this ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.708333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "31/08/2022-18:50:12",
+                    "content": "    ralexstokes:  as written I\u2019d say there is no additional hashing layer, I don\u2019t see a reason to add it; e.g. the transactions trie doesn\u2019t have hashing like the main state trie   I completely agree, but it would make the EIP more self contained (also with the timestamp clearly defined as >=)     ralexstokes:  nice catch, I\u2019ll make a note to update this   Great  Thanks for the quick reply! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.87962962962963
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "01/09/2022-07:13:56",
+                    "content": "mixhash should also be changed to prevRandao I think, since this will almost certainly land after EIP-4399: Supplant DIFFICULTY opcode with PREVRANDAO. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.071428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "19/09/2022-12:51:05",
+                    "content": " NOTE: refer to EIP-3675 as some of the values in the header RLP have fixed values that MUST* be used.  Can we get this line removed and instead just have the block header contain the fixed values?  This PR was written prior to The Merge, so I can appreciate why it was this way originally, but I think things would be more clear if we just put the fixed values inline. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.910714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "19/09/2022-16:38:36",
+                    "content": "agree, I intend to address the feedback in this thread some time this week ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "20/09/2022-13:20:38",
+                    "content": "I have addressed all of the feedback to date in this PR:   github.com/ethereum/EIPs         updates for 4895   ethereum:master \u2190 ralexstokes:fixes/4895            opened 01:20PM - 20 Sep 22 UTC               ralexstokes             +38 -38       these updates change some of the language to reflect the post-merge environment \u2026  and also address some feedback like missing fields or the presentation of fixed values in the header       ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/5697",
+                        "https://github.com/ralexstokes",
+                        "https://github.com/ethereum/EIPs/pull/5697/files",
+                        "https://github.com/ethereum/EIPs/pull/5697"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "10/10/2022-11:29:49",
+                    "content": "I have a question regarding this EIP. The index items of the withdrawals are \u201cmonotonically increasing\u201d and \u201cuniquely identify each withdrawal\u201d. The index is of type uint64. Is this \u201cmonotonically increasing\u201d verified at block-level or does it uniquely identify each withdrawal? I.e. if block A has withdrawals with indices [0,1,2] and block B (B.number > A.number) has [0,1] as indices, is this invalid? So should B at least start with index 3? The \u201cmonotonically increasing\u201d  also sounds a bit problematic to me if the monotonically increasing is enforced system-wide (so spanning multiple blocks), I am not sure if this is enforced at CL, but what if I create a valid block with a withdrawal ID of uint64.maxNumber - 1 and the next block should have a withdrawal where the index is also larger than the last one, then it will not fit into the uint64 anymore? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.765625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "10/10/2022-13:59:15",
+                    "content": "the index starts at 0 and increments by 1 for each withdrawal. the withdrawals are automatically made at the consensus layer where the logic to do this is enforced. withdrawal indices will never duplicate \u2013 so you couldn\u2019t get into the [0,1,2] then [0,1] situation you describe. you have no (direct) control over the index so we will never see uint64.maxNumber - 1 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "12/10/2022-05:07:03",
+                    "content": "    ralexstokes:  the index starts at 0 and increments by 1 for each withdrawal.   This should be indicated in the specification.  Right now it only says:   a monotonically increasing index as a uint64 value that uniquely identifies each withdrawal   It should be updated to include that this number starts at 0 for the very first withdraw, and each withdraw after that has an index that is 1 more than the previous withdraw. It may also be valuable to note that this index is global, not per-block. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.942176870748299
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "12/10/2022-12:13:19",
+                    "content": "Yes, this was exactly my point, since indeed monotonically increasing does not mean that it +1s for each withdrawal, it can increase with any number (integer). And you are right, it should also specify that it should start at 0. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.153273809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "12/10/2022-18:35:04",
+                    "content": "Just to verify: this monotonically increasing the withdrawal indices which start at 0 should not be checked by the execution layer, because it is enforced by the consensus layer? EDIT: other question: to compute the withdrawals root, I assume we put (index, withdrawalRLP) in the trie, where withdrawalRLP is the RLPd version of the withdrawal in question? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "12/10/2022-23:47:18",
+                    "content": "I have started implementing this in EthereumJS: Implement EIP4895: Beacon Chain withdrawals by jochem-brouwer \u00b7 Pull Request #2353 \u00b7 ethereumjs/ethereumjs-monorepo \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "25/10/2022-19:57:36",
+                    "content": " because it is enforced by the consensus layer?  correct, the EL only needs to apply the balance update \u2013 the content has already been verified by the CL.  I assume we put (index, withdrawalRLP) in the trie, where withdrawalRLP is the RLPd version of the withdrawal in question?  yep ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "25/10/2022-20:14:02",
+                    "content": "I have added some extra context around the index value here: Update EIP-4895: `validator_index` and more info around `index` by ralexstokes \u00b7 Pull Request #5835 \u00b7 ethereum/EIPs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "23/11/2022-18:37:37",
+                    "content": "The proposed withdrawal_root does not match the one that is currently included in the consensus specs ExecutionPayloadHeader. In the CL: withdrawals_root = hash_tree_root([SSZ.encode(Withdrawal), ...])  In the proposed EIP: withdrawals_root = hexary_trie_root([RLP.encode(Withdrawal), ...])  Given that withdrawals_root and the Withdrawal structure are new additions, I\u2019m wondering if it would be possible to use a consistent tree style across the two specs. This would enable the EL block header to be derived from the CL ExecutionPayloadHeader, enabling light clients that are subscribed to the CL light clients gossip to follow the chain without requiring any additional network requests. Network requests would only be needed when encountering a block of interest via logs_bloom, or when requesting a state or transaction inclusion proof. I have explored three other approaches to solve this inconsistency across EL and CL root formats for light clients.  Including hexary transactions_root and withdrawals_root into the ExecutionPayload  This would require extensions to the BeaconBlock and BeaconState, hence is more invasive than it should be, just to make life easier for light clients. May interfere with future changes to the trie format (statelessness / verkle tries).   Have the CL implementation re-compute hexary transactions_root and withdrawals_root from the beacon block data when providing light client data.  This would require CL implementations to add software for hexary trie computation. Given that SSZ tends to be seen as more modern than hexary tries, it would be a step into the wrong direction. May interfere with split block storage designs, because the CL would no longer have the raw transactions and withdrawals that are needed to compute the hexary trie root hashes. The CL may need to fetch that info via eth_getBlockByRoot(..., includeTransactions: false), and that call may compete with resources needed for ongoing validator duties or fork choice processing.   Only provide the other ExecutionPayloadHeader fields to the light client, omitting the hexary transactions_root and withdrawals_root.  This would require light clients to issue a second network request to obtain those hexary trie roots, which are needed to validate inclusion of transactions. It would be great if light clients could follow the chain without additional network requests to individual peers, just by following gossip on light client topics (or the event stream from REST). May introduce complexity by having not only full blocks and block headers, but also a partial block headers concept.    Hence, the request here, whether withdrawals_root and Withdrawals could be modernized with a change to SSZ. SSZ libraries should already be available for all programming languages used by major EL implementations. Going forward, new roots should become consistent across both the EL and CL. Note that transactions_root is the other blocker currently preventing to convert ExecutionPayloadHeader to an EL block header. The situation is different, though, because the individual transactions are also RLP encoded in the CL. So, only the hexary transactions_root would need to be converted to a SSZ root, but not the individual transactions. If that is not feasible given the long-term existence of this field, the ExecutionPayload could be extended with the hexary transactions_root as a one-time exception. ",
+                    "links": [
+                        "https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/p2p-interface.md"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.625518376971865
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ReneMadsen",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "13/12/2022-16:44:03",
+                    "content": "I have read a lot of different things about the staking mechanism, but I\u2019m still a little bit confused about the lifecycle. As I understand it it has the following steps/operations  create staking and validator depositing 32 ETH set an eth 1 address for withdrawals begin to retrieve rewards through the EIP-4895 mechanism (march 2023) signal a voluntary stake exit retrieve the 32 ETH staken  So my questions/confusions are  Is this a fair representation of the lifecycle As I understand the eth 1 address at 2) is for both 3) and 5) and can only be a Externally Owned Address not a Contract Address (as no EVM). It this correct? is 4) supported now or when will it be and how do you do it, is there a EIP for that? as i understand EIP-4895 the amounts are added directly to the eth1 address 2), \u201cout of thin air\u201d Is that true for both 3) and 5). If so, what happens with the 32 ETH from 2) in deposit_contract.sol  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.081250000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "13/12/2022-17:33:05",
+                    "content": " Is this a fair representation of the lifecycle  ignoring many details, yes   As I understand the eth 1 address at 2) is for both 3) and 5)  yes  can only be a Externally Owned Address not a Contract Address (as no EVM). It this correct?  no, the execution layer address can be any valid address, so either an EOA or a smart contract. the mechanism of EIP-4895 only increments the balance so one caveat is that if you are expecting any kind of execution from the smart contract, that simply won\u2019t happen (so no logs, or ability to update internal smart contract state)  is 4) supported now  yes  Is that true for both 3) and 5)  yes  what happens with the 32 ETH from 2) in deposit_contract.sol  nothing. the ETH in this contract should be considered to be \u2018burnt\u2019 and/or taken out of supply. there is no way to access them any more ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.266483516483516
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ReneMadsen",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "13/12/2022-20:27:31",
+                    "content": "Many thanks for the response      ralexstokes:  is 4) supported now yes   Can you tell me where this function 4) is described ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "13/12/2022-21:53:43",
+                    "content": "the consensus client you are running likely has docs for how to create a signed voluntary exit which must be broadcast to the network for example, here are the prysm docs: Exit your validator | Prysm I\u2019d suggest going to your consensus client\u2019s discord for further help there ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ReneMadsen",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "15/12/2022-10:43:27",
+                    "content": "Since we are handling a large number of validators, we are thinking about having multiple validators using the same withdrawal address, for speed and cost reasons of the further handling of funds. However that introduces a potential accounting traceability problem. Will it be possible to somehow enumerate through all the execution_payload.withdrawals   ...  List of [index, validator_index, address, amount]  specified in EIP-4895 performed on the execution layer, to trace the specific transactions per validator ? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.153061224489796
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "15/12/2022-15:38:38",
+                    "content": "yes, you can just scan each block which has distinct withdrawals ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sbacha",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "22/12/2022-16:22:29",
+                    "content": "Block subsidy is not done by all relayes FWIW ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ReneMadsen",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "03/01/2023-15:02:59",
+                    "content": "for the staking steps     ReneMadsen:   create staking and validator depositing 32 ETH set an eth 1 address for withdrawals begin to retrieve rewards through the EIP-4895 mechanism (march 2023) signal a voluntary stake exit retrieve the 32 ETH staken    Is it correct understod that  cost normal smart contract gas as it is done on the execution layer and 4. is send directly to the beacon chain using a validator and does not cost anything (gas etc) and 5. is send as extra \u201cfree\u201d payload on the execution block and does not cost any gas  If you have 10.000 validators that you want to either set an address 2) or signal an exit 4) How fast would that be able to execute ? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.970238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bdoconnell4",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "10/01/2023-17:03:21",
+                    "content": "Hey @ralexstokes! Are validator gas tips included in the automatic reward push on top of the 32 ETH or are they withdrawn in a different way? Also, can rewards and principal be withdrawn simultaneously? Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "10/01/2023-17:18:39",
+                    "content": "\u201cgas tips\u201d would fall into execution layer rewards and those go to the feeRecipient set in each block entirely separately, validators get rewards for various duties performed at the consensus layer and those rewards are subject to withdrawals via this EIP-4895 mechanism you can withdraw \u201crewards and principal\u201d at the same time if you have exited the validator and it becomes withdrawable ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bdoconnell4",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "10/01/2023-18:34:51",
+                    "content": "Hey @ralexstokes I appreciate it! Do partial withdrawals (where the remaining principal after the withdrawal is greater than 16 ETH) require the validator to be exited? If not, is this an immediate withdrawal to the beacon chain? I was also wondering if the withdrawal operation will require the validator key and the withdrawal key or just the withdrawal key? Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.541666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/eboadom",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "11/01/2023-11:41:06",
+                    "content": "Question (maybe naive). With the recipient address on the Withdrawal object being any ETH valid address (including smart contracts), could this affect applications on the EVM assuming that the contract should never have an ETH balance? Maybe it is just that because of SELFDESTRUCT this should simply not be assumed, but to me looks like something pretty important and new, if working like that. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.583874458874459
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "11/01/2023-15:34:23",
+                    "content": "\u201cpartial\u201d withdrawals refer to a validator balance over the MAX_EFFECTIVE_BALANCE which is 32 ETH on mainnet \u2013 the intuition is that each validator is about the same \u201csize\u201d by stake and doing so simplifies reasoning/analysis of the protocol partial withdrawals do not require the validator to be exited, if you exit the validator you start moving to a place where the entire stake becomes withdrawable withdrawals happen automatically once some conditions are met \u2013 a big one is upgrading the \u201cwithdrawal credentials\u201d \u2013 expect more information soon about how to do this; but in short you\u2019ll need to sign a one-time message to change your \u201cversion 0\u201d withdrawal credentials to a \u201cversion 1\u201d withdrawal credentials which contains the destination execution layer address ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "11/01/2023-15:35:34",
+                    "content": "which applications are assuming a contract never has an ETH balance? I see a scenario where perhaps ETH is sent to a contract (likely by accident) and that ETH is not retrievable (i.e. \u201cburnt\u201d)\u2026 but that falls into the category of \u201cuser error\u201d ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/eboadom",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "12/01/2023-08:09:39",
+                    "content": "I\u2019d say it is not so much about the direct impact on applications, because currently, due to SELFDESTRUCT, (and coinbase) is just not possible to design assuming the contract will not have ETH, even if (talking Solidity) you don\u2019t have payable functions and revert on receive() and fallback(). But probably quite important to document that from this upgrade, another scenario no which your contract could receive \u201cunexpected\u201d ETH, is as result of a withdrawal. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.575
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ReneMadsen",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "12/01/2023-08:16:18",
+                    "content": "Hi @ralexstokes Is it correctly understod that voluntary-exit and BLSToExecutionChange commands are send directly to the beacon chain using a validator and does not cost anything (gas etc) What is the expected capacity of these commands If you for example have 10.000 validators that you want to either set an address or signal an exit How fast would that be able to execute ? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Pandapip1",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "12/01/2023-13:29:48",
+                    "content": "    eboadom:  With the recipient address on the Withdrawal object being any ETH valid address (including smart contracts), could this affect applications on the EVM assuming that the contract should never have an ETH balance?   It is possible to send ether to contracts using selfdestruct and coinbase payments, even if those contracts would usually revert when they receive ether. See SWC-132 \u00b7 Overview ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.940476190476191
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "12/01/2023-15:12:07",
+                    "content": "right the SignedVoluntaryExit and SignedBLSToExecutionChange messages are \u201coperations\u201d at the consensus layer and we don\u2019t have use a gas model to handle DoS concerns there (we just have relatively small fixed limits per block) iirc it is 16 exits per block and also 16 credential changes per block \u2013 we get a block at most once every 12 seconds ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.794642857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "14/01/2023-14:52:55",
+                    "content": "With these, the withdrawals_root and txs_root will eventually match the values in the CL ExecutionPayloadHeader, and the mentioned issues will disappear:  CL-EL withdrawals harmonization: using units of Gwei by ralexstokes \u00b7 Pull Request #354 \u00b7 ethereum/execution-apis \u00b7 GitHub EIP-4895: CL-EL withdrawals harmonization: using units of Gwei by ralexstokes \u00b7 Pull Request #6325 \u00b7 ethereum/EIPs \u00b7 GitHub  ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/6325"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yiz",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "26/01/2023-16:20:35",
+                    "content": "With this proposal to push staking rewards (in particular ethers in excess of effective balance) into ETH1 addresses, there are interesting tax implications. Regarding taxes, users often prefer to have control over when their rewards are distributed, as opposed to automatically distributed. With this proposal, once a user updates their withdraw address from BLS to an ETH1 address, they lose control over timing their rewards. Do you have any suggestions on how this can be improved? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.111111111111112
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/peterzhb",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "31/01/2023-06:44:11",
+                    "content": "Hi I currently have a few questions regarding how Beacon Chain updates the user account balance  Now the balance is tracked for each validator, how it\u2019s tracked for each EOA address before / after Shanghai Upgrade? When the EOA balance will be updated along with the Shanghai Upgrade? Is there any execution process that needs to be triggered by someone?  I guess the second question is dependent on the first one, if the balance it\u2019s already tracked by execution layer (ethereum), then I guess there\u2019s nothing needs to be done. Otherwise I suppose there will be a phase of updating all user\u2019s account balance? Thank you ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "08/02/2023-12:27:13",
+                    "content": "devp2p specs seem to be missing still. For the exchange of historic withdrawals, ideally there would be a version byte similar to EIP-2718 for consistency, and to enable clean upgradability to SSZ. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-6465-ssz-withdrawals-root/12883"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.066666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/etan-status",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "08/02/2023-17:35:22",
+                    "content": "Created EIP for transitioning withdrawals to SSZ: EIP-6465: SSZ withdrawals root ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Cesarsalad",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "13/02/2023-10:07:49",
+                    "content": "@ralexstokes how can we withdraw from the ETH2? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1645"
+}

@@ -1,0 +1,64 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/gno-erc20-token-smart-contract-technical-assessment/18162",
+            "title": "[GNO] ERC20 Token Smart Contract Technical Assessment ",
+            "index": 18162,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "mips",
+                "sc-domain-work",
+                "gnosis",
+                "ces-domain-work",
+                "gno"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/amusingaxl",
+                    "index": "#1",
+                    "likes": "5",
+                    "time": "30/09/2022-18:23:36",
+                    "content": " General Information   Symbol : GNO  Address(es):   GnosisToken: 0x6810e776880C02933D47DB1b9fc05908e5386b96   DutchAuction[2]: 0x1d0DcC8d8BcaFa8e8502BEaEeF6CBD49d3AFFCDC     Deployment date:   GnosisToken: Apr-18-2017 01:45:16 PM +UTC   DutchAuction[1]: Apr-18-2017 01:42:10 PM +UTC     Total supply: 10,000,000   Developers allotment: 1,000,000   Collateral onboarding application: [GNO] MIP6 Collateral Onboarding Application - GnosisDAO   Project website: Gnosis   Project whitepaper: N/A  Github repository:  GnosisToken: gno-token[2]     Can use existing MCD collateral type adapter? Yes, we can use the original GemJoin adapter.   [1] The DutchAuction smart contract is only listed for completeness, since it is referenced by the GnosisToken (no interactions, only to set its balance), but it is not part of this assessment, as it does not hold a significant amount of GNO as of this writing. [2] The deployed GnosisToken contract verified on Etherscan differs from all revisions that can be found in the Github repository. The DutchAuction smart contract could not be found on Gnosis Github.  Risk Summary   Does the contract implement the ERC20 token standards? Yes.  Risk analysis : LOW.   Technical Information   Compiler version : v0.4.10+commit.f0d539ae   Decimals : 18   Overflow checks : Yes, where there are practical implications. See notes below.  Mitigation against allowance race-condition : No.  Upgradeable contract patterns : No.  Access control or restriction lists : No.  Non-standard features or behaviors : No.   Formal Verification Considerations:   Does transfer have simple semantics? Yes.  Does transferFrom have simple semantics? Yes.  Can balances be arbitrarily modified by some actor? No.  Are there any external calls? No.   Testnet Information GNO is only deployed to now deprecated testnets:   Rinkeby: https://rinkeby.etherscan.io/token/0xd0dab4e640d95e9e8a47545598c33e31bdb53c7c   Kovan: https://kovan.etherscan.io/token/0x6018bf616ec9db02f90c8c8529ddadc10a5c29dc    Contract Logic Summary[3]  GNO is a straightforward implementation of the ERC20 standard. There is a simple inheritance structure (see below) and it does not interact with any external contract. The total supply is fixed and set to 10,000,000 in the constructor. There is no possible way to modify it. From those 10,000,000, exactly 9,000,000 (90%) was auctioned and 1,000,000 (10%) was pre-allocated as described bellow: -----Decoded View--------------- Arg [1] : owners (address[]): [   0x1d805bC00b8fa3c96aE6C8FA97B2FD24B19a9801,   0x5210c4dCd7eb899a1274Fd6471AdeC9896ae05AA,   0x9F7dfAb2222A473284205cdDF08a677726d786A0,   0x6750adBb477d0310f395DA2AD93abE4B9bfd1c87,   0x31CbA7aD3483F9BFF236DF556E1C3695736a9615,   0xFc36387AfdbA73d4532AF724eE04d94992E8A2E8,   0x9EE585a6C270Fd8b046A5b2019fdac86544bcA61,   0xD8dD5d51eFEA7108C2D2e663F4520FE4715056C0,   0xC0754d0A5cb5B25d452be07165180eF331A3241A,   0x9F7dfAb2222A473284205cdDF08a677726d786A0 ] Arg [2] : tokens (uint256[]): [   400000000000000000000000,   50000000000000000000000,   50000000000000000000000,   15000000000000000000000,   10000000000000000000000,   150000000000000000000000,   150000000000000000000000,   45000000000000000000000,   30000000000000000000000,   100000000000000000000000 ]  The parameters above were extracted from the constructor arguments in the transaction that created the contract. Keep in mind that the values in tokens include the 18 decimals for GNO. For instance 400000000000000000000000 is actually 400,000 GNO. Regarding overflow/underflow checks, the contracts have tactical inline checks (no SafeMath-like library) for underflows, but it does not check for overflows. Since the token supply is fixed at 10,000,000 and GNO has 18 decimals, the maximum amount the contract needs to be able to handle is 10^{25}, which can safely fit into 84 bits, meaning that variables of type  uint256 would never overflow.  [3] Comments in this section refers to the actual deployed GNO smart contract as it can be seen on Etherscan.  Supporting Materials  Architecture Diagram  GNO Architecture Diagram344\u00d71179 55.8 KB   Inheritance Diagram   ABI Description +  Token      - [Pub] transfer #     - [Pub] transferFrom #     - [Pub] approve #     - [Pub] totalSupply     - [Pub] balanceOf     - [Pub] allowance   +  StandardToken (Token)     - [Pub] transfer #     - [Pub] transferFrom #     - [Pub] approve #     - [Pub] allowance     - [Pub] balanceOf   +  GnosisToken (StandardToken)     - [Pub] <Constructor> #    ($) = payable function  # = non-constant function   S\u016brya\u2019s Description Report (tool: surya)  Files Description Table     File Name SHA-1 Hash     GnosisToken.sol 50bf6e27d99041cdb8a43b6c0729c73e8a583a10     Contracts Description Table     Contract Type Bases       \u2514 Function Name Visibility Mutability Modifiers          Token Implementation      \u2514 transfer Public    NO\u2757\ufe0f   \u2514 transferFrom Public    NO\u2757\ufe0f   \u2514 approve Public    NO\u2757\ufe0f   \u2514 totalSupply Public    NO\u2757\ufe0f   \u2514 balanceOf Public    NO\u2757\ufe0f   \u2514 allowance Public    NO\u2757\ufe0f          StandardToken Implementation Token     \u2514 transfer Public    NO\u2757\ufe0f   \u2514 transferFrom Public    NO\u2757\ufe0f   \u2514 approve Public    NO\u2757\ufe0f   \u2514 allowance Public    NO\u2757\ufe0f   \u2514 balanceOf Public    NO\u2757\ufe0f          GnosisToken Implementation StandardToken     \u2514 <Constructor> Public    NO\u2757\ufe0f     Legend     Symbol Meaning      Function can modify state    Function is payable     Slither Report (tool: slither) Deprecated standard detected THROW (): \t- Usage of \"throw\" should be replaced with \"revert()\" Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#deprecated-standards  Pragma version0.4.10 () allows old versions solc-0.4.10 is not recommended for deployment Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity  Parameter StandardToken.transfer(address,uint256)._to () is not in mixedCase Parameter StandardToken.transfer(address,uint256)._value () is not in mixedCase Parameter StandardToken.transferFrom(address,address,uint256)._from () is not in mixedCase Parameter StandardToken.transferFrom(address,address,uint256)._to () is not in mixedCase Parameter StandardToken.transferFrom(address,address,uint256)._value () is not in mixedCase Parameter StandardToken.approve(address,uint256)._spender () is not in mixedCase Parameter StandardToken.approve(address,uint256)._value () is not in mixedCase Parameter StandardToken.allowance(address,address)._owner () is not in mixedCase Parameter StandardToken.allowance(address,address)._spender () is not in mixedCase Parameter StandardToken.balanceOf(address)._owner () is not in mixedCase Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions  GnosisToken.GnosisToken(address,address[],uint256[]) () uses literals with too many digits: \t- totalSupply = 10000000 * 10 ** 18 () GnosisToken.GnosisToken(address,address[],uint256[]) () uses literals with too many digits: \t- balances[dutchAuction] = 9000000 * 10 ** 18 () Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#too-many-digits  ERC20 event TokenTransfer(address,address,uint256) ()does not index parameter from ERC20 event TokenTransfer(address,address,uint256) ()does not index parameter to ERC20 event TokenApproval(address,address,uint256) ()does not index parameter owner ERC20 event TokenApproval(address,address,uint256) ()does not index parameter spender Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unindexed-erc20-event-parameters  GnosisToken.name () is never used in GnosisToken () GnosisToken.symbol () is never used in GnosisToken () GnosisToken.decimals () is never used in GnosisToken () Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-state-variable  GnosisToken.decimals () should be constant GnosisToken.name () should be constant GnosisToken.symbol () should be constant Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-constant  transfer(address,uint256) should be declared external: \t- StandardToken.transfer(address,uint256) () \t- Token.transfer(address,uint256) () transferFrom(address,address,uint256) should be declared external: \t- StandardToken.transferFrom(address,address,uint256) () \t- Token.transferFrom(address,address,uint256) () approve(address,uint256) should be declared external: \t- StandardToken.approve(address,uint256) () \t- Token.approve(address,uint256) () totalSupply() should be declared external: \t- Token.totalSupply() () balanceOf(address) should be declared external: \t- StandardToken.balanceOf(address) () \t- Token.balanceOf(address) () allowance(address,address) should be declared external: \t- StandardToken.allowance(address,address) () \t- Token.allowance(address,address) () Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#public-function-that-could-be-declared-external contracts/GnosisToken.sol analyzed (3 contracts with 78 detectors), 31 result(s) found  ",
+                    "links": [
+                        "https://etherscan.io/address/0x1d0DcC8d8BcaFa8e8502BEaEeF6CBD49d3AFFCDC",
+                        "https://etherscan.io/tx/0xa7838a091c7daa3033ec59a3f13bd8dc5b4c69d3b3ab33f486d06faae72a1606",
+                        "https://etherscan.io/tx/0x4dbf95eb08cde01d46fcc0916c2da4adb7cd12eed473ec96f6dbe2ba6054a417",
+                        "https://forum.makerdao.com/t/gno-mip6-collateral-onboarding-application-gnosisdao/17321",
+                        "https://gnosis.pm",
+                        "https://github.com/gnosis/gno-token",
+                        "https://github.com/makerdao/dss/blob/master/src/join.sol#L66-L121",
+                        "https://etherscan.io/address/0x6810e776880c02933d47db1b9fc05908e5386b96#code",
+                        "https://github.com/gnosis/gno-token/commits/master/contracts/TokenGNO.sol",
+                        "https://rinkeby.etherscan.io/token/0xd0dab4e640d95e9e8a47545598c33e31bdb53c7c",
+                        "https://kovan.etherscan.io/token/0x6018bf616ec9db02f90c8c8529ddadc10a5c29dc",
+                        "https://etherscan.io/address/0x6810e776880c02933d47db1b9fc05908e5386b96#code",
+                        "https://github.com/consensys/surya",
+                        "https://github.com/crytic/slither",
+                        "https://forum.makerdao.com/t/gno-collateral-onboarding-risk-evaluation/18820",
+                        "https://forum.makerdao.com/t/ces-september-2022-update/18304",
+                        "https://forum.makerdao.com/t/gno-evaluacion-tecnica-del-contrato-inteligente-del-token-erc20-traduccion/18186",
+                        "https://forum.makerdao.com/t/consensys-delegate-platform/18246/8"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.183716707021792
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "29/12/2022-18:24:06",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

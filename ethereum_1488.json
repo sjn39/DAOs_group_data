@@ -1,0 +1,165 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/evm-evolution-session/734",
+            "title": "EVM Evolution Session ",
+            "index": 734,
+            "category": [
+                "Happenings",
+                "Council Sessions"
+            ],
+            "tags": [
+                "evm",
+                "evm-evolution"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/expede",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "15/07/2018-15:06:24",
+                    "content": "Notes from the EVM Evolution session at the 2018 Berlin Council. I had to type pretty quickly; apologies if any points are missing (please leave a comment if this is the case). Since the conversation jumped back and forth a bit, these are organized by topic, not chronologically. Thanks everyone for participating and making this a great session!   History  256-bit native is weird Lots of crytpography relies on large numbers Many people questioning why this design decision was made  Why single fixed sized? Something like the CLR or JVM   Only one VM expert early on, none at the beginning  Looked like a simple \u201cclassroom exercise\u201d Resources now going into WASM instead of EVM 1.5 EIPs for subroutines, deprecate JUMP, vector arbitrary access     EVM  Old EVM contracts must always be available, esp since they can create more contracts for all time   1.5 Roadmap  Discontinued / deprecated Subroutines, static jumps, unfinished, Sol not mature enough to test Vector processing complete, but untested w/ Sol Quasi-official statement: eWASM is on roadmap, in par with Capser/sharding Client devs frustrated because effort wasted (ex. previous Casper spec) Register too wide (256 bits), storage too narrow (256-bits)  Why not pay for pages? How about immutable data structures? Probably designed this way because of simplicity rather than real world These changes may make existing contracts less efficient   How realistic to get this on mainnet?  No resources allocated for paid work Probably worth pushing forward to core devs A client team would need to champion it     Architecture  Stack machines perform very well on wide words Register machines better with narrow words Arbitrary with a good compiler Initial EVM design used stack for working memory, Sol uses as call stack Sol has to do weird stuff because no subroutine instructions Contracts don\u2019t live long enough to really need freeing refs   eWASM   eWASM = WASM - floats + EEI  EEI: Ethereum Environment Interface People like the host function design   Main purpose not to run in browser, though possible  Light client to bring closer to MetaMask, &c  Could run over TCP/IP or sockets (and so on)   JIT probably not a great idea  DDoS is an issue  Adversary may write a program that takes a long time to JIT Possible to work around, but extremely difficult   Exploring gas cost for certain cases May gas meter JIT compilation   Some questions on why switch to WASM from major players not in room 100% of work so far is EVM-compatible  No new opcodes, everything is transpilable Especially gas semantics  They\u2019re identical to EVM       Differences from Regular WASM   eWASM is WASM, just restricted No floating-point No need for threads High determinism   Roadmap  Is there value in continuing with EVM vs just sticking with eWASM? Interest in variable-length storage   Ideas  ERC20 primitives/opcodes?   Contributing Upstream  Why no opcode for atomic ETH send  Workaround exists (requires self-destructible intermediate) Let\u2019s add SIMPLE_SEND to eWASM     eWASM is interesting because\u2026  EVM has mix high level and low level opcodes Cleans up a lot of stuff WASM is well designed, lots of money behind it Closer model to chip  Great perf Resource constraint friendly (phones) Web compatible Takes advantage of LLVM  Debuggers, &c   Would be much faster because (for example) native registers   Makes it easier to write new clients Lower attack surface   IELE Machine   Based on K, correct by construction, &c &c (all the good stuff) Higher level of abstraction has advantages for cross-compilation, verification, and so on   Sharding  Only needs to share consensus and security Could run on whatever VM May not need to be EVM-bytecode compatible  ",
+                    "links": [
+                        "https://iohk.io/blog/iele-a-new-virtual-machine-for-the-blockchain"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.4266560033104145
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "17/07/2018-23:40:48",
+                    "content": "Excellent notes, thanks for taking these and for sharing them! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "18/07/2018-04:49:34",
+                    "content": "    expede:  eWASM is interesting because\u2026 Lower attack surface   Can someone run through the arguments and/or proof behind this statement? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "18/07/2018-04:57:28",
+                    "content": "Also, what considerations are there for the impact of inclusion of eWASM into the Ethereum 2.0 roadmap, since existing compilers and toolsets will have to be substantially rewritten to accommodate the new design? Will there be a release of the eWASM work prior to Ethereum 2.0 such that this work can be done in preparation for release of the upgraded network? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.227272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "18/07/2018-05:12:45",
+                    "content": "In the eWasm standup there was discussion of parallel, coordinated development of 1.5 and eWasm.  From memory (there are notes somewhere)  Delays in the Cheshire Casper mean the current EVM must live even longer than anticipated.  That leaves users with an incomplete, formally intractable machine.  Formally intractable means it\u2019s hard to prove properties like \u201cwill not vaporize a million ETH.\u201d More progress on EMV1.5 has been made than people realize, with much of the eWasm work like Iulia able to generate 1.5 byecodes, and many 1.5 byte codes implemented. eWasm is in some ways more experimental and requires more resources. E.g. it requires compilers to achieve performance goals, whereas the first phase of EVM 1.5 (EIP-615) only requires interpreter extensions. eWasm experiments fairly naturally fit with casper/sharding experiments, whereas EVM1 evolution fits fairly naturally on the main chain. eWasm can start moving to the main chain when stable. Transpilers and K specs can keep the two from conflicting. Alternatively, eWasm can become a shard-only VM, with EVM remaining the mainchain VM. I\u2019m not the expert, but I don\u2019t think shasper requires any changes to the mainchain.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.948758417508417
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "18/07/2018-05:23:43",
+                    "content": "    gcolvin:  Alternatively, eWasm can become a shard-only VM, with EVM remaining the mainchain VM.   Neat idea!     gcolvin:  eWasm can start moving to the main chain when stable.   This is needed for a smooth transition. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "18/07/2018-05:33:14",
+                    "content": "Here are the eWasm notes: https://notes.ethereum.org/9hg30dhNQmCWdliLDI5n4w ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "18/07/2018-21:26:44",
+                    "content": "Greg, I broke out the EVM roadmap stuff from that hackmd into a new one: https://notes.ethereum.org/QZIZdIahTnaTlv4ICsi5wg ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.681818181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "27/11/2018-13:54:10",
+                    "content": "It\u2019s been a while but my interpretation of that line item is as follows. Today, if you want to build a new Ethereum client from scratch, you have to implement a bunch of things including precompiles in trusted, native code. In an Ewasm-enabled world, a lot of this logic can live on chain inside regular contracts running safely inside the VM. In other words, they no longer need to be trusted code. Over time, more bits and bobs of the codebase could be migrated on chain in an Ewasm-enabled world. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.9564393939393945
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "27/11/2018-16:32:19",
+                    "content": "Thanks for the clarification, that is helpful. I took the original comment to mean that WASM had a lower attack surface than EVM. I was thinking about DoS hardenness of the two options. The correct interpretation, as you mentioned, is that eWASM can eliminate our dependance on precompiles, which is an attack surface of the current design (computations whose true cost isn\u2019t well reflected). Did I get that right? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.748511904761905
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "11",
+                    "likes": "2",
+                    "time": "27/11/2018-16:57:30",
+                    "content": "Precisely, that\u2019s my understanding. I wouldn\u2019t, as a general statement, say that Wasm has a lower attack surface than EVM. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/seven7hwave",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "27/11/2018-22:07:46",
+                    "content": "(Hello Magicians. Porting this over from twitter, commenting on the Working Group Proposal; thanks Lane) Regarding security\u2026does the existence of two parallel VM\u2019s introduce systemic risk? The increased complexity of having separate VM\u2019s, executing separate instruction sets, seems to increase the attack surface. In other words, the security benefits gained from eliminating dependance on precompiles might be countered by the resulting complexity stemming from the above proposal. Or can those risks be managed? And loosely speaking, how would you go about testing this setup? Could you throw fuzzers at it, similar to how Geth/Parity is tested? On another note, it seems like this would make life a bit easier for end-user DApp developers. If so, that\u2019s a nice win  : ) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.054487179487179
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "27/11/2018-22:23:42",
+                    "content": "I think Lane just remembered to come back and answer some of these questions from the session in Prague - but all good as long as questions get answered! The proposal thread is here \u2014 Ewasm working group proposal for Eth 1.x ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "14",
+                    "likes": "1",
+                    "time": "28/11/2018-09:22:48",
+                    "content": "@boris is right, sorry to misdirect you @seven7hwave, let\u2019s take the discussion to that other, more recent thread? The conversation @fubuloubu and I were just having here is relevant, too, though. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.467261904761904
+                }
+            ]
+        }
+    ],
+    "group_index": "1488"
+}

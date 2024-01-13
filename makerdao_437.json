@@ -1,0 +1,135 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/informal-poll-smooth-burn-proposal-code-included/12106",
+            "title": "[Informal Poll] Smooth Burn Proposal (code included) ",
+            "index": 12106,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "informal-poll",
+                "burn",
+                "makerburn"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Spidomo",
+                    "index": "#1",
+                    "likes": "2",
+                    "time": "09/12/2021-05:04:59",
+                    "content": "A lot of people like to watch Maker burn. Dai must be spent yet sadly it interrupts the burn. I propose the following improvement. A new condition which allows kicking off a surplus action. Actually, a composite of two configurable conditions. After x hours of no surplus auction, if system surplus is larger than y, Allow kicking off a surplus auction if: Prior auction was more than x hours ago and Surplus buffer is more than y For example, an auction can start every 6 hours when the surplus is more than 45m. This would have some nice properties: No burn withdrawal. People who like to watch Maker burn won\u2019t be bored. Proves keeper liveliness. In effect it\u2019s a simple adjustment that massively smooths out the timing of Maker burn. Burn at least a little, most of the time (unless things start to get ugly). But don\u2019t let every little surplus buffer draw (or limit increase) spoil the burn party.     Approve Disapprove Abstain     0 voters     Poll closes at 2021-12-15T06:00:00.000Z ",
+                    "links": [
+                        "https://forum.makerdao.com/t/forum-at-a-glance-december-2-9-2021/12119",
+                        "https://forum.makerdao.com/t/in-defense-of-bigger-surplus-buffer/12875/5"
+                    ],
+                    "GPT-summary": "The author of the post is proposing an improvement to the Maker burn system. The proposal involves a new condition that allows kicking off a surplus action. The post includes a code and an informal poll for feedback. The post does not advertise the proposal, nor does it contain entirely positive or negative feedback.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.067687747035573
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ultraschuppi",
+                    "index": "#2",
+                    "likes": "4",
+                    "time": "09/12/2021-17:20:58",
+                    "content": "    Spidomo:  In effect it\u2019s a simple adjustment that massively smooths out the timing of Maker burn.   I doubt this is a simple adjustment. If we really want to spend engineering effort on the flap we should directly go to Liq2 (clap). Not worth the effort (disclaimer: without talking to PECU first\u2026) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jiecut",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "09/12/2021-18:30:15",
+                    "content": "@ultraschuppi Yeah, liq2 would be cool. And a throttle is already part of the liq2 implementation. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Spidomo",
+                    "index": "#4",
+                    "likes": "3",
+                    "time": "10/12/2021-02:34:28",
+                    "content": "@ultraschuppi Thank you for your response! Engineering effort is always a concern for any proposal. I went ahead and put together what I believe are the changes that would be required. That flapper contract itself remains unchanged. Instead, vow is updated: Replace flap function at dss/vow.sol at master \u00b7 makerdao/dss \u00b7 GitHub // Surplus auction //  minFlapDelay: governance controlled, minimum seconds to wait before flap smoothing //  minDaiSmoothedFlap: governance controlled, minimum Dai in surplus buffer for flap smoothing function flap() external returns (uint id) {     require( \t\t( \t\t\tvat.dai(address(this)) >= add(add(vat.sin(address(this)), bump), hump) \t\t\t|| \t\t\t( \t\t\t\tvat.dai(address(this)) >= minDaiSmoothedFlap && \t\t\t\tnow >= add(lastFlapTime, minFlapDelay) \t\t\t) \t\t), \t\t\"Vow/insufficient-surplus-or-delay\" \t );     require(sub(sub(vat.sin(address(this)), Sin), Ash) == 0, \"Vow/debt-not-zero\");     lastFlapTime = now;      id = flapper.kick(bump, 0); }  Insert at dss/vow.sol at master \u00b7 makerdao/dss \u00b7 GitHub  uint256 public lastFlapTime;  // seconds since the UNIX epoch  Considerations: Upon replacing Vow contract, lastFlapTime is zero, so a smoothed flap will only occur after the first non-smoothed flap. This could be solved by initializing lastFlapTime to the time of contract deployment. If the changes being this simple checks out, would you support it? ",
+                    "links": [
+                        "https://github.com/makerdao/dss/blob/master/src/vow.sol#L71"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ultraschuppi",
+                    "index": "#5",
+                    "likes": "2",
+                    "time": "10/12/2021-07:24:04",
+                    "content": "@Spidomo nice you are giving it a try codewise  something like lastFlapTime would also be helpful for an IAM on the Surplus Buffer to cover requirements like this    [preMIP] IAM for Surplus Buffer   One suggestion. The Surplus Buffer should not be raised if there were no burns over the past week. Due to CU expenses draining the SB, or lower weekly profits, it\u2019s possible for no burning to happen while the SB to keep getting raised.   This approach will introduce two new parameters that need to be controlled by governance - while minFlapDelay will probably not need a lot of adjustments, how do you want to deal with minDaiSmoothedFlap? Is this just going to be a bit lower than the surplusBuffer? so this would need to get lerped the same way as we currently do?     Spidomo:  If the changes being this simple checks out, would you support it?   If PECU thinks this is reasonable effort and makes sense - yes! But even if this is easier than just going straight to clap (which just changes auction behaviour), the main problem I see with the current approach is not that we are having some hours (somedays even a couple of days) without a flap, but that the auctions are not efficient - both for us and for the keepers. That\u2019s why I would like to see some  instead  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/premip-iam-for-surplus-buffer/11584/25",
+                        "https://vote.makerdao.com/executive/template-executive-vote-onboarding-new-vault-types-parameter-changes-and-core-unit-budget-distributions-november-26-2021?network=mainnet#proposal-detail"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.407512626262626
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/twblack88",
+                    "index": "#6",
+                    "likes": "2",
+                    "time": "10/12/2021-16:12:12",
+                    "content": "    ultraschuppi:  But even if this is easier than just going straight to clap (which just changes auction behaviour), the main problem I see with the current approach is not that we are having some hours (somedays even a couple of days) without a flap, but that the auctions are not efficient - both for us and for the keepers.   To add to that, there is already a clapper branch courtesy of @galabasquer via discord.   github.com/makerdao/dss         Some changes + tests            committed 06:27PM - 26 May 21 UTC               gbalabasquer             +302 -10           and message link for ya. ",
+                    "links": [
+                        "https://github.com/makerdao/dss/commit/cfdeec2b46559b4d52bda005aaee32434114819f",
+                        "https://github.com/gbalabasquer",
+                        "https://github.com/makerdao/dss/commit/cfdeec2b46559b4d52bda005aaee32434114819f",
+                        "https://discord.com/channels/893112320329396265/899667119426371625/918613503143714847"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.611111111111111
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Spidomo",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "10/12/2021-19:28:56",
+                    "content": "    ultraschuppi:  But even if this is easier than just going straight to clap (which just changes auction behaviour), the main problem I see with the current approach is not that we are having some hours (somedays even a couple of days) without a flap, but that the auctions are not efficient - both for us and for the keepers. That\u2019s why I would like to see some  instead    @ultraschuppi yes I completelly agree that Liquidation 2.0 style surplus auctions will be great and much more valuable that the Smooth Burn Proposal. Smooth Burn Proposal is completely agnostic to what kind of surplus auction gets kicked off: Flap or Clap.  And actually, Clap deployment would be the optimal time to deploy Smooth Burn as well, since the Vow needs to be updated anyway to kick off Clap instead of Flap auctions. Regarding minDaiSmoothedFlap, maybe it would be better to just make it a percentage of the surplus buffer.  Then, it will likely not need to be adjusted often by governance. So governance might say, the surplus buffer needs to be at least half full, or else smoothed burns are turned off. Replace flap function at dss/vow.sol at master \u00b7 makerdao/dss \u00b7 GitHub // Surplus auction //  minFlapDelay: governance controlled, minimum seconds to wait before flap smoothing //  minDaiSmoothedPercent: governance controlled, minimum percentage of surlus buffer required for flap smoothing function flap() external returns (uint id) { \trequire( \t\t( \t\t\tvat.dai(address(this)) >= add(add(vat.sin(address(this)), bump), hump) \t\t\t|| \t\t\t( \t\t\t\tvat.dai(address(this)) >= mul(minDaiSmoothedPercent, hump) && \t\t\t\tnow >= add(lastFlapTime, minFlapDelay) \t\t\t) \t\t), \t\t\"Vow/insufficient-surplus-or-delay\" \t); \trequire(sub(sub(vat.sin(address(this)), Sin), Ash) == 0, \"Vow/debt-not-zero\"); \tlastFlapTime = now; \tid = flapper.kick(bump, 0); }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.161764705882353
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "12/03/2022-01:29:21",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

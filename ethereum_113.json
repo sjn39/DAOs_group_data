@@ -1,0 +1,589 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5643-subscription-nfts/10802",
+            "title": "EIP-5643 Subscription NFTs ",
+            "index": 10802,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "1",
+                    "likes": "13",
+                    "time": "10/09/2022-19:20:02",
+                    "content": " Abstract This standard is an extension of ERC-721. It proposes an additional interface for NFTs to be used as recurring, expirable subscriptions. The interface includes functions to renew and cancel the subscription.  Motivation NFTs are commonly used as accounts on decentralized apps or membership passes to communities, events, and more. However, it is currently rare to see NFTs like these that have a finite expiration date. The \u201cpermanence\u201d of the blockchain often leads to memberships that have no expiration dates and thus no required recurring payments. However, for many real-world applications, a paid subscription is needed to keep an account or membership valid. The most prevalent on-chain application that makes use of the renewable subscription model is the Ethereum Name Service (ENS), which utilizes a similar interface to the one proposed below. Each domain can be renewed for a certain period of time, and expires if payments are no longer made. A common interface will make it easier for future projects to develop subscription-based NFTs. In the current Web2 world, it\u2019s hard for a user to see or manage all of their subscriptions in one place. With a common standard for subscriptions, it will be easy for a single application to determine the number of subscriptions a user has, see when they expire, and renew/cancel them as requested. Additionally, as the prevalence of secondary royalties from NFT trading disappears, creators will need new models for generating recurring income. For NFTs that act as membership or access passes, pivoting to a subscription-based model is one way to provide income and also force issuers to keep providing value.  Specification The key words \u201cMUST\u201d, \u201cMUST NOT\u201d, \u201cREQUIRED\u201d, \u201cSHALL\u201d, \u201cSHALL NOT\u201d, \u201cSHOULD\u201d, \u201cSHOULD NOT\u201d, \u201cRECOMMENDED\u201d, \u201cMAY\u201d, and \u201cOPTIONAL\u201d in this document are to be interpreted as described in RFC 2119. The technical specification should describe the syntax and semantics of any new feature. The specification should be detailed enough to allow competing, interoperable implementations for any of the current Ethereum platforms (go-ethereum, parity, cpp-ethereum, ethereumj, ethereumjs, and others). interface IERC5643 {     /// @notice Emitted when a subscription expiration changes     /// @dev When a subscription is canceled, the expiration value should also be 0.     event SubscriptionUpdate(uint256 indexed tokenId, uint64 expiration);      /// @notice Renews the subscription to an NFT     /// Throws if `tokenId` is not a valid NFT     /// @param tokenId The NFT to renew the subscription for     function renewSubscription(uint256 tokenId, uint64 expiration) external payable;      /// @notice Cancels the subscription of an NFT     /// @dev Throws if `tokenId` is not a valid NFT     /// @param tokenId The NFT to cancel the subscription for     function cancelSubscription(uint256 tokenId) external payable;      /// @notice Gets the expiration date of a subscription     /// @dev Throws if `tokenId` is not a valid NFT     /// @param tokenId The NFT to get the expiration date of     /// @return The expiration date of the subscription     function expiresAt(uint256 tokenId) external view returns(uint64);      /// @notice Determines whether a subscription can be renewed     /// @dev Throws if `tokenId` is not a valid NFT     /// @param tokenId The NFT to get the expiration date of     /// @return The renewability of a the subscription     function isRenewable(uint256 tokenId) external view returns(bool); }  The expiresAt(uint256 tokenId) function MAY be implemented as pure or view. The isRenewable(uint256 tokenId) function MAY be implemented as pure or view. The renewSubscription(uint256 tokenId) function MAY be implemented as external or public. The cancelSubscription(uint256 tokenId) function MAY be implemented as external or public. The SubscriptionUpdate event MUST be emitted whenever the expiration date of a subscription is changed. The supportsInterface method MUST return true when called with 0x8c65f84d.  Rationale This standard aims to make on-chain subscriptions as simple as possible by adding the minimal required functions and events for implementing on-chain subscriptions. It is important to note that in this interface, the NFT itself represents ownership of a subscription, there is no facilitation of any other fungible or non-fungible tokens.  Subscription Management Subscriptions represent agreements to make advanced payments in order to receive or participate in something. In order to facilitate these agreements, a user must be able to renew or cancel their subscriptions hence the renewSubscription and cancelSubscription functions. It also important to know when a subscription expires - users will need this information to know when to renew, and applications need this information to determine the validity of a subscription NFT. The expiresAt function provides this functionality. Finally, it is possible that a subscription may not be renewed once expired. The isRenewable function gives users and applications that information.  Easy Integration Because this standard is fully EIP-721 compliant, existing protocols will be able to faciliate the transfer of subscription NFTs out of the box. With only a few functions to add, protocols will be able to fully manage a subscription\u2019s expiration, determine whether a subscription is expired, and see whether it can be renewed.  Backwards Compatibility This standard can be fully EIP-721 compatible by adding an extension function set. The new functions introduced in this standard add minimal overhead to the existing EIP-721 interface, which should make adoption straightforward and quick for developers.  Test Cases The following tests require Foundry. // SPDX-License-Identifier: CC0-1.0 pragma solidity ^0.8.13;  import \"forge-std/Test.sol\"; import \"../src/ERC5643.sol\";  contract ERC5643Mock is ERC5643 {     constructor(string memory name_, string memory symbol_) ERC5643(name_, symbol_) {}      function mint(address to, uint256 tokenId) public {         _mint(to, tokenId);     } }  contract ContractTest is Test {     event SubscriptionUpdate(uint256 indexed tokenId, uint64 expiration);      address user1;     uint256 tokenId;     ERC5643Mock erc5643;      function setUp() public {         tokenId = 1;         user1 = address(0x1);          erc5643 = new ERC5643Mock(\"erc5369\", \"ERC5643\");         erc5643.mint(user1, tokenId);     }      function testRenewalValid() public {         vm.prank(user1);         vm.expectEmit(true, true, false, true);         emit SubscriptionUpdate(tokenId, 2000);         erc5643.renewSubscription(tokenId, 2000);     }      function testRenewalNotOwner() public {         vm.expectRevert(\"Caller is not owner nor approved\");         erc5643.renewSubscription(tokenId, 2000);     }      function testCancelValid() public {         vm.prank(user1);         vm.expectEmit(true, true, false, true);         emit SubscriptionUpdate(tokenId, 0);         erc5643.cancelSubscription(tokenId);     }      function testCancelNotOwner() public {         vm.expectRevert(\"Caller is not owner nor approved\");         erc5643.cancelSubscription(tokenId);     }      function testExpiresAt() public {         assertEq(erc5643.expiresAt(tokenId), 0);         vm.startPrank(user1);         erc5643.renewSubscription(tokenId, 2000);         assertEq(erc5643.expiresAt(tokenId), 2000);          erc5643.cancelSubscription(tokenId);         assertEq(erc5643.expiresAt(tokenId), 0);     } }   Reference Implementation Implementation: ERC5643.sol // SPDX-License-Identifier: CC0-1.0 pragma solidity ^0.8.13;  import \"@openzeppelin/contracts/token/ERC721/ERC721.sol\"; import \"./IERC5643.sol\";  contract ERC5643 is ERC721, IERC5643 {     mapping(uint256 => uint64) private _subscriptions;      constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}      function renewSubscription(uint256 tokenId, uint64 expiration) external payable {         require(_isApprovedOrOwner(msg.sender, tokenId), \"Caller is not owner nor approved\");         _subscriptions[tokenId] = expiration;         emit SubscriptionUpdate(tokenId, expiration);     }      function cancelSubscription(uint256 tokenId) external payable {         require(_isApprovedOrOwner(msg.sender, tokenId), \"Caller is not owner nor approved\");         delete _subscriptions[tokenId];         emit SubscriptionUpdate(tokenId, 0);     }      function expiresAt(uint256 tokenId) external view returns(uint64) {         return _subscriptions[tokenId];     }      function isRenewable(uint256 tokenId) external pure returns(bool) {         return true;     }      function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {         return interfaceId == type(IERC5643).interfaceId || super.supportsInterface(interfaceId);     } }   Security Considerations This EIP standard does not affect ownership of an NFT and thus can be considered secure.  Copyright Copyright and related rights waived via CC0. ",
+                    "links": [],
+                    "GPT-summary": "The post proposes a new standard, EIP-5643, which is an extension of ERC-721, to allow NFTs to be used as recurring, expirable subscriptions. The proposal aims to make on-chain subscriptions as simple as possible by adding the minimal required functions and events for implementing on-chain subscriptions. The post also explains the motivation behind the proposal, the specification, rationale, subscription management, easy integration, and backwards compatibility. The post does not receive any feedback or criticism from a third party, but it does extend to the Ethereum Name Service (ENS) as an example of a similar interface.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Interoperability and scalability",
+                        "Privacy, security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.451174829186877
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "10/09/2022-19:27:27",
+                    "content": "I\u2019ve read through some of the other proposed subscription-related posts: EIP-4885: Subscription Token Standard, EIP-5029: Subscription Tokens, but I wanted to create an interface that used the NFT itself to represent the subscription in order to be simple and easily compatible with ERC721. Rather than pay (via an ERC20 token) and receive some sort of balance, I propose that users pay (via ETH) and have a set expiration time of their subscription. This model is simple, requires only one extra on-chain mapping, and makes it easier for users to know when their subscription expire. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-5029-subscription-tokens/9013"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.220238095238096
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/darcys22",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "10/09/2022-22:58:41",
+                    "content": "Awesome work, like the idea. What would the benefit be over minting a new nft every time your subscription period ends though? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.840909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "4",
+                    "likes": "3",
+                    "time": "11/09/2022-05:36:31",
+                    "content": "A service might want to reward long time subscribers, and in that case you\u2019d want to keep your subscription NFT as long as possible rather than burning one every time it ends. It\u2019s also probably less gas, but I\u2019d have to run some tests. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.666666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/julien51",
+                    "index": "5",
+                    "likes": "4",
+                    "time": "12/09/2022-06:03:42",
+                    "content": "This is very exciting. And something we\u2019re happy to support at Unlock where we built renewable NFT subscriptions a while back! One issue that i can see here is that the subscriptions has to be manually renewed by the owner of the NFT everytime it expires which is not ideal. (Imagine if your have to give the Netflix once a month to extend your account). The approach we took at Unlock it\u2019s to enable \u201cpricing\u201d using ERC20 where the user can then approve a large amount corresponding to multiple renewals that can then be triggered by anyone. We\u2019d love to contribute! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 6.128061224489796
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/zlace",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "12/09/2022-16:49:18",
+                    "content": "Love the simplicity of this! Can tie in well with    EIP-5007: EIP-721 Time Extension EIPs   eip:  title: ERC-721 Time Extension  description: Add start time and end time to ERC-721 tokens.  author: Anders (@0xanders), Lance (@LanceSnow), Shrug shrug@emojidao.org  discussions-to:  status: Draft  type: Standards Track  category: ERC  created: 2022-04-13  requires: 165, 721  Abstract This standard is an extension of ERC-721. It proposes some additional property( startTime, endTime,originalTokenId) to help with the on-chain time management.   Motivation Some NFTs have a defined usage per\u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "12/09/2022-18:01:08",
+                    "content": "What changes to the interface would you make? I\u2019d imagine something related to allowing auto-renewals? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gregfromstl",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "13/09/2022-18:20:18",
+                    "content": "I agree the most common use case will involve auto-renewals but think that should be left to the implementation rather than requiring it for the standard. That way the standard only requires the base level implementation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.571428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shobhit",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "14/09/2022-12:19:50",
+                    "content": "Why is cancelSubscription payable? Also, I think updateSubscription will be a better name than renewSubscription. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MrLine",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "15/09/2022-02:18:19",
+                    "content": "This is awesome, we are thinking of integrating this into our NFT project/app. NFT 2.0 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "15/09/2022-02:38:31",
+                    "content": "That\u2019s how I was approaching this problem, however if someone can provide a clean interface for auto-renewals I\u2019d be happy to consider it ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.944444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "15/09/2022-02:39:53",
+                    "content": "Someone may have a reason to make cancellations payable, I want this to be as open as possible. Take EIP721 for example, transfer and approve are both payable but it\u2019s not used most of the time. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/julien51",
+                    "index": "13",
+                    "likes": "2",
+                    "time": "16/09/2022-00:24:22",
+                    "content": "First of all, thanks a lot for your patience here. I would preface by saying that I am really happy that the space is thinking about recurring revenues. I deeply believe that the \u201csell once, provide value forever\u201d model is not going to work for lots of creators\u2026 Additionally time limits on NFTs do bring lots of opportunities for artistic work even! You can make on NFT that render differently based on whether they are expired or, or how close to expiration they are\u2026 etc! (People have used Unlock for that and it\u2019s pretty cool!). Now, when it comes to feedback about the spec, I think it is a good start, but also falls short to be practically usable as is. For example, and unless I missed something there is currently no way to start a subscription. Well, first I think you would need to have a way for the user to \u201cstart\u201d a subscription. Right now it is unclear how as a user, when I own an NFT, I can \u201cstart a subscription\u201d. Then, as I wrote earlier, I deeply believe that a prerequisite to this would be to allow users to pay for the NFT with an ERC20 (vs the native currency via the payable approach). The reason for this is that with ERC20 users can \u201capprove\u201d the contract to spend from them\u2026 rather than have them come back over and over to (re)purchase next month\u2019s subscription. However, if ERC20 \u201capprovals\u201d are supported it is critical to make sure they are not abused by either making the price/duration \u201cunchangeable\u201d, or by keeping track in the contract of what each user has \u201callowed\u201d in terms of pricing (combination of duration and amount). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.172470238095238
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "14",
+                    "likes": "2",
+                    "time": "16/09/2022-01:15:32",
+                    "content": "Regarding the \u201cno way to start a subscription\u201d, I was imagining it would be part of the mint process for the token - when you mint a token to someone, the subscription would start. However, we could in theory change renewSubscription to updateSubscription like mentioned above and kick off the subscription then. For autorenewals, I do agree that having this feature is nice to have, however if you look at ENS, they\u2019ve been able to create a very successful subscription NFT without needing it. I can see a popular library having an autorenewal feature built-in (similar to how OpenZeppelin\u2019s library has mint functions for 721), but I don\u2019t think the standard requires it. At the end of the day, a subscription only really needs to be renewable and cancelable to be considered a \u201csubscription\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.597222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cosmosys",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "22/09/2022-05:43:55",
+                    "content": "This has a great use case for e-commerce NFTs. I\u2019d be down to do some hypothesis test with www.shopx.co \u2192 might be interesting to open up that subscriptions could be paid in erc-20s too. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party wanting to collaborate on proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.430555555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "24/09/2022-16:38:56",
+                    "content": "Happy to work with you on implementing this EIP! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aram",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "12/10/2022-13:03:01",
+                    "content": "Thanks @cygaar for the proposal, very good work  To keep it simpler would it be beneficial to leave our the \u201crenew\u201d functions out of this EIP, and only keep the view functions (and maybe cancel) included? Main reason for that is similar to mint function there would be various ways people want to implement a \u201cstart\u201d/\u201crenew\u201d for example choosing a specific Plan, not just a direct payment, or being able to \u201cupgrade\u201d/\u201cdowngrade\u201d, etc. Since the signature for renew (and potentially upgrade/downgrade) cannot be generalized, the wallet implementations for example cannot create a \u201cGeneric Renewal\u201d interface and take advantage of a standard. Another way to generalize \u201crenew\u201d (or \u201cupdate\u201d) is to extend the EIP further (which I personally suggest to be a separate eip maybe), is to provide an additional \u201cbytes data\u201d argument. But still since there won\u2019t be a generalized solution, and each dApp will end up creating their own renewal methods/interfaces. People could still use same method name (e.g. updateSubscription) but the rest of signature might be different per use-case. What are you thoughts? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.773958333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mpeyfuss",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "18/10/2022-14:13:52",
+                    "content": "@cygaar this is an awesome proposal that I\u2019d love to contribute to. Timing works out as I am currently developing a subscription NFT  @aram makes a good point on the update functions potentially being limiting based on the desired implementation. Limiting this standard to only view functions and the required events would greatly increase usability for various implementations. This would also help solve the questions about auto-renewals and how to start subscriptions. I do have two additional comments as feedback.   I think adding in a function called isCancelable would make a lot of sense, as there can definitely be implementations that don\u2019t want to allow canceled subscriptions. It would operate similar to isRenewable.   Typically subscriptions have tiers. The way you buy tiers is hard to generalize properly, but adding the idea of tiers should be easy to implement into this standard. Basically, the SubscriptionUpdate event would have to include a tier variable (maybe uint8 so enums can be used - 255 tiers should be plenty in basically all applications) and adding a getTier view function would be simple. It may also make sense to add view functions for seeing if a token is upgradeable/downgradeable \u2013 isUpgradeable and isDowngradeable.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/admlj",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "19/10/2022-20:30:03",
+                    "content": "edit: ahhh i see this has been implemented already, nice i\u2019m wondering if, rather than having to manually set the expiration for renewSubscription, it might be better to have that function take a duration instead that would then be added to the existing _subscription. like \u201crenew for 30 days\u201d and it would check if 30 days * cost was paid then add time.~ ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "20",
+                    "likes": "1",
+                    "time": "24/10/2022-23:46:47",
+                    "content": "    admlj:  renewSubscription   Yes, I actually made that change in the EIP as well as the implementation: ERC5643/IERC5643.sol at main \u00b7 cygaar/ERC5643 \u00b7 GitHub. Thanks for the callout! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.694444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "24/10/2022-23:50:23",
+                    "content": "Let me think on the renew function - I think it makes sense to require a function of this nature since it\u2019s a core part of being a subscription. I would be open to having a second renew function that takes in a data bytes parameter (similar to 721 having multiple safeTransferFrom functions).  This is a bit tricky because if a user doesn\u2019t pay for their subscription then it\u2019s by definition canceled. Even if you say a subscription can\u2019t be canceled, you can\u2019t force a user to pay. I think this would be a good idea for an implementation, but I don\u2019t think it\u2019s necessary for a standard interface. I\u2019ll think about it some more.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "24/10/2022-23:50:53",
+                    "content": "Thanks for the response, I addressed these concerns in the response above this. Let me know what you think! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/zeec",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "27/10/2022-02:10:01",
+                    "content": "I really like this idea. This is my first time looking at contracts outside of tutorials so I will explore the repo and help where I can.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wenwenfromparis",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "03/11/2022-16:12:20",
+                    "content": "Hi everyone! Thanks for sharing this brilliant idea ! I am Wen, I based in Paris and I am building an NFT-based subscription/ NFT gated e-commerce platform using Unlock @julien51 for the creators, e-commerce and the local business. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party is advertising proposal"
+                    ],
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/howarde",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "09/11/2022-15:42:30",
+                    "content": "I really do like the idea, what about considering a pause state, as sometimes you may want to take a holiday from a sub but not cancel, there might be a limit for how long you can pause but may encourage them to remain subscribed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vrypan",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "16/11/2022-09:31:07",
+                    "content": "That\u2019s a great idea @cygaar. What happens to the token ownership when the subscription has expired? What will ownerOf() return in this case for example? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 9.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vrypan",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "16/11/2022-09:41:27",
+                    "content": "I believe that it is important to describe what users should expect from tokens implementing this. For example, ERC721 implies that I have ownership over a token. (Of course there\u2019s nothing preventing contracts from doing all types of things, including implementing backdoors that allow someone else to transfer my tokens, but there is an expected behaviour and anyone not following is considered shady.) So, regarding subscriptions, what should users expect? That they loose ownership? That the token is destroyed? That some of the token utility is limited? If it was up to me, I would propose that when a subscription expires, all approvals are canceled. What this means in practice is that I can no longer trade the token (make profit, which is exactly the occasion when a creator would collect royalties normally). It is still owned by me, I can transfer it to my vault, or an other wallet, but I can\u2019t trade it until I renew my subscription. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.098137973137973
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yuk6ra",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "22/11/2022-03:16:56",
+                    "content": "Thanks @cygaar, I was recently developping a similar subscription NFT. I think manual is right as we should renew when we need to. Having an NFT means you have ownership. The decision should be left to each project to decide about ownership. It is very simple and we already think it is a good idea. What is the main problem with this EIP? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.845238095238096
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/leo",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "23/11/2022-08:21:56",
+                    "content": "good proposal.  For subscription-based NFT, I feel the auto-renew is an important feature, which is not defined in the interface.  You have an interface of \u201cisRenewable\u201d , why not add an \u201cisAutoRenewable\u201d interface? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jbluv",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "06/12/2022-04:11:10",
+                    "content": "It\u2019s really a good idea. I think it can be applied to many scenarios ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "06/12/2022-20:10:27",
+                    "content": "This is a good point. In my mind, when a subscription expires, the user still owns the token, but the token should no longer have any utility. I don\u2019t think the EIP should include anything about transferability after a token expires - that should be left to the implementation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/julien51",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "07/12/2022-21:41:02",
+                    "content": "In the case of Unlock the ownerOf function will still return the owner however balanceOf returns only the number of non-expired NFT so that tools that mostly rely on this will \u201cblock\u201d access by default. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vrypan",
+                    "index": "34",
+                    "likes": "1",
+                    "time": "08/12/2022-07:56:46",
+                    "content": "Unlock is a special case of this, because the Unlock NFT is usually just the subscription. However if you have NFTs that represent art, owning the NFT is the utility in many cases. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.011904761904762
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/estarriolvetch",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "23/12/2022-00:22:01",
+                    "content": "This is fantastic idea, and I really like it! I think adding data bytes is a good idea. It will be required if one wants to renew the subscrtion with ERC20 token with permit. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AustinZhu",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "03/01/2023-08:41:49",
+                    "content": "I really like your idea @cygaar ! I\u2019m working on a specification of SBT (EIP-5727). In EIP-5727, there is an extension used for token expiration. (e.g. some skill certifications are only valid for a period of time) I think your proposal is a perfect fit for this. I\u2019m considering to integrate EIP-5643 if it went to Final. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 6.65
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/scotthconner",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "03/01/2023-18:23:21",
+                    "content": "A couple of questions:   why uint64 for duration? Why limit not uint256? Seems like the flexibility is worth it.   after thinking about it a bit, all the interface really needs is isExpired().   The more methods, the more assumptions. On one end of the spectrum is just an interface determining validity, another is completely prescribing how subscriptions are done. A middle ground is likely to leave a lot of people rolling their own solution. What value is unlocked by having a standard for this? Not all subscriptions are the same today outside of Ethereum. The challenge isn\u2019t in the technology but in the use cases. I wonder what subscription-gateway services exist today? Mainly things like pay pal, etc. The core value I\u2019m not certain is in managing the subscription as much as it is enabling recurring payments. Having a solid standard for that brings wallets and thus users onboard to it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.76860119047619
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lukemorton",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "09/01/2023-09:36:56",
+                    "content": "Love the simplicity of this proposal. I tend to agree with @aram that it could be kept even simpler by providing the read only interface to enable more flexibility with implementations. Comments on tiers, auto-renewals and expected behaviours of NFTs are all important for implementation but less so at the interface level I would say. At least for a first subscription-based interface. Loving the work, keep it up and let us know if you need any help. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.935185185185185
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tahpot",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "24/01/2023-03:49:23",
+                    "content": "This seems like a popular proposal, and something we have been thinking about at Verida for enabling streaming payments for storage node infrastructure providers. What\u2019s the status / next steps? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "01/02/2023-04:16:57",
+                    "content": "I\u2019ve been pretty busy, but I did put together a library for this EIP: GitHub - cygaar/ERC5643: Subscription NFT Smart Contracts ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.940476190476191
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "01/02/2023-04:17:36",
+                    "content": "Would you add any other read functions? I assume you\u2019d want to remove cancel/renew ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/codeislight",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "03/02/2023-03:36:15",
+                    "content": "instead of going through the route of manual cancellation. i believe the token can be considered automatically as being expired by checking that the expiration timestamp has been bypassed, so at that moment, any user would be able to claim ownership of that subscription through renewSubscription. For the ownerOf and balanceOf, they would not to be updated unless someone claim ownership, for ownerOf we may resolve it by checking that if it has already expired to return a zero address. but the only downside is that the balanceOf for the previous owner, it would still reflect as if he still owns it. until someone renew it, then it would adjust it accordingly. I think maybe there might be a need to add a separate subscribe function which should take care of setting up the timestamp and minting process. since subscribe would mean that we want to mint a new subscription, the renew would take care of renewing existing ones. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.15719696969697
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cygaar",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "04/02/2023-19:14:32",
+                    "content": "I originally had a subscribe function in the interface, but I felt that there would be too much variability between different subscribe use cases to force a single function signature. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.629464285714285
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/codeislight",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "05/02/2023-04:17:55",
+                    "content": "makes sense to keeps it simple, in terms of renewSubscription, maybe it would be much better if it takes in the number of periods to subscribe for. (e.g: 1 month per period). so it would make it much easier to subscribe without the need to manually validate the entered expiration each time. also, maybe it\u2019s better to use uint256 instead of uint64, since in the mapping there is no other parameters to be tightly packed with it. interface IERC5643 {     ...     /// @notice Renews the subscription to an NFT     /// Throws if `tokenId` is not a valid NFT     /// @param tokenId The NFT to renew the subscription for     /// @param quantity The number of periods to subscribe for     function renewSubscription(uint256 tokenId, uint256 quantity) external payable;     ... }  // SPDX-License-Identifier: CC0-1.0 pragma solidity ^0.8.13;  import \"@openzeppelin/contracts/token/ERC721/ERC721.sol\"; import \"./IERC5643.sol\";  contract ERC5643 is ERC721, IERC5643 {     mapping(uint256 => uint64) private _subscriptions;     uint256 public constant period = 30.42 days;      constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}      function renewSubscription(uint256 tokenId, uint256 quantity) external payable {         require(_isApprovedOrOwner(msg.sender, tokenId), \"Caller is not owner nor approved\");         require(quantity > 0, \"Zero quantity not allowed\");         uint256 expiration = block.timestamp + period * quantity;         _subscriptions[tokenId] = expiration;         emit SubscriptionUpdate(tokenId, expiration);     }     ... }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.492694805194805
+                }
+            ]
+        }
+    ],
+    "group_index": "113"
+}

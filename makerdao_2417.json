@@ -1,0 +1,849 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/a-liquidation-system-redesign-a-pre-mip-discussion/2790",
+            "title": "A Liquidation System Redesign: A Pre-MIP Discussion ",
+            "index": 2790,
+            "category": [
+                "Governance",
+                "Proposal Ideas"
+            ],
+            "tags": [
+                "mips",
+                "developers",
+                "discussion",
+                "liquidation-system"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/charlesstlouis",
+                    "index": "#1",
+                    "likes": "34",
+                    "time": "10/06/2020-19:15:24",
+                    "content": " Introduction This forum post aims to serve as a \u201cpre-MIP\u201d discussion, where the Maker Community and the Smart Contracts Domain Team can discuss and provide input on the proposed solution for a redesign of the liquidation system of the Maker Protocol. The main goal of this \u201cpre-MIP\u201d forum post is to introduce a proposed solution for a liquidation system redesign and gather feedback in preparation for the creation of a formal Maker Improvement Proposal (MIP), which will contain more implementation details. The MIP itself will be proposed as a MIP2 proposal, which means that the Feedback Period and Frozen Period defined in MIP0 are ignored for both MIPs and Subproposals and are instead determined by the MIP Author(s). In general, in order for proposals to qualify as a MIP2 proposal, it must address one of the issues listed in MIP1. Initial Research and Findings The process behind the proposed solution design initially began with looking at many different options to determine which may be optimal for the Maker Protocol. More specifically, we considered the following classical auction solutions:  English Auctions Reverse English Auctions Sealed/Batched Bid Auctions Multiphase Auctions Dutch Auctions Reverse Dutch Auctions  After research and design consideration, the Smart Contracts Domain Team believes the Dutch auction system, based on its merits (further described below), is likely the most suitable solution for a redesign of the liquidations system. The Dutch auction system has been validated in the market and has proven to work for massive liquidation events, such as Set Protocol\u2019s use of Dutch auctions for rebalancing. Set Protocol\u2019s implementation can be found here and is also described on page 24 of their whitepaper. In terms of this proposed solution design, the sections below address the motivation behind the system redesign, the design considerations, and the details regarding the requirements of the solution: Motivation Our ongoing analysis, further focused by the events of March 12th, 2020 (\u201cBlack Thursday\u201d), developed several opportunities to improve the Maker Protocol\u2019s collateral auction mechanism. Specifically, the following list covers the areas of improvement that can be considered when designing a new liquidation system for the Maker Protocol:   Reducing the reliance on DAI liquidity  Today, Keepers require sufficient DAI before making a bid, and that DAI is locked until that Keeper is outbid; if the Keeper\u2019s bid wins, it must then find a way to recycle that purchased collateral back into DAI in an efficient manner. Since multiple Keepers are necessary to ensure competitive (and thus, efficient) auctions, there is a multiplier effect on the DAI required. For every 1 DAI of debt sought by auction, there needs to be at least 2 DAI of liquidity. The need to lock DAI for multiple blocks after a bid is submitted means that flash loans cannot be used to ease liquidity requirements.    Reducing the likelihood of auctions settling far from the market price  Currently, an arbitrarily low bid can be made immediately after an auction starts. If other participants are not able to outbid the initial bid, due to liquidity constraints (above) or network congestion, the auction is won at the initial low bid price.    Reducing the barriers to entry  Participating in auctions: (1) is capital intensive; (2) involves significant time exposure to collateral and DAI price; and (3) requires substantial technical sophistication. As MCD scales with more collateral types, the infrastructure cost and liquidity requirements of running Keepers for all collateral types increases. Therefore, the Maker Community should seek to hold constant or reduce both liquidity requirements and infrastructure costs as MCD scales.    Design Considerations for a New Liquidation System With the above in mind, the Smart Contracts Domain Team put together a list of desirable features for the new liquidation system of the Maker Protocol.   Single Block Composability   Decentralized Exchange (DEX) Compatibility - This would allow Keepers to use their liquidity to purchase collateral and instantly cycle it back into DAI through a DEX or DEX aggregator. This method would lower the friction of recycling capital for Keepers and also mitigate the risk inherent with Keepers committing to a bid for some period of time.  Automatic auction Bidding with DEX Aggregators - It should be possible for open auctions to show up in DEX aggregators, allowing regular users to buy directly from active auctions (if they have the best price available on the market). This function expands the pool of auction participants beyond just Keepers, likely increasing liquidity and resilience for the system.  Flash Loan Compatibility - Flash loans can be used to augment liquidity by performing atomic arbitrage. Ideally, this means that, for some set of bidding strategies, Keepers would need only provide the gas costs to execute a flash loan. However, this should not exclude Keepers from providing liquidity if they choose to do so. This function could provide a significant advantage as it may alleviate the capital requirements for auction participation and permit Keepers to employ such strategies to mitigate the operational security risk of holding funds in hot wallets.    Allowing Partial Bids - A Keeper could buy a portion of the collateral in an ongoing auction, even if they lack the capital to purchase the full amount. This functionality would open the door to smaller players to participate in auctions more readily. It also likely simplifies the liquidator contract (Cat), which would no longer need to perform partial liquidations.  Protection From Low Bids - The new liquidation system should contain logic that prevents Keepers from making bids that are unreasonably far from prevailing market prices.  Relying Only On Prices From the Oracle Security Module (OSM) - The new liquidation system, like the existing one, should be oracle risk-minimized.  Proposed Solution Design The Smart Contracts Domain Team believes, given the design considerations above, that Dutch auctions are likely the optimal design solution. Dutch auctions, in which a high starting price is set, and then decreases deterministically over time, can address most of the design considerations discussed above and likely make the Maker Protocol more robust.   Single Block Composability   Decentralized Exchange (DEX) Compatibility - Since Dutch auctions settle instantly, Keepers could use their liquidity to purchase collateral and instantly cycle it back into DAI through a DEX or DEX aggregator.  Automatic auction Bidding with DEX Aggregators - Again, since Dutch auctions settle instantly, open auctions can show up in DEX aggregators allowing regular users to buy directly from active auctions.  Flash Loan Compatibility - The instant settlement of dutch auctions also enables the use of flash loans.    Allowing Partial Bids - A Dutch auction would permit Keepers to buy a portion of the collateral in an ongoing auction, even if they lack the capital to purchase the full amount.  Protection From Low Bids - Since Dutch auction prices start high and decrease deterministically, extremely low bids are not generally possible unless sufficient time passes (and auctions could be configured to reset before reaching arbitrarily low prices).  Relying Only On Prices From the Oracle Security Module (OSM) - A Dutch auction would rely on the OSM to liquidate undercollateralized Vaults and establish an initial price of the auctions.   ",
+                    "links": [
+                        "https://github.com/makerdao/mips/blob/master/MIP0/mip0.md#mip0c1-definitions-of-the-maker-improvement-proposal-framework",
+                        "https://github.com/makerdao/mips/blob/master/MIP1/mip1.md",
+                        "https://www.setprotocol.com/",
+                        "https://github.com/SetProtocol/set-protocol-contracts/tree/master/contracts/core/liquidators",
+                        "https://www.setprotocol.com/pdf/set_protocol_whitepaper.pdf",
+                        "https://docs.makerdao.com/keepers/auction-keepers",
+                        "https://docs.makerdao.com/smart-contract-modules/core-module/cat-detailed-documentation",
+                        "https://forum.makerdao.com/t/liquidations-2-0-technical-summary/4632",
+                        "https://forum.makerdao.com/t/liquidations-system-1-2-upgrade-timeline/3592/12",
+                        "https://forum.makerdao.com/t/signal-request-adjust-the-wbtc-debt-ceiling-and-risk-premium/2824/28",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-thursday-june-11-9am-pst-4-00-pm-utc/2742/4",
+                        "https://forum.makerdao.com/t/weekly-mips-update-5/2833",
+                        "https://forum.makerdao.com/t/mip45-liquidations-2-0-liq-2-0-liquidation-system-redesign/6352",
+                        "https://forum.makerdao.com/t/incentivized-attention-makerdao-governance-prediction-markets/3789/11",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-106-thursday-august-20-4-00-pm-utc/3657/2",
+                        "https://forum.makerdao.com/t/liquidation-auction-mechanisms-more-is-better/3757",
+                        "https://forum.makerdao.com/t/vault-compensation-plan-v2/3584/28",
+                        "https://forum.makerdao.com/t/bidding-costs-for-liquidation-auctions/3577/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-thursday-june-18-9am-pst-4-00-pm-utc/2814/6",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-thursday-june-18-9am-pst-4-00-pm-utc/2814/5",
+                        "https://forum.makerdao.com/t/weekly-mips-update-6/2914",
+                        "https://forum.makerdao.com/t/week-2-dai-distributions-sourcecred-trial/2846"
+                    ],
+                    "GPT-summary": "The post is a pre-MIP discussion proposing a redesign of the liquidation system of the Maker Protocol. The Smart Contracts Domain Team has researched and considered different auction solutions and believes that Dutch auctions are the most suitable solution. The post discusses the motivation behind the redesign, design considerations, and proposed solution design. The post aims to gather feedback from the Maker Community and the Smart Contracts Domain Team in preparation for the creation of a formal Maker Improvement Proposal (MIP).",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.388862834696169
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jtathmann",
+                    "index": "#2",
+                    "likes": "3",
+                    "time": "10/06/2020-20:05:05",
+                    "content": "    charlesstlouis:  Again, since Dutch auctions settle instantly, open auctions can show up in DEX aggregators allowing regular users to buy directly from active auctions.   So a non-technical guy like me could just tap into anything using 0x api, 1inch, etc to participate? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 4.958333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jiecut",
+                    "index": "#3",
+                    "likes": "5",
+                    "time": "10/06/2020-20:05:52",
+                    "content": "Yeah, the Set Protocol is a great example of Dutch Auctions working well. Great writeup on the liquidation system redesign. I guess the only thing I want to add is that it\u2019s important that the auction doesn\u2019t reduce the price too aggressively. It can be important to give market participants time to short DAI (these might be different then auction participants). Good that you\u2019re considering protection from low bids, failsafe from arbitrarily low prices. It might be good to investigating possible variable auction parameters depending on liquidation size. Basically lengthening the auction process for big liquidations [less aggressive price decrease per block]. This throttle effect is important for black swan events. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 6.208333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Mariano_Conti",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "10/06/2020-20:56:37",
+                    "content": "    Jtathmann:  So a non-technical guy like me could just tap into anything using 0x api, 1inch, etc to participate?   Exactly. It would be easy for aggregators like 1inch, dex_ag and others to directly tap into this system. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 6.305555555555555
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#5",
+                    "likes": "3",
+                    "time": "10/06/2020-21:18:22",
+                    "content": "1000 times yes please! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "10/06/2020-21:55:23",
+                    "content": "This all sounds great, but I\u2019m curious as to why the current system was first chosen and what the tradeoffs would be between the two. I\u2019m guessing it\u2019s not all positive changes by switching. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.177272727272727
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#7",
+                    "likes": "3",
+                    "time": "10/06/2020-21:58:18",
+                    "content": "    Jiecut:  It might be good to investigating possible variable auction parameters depending on liquidation size. Basically lengthening the auction process for big liquidations. This throttle effect is important for black swan events.   Very timely comment.  I\u2019ll make sure this idea is considered when foundation technical teams discuss this tomorrow.  Also up for discussion tomorrow is how we can easily present all auctions to integrators on-chain.  One possible option was an enumerable set, but that has some limitations when we have too many liquidations.  One solution to that was to make sure auctions were always ordered and let the integrator iterate on their own.  Extending the auction time for large liquidations would change the ordering, but we may yet find a better solution to the former problem. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.2336309523809526
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jiecut",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "10/06/2020-22:14:31",
+                    "content": "@cmooney Maybe too complicated, kicking multiple vaults together as a single auction? Also regarding the variable parameters, it would probably be better to just have variable parameters for big liquidations. It should be easier to track if most auctions have the same parameters, price decreasing at the same rate. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.267857142857143
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#9",
+                    "likes": "3",
+                    "time": "10/06/2020-22:18:21",
+                    "content": "    hexonaut:  This all sounds great, but I\u2019m curious as to why the current system was first chosen and what the tradeoffs would be between the two. I\u2019m guessing it\u2019s not all positive changes by switching.   This is a good question, but requires a very detailed response.  We\u2019ve been making many changes (low-hanging-fruit) to the liquidation system over the past few months.  Tuning some of the governance parameters, working up some fixes for double liquidity requirements and blocked flop auctions, but we have also put a bunch of work into the auction-keeper reference implementation and the dockerized-auction-keeper.  We\u2019ve exhausted most of the low-hanging-fruit, and when we start to consider medium to long term fixes to liquidations, we realize we\u2019ve entered a realm of diminishing returns. What\u2019s more, when we consider all of the design objectives we would have today, the strengths of single block composability in DeFi, and partial liquidations mixed with shortcomings in the current design, it becomes clear that the ethereum ecosystem has changed since many of the original design decisions for the existing system were made. So far, and I can say this honestly, I can name no existing feature of the current design that the new design does not also include.  That is, up to this point, it would appear as though a dutch auction system is strictly better in all regards.  That is not to say we won\u2019t find some trade-off in the coming weeks or months of design, but that is also why we are engaging the community now: we want to hear new ideas and discover pitfalls before we\u2019re too far along. EDIT: I forgot about front-running attacks.  In a dutch auction design where a keeper brings no liquidity to the table (flash loan), any bid can be front-run by an attacker with more gas.  There are some ways to make this more difficult, but we have no solution to absolutely stop this yet. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.951995798319328
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#10",
+                    "likes": "1",
+                    "time": "10/06/2020-22:24:43",
+                    "content": "    Jiecut:  @cmooney Maybe too complicated, kicking multiple vaults together as a single auction? Also regarding the variable parameters, it would probably be better to just have variable parameters for big liquidations. It should be easier to track if most auctions have the same parameters, price decreasing at the same rate.   Aggregating liquidations is under consideration, but it does indeed as some additional complexity.  As would having different parameters for large liquidations vs. smaller ones.  We have to consider these options and weigh them against other solutions and how they hold up when considering all of the various risks and complexities. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.199175824175825
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "10/06/2020-23:16:54",
+                    "content": "I\u2019d add that the ability to do partial bids that comes with Dutch auctions makes it so that there\u2019s no real difference between one big auction and a bunch of smaller auctions kicked off around the same time. So IMO having different parameters for large auctions doesn\u2019t really make sense. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.133928571428571
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jiecut",
+                    "index": "#12",
+                    "likes": "1",
+                    "time": "11/06/2020-00:16:08",
+                    "content": "@Kurt_Barry True. The point on throttling still stands. Could have a global throttle that can slow down ALL auctions or all new auctions after a trigger. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.030808080808081
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/The_Ratj",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "11/06/2020-00:23:54",
+                    "content": "If we had one big auction with a sell price at a single value, I could see a situation where the price of ETH is falling faster than the auction sell price is lowering, causing minimal bids to come in. By having multiple auctions (especially with variable price lowering rates) it means that auction bids should continue to trickle in irrespective of the movement of the ETH price. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.828571428571429
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "11/06/2020-00:28:14",
+                    "content": "Agreed, limits on number of auctions and amount of debt to be covered are both design options under consideration. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#15",
+                    "likes": "3",
+                    "time": "11/06/2020-00:34:31",
+                    "content": "In a situation in which the market price is dropping faster than the auction price, with Dutch auctions \u201cminimal bids\u201d aren\u2019t a concern\u2013you\u2019re constrained to buy at the current price of the auction. What would happen in that situation is no one would bid at all. If the price in the auction never catches up to the market, that is a real risk as the debt won\u2019t be covered. Mitigations like re-initialization based on the current OSM price can help to correct this, but ultimately, if a collateral is going to zero, the system is likely to sustain losses no matter what. But it is an important point that dropping the price too slowly has risks just like dropping the price too quickly. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.395833333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/The_Ratj",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "11/06/2020-01:35:02",
+                    "content": "What I had meant to describe by \u201cminimal bids\u201d is the situation that you\u2019re describing where no bids would come in due to the auction not catching up to the market. Sorry if I wasn\u2019t clear in my original post. I agree that protecting against this situation is critical to maximise returns from collateral auctions. Because of this, I think that having a single auction price is risky. Intuitively, I would say that small packets of collateral should have their auction price drop quickly and larger packets should have their price drop quickly. I believe this would ensure that no matter the movement of the market, there should always be a trickle (or steady stream) of collateral being sold. I think that a single price for all collateral is too difficult to optimize to behave desirably in all situations. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.818027210884353
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#17",
+                    "likes": "0",
+                    "time": "11/06/2020-02:18:54",
+                    "content": "    charlesstlouis:  Relying Only On Prices From the Oracle Security Module (OSM) - A Dutch auction would rely on the OSM to liquidate undercollateralized Vaults and establish an initial price of the auctions.   Would the idea here be we would start the bidding at the OSM price, or would we take the OSM price and multiply it by some auction premium? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#18",
+                    "likes": "0",
+                    "time": "11/06/2020-02:37:07",
+                    "content": "In practice you probably want some adjustable multiplicative factor (e.g. 1.15) that you multiply the OSM price by to compute the auction start price, but the point is that the input to the calculation is just the OSM (1 hour delayed) price, not the instantaneous feed price. Using the latter would significantly increase the risk from oracle attacks. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#19",
+                    "likes": "1",
+                    "time": "11/06/2020-02:41:21",
+                    "content": "I suppose that under this system once someone is liquidated they would not have any collateral returned to their vault as we currently do during the dent phase today? Basically the auction would always liquidate the whole lot. Also who makes the profit if the collateral is sold for more than the OSM price? The protocol? The Vault owner? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#20",
+                    "likes": "1",
+                    "time": "11/06/2020-02:59:14",
+                    "content": "There isn\u2019t \u201ca single price for all collateral\u201d: the price for any given chunk of liquidated collateral is a function of how long ago it was liquidated and what the OSM price was at the time of liquidation. So naturally you\u2019re going to get a range of prices. Note that unless the price decrease function is very trivial (linear with fixed slope), the rates of decrease will differ between auctions anyway. I don\u2019t see any argument for why the rate of decrease should depend on the amount of collateral in a particular auction in a world with partial bids. Why should 100 auctions of 10 ETH (started simultaneously) behave differently from 1 auction of 1000 ETH? A fast-dropping market price is certainly a scenario requiring careful thought and probably some mitigation strategies. Something along the lines of what you suggest that makes more sense to me would be when a liquidation occurs, the collateral is split up into tranches which change in price at different rates. This way the proportion of collateral in each of the \u201cprice decrease rate\u201d buckets can be controlled in some reasonable way and is not randomly determined by the sizes of the Vaults that are liquidated. I\u2019m unsure if that would give any extra robustness, and even if it did, whether it would be worth the increased complexity. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.53422619047619
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#21",
+                    "likes": "1",
+                    "time": "11/06/2020-03:03:35",
+                    "content": "Dutch auctions will return collateral to the Vault owner as well, if they complete at a sufficiently high price. The auction simply doesn\u2019t accept more than (debt + liquidation penalty) amount of dai, and if that requirement is met before the price gets too low, there will be leftover collateral.  Also who makes the profit if the collateral is sold for more than the OSM price? The protocol? The Vault owner?  The protocol\u2019s profit is only ever the liquidation penalty (at most). Any leftover collateral goes back to the Vault holder. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.977777777777778
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/The_Ratj",
+                    "index": "#22",
+                    "likes": "1",
+                    "time": "11/06/2020-03:16:44",
+                    "content": "I\u2019d misunderstood initially. Thanks for the clarification. All clear now. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#23",
+                    "likes": "3",
+                    "time": "12/06/2020-01:23:07",
+                    "content": "Finally nice to see this pop up guys. Various thoughts not in any particular order. I see nothing about controlling auction liquidity flow here.   What I thought was put into using OSM vs. auction price regarding how much collateral will be allowed to flow through auction.    The idea of jamming a shitload of collateral for a lot of DAI \u2018all at once\u2019 isn\u2019t really an appealing solution here.   But I am quite aware that putting say a OSM to Dutch price collateral liquidity throttle isn\u2019t really appealling from a risk perspective.   But think about it from a liquidity perspective.  Is it better to jam a ton of collateral into a disjointed market or to use a value for how disjointed the market is (or not) to throttle or accellerate collateral liquidation.? Another point.  IF one groups these liquidations together into a \u2018liquidation lot\u2019 I guess basically all the auctions together split the total price right?    Here  I am wondering whether there will be a liquidation lot size and whether these will vary or not.  One is going to want to have some small lots hit simply to sample the market to gather some operational data before jamming a lot more liquidity at it and finding the market price and liquidity is horrible. Someone was talking about initial pricing on the Dutch.   Are you going to use something like OSM*1.1 or something better like last sell price * 1.1 on the new auctions.   Point here is once you decide to liquidate you really don\u2019t want to wait too long to hit the market price to clear collateral, but you also don\u2019t want to lower price to aggressively/fast.   Again I come back to controlling collateral liquidity offering against the [OSM-last sale prices]/OSM and using this as a kind of market disjointed factor to \u2018manage\u2019 what the system is doing. I know you guys are aware of this but what is the thought about what to do when the market price on auctions vs. OSM is such that attack is possible?    Is the system going to still throw out collateral and auction it even at a loss simply to keep getting some data to feed the data for the [OSM-last sale price]/OSM and wait for OSM to come down or last sale prices to come up or just keep jamming Dutch auctions out without much control of collateral liquidity flows when the market to OSM is heavily disjointed? I keep thinking about liquidity here.   Since stablecoins are a collateral type might it be possible to use them during really bad times for people to bid for collateral?   The point being stablecoins typically increase in value above $1 during bad times and since we already have these as collateral types in the system why not use not just DAI to bid for collateral but all the stablecoins that can be deposted in the system to mint DAI?    Then just reverse out the system positions as DAI liquidity returns to the system?  I know this has centralization risks etc and the system wants to work the liquidity all in DAI but has any thought been put towards easing the liquidity constraints on DAI when the system is being hammered by liquidating collateral for stablecoins that can be deposited into the system to mint DAI thereby helping ease liquidity availability for liquidations or do we just want to let the keepers do this? Oh last question:   Where is the technical write up on how this would work in detail.?!  lot sizes, pricing decrease/unit time, setting of lower price auction bounds where collateral won\u2019t be sold, etc. That is about all I have for now on this.   I look forward to seeing the details on this. EDIT ADD:   I think given what I wrote above one definitely would want to use different lot sizes and price lowering constraints to sample the markets.  Ideally these prices at the various auctions should be used to create a collateralliquidation oracle price which is then used to set the next set of liquidation prices and to be used from this whole how disjointed is the market to the OSM throttling mechanism.   Some real deep thought and probably some monte carlo type testing work will have to done against the contract mechanics I think.   In the end I think we are still back to wanting to design a system that can probe the market quickly to gather information and then act based on this information.    Having a memory is going to be important as well.   Is the collateral price fluctuating a lot (up and down) is it just going down did it just bounce? Think about this.  Would we really want to auction collateral if the OSM is telling us the price is Y, when the auction market is paying 1.2 x Y.   Sure the vault would get extra collateral back but do we then still auction this collateral or do we maybe hold it back because the auction price being fetched is above someones liquidation point.    I think this has huge complexity issues but the idea of pulling back collateral that doesn\u2019t need to be auctioned really has huge benefits in terms of reducing the need to auction collateral which brings me back to this idea that if the OSM drops significantly we end up in this state the system needs to liquidate a lot of collateral which will further depress the market causing a self re-inforcing feedback loop.   Notice that most of the people liquidated during black thursday that had liquidation prices between 100-120 USD on ETH - all that had to happen was to wait less than 1 maybe 2 hours and this collateral would have been above the liquidation threshold. While I want to see a better auction system.   I really think some thought being put into how to provide a liquidation threshold buffer in place to try to stave off liquidations might be in order as well because the liquidation system does better and vault owners end up happier (not liquidating) if we can find a way to create some flexability with regards to when to liquidate using a kind of fluid LR threshold based on market conditions.    I know this introduces risk to DAI holders and the system in general but again if we can put this whole system on edge into more of \u2018the whole damn thing fails at once\u2019 or \u2018basically it survives mostly intact with the least amount of liqudiations\u2019 bimodal survive or die model I think it works better generally. One thing I don\u2019t think I have ever seen really is a kind of risk analysis using current vault situations where the collateral price(s) have to fall to put entire system at risk.   For most of the smaller collateral types I think they could crash to zero and it would hurt but not kill the system.   ETH on the other hand literally IS the single collateral type that could risk the entire system.     I never heard anyone say ETH dropping to like 30-40% value pretty much could wipe out the system vs. 60% in most cases won\u2019t and what this scenario basically means to all the stake holders. BTW:  I think the whole LR flexibility could be accomodated by adjusting Liquidation Fees (using this 13% fee buffer as a kind of LR buffer to flex LR\u2019s to the tune of at least 13% down during severe market stress and giving up the LF during these times). END EDIT ADD: ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5586747707959825
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#24",
+                    "likes": "1",
+                    "time": "12/06/2020-07:25:16",
+                    "content": "I very much support the proposal. About 2 months ago, I wrote about the DAI problems and the liquidation process is one big problem that needs redesign. I also mentioned the need for the liquidation system redesign here. I am not familiar with most of the technical details so I\u2019ll leave to the devs to find the best solution. The side effect of that redesign is regaining trust in the system and that benefit is huge. When opening a vault (and later), it would be great to be able to select some kind of notification when the collateral value falls below a certain threshold. I know that there are 3rd party solutions for that but the average user does not know about them. I don\u2019t know if that notification mechanism should be integrated in the proposal (API) or it is a completely separate problem. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/flip-auctions-vs-selling-collateral-on-exchanges-such-as-uniswap/1554/17"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.345595238095239
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Rafa",
+                    "index": "#25",
+                    "likes": "0",
+                    "time": "12/06/2020-11:49:15",
+                    "content": "What were the reasons not to go for Sealed/Batched auctions? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#26",
+                    "likes": "4",
+                    "time": "12/06/2020-13:34:11",
+                    "content": "I think sealed/batched auctions would preclude the possibility of single block composability. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.642857142857143
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#27",
+                    "likes": "17",
+                    "time": "14/06/2020-11:49:20",
+                    "content": "In my opinion, one of the most important features of a new design here is going to be how it affects the system\u2019s reliance on oracles. One of the strengths of the current liquidation system (which nevertheless I agree is not perfect), is that while oracles are used to decided whether or not to liquidate, they do not affect how we liquidate. Specifically, given that a liquidation will occur, the oracle value has no impact on the outcome (since the OSM value is not used anywhere beyond the initial liquidation trigger) so price discovery cannot be impeded by a wild oracle value. This can be compared to a na\u00efve Dutch auction design which kicks off a decreasing-price auction at some spread above the last OSM value, which will catastrophically fail to discover a good price if the last OSM value was significantly below market (apologies for this straw man example, but I didn\u2019t see this issue mentioned anywhere above). While we of course have the OSM delay to try to react to a wild oracle price, note that the failure mode with the na\u00efve Dutch auction in the event that the wild oracle price is not caught in time is probably significantly worse than in the current design, where at least in theory there is a chance to recover some value during the mass liquidations). Note that it\u2019s not easy to solve this problem by just setting a very high initial price spread, since there is currently no restriction on the range of the oracle price. I think the conclusion is that in order to avoid introducing this new risk, a Dutch auction based design would need to incorporate one or more of:  some kind of intelligent liquidation throttling some kind of intelligent initial price discovery, potentially combined with throttling (e.g. if a previous auction cleared immediately then use a higher initial price) some kind of filtering/anomaly detection/sanity checking of OSM prices, when they are used to initialise auctions some kind of circuit breaker that would stop liquidations if there is a wild OSM value (perhaps similar to the one that we already have on ETH liquidations)  It is also worth adding that the DAI lockup multiplier problem during bidding is to some extent currently addressed by the USDC/USDC-B collateral types, i.e. you can effectively bid in USDC and the extra funding cost on a 6-hour bid is 0.028%, though of course the availability is limited by the debt ceiling, (currently two competing bidders cannot finance more than 5mm DAI of open bids at once). Interestingly, if we were to introduce some form of liquidation throttling, we would have more control over how much collateral might be at liquidation at once which would help us plan for this situation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.7734298701298705
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#28",
+                    "likes": "11",
+                    "time": "15/06/2020-20:11:35",
+                    "content": "    equivrel:  This can be compared to a na\u00efve Dutch auction design which kicks off a decreasing-price auction at some spread above the last OSM value, which will catastrophically fail to discover a good price if the last OSM value was significantly below market (apologies for this straw man example, but I didn\u2019t see this issue mentioned anywhere above).   This is a great point. One possible way of mitigating this is by using a non-linear function to determine the auction price offered, e.g.: y = dutch auction price offered t = time since auction began (minutes) p = OSM price at time auction was triggered c = time until OSM price is reached (minutes) - constant set by governance y(t) = (c/t)*p If c was set as 10 minutes, then: y(0) = infinity y(1) = 10*p y(5) = 2*p y(10) = p y(20) = p/2 Another option would be to hard code an initial auction price variable that is comfortably above market price (2-5x) for each collateral package. Auctions could then be initialized either at the hard coded price, or the average of the hard coded price and the OSM price, before swiftly dropping to the OSM price (and below if needed). I believe this is similar to how Compound protects their system from oracle manipulation. Each of these solutions has the drawback of causing delays to auction settlement, as the time at the beginning when auction price offered is above OSM will not receive bids unless the OSM price is unreasonably low. However, if the \u201coverpriced\u201d period is too short, then the system becomes more vulnerable to network congestion, miner collusion to not mine bids, etc. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.913043478260869
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#29",
+                    "likes": "2",
+                    "time": "16/06/2020-00:08:48",
+                    "content": "Looking at the last two posts by @equivrel and @monet-supply Completely agree regarding liquidation throttling and price discovery mechanics. One thing I was thinking is that the above is an actual reason for the protocol to own collateral.   Wouldn\u2019t it be better to absorb the cost of market pricing determination by the protocol itself and to maintain a robust auctioning system to basically have two auctions running simultaneously.  One to buy the other to sell some amount of collateral using the same dutch system.? The real issue here is market oracles.    I take well @equivrel point regarding issues with using the OSM for price discovery but we have a lot of markets to choose from that we can pull prices from.  Uniswap v2 looks to have an interesting on-chain pricing model that could also feed the liquidator here. Something else that came to mind given consideration of compensation and theoretical collateral return modelling.   We know two things.  OSM basically signalled a liquidation (via a keeper activating a kick) IF the OSM was correct and the liquidation should occur we know if a bidder is not overbidding the theoretical collateral return based on the vault TAB.    Why not start the reverse auction bidding just over the nominal theoretical collateral return.   Example  say 100 ETH is liquidating to capture 10K DAI tab.   We know the theoretical collateral return based on the LR(150%) LF (13%) is like 25% so why not start the bidding at 70ETH for 10K DAI?  IF the liquidation market is above this number then I think the liquidator should use that new information to feed into a liquidation OSM price and decide perhaps to hold back on liquidations that have a liquidation price market above the OSM but below the liquidation OSM market as sampled by an actual liquidation. A few things that look to be true:  Liquidator is going to need some brains Liquidator is going to need to sample the liquidation market (somehow) to determine the liquidation market price. The OSM drives initalization of auctions so there is some relevance of the OSM to the liquidator even if the OSM can hang up. The liquidator is going to need some way to determine if the OSM is whacky or not.    Which will probably require more pricing inputs.  I think uniswap v2 is interesting, dydx another. Circuit breaker that activates when Liquidator parameters out outside of a reliable working space. Liquidation volume management/throttling which should help with managing DAI liquidity.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.63778409090909
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#30",
+                    "likes": "2",
+                    "time": "16/06/2020-16:55:01",
+                    "content": "    Rafa:  What were the reasons not to go for Sealed/Batched auctions?   Primarily, that we cannot take advantage of single block composability as most of these systems have some reveal stage some number of blocks later.  We think the strengths of reducing liquidity requirements by making all DEX liquidity available for auctions is too great.  What\u2019s more, we can intrablock lend (flash lend) the collateral up for auction at that price with no fee.  Combine this with all of DeFi and also the ability to use USDC-A/B in that single block to reduce DAI demand, and this one requirement excluded any auction that would require multiple blocks to settle. The only other problem I would have with a sealed bidding system would be the complication of the bidding and reveal stages for UI users.  There are probably ways to improve UX for these auction types, but I wasn\u2019t a fan of the Vickrey auction UX ENS initially used.  I love the price discovery methodology, but it needed to be more user friendly. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.235714285714286
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#31",
+                    "likes": "5",
+                    "time": "16/06/2020-17:12:06",
+                    "content": "@equivrel @monet-supply @MakerMan Regarding liquidation throttling and how to set that initial liquidation price, the problems you\u2019ve identified and even solutions proposed are all up for discussion.  We\u2019ve been thinking about this exact set of problems internally and have some ideas (some of which you\u2019ve already suggested). I am reluctant to comment yet, because I don\u2019t want to coerce the problem space into something else or influence proposed solutions.  This process should help us discover problems we were blind to, and solutions we had not considered.  Please keep the ideas coming.  How would you exploit a particular design, and what are the countermeasures that would fix that?  I\u2019ll try to record novel problems and approaches so they can compete fairly, when we think we\u2019ve found the right solution to one of these sub-problems I may even post it in a new forums thread for final review. Thank you for putting the time in everyone. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.577080327080327
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#33",
+                    "likes": "1",
+                    "time": "16/06/2020-18:36:27",
+                    "content": "One consideration I\u2019d like to point out that applies to many of the suggestions around improving price discovery (using Uniswap, previous auction settlement values, \u201cprobing the market\u201d, etc) is that care is required to ensure that these are not vulnerable to gaming/manipulation themselves. I think ultimately the initial price determination logic will need to take several sources of information into account to be as robust as possible. Throttling/other rate limiting is of course under discussion as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#34",
+                    "likes": "0",
+                    "time": "16/06/2020-19:33:39",
+                    "content": "Something like Uniswap v2\u2019s on-chain price oracle solution? I believe it allows you to get the average price over a timescale of your choice (not entirely sure how it works.) Something like taking the price average over the last week or month, and then adding a fixed percentage is my first thought for initial price determination. Rate limiting also seems like a great idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#35",
+                    "likes": "2",
+                    "time": "16/06/2020-20:40:43",
+                    "content": "Is your main concern with the price oracle attack is system stability or fairness towards user? (I assume both are concerns, but still). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#36",
+                    "likes": "1",
+                    "time": "16/06/2020-22:06:30",
+                    "content": "Welcome @yaronvel! I\u2019m assuming that ensuring vaults\u2019 debts are covered (avoiding bad debt) will be the top priority, but optimizing for the best possible price (and therefore the greatest possible return of collateral to liquidated vault owners) will also be an important consideration. Vaults have 1 hour notice before being liquidated due to the oracle security module delaying price updates, so hopefully liquidations will only happen rarely. With a liquidation penalty of 13%, users should always get more collateral back by liquidating their own position (potentially using a flash loan or automation service like defisaver) versus letting their vault go to auction. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.491666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#37",
+                    "likes": "1",
+                    "time": "16/06/2020-22:45:19",
+                    "content": "Had another thought about this. It seems like the greatest risk with the dutch auction system is an oracle attack that feeds in an unreasonably low price - causes lots of liquidations and the starting price could potentially be far below market. Maybe this risk could be mitigated by limiting the rate of change of the OSM price itself. E.g. Revise the oracle system to only permit next price to change by a maximum factor of 2x per hour since the last update. For any median price outside of these bounds, the OSM updates the next price to the minimum (last price * (50% ^ time since last update)) or maximum (last price * (200% ^ time since last update)) amount permitted instead of the fed price. If an oracle attack feeds too low of a price, a rate of price change feature would limit the damage. Side benefit is that this feature could help with oracle attacks feeding too high of a price as well to purposefully generate bad debt. Drawback is that if a collateral price fell faster than the rate limiter, it could lead to some bad debt accumulating. If a price ever updates limit down, maybe that could be used to trigger an automatic drop of that asset\u2019s DC to 0. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.917901234567902
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#38",
+                    "likes": "7",
+                    "time": "17/06/2020-00:45:41",
+                    "content": "@monet-supply hmmm yeah a tweak to the oracle system like that could be a good idea. Depending on exactly how it\u2019s implemented, it could have the side effect of significantly slowing liquidations during a crash, and also if the price recovers quickly, avoid some liquidations entirely. EDIT: of course, it\u2019s not strictly necessary to implement this in the OSM itself, you can track it in the auction instead (probably by having the Spotter poke the auction contract as well). One other thing that\u2019s been suggested elsewhere but not mentioned in this thread is using the \u201cliquidation price\u201d, which is defined as the price of the collateral in a Vault after adjusting for the liquidation ratio (i.e. the maximum price at which the position could be liquidated). In the case of an oracle attack that artificially crashes the ETH price very suddenly, the liquidation price of most Vaults will be well above the OSM price and thus can be used to set a more reasonable starting value. In reality it should probably just be one of several inputs to the logic that determines the starting price. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#39",
+                    "likes": "2",
+                    "time": "17/06/2020-07:44:30",
+                    "content": "To me it seems that the dilemma on how to set initial price is really about what is a reasonable/ideal time for the auction to reach so called \u201cmarket price\u201d. I would imagine the rate of the price change to be a main question. Here are few thoughts on how to mitigate the initial price problem, but not sure how practical they are:  Let governance vote decide on initial price which will always be at least x10-x100 from current market price (and vote again whenever price changes by x10). And in addition have a mechanism for speedy price decrease in the initial phases. E.g., price goes down quickly before X% of the tab was bid. When tab is big, first do an auction (like with current flipper) on 10% of the tab. Then use the outcome to set an initial price for a dutch auction on the remaining 90%. Run daily DAI=>GEM and GEM=>DAI (non dutch) auctions for 10k dai qty. and use the price x2 as initial price for that day. Assuming 10% loss in DAI=>GEM=>DAI conversion, this requires a subsidy (dai inflation?) of 1k dai per ilk per day.  All the above have attack vectors and disadvantages, and most importantly probably heavy to implement. But they could be refined to mitigate some of the pitfalls. Finally a note on OSM price. It should be noted that OSM does not reflect DAI/USD price, hence taking x1.1 over OSM price is a bit borderline, as e.g., on black Thursday DAI was briefly traded for 1.1 USDC. That said, from a system stability point of view, i guess 1 DAI = 1 USD is good enough. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.2366255144032925
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/kluge",
+                    "index": "#40",
+                    "likes": "2",
+                    "time": "17/06/2020-13:29:16",
+                    "content": "One more idea about resistance against oracle attacks: The risk here is mostly one-sided. We are worried about oracles being manipulated to show too low prices which triggers liquidations. Too high prices would lead to auctions not being started. Let\u2019s additionally assume that the oracles were honest recently. This should hold, except well into a long-running attack which should have been reacted to otherwise. So keep track of the recent maximum price and use that to set the initial price. Due to taking the maximum, it can\u2019t be manipulated downwards. This does not need tricky governance decisions (except perhaps deciding the period to take the maximum price from) or have costs to run (apart from normal oracle costs). A multiplier can be applied on top for the same reasons other options have multipliers. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8307692307692305
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#41",
+                    "likes": "3",
+                    "time": "17/06/2020-14:48:54",
+                    "content": "Doesn\u2019t the OSM already take into account many different price feeds? It is good to be cautious, but are we being overly afraid here assuming the OSM cannot be trusted? Surely such a robust attack across multiple price feeds and exchanges would be incredibly difficult to pull off? If we believe this attack vector is feasible, perhaps we should look into restructuring the OSM. I am also in favor of limiting the amount the price could change in a single update. But maybe even having the price change percent be lower than 50%. Black Thursday we lost about 50% over the course of a day if I remember correctly. Maybe even a max change of 10-20% for a single update would be good. In most cases when there is a dramatic swing like this there tends to be a rebound effect anyway, and so smoothing the curve will likely reduce losses for the protocol. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.198979591836734
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/kluge",
+                    "index": "#42",
+                    "likes": "4",
+                    "time": "17/06/2020-15:49:21",
+                    "content": "    befitsandpiper:  Doesn\u2019t the OSM already take into account many different price feeds? It is good to be cautious, but are we being overly afraid here assuming the OSM cannot be trusted? Surely such a robust attack across multiple price feeds and exchanges would be incredibly difficult to pull off? If we believe this attack vector is feasible, perhaps we should look into restructuring the OSM.   It does, but liquidations should not rely on OSM if they don\u2019t have to. Liquidations not relying on it also makes such an attack less useful, because the payoff of pulling it off would be in getting to buy collateral below market price. So not using OSM here makes OSM safer.     befitsandpiper:  In most cases when there is a dramatic swing like this there tends to be a rebound effect anyway, and so smoothing the curve will likely reduce losses for the protocol.   This is definitely not anything we should play with. Smoothing like this can reduce losses often and catastrophically increase them in larger negative events. Exactly the opposite of what we want! Predictable small losses can be countered with fees, it is the unpredictable large losses that are the real problem which MakerDAO needs to try to minimize. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.010351966873706
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#43",
+                    "likes": "4",
+                    "time": "17/06/2020-16:13:04",
+                    "content": "I understand that we don\u2019t want to rely on the OSM if we don\u2019t have to, but it seems like much of the difficulties around using this dutch auction style (which in most ways is a dramatic improvement over the previous auction style) is coming from our attempts to avoid trusting the OSM. I guess my point is more that maybe we can\u2019t really avoid trusting the OSM, or at least the most robust way of accomplishing what we want to do is by trusting the OSM and then just doubling down on the security there. This way we don\u2019t have to choose lots of arbitrary values for where to start the auction, and make lots of weird assumptions that are likely to lead to different harder to predict problems. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.051587301587301
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#44",
+                    "likes": "15",
+                    "time": "17/06/2020-20:25:21",
+                    "content": "I think it\u2019s great to see discussion about the risks of the OSM, but in my opinion rather than zooming in on the auctions, I think it is a much better direction to discuss how to improve the OSM and make it more secure, and I already see a lot of great suggestions on the topic. On that note people here might find it relevant to take a look the MIP1 problem spaces that relate to the OSM, such as Decentralized Oracle Freeze and Emergency Oracles. Focusing specifically on trying to make auctions resistant to OSM failure misses the mark, because there are already other aspects of the protocol that critically rely on, and assume, that the OSM will always report true values. Most importantly is triggering liquidations, and calculating emergency shutdown settlement. Both of these result in catastrophic failure if the OSM fails - if Maker liquidated all of its collateral simultaneously in a fire sale due to a failure of the OSM, it wouldn\u2019t really matter if the auctions had a correct starting price, it still wouldn\u2019t be much different from selling everything at 0, and obviously it\u2019s an outcome that is completely unacceptable to users no matter what. So it has to be prevented from happening in the first place by governance. Same goes for emergency shutdown, if the OSM failed, an emergency shutdown could be manipulated so that either all Dai holders, or all Vault holders would lose everything and the other side would gain twice as much in the settlement. Again an outcome that would be completely unacceptable if it was even remotely a possibility in the long run, and has to be prevented by governance for the Maker protocol to be viable. So my point is, if we\u2019re worried about failure of the OSM, I think the solution is to try to improve the OSM and make it more robust, not spend precious time on trying to come up with a perfect auction auction design that\u2019s resistant to the edge case of OSM failure, while at the same time ignoring the other critical, unacceptable outcomes that would happen as a result of an OSM failure. The smarter approach is to tackle the two issues separately to avoid getting stuck, and finish the auction design first without focusing on the OSM failure edge case. Because getting it done would then create space for the community to move on to new features that would address the OSM issue directly, and for all aspects of the system - not just auctions - such as the suggestions already posted here, or another example would be things such as the Decentralized Oracle Freeze and Emergency Oracles mentioned above (both are MIP1 problem spaces so you if you want to learn more about them you can check out MIP1). A final, but important point to add, is that the auction system, like everything else, can always be upgraded later with more sophisticated and complicated logic. Given the amount of work that still needs to be done to prepare Maker for self-sustainability, I don\u2019t think that now would be the right time to try to build a perfect solution that would never need to be revisited. So even if it hypothetically is possible to create a solution that mitigates impact of OSM failure for auctions, and does so without compromising economic efficiency, there is still no reason to focus all energy on having that implemented from day 1. Instead it can be done in the future when other, more pressing issues are dealt with. Thoughtful prioritization will be critical if this community is to be successful in holistically navigating all the risks that the protocol faces. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-thursday-june-18-9am-pst-4-00-pm-utc/2814/6"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.641698795995671
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#45",
+                    "likes": "6",
+                    "time": "18/06/2020-03:11:58",
+                    "content": "I generally agree with Rune\u2019s point that we should focus on improving the OSM/oracles separately from implementing the new auctions, given that in a catastrophic \u201cprices set to zero\u201d OSM attack, the system is likely sustaining losses of the same order of magnitude whether the Dutch Auctions have good initial price discovery or just use the OSM value. That said, it doesn\u2019t mean we shouldn\u2019t have any countermeasures in the new auctions themselves, because the risks of a Black Thursday-like market fluctuation are very real and quite similar to the risks of an OSM attack (i.e. a difference of degree, not kind). Of course the special features of Dutch Auctions are supposed to help lessen those risks. I\u2019ve been gaming different scenarios and mitigations out in my head most of today, and every mitigation seems to be a mixed bag\u2013some are only good in certain situations but bad in others, and some introduce new vulnerabilities. We\u2019ll be doing economic simulations as part of the testing process for the new auctions; these can hopefully shed some light whether a simple  initial price determination will suffice. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4707147019647016
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Rafa",
+                    "index": "#46",
+                    "likes": "7",
+                    "time": "29/06/2020-09:08:48",
+                    "content": "Hi! I made a separate thread on Batch auctions for liquidations. It also includes our (Gnosis\u2019) experience with the DutchX, a DEX using the dutch auction model that we built in the past. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/maker-relay-ep-1/2970"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flip_flap_flop",
+                    "index": "#47",
+                    "likes": "0",
+                    "time": "02/07/2020-11:20:48",
+                    "content": "Am I missing something or do Dutch auctions imply a single flip phase (tend) and thus the liquidated CDP might not receive any collateral back (lack of dent)? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.5476190476190474
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/wouter",
+                    "index": "#48",
+                    "likes": "0",
+                    "time": "02/07/2020-22:44:36",
+                    "content": "Not really. In a first phase, the amount of Dai to be raised could remain constant (equaling the debt to be covered + liquidation penalty), and the amount of collateral being given in return would increase until the point where all the collateral in the vault is up for sale. From there, the amount of Dai would be decreased (and the system would be making a loss once it has eaten through the liquidation penalty.) The price per unit collateral would in any case follow the price curve, for example a linear decline. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flip_flap_flop",
+                    "index": "#49",
+                    "likes": "0",
+                    "time": "03/07/2020-00:32:27",
+                    "content": "@wouter So just to make sure I understand. You start the auction with X amount of shortfall (DAI) to cover (raise) where X = debtToCover + penalty. You also start with an amount of collateral to sell Y that is proportional to debtToCover. You then constantly increase the amount to sell until in hits the total amount locked in the vault. After you hit the ceiling, you decrease the DAI amount to cover with the auction. All of this is done smoothly using a DAI/COL price curve. DAI/COL may start at p% of the OSM price and from there everything is adjusted by the curve. Did I miss anything? EDIT: In this model you can\u2019t really guarantee only a penalty percent loss for vault users because the DAI/COL offered to bidders (and thus the loss incurred by vaults) always changes according to the curve. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.916666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#50",
+                    "likes": "2",
+                    "time": "17/07/2020-15:01:17",
+                    "content": "Folks a quick note regarding an some thoughts on the liquidation system that led to an idea. A quick example that illustrates the idea: Lets say OSM is at $200USD/ETH (just for easy calculation) and a new vault owner opens with 300ETH a vault for 20K DAI.   So their CR on inception is 300%.   All fine and dandy.   Now OSM drops to $100 putting them at the liquidation point. So now they come under liquidation gun here.   The system as it is currently designed liquidates everything returning any collateral that comes back from phase 2 to the vault.   But lets change a bit how this vault liquidates into a sequence of liquidations of some fixed amount of ETH.   Say 50ETH at a time. So this vault needs to recover its tab + .13 x tab = 1.13*20000=22600 DAI so if we were to offer this vaults 50ETH lot up for auction 50ETH would have to fetch 3333.33 (borrowed) + .13 * 3333.33 (433.33) profit to the system.   Lets say phase 1 gets a bid that covers the full tab (3766.66) and phase 2 gets a bid of 40 ETH. So what happens to the vault.  DAI owed would drop from 20000 - 3333.33 = 16666.66 DAI owed. ETH backing the above DAI would become 250+10 = 260. The new vault liquidation price becomes 16666.66*1.6/260 = 96.15 and if the OSM never drops below 100 this vault only loses 40ETH and remains intact.  What the above scenario illustrates is that there may be circumstances where if liquidations are done sequentially on a vault that IF ANY collateral is returned from such an auction it will improve the vaults CR. There are a few ideas one can take away from this:  Liquidating a vault in a sequence of smaller liquidations could save the rest of collateral in a vault. If a vault is saved from further liquidations this may stop a sequence of cascading liquidations. DAI profit from the first liquidation could be used to also temporarily buffer this vault from further liquidations.   Even if we used 1/2 of the 433.33 DAI profit this would drop the Liquidation point by 1% in this case. borrow facilities that have a higher LR and lower LF and hence have a higher chance at returning collateral in the above model of sequential liquidations would actually have a much better chance of not liquidating entire vaults. If these sequential liquidations happen over time it might buy enough time for a vault owner to either add more collateral, or add more DAI.  The issues with this in terms of code.  Not as clean as liquidating the entire vault. Vault status when in a sequence of liquidations is more difficult to track. Liquidating sequentially as above may expose the system to more risk.  My point here is that it isn\u2019t just fixing the method of auction here, but actually an adjustment to how a vaults collateral is liquidated actually could have a positive improvement on the system in terms of reducing the need to liquidate, or put better using a sequence of liquidations to try to recover collateral for vault holders so their entire vaults don\u2019t need to be liquidated.   In principle the system could also use the liquidation fee DAI (at least 1/2 of it) to act as an additional temporary collateralization buffer for the vault to buy time or collateralization to possibly stop additional collateral from being liquidated. This becomes particularly true if market prices are recovering. Anyway.   I know doing anything to implement the above is probably a \u2018big deal\u2019 from a smart contract design but it was something I wanted to point out when I started looking at this from a how can we improve the liquidation system generally. One last thing that came up here is the idea of having a flag operationally when auctions DO NOT return any collateral to a vault as this one kind of event shows that either the markets are really stressed pricewise or the auction system is not performing properly.   It is a reason to throttle liquidations somewhat particularly if they are not recovering:  Any vault collateral The 13% liquidation fee System losing money because auctions are not even fething the 100% borrow tab.  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/liquidations-system-1-2-upgrade-timeline/3592/6",
+                        "https://forum.makerdao.com/t/vault-liquidation-compensation-how-much-should-have-been-returned-to-your-vault/3256/13"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.67296918767507
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/latetot",
+                    "index": "#51",
+                    "likes": "0",
+                    "time": "20/07/2020-00:54:51",
+                    "content": "If the auction doesn\u2019t recover any collateral, it typically means the ETH price is falling very fast (faster than the auction duration).  If you throttle liquidations for this reason, it just means MKR holder absorb bigger losses (assuming ETH price does not bounce back quickly).   Vault holder need to understand there is no guarantee that they will receive collateral back in the even of a liquidation. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-10/3429",
+                        "https://forum.makerdao.com/t/weekly-mips-update-11/3618",
+                        "https://forum.makerdao.com/t/weekly-mips-update-13/3906",
+                        "https://forum.makerdao.com/t/weekly-mips-update-12/3710"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.355555555555556
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#52",
+                    "likes": "0",
+                    "time": "23/08/2020-15:43:27",
+                    "content": "I see here that liquidation system 2.0 is in plan. But there is no link to the new system discussion. Is the system described at this post is the 2.0? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.681818181818182
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#53",
+                    "likes": "0",
+                    "time": "24/08/2020-18:06:36",
+                    "content": "Yes, this one is the 2.0 discussion. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-14/4028"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#54",
+                    "likes": "2",
+                    "time": "01/10/2020-09:27:37",
+                    "content": "This blog post includes an interview with two DeFi players who describes why currently they are not being keepers in lending platforms, and their thoughts on liquidations processes in general. (Full disclosure, it is also a self promotion to my project, but i think this forum could benefit from having the point of view of the potential keepers in writing)    Medium \u2013 1 Oct 20    The genesis backstop: B.Protocol brings new players to DeFi liquidations We are pleased to announce that Kyber Network\u2019s top 3 liquidity providers (LPs) joined our genesis backstop, who will execute the\u2026 Reading time: 5 min read       ",
+                    "links": [
+                        "https://medium.com/b-protocol/the-genesis-backstop-b-protocol-brings-new-players-to-defi-liquidations-74619b11486e",
+                        "https://forum.makerdao.com/t/weekly-mips-update-16/4536"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party or author is advertising proposal"
+                    ],
+                    "Sentiment": 6.097402597402597
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/akirillo",
+                    "index": "#55",
+                    "likes": "2",
+                    "time": "23/01/2021-04:44:16",
+                    "content": "    Kurt_Barry:  We\u2019ll be doing economic simulations as part of the testing process for the new auctions; these can hopefully shed some light whether a simple initial price determination will suffice.   What do you use to run these simulations, Gauntlet? I only ask because I\u2019m currently working on a simulation platform for the Maker Protocol and want to know how we can be of any help! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.525974025974026
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/infomorph",
+                    "index": "#56",
+                    "likes": "1",
+                    "time": "23/01/2021-18:43:45",
+                    "content": "Yes, it seems that Gauntlet is doing the simulations:     [Agenda/Discussion] Scientific Governance and Risk #120 - Thursday, December 3 16:00 UTC Governance and Risk Meetings       Episode 120: December 03, 2020 Agenda   00:00: Introduction & Announcements  04:03: Governance at a Glance  06:42: Smart Contracts Team Update  14:56: Risk Team Update  22:50: Community Development + Operational Support Update  23:56: Collateral Calls Update  25:23: MIPs Update  30:40: November MIPs Governance Cycle Review  50:50: Walkthrough of the DsChief v1.2 Migration Process  57:09: Oracles Team Update  01:09:34: PSM Implementation Update  01:11:12: Open Discussion over the prioritisation o\u2026      ",
+                    "links": [
+                        "https://youtu.be/gadMkrlm5dY",
+                        "https://youtu.be/gadMkrlm5dY?t=243",
+                        "https://youtu.be/gadMkrlm5dY?t=402",
+                        "https://youtu.be/gadMkrlm5dY?t=896",
+                        "https://youtu.be/gadMkrlm5dY?t=1370",
+                        "https://youtu.be/gadMkrlm5dY?t=1436",
+                        "https://youtu.be/gadMkrlm5dY?t=1523",
+                        "https://youtu.be/gadMkrlm5dY?t=1839",
+                        "https://youtu.be/gadMkrlm5dY?t=3051",
+                        "https://youtu.be/gadMkrlm5dY?t=3429",
+                        "https://youtu.be/gadMkrlm5dY?t=4173",
+                        "https://youtu.be/gadMkrlm5dY?t=4271"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party auditing and reviewing proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.107142857142857
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/akirillo",
+                    "index": "#57",
+                    "likes": "1",
+                    "time": "23/01/2021-18:56:18",
+                    "content": "mm i see, thanks for finding this post for me! i\u2019ll check out the video linked in there. would you happen to know: Gauntlet\u2019s sims aren\u2019t open-source, right? i doubt our platform will be (anywhere near) as robust as Gauntlet\u2019s, but we\u2019re hoping it\u2019ll at least serve as interesting open-source tool for the community to experiment with! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.960714285714285
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/infomorph",
+                    "index": "#58",
+                    "likes": "1",
+                    "time": "23/01/2021-20:25:57",
+                    "content": "Given that Gauntlet is a for-profit company, I expect not. But they might e.g. make the model available in a SaaS format so that it can be run with different inputs. My 2 cents is that having multiple tools is good\u2013Gauntlet will give great depth on simulation realism (e.g. being able to address even Ethereum network congestion), but something less detailed but easier/quicker to experiment with+open could still add a lot of value. Btw there\u2019s also a high-level model of the system written in K:    GitHub    makerdao/mkr-mcd-spec High level KSpecification for the MCD System by Runtime Verification and Maker Foundation - makerdao/mkr-mcd-spec      ",
+                    "links": [
+                        "https://github.com/makerdao/mkr-mcd-spec"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.308333333333334
+                }
+            ]
+        }
+    ]
+}

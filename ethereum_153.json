@@ -1,0 +1,319 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-5750-extra-data-parameter-in-methods/11176",
+            "title": "ERC-5750 Extra Data Parameter in Methods ",
+            "index": 11176,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "erc"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "04/10/2022-18:12:06",
+                    "content": "Hi all, I am proposing an EIP-5750 to denote and designate the last parameters method as extra data. Here is the pull request: EIP-5750: Method with Extra Data by xinbenlv \u00b7 Pull Request #5750 \u00b7 ethereum/EIPs \u00b7 GitHub To save you a click away, I add a snapshot here   eip: 5750 title: Extra Data Parameter in Methods description: This EIP that defines an extra data parameter in methods. author: Zainan Victor Zhou (@xinbenlv) discussions-to: ERC-5750 Extra Data Parameter in Methods status: Review type: Standards Track category: ERC created: 2022-10-04  Abstract This EIP that defines an extra data parameter in methods, denoted as methodName(... bytes calldata _data). Compliant method of compliant contract can use the extra data in structural way to introduce extended behaviors.  Motivation The general purpose of having a standard for extra data in a method is to allow further extensions for a existing method interface. For example, the safeTransferFrom already  At the very least, Methods complying with this EIP, such as transfer and vote can add reasons in extra data, just like how GovernorBravo\u2019s improvement over GovernorAlpha In addition, existing EIPs that has exported methods compliant with this EIP can be extended for behaviors such as using the extra data for endorsements or salt, nonce, commitments for reveal commit. Allowing one method to carry arbitrary calldata for forwarding a function call to another method.   Specification The key words \u201cMUST\u201d, \u201cMUST NOT\u201d, \u201cREQUIRED\u201d, \u201cSHALL\u201d, \u201cSHALL NOT\u201d, \u201cSHOULD\u201d, \u201cSHOULD NOT\u201d, \u201cRECOMMENDED\u201d, \u201cMAY\u201d, and \u201cOPTIONAL\u201d in this document are to be interpreted as described in RFC 2119.  Any compliant contract\u2019s compliant method MUST have a bytes(dynamic size) as its LAST parameter of the method.  function methodName(type1 param1, type2, param2 ... bytes calldata data);   Rationale  Having a dynamic sized bytes allow for maximum flexibility for arbitrary additional payload Having the bytes specified in the last naturally compatible with the calldata layout of solidity.   Backwards Compatibility Many of the existing EIPs already have compliant method and all compliant contracts of such EIPs are already compliant. Here are an incomplete list  In the EIP-721 the following methods are already compliant:    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) external payable; is already compliant   In the EIP-1155 the following methods are already compliant   function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes calldata _data) external; function safeBatchTransferFrom(address _from, address _to, uint256[] calldata _ids, uint256[] calldata _values, bytes calldata _data) external;   In the EIP-777 the following methods are already compliant   function burn(uint256 amount, bytes calldata data) external; function send(address to, uint256 amount, bytes calldata data) external;   In the EIP-2535 the following methods are already compliant  function diamondCut(         FacetCut[] calldata _diamondCut,         address _init,         bytes calldata _calldata     ) external;   In the EIP-1271 the following methods are already compliant:    function isValidSignature(     bytes32 _hash,     bytes memory _signature)     public     view     returns (bytes4 magicValue);   Security Considerations  If using the extra data for extended behavior, such as supplying signature for onchain verification, or supplying commitments in a commit-reveal scheme, the security best practice shall be followed for that particular extended behaviors. Compliant contract shall also take into consideration the information of extra data will be shared in public and circulate around mempool, so specific caution shall be paid for replay-attack, front-run/back-run/sandwich attacks.   Copyright Copyright and related rights waived via CC0. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc-5750-method-with-extra-data/11176"
+                    ],
+                    "GPT-summary": "The author is proposing an EIP-5750 to define an extra data parameter in methods. The proposal aims to allow further extensions for an existing method interface, and compliant methods can use the extra data in a structural way to introduce extended behaviors. The post includes the abstract, motivation, specification, rationale, and security considerations of the proposal. The post also lists existing EIPs that have compliant methods and are already compliant with the proposed EIP. The post may be of interest to those interested in Ethereum's EIPs and those who want to extend existing method interfaces.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Change to proposal pipeline",
+                        "Token economics",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.130496453900709
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "31/10/2022-20:58:35",
+                    "content": "Posting some good questions from @SamWilsn  from the EIPs PR  github.com/ethereum/EIPs         Update EIP-5750: Move to Review   ethereum:master \u2190 xinbenlv:ed              opened 05:54PM - 15 Oct 22 UTC                 xinbenlv               +28 -5       A relatively straightforward       @SamWilsn  Why does this EIP need to exist? I think this is a great recommendation, but we don\u2019t want the EIPs repository to become a catalogue of Solidity best practices. You need to make the case in your Motivation for why this pattern needs its own standard.  @Pandapip1  I see no reason why best practices shouldn\u2019t be standards. I could see the type being changed to informational, though.  Here is author answer  Just to be clear, this EIP is not a \u201crecommendation\u201d or \u201cbest practice\u201d. EIP intend to serve as a a protocol/standard specifying format of method and their behavior. Unlike a lot of other ERCs that specifying the name and all parameters, this EIP specifies only the last data and its format, which makes it maximally compatible, both future and backward. It could be confusing, so let me make a metaphor here:  If someone says: \u201cI\u2019d recommend you drive your car on the right side of the road because it has benefit of we bump into each other less\u201d it\u2019s an informational EIP. If someone says, \u201cFor all standard-compliant road, let\u2019s designate its right side of the road to be reserved for forward traffic, so we can future agree to which side to build traffic lights, ramps, lightings, fire stations\u2026\u201d, it\u2019s an ERC EIP  This EIP serves for the standardizing purpose: There are a thousand ways to extend methods, but this EIP ask to designate certain place and format for extending behaviors. EIPs like EIP-5453(#5453) and EIP-5732(#5732) can all benefit from this EIP if they can rely on that a parameter in a given method is being designated for extending behavior.  ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/5785/files",
+                        "https://github.com/xinbenlv",
+                        "https://github.com/ethereum/EIPs/pull/5785/files",
+                        "https://github.com/ethereum/EIPs/pull/5453",
+                        "https://github.com/ethereum/EIPs/pull/5732"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.336309523809524
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "28/11/2022-19:29:29",
+                    "content": "Can you elaborate on this part of the EIP?  Having the bytes specified as the last parameter makes this EIP compatible with the calldata layout of solidity.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "30/11/2022-19:24:29",
+                    "content": "@frangio  thank you for the question The Solidity language structure the calldata layout as follows, as documented in 1, 2:  All in all, a call to the function f with parameters a_1, ..., a_n is encoded as  function_selector(f) enc((a_1, ..., a_n))   Thus, if we choose the bytes that will be designated for extension to locate in the last one of all parameters of a function, then we can use that in nesting data, we will be able to assume the same location of data in all methods that conform this rule. But if we don\u2019t designate the last bytes to be extaData, but alternatively choose the second from last field as a standard, then this is what could happen One of standard\u2019s implementation choose to put a string field after extraData function foo(uint8 param1, bytes calldata extraData, string param2);  another of standard\u2019s implementation choose to put a uint8 after extraData function bar(uint8 param1, bytes calldata extraData, uint8 param2);  Then it\u2019s not very easy nor gas efficient to figure out where extraData locates in such scenario. But if we choose the last one, both implementations will have to be function foo(uint8 param1, string param2, bytes calldata extraData);  function bar(uint8 param1, uint8 param2, bytes calldata extraData);  Then we can reliably always know the last parameter (meaning, zero from ending byte), are the extraData field. One more real world example is for \u201cEIP Endorsement\u201d, we could choose to say: if this last 32 bytes is keccak256(\u201cSOME_MAGIC_WORD\u201d), we will interpret the extending data as endorsement and try to parse it, see EIP-5453 Endorsement (WIP) It also helps when we try to do nested calls, e.g. SomeERC721 is ERC5679MintAndBurn {      function burn(from, extraData) {     // send a call to another function via parsing extraData     // then      _burn(from, []);   } }  Hope these descriptions and helps me explain myself more clearer, if not I will create some more deployable contract examples soon and get back with those examples ",
+                    "links": [
+                        "https://docs.soliditylang.org/en/v0.8.13/abi-spec.html#function-selector-and-argument-encoding"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.598039215686274
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/devinaconley",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "01/12/2022-21:30:07",
+                    "content": "Interesting proposal @xinbenlv     xinbenlv:  function methodName(type1 param1, type2, param2 ... bytes calldata data);    Functionally, is the requirement that any implementing contract must treat the bytes parameter as optional and non-critical? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "01/12/2022-23:27:51",
+                    "content": "@devinaconley not necessarily, When a contract.method has last bytes and use the first N bytes, the remaining of bytes after Nth are always optional and non-critical. For example, in one of the Commit-Reveal implementation, this particular line  github.com   ercref/ercref-contracts/blob/e833633a65de5910ed34e98681278b931993d1b8/ERCs/eip-5732/contracts/CommitableERC721.sol#L43                   {               return super.supportsInterface(interfaceId);           }                       function safeMint(               address _to,               uint256 _tokenId,               bytes calldata _extraData           )   onlyCommited(                   abi.encodePacked(_to, _tokenId),                   bytes32(_extraData[0:32]), // The first 32bytes of safeMint._extraData is being used as salt                   MANDATORY_BLOCKNUM_GAP               )               external {               _safeMint(_to, _tokenId); // ignoring _extraData in this simple reference implementation.           }                       function get165Core() external pure returns (bytes4) {               return type(IERC_COMMIT_CORE).interfaceId;           }                               uses first 0-32 bytes for salt, the the remaining bytes after 32th byte could be used for extension behavior. ",
+                    "links": [
+                        "https://github.com/ercref/ercref-contracts/blob/e833633a65de5910ed34e98681278b931993d1b8/ERCs/eip-5732/contracts/CommitableERC721.sol#L43"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.565476190476191
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "01/12/2022-23:54:30",
+                    "content": "    xinbenlv:  Then we can reliably always know the last parameter (meaning, zero from ending byte), are the extraData field.   Given a function foo(uint x, string s, bytes extraData) there is no guarantee that extraData will be the last thing in calldata. More generally, if there are multiple dynamic types there is no guarantee of their ordering in calldata. Do you agree with this? See Use of Dynamic Types in the Solidity docs on ABI encoding. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.392857142857142
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "02/12/2022-00:28:58",
+                    "content": "I am not sure if I follow your word here:  Given a function foo(uint x, string s, bytes extraData) there is no guarantee that extraData will be the last thing in calldata.  Based on solidity\u2019s calldata (in the context of calldata vs storage, not to be confused with other meaning of calldata) the structure of foo(uint x, string s, bytes extraData);  based on the encoding rule: function_selector(f) enc((a_1, ..., a_n)) will be a concatenation of   d1. method selector = keccak256(\"foo(uint256,string,bytes)\")[0:3]   d2. encoded uint x which is x   offsetOfD3 for location of d3  offsetOfD4 for location of d4  d3. encoded string s which is padded32(length(s)) || uint256 of each bytes of s's content   d4 encoded bytes extraData which is extraData's length per 32bytes || content of extraData padded last one to full 32bytes   The overall becomes d1 || d2 || offsetOfD3 || offsetOfD4 || d3 || d4. (Updated with frangio\u2019s correction.) ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.696428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "02/12/2022-14:11:41",
+                    "content": "    xinbenlv:  The overall becomes d1 || d2 || d3 || d4.   This is not correct. In the simplest case, the encoding will be: d1 || d2 || X || Y || d3 || d4                       ^X    ^Y  With X and Y the offsets where d3 and d4 respectively start. Although this is the canonical encoding that Solidity will produce, the decoding routines support other non-canonical encodings such as: d1 || d2 || X || Y || d4 || d3                       ^Y    ^X  As a consequence, it is not possible to predict the location of a dynamic bytes type in calldata. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.895833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "02/12/2022-20:00:24",
+                    "content": "@frangio Oh, you are right. Thanks for the correction, yes there are offset X and Y to indicate place of such dynamic types in tail parts. You made a very good point that I didn\u2019t think of when drafting this EIP, which is with non-canonical encoding, it\u2019s possible to even have reverse location of bytes, or some trick in having overlaps for different data fields (maybe, due to malicious TX or for saving gas cost maybe?). So there is no guarantee of last bytes being physically last one. This fact you point out did weaken one of the rationales for mandating extraData as last one so the remaining rationale is majorly due to conventions. For non-canonical encoded contract this could be even a potential security issue if interacting clients/contract assumes so. An action item for me is to think of how to add this as a security considerations. I will send a PR. I appreciate your feedback and let me know if there are other advice. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.373571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "02/12/2022-20:38:20",
+                    "content": "Given this, I think the justification for this ERC has lost a lot of weight. I\u2019m not sure that I see the point in standardizing this. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "02/12/2022-20:50:29",
+                    "content": "@frangio If there is no value of this standard, this EIP could just get ignored and quietly stay in the corner. I hold the views that there are still many features that could utilize EIP-5750 and demonstrating having an extension field have a lot of benefits. I am working on a few ideas that actually requires EIP-5750 and will invite/notify you to review when those are ready for reviews. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "15/12/2022-09:22:47",
+                    "content": "@frangio EIP-5453 is an example why I think this EIP-5750 is useful See reference implementation   github.com   ercref-contracts/ERCs/eip-5453 at main \u00b7 ercref/ercref-contracts main/ERCs/eip-5453 ERC Reference Implementations. Contribute to ercref/ercref-contracts development by creating an account on GitHub.      ",
+                    "links": [
+                        "https://github.com/ercref/ercref-contracts/tree/main/ERCs/eip-5453",
+                        "https://github.com/ercref/ercref-contracts/tree/main/ERCs/eip-5453"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving positive feedback on proposal",
+                        "3rd party referencing existing EIPs",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "04/01/2023-23:22:36",
+                    "content": "@frangio EIP-5750 opens up all sorts of extensionability, e.g.  Supplying salt with EIP-5732 Commit Service for Commit-Reveal scheme Supplying endorsement for same-TX permit using EIP-5453, or in separate TX by ERC-2612 or ERC-4494 Avoid the limitation of EIP-1271 which is being solved by Add EIP-6066: Signature Validation Method for NFTs by boyuanx \u00b7 Pull Request #6066 \u00b7 ethereum/EIPs \u00b7 GitHub  Avoid the limitation of original domain separator lacking \u201cextensions\u201d in EIP-712 being addressed by EIP-5267: Retrieval of EIP-712 domain which is proposing an uint256[] extensions   Let\u2019s continue the discussion on EIP-5750. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator",
+                        "https://eips.ethereum.org/EIPS/eip-5267"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "08/01/2023-00:55:06",
+                    "content": "    xinbenlv:  Avoid the limitation of original domain separator lacking \u201cextensions\u201d in EIP-712 being addressed by EIP-5267: Retrieval of EIP-712 domain which is proposing an uint256[] extensions   I think you misinterpreted this. EIP-712 is already extensible. It says:  Future extensions to this standard can add new fields with new user-agent behaviour constraints. User-agents are free to use the provided information to inform/warn users or refuse signing. Dapp implementers should not add private fields, new fields should be proposed through the EIP process.  The uint[] extensions in EIP-5267 is just a manifestation of this existing bit of the spec. I think this serves to exemplify why I think this EIP\u2019s approach to extensibility doesn\u2019t work. EIP-712 and EIP-5267 are extensible through the extensions array, but the difference is that the EIP gives the array a specific semantics. It says \u201cfor each integer N in the array there will be additional fields defined in EIP-N, which is expected to specify how to retrieve their values\u201d. Note that, from the outset, users of EIP-5267 know what to do with the extensions array, even if only to recognize that there is some unimplemented behavior that should result in an error.   github.com   frangio/eip-5267/blob/7413ee18bbdcbb893154e100b550827a0319b3ca/app/src/lib/eip-5267.ts#L36-L38                   if (extensions.length > 0) {             throw Error(\"extensions not implemented\");           }                  Similarly, implementors of EIP-5267 know exactly what it means to include a number in the extensions array. The problem that I see in all of the examples you provide is that there are no semantics given to these bytes extraData arguments. For example, in EIP-6066, what should a contract do if it receives non-empty extraData? How does a user know that the contract is interpreting the extraData correctly? Standards are about coordination, and as far as I can tell adding bytes extraData is not helping coordinate, and may even be leading to coordination problems if different users/implementors don\u2019t agree on how to use it. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-5267",
+                        "https://github.com/frangio/eip-5267/blob/7413ee18bbdcbb893154e100b550827a0319b3ca/app/src/lib/eip-5267.ts#L36-L38",
+                        "https://github.com/frangio/eip-5267/blob/7413ee18bbdcbb893154e100b550827a0319b3ca/app/src/lib/eip-5267.ts#L36-L38"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.4780303030303035
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "10/01/2023-16:04:14",
+                    "content": "Thank you for your continued effort in discussing with me, @frangio. Considering you are the main author of OZ, your opinion carry a lot of weight in my heart both because of my respect to your work in creating the wonderful OZ but also the experience and expertise you earn and demonstrate in that creation. But I do respectfully share quite different views with you on a few things you write up there.     frangio:  I think you misinterpreted this. EIP-712 is already extensible. It says:  Future extensions to this standard can add new fields with new user-agent behaviour constraints.  The uint[] extensions in EIP-5267 is just a manifestation of this existing bit of the spec. \u2026   I think I didn\u2019t misinterpret this. EIP-712 already is (or claim to be) extensible. I think you misinterpret EIP-5750. When EIP-712 says it\u2019s extensible, people wasn\u2019t sure how it can be extended. For example \u201ccan add new fields\u201d, there are unanswered question open for interpretation: Add such new field at where, in for format?  This is exactly why EIP-5267 tries to specify. In EIP-5267 you answered: (1) it should be \u201cuint256[]\u201d and (2) it should be added to the last of the param list, and (3) it should refer to EIP-number.  Those are actually design choices you made in EIP-5267. Now, combing back to EIP-5750, it\u2019s trying to solve the unanswered problem like this, and at certain level of clarity and flexiblity once-for-all: it says it there should be (1) last param, (2) bytes, and amongst other implied decision, (3) it didn\u2019t require it to be EIP number or anything, leaving it to be open for interpretation. And I do ask you the same question on EIP-5267 whether it has to be EIP-number, or whether you are open it to be other format.     frangio:  I think this serves to exemplify why I think this EIP\u2019s approach to extensibility doesn\u2019t work. EIP-712 and EIP-5267 are extensible through the extensions array, but the difference is that the EIP gives the array a specific semantics. It says \u201cfor each integer N in the array there will be additional fields defined in EIP-N, which is expected to specify how to retrieve their values\u201d.   I could understand if you want something more restrictive being specified in EIP-5750, but that\u2019s a choice. Just like EIP-712 says \u201cyou can add fields\u201d and then open up for flexibility for future EIP / impl to decide how to add fields and what those fields means, EIP-5750 also make some choices and intentionally leave some choices for flexibility. Now one could be as much restrictive as they want, but they also needs to be questioned: why so restrictive? IMHO this is the main difference of mindset between \u201cstandard designing\u201d vs \u201cimplementation designing\u201d:   Implementation designing mindset prioritize restrictiveness over flexibility  standard designing mindset prioritize flexibility over restrictiveness.  I was using EIP-5267 as one of the example to speak the same language with you as you are author of that EIP and it may come to be more obvious such decision were (probably) unmade in EIP-712 and you needs to make it in EIP-5267, hoping you could easily wear the same hat such need will occur in other EIPs and thus see the value of EIP-5750 that makes some design choices for all functions. But if you don\u2019t think using EIP-5267 helps me explain my position and motivation of EIP-5750, that\u2019s fine too, here are other examples\u2026  Let\u2019s use some other examples: EIP-5732 Commit Interface using any function with a EIP-5750 compatible field for supplying secret salt, or EIP-5453 Endorsement Interface to allow any function to be endorsible if they comply with EIP-5750. I think they provide a much better angle of why EIP-5750 provides a overall value for the whole ERC/application layer. Please note, some of the choice in EIP-5750 were intentionally flexible so it can be maximally useful.  Footnote: Just like any ERCs, any dApp/Smart Contract/user-client builders could ignore any ERCs, people could feel absolutely free to ignore EIP-5750. But at the end of the day, design question like \u201chow to extend EIP-712, exactly?\u201d comes up every once a while, and hopefully EIP-5750 provides some inspiration, and drive some consensus, of how to answer such design choice for ERC community as a whole ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.412327999381571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "10/01/2023-19:52:50",
+                    "content": "    xinbenlv:  design question like \u201chow to extend EIP-712, exactly?\u201d comes up every once a while, and hopefully EIP-5750 provides some inspiration, and drive some consensus, of how to answer such design choice for ERC community as a whole   I can agree with this. But I think the extensibility mechanism proposed in this EIP is not helpful and may lead to bad results.     xinbenlv:  standard designing mindset prioritize flexibility over restrictiveness.   Standards should be somewhat flexible, but also need to be unambiguously specified. If there is a \u201cbytes\u201d value as a function argument with no meaning given by the standard at all, no one can possibly know how to use this value: users can\u2019t assume what values an implementation would accept or expect, and implementors can\u2019t assume that users would pass in the expected values. There needs to be a way to coordinate users and implementors in the meaning of the bytes value. Generally the standards spec is the coordination mechanism, but when there is an extensibility mechanism there is a need to define a separate coordination mechanism about the extensions being used. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.65625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "10/01/2023-19:59:15",
+                    "content": " no one can possibly know how to use this value  That\u2019s true for \u201cwhat data will the last param be\u201d, and leaving to EIPs like EIP-5732 and EIP-5453 to specify. One of things that \u201cone does know\u201d in EIP-5750 is that a compliant function shall add one last param. Which also mean any callers shall take into the account for an existence of such last param. This is entirely what this EIP is about.  And I am unsure if you are  (1) questioning if there is even any value to specify the existence, location or datatype of a param, or (2) questioning if there is value when only such existence, location and datatype last param is specified but content of datatype is unspecified.  My take is that  There is value in specifying the existence, location or datatype of a param. As author of EIP-5750 I intentionally made a design choice to leave content unspecified to leave ways for EIP-5732, EIP-5453 and other future EIP authors.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.966346153846154
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "10/01/2023-22:44:36",
+                    "content": "I think there can be value in documenting a design pattern for extensibility. I do think the contents of this extensible argument are very important. In EIP-5267, you may disagree with the choice to use EIP numbers (and you make some good points about that!), but the content of the argument and its interpretation are unambiguously defined. Taking EIP-6066 as an example, there is a data argument that has no meaning whatsoever given to it. Each particular EIP-6066 implementer might give it a specific interpretation, but the EIP makes no provisions for communicating what that is. In the Governor contracts in OpenZeppelin there is a similar situation that we tried to address. The castVote functions have two arguments that are generic and extensible: uint8 support, and also bytes params. \u201cSupport\u201d is the value that encodes For/Against/Abstain, but it could also encode completely different values in other Governor instances with custom behavior. It\u2019s very important to communicate to a user (or application) how to use that argument. The way we do that is with the COUNTING_MODE() getter, which returns a string that describes how support and params should be used.  image740\u00d7630 86.8 KB  Hope this example helps understand where I think this pattern is lacking. ",
+                    "links": [
+                        "https://docs.openzeppelin.com/contracts/4.x/api/governance#IGovernor-COUNTING_MODE--",
+                        "https://ethereum-magicians.org/uploads/default/original/2X/e/e52ac578ea83cf197de800e7b0b45ca756d6883d.png"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.087037037037037
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "11/01/2023-00:01:33",
+                    "content": " you make some good points about that!  Thanks for recognizing, @frangio !  but the content of the argument and its interpretation are unambiguously defined.  Yeah, that was intentional, as I reiterated above.  Taking EIP-6066 as an example, there is a data argument that has no meaning whatsoever given to it.  Yes, as an EIP that adopts EIP-5750, the EIP-6066 has that data argument, which is just as the same as the EIP-721     /// @notice Transfers the ownership of an NFT from one address to another address     /// ...     /// @param data Additional data with no specified format, sent in call to `_to`     function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) external payable;  In which it reads data: Additional data with no specified format  I do understand that you disagree the technical design decision that such data being unspecified. But we increasingly see such pattern being adopted, so that was the rationale of EIP-5750 choose to be content agnostic but only to advocate for the same pattern. Such pattern is adopted by not only EIP-721, but also EIP-1155 and many more, such as  EIP-3668: CCIP Read: Secure offchain data retrieval EIP-3234: Batch Flash Loans EIP-4341: Ordered NFT Batch Standard  Just to name a few. Not to mention those other EIPs who have a last param and already assign a meaning. In fact, if you would entertain an idea that there will be a use-case for minorEIPIdentifier in EIP-5269: EIP/ERC Detection and Discovery, I\u2019d suggest the EIP-5267: Retrieval of EIP-712 domain to consider a minor EIP/behavior identifier to provide flexibility for granularity of future use case not just at the whole-EIP level. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-3668#existence-of-extradata-argument",
+                        "https://eips.ethereum.org/EIPS/eip-3234",
+                        "https://eips.ethereum.org/EIPS/eip-4341",
+                        "https://eips.ethereum.org/EIPS/eip-5269",
+                        "https://eips.ethereum.org/EIPS/eip-5267"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.488636363636363
+                }
+            ]
+        }
+    ],
+    "group_index": "153"
+}

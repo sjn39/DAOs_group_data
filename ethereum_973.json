@@ -1,0 +1,165 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/rfc-eip-2442-logqueryn-opcodes/3867",
+            "title": "[RFC] EIP-2442 - LOGQUERYn Opcodes ",
+            "index": 3867,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "events",
+                "opcodes",
+                "eip-2442"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pinkiebell",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "19/12/2019-16:21:43",
+                    "content": " Magicians.  Let this here be the breeding ground, around all things LOGQUERY bound.    github.com/ethereum/EIPs         [Draft] EIP-2442 - LOGQUERYn opcodes   ethereum:master \u2190 pinkiebell:logquery            opened 04:14PM - 19 Dec 19 UTC               pinkiebell             +113 -0             To better support stateless(light)-clients, layer-2 scaling solutions and similiar applications, gaining the ability to query the last emitted log event and having the log-data available inside a contract has a huge benefit to an overall simpler system/application design. In the context of optimistic-rollup solutions, one could imagine to use LOG events, corresponding topics as storage keys and log-data as a way to signal state changes to light clients and simultaneously using it as a storage backend for the on-chain contract itself. A rudimentary example: // Layer-2 Bridge contract transfers AMOUNT of TOKEN from `Alice` to `Bob`.  let storageTopic = keccak256(Alice, Token) // query Alice let success = logquery1(memoryPtr, 0, 32, storageTopic)  // we had a past event if (success) {   // the data of the log contains the uint256 balance   let aliceBalance = mload(memoryPtr)    if (aliceBalance >= AMOUNT) {     mstore(memoryPtr, aliceBalance - AMOUNT)     // update Alice's new balance     log1(memoryPtr, 32, storageTopic)      // Bob's new (pre) balance     mstore(memoryPtr, AMOUNT)     let storageTopic = keccak256(Bob, Token)     // query Bob     success = logquery1(memoryPtr, 0, 32, storageTopic)     if (success) {       // update Bob's balance       mstore(memoryPtr, mload(memoryPtr) + AMOUNT)     }     // log Bob's new balance     log1(memoryPtr, 32, storageTopic)   } else {     // Alice has not enough AMOUNT     revert()   }  } else {   // no event for (Alice, Token) emitted in the past - who is Alice?   revert() }  Other solutions like validating log events with past block-hashes are inconvienent and also of limited use. Additionally, there is no trustless way of verifying if any given log was the latest/most recent  one. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/2442",
+                        "https://github.com/pinkiebell",
+                        "https://github.com/ethereum/EIPs/pull/2442/files"
+                    ],
+                    "GPT-summary": "The author of the post is explaining a proposal for a new Ethereum Improvement Proposal (EIP) called LOGQUERYn opcodes. The proposal aims to simplify the system/application design by allowing the querying of the last emitted log event and having the log-data available inside a contract. The post also mentions an example of how this proposal could be used in the context of optimistic-rollup solutions. A 3rd party gives constructive criticism of the proposal and asks questions about it.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.383967223252938
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MrChico",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "21/12/2019-13:37:07",
+                    "content": "The very nature of ethereum LOGs is that they are transient constructions that they can only reveal information about EVM execution, but never effect it. Currently, fully verifying nodes do not need to store any logs at all, and while most implementations do anyway, there are concrete plans on pruning historical logs. This proposal would increase the storage requirements for nodes. In addition to this, there are smart contract security properties that would need to be revisited in the context of this EIP. In discussions around reentrency vulnerabilities, or more generally the question of what possible state can be changed as a result of a CALL, the general assumption is that emitting a LOG does not effect state, and will therefore not effect further computation (cf.  STATICCALLWITHLOGSANDVALUE). ",
+                    "links": [
+                        "https://github.com/ethereum/pm/issues/123#issuecomment-528506546"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.6934523809523805
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pinkiebell",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "21/12/2019-15:41:24",
+                    "content": "Thanks for the feedback!     MrChico:  Currently, fully verifying nodes do not need to store any logs at all, and while most implementations do anyway, there are concrete plans on pruning historical logs. This proposal would increase the storage requirements for nodes.   My initial thoughts on the implementation side of the nodes was that they only have to store the most recent log events for any given unique topic-combination log0() log1(), log2() etc, and are free to prune the remainder of it. So yes, it increases the state requirements somewhat that these nodes still need some kind of index + the logs itself. My assumption is that if developers going to use this scheme, then they likely won\u2019t make us of SSTORE/SLOAD anymore.     MrChico:  In addition to this, there are smart contract security properties that would need to be revisited in the context of this EIP. In discussions around reentrency vulnerabilities, or more generally the question of what possible state can be changed as a result of a CALL, the general assumption is that emitting a LOG does not effect state, and will therefore not effect further computation (cf. STATICCALLWITHLOGSANDVALUE).   Thanks for the hint. I agree, that would need to be communicated widely. ",
+                    "links": [
+                        "https://github.com/ethereum/pm/issues/123#issuecomment-528506546"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.878401360544218
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "24/12/2019-13:55:15",
+                    "content": "The gas cost of this EIP does seem way too low. I would use this opcode to store data (like SSTORE). You can use the storage slot as the topic and then use LOGQUERY1 to load the data. Logging (LOG1) is much cheaper than storing via SSTORE. Loading it will also be significantly cheaper than SLOAD. Result is probably that this is significantly underpriced. Another problem I see is that you might need to know the length of the stored event. You can of course circumvent this by storing the length in the first bytes32 and then loading the rest, e.g. calling the opcode twice with different lengths. What happens when this op is called on a contract which has the opcode, where this contract has been deployed before the fork block? What happens if I call the op? If it returns the last log this means at the block we should somehow query the chain to figure out the latest log data. This imposes a gigantic load on the fork block. Even if a client does not do this it still means it has to retroactively go back in blocks to figure out the latest data. In general I think this op is severely underpriced and think it can be used to DoS the network by simply logging gigantic loads of data for a low price. In conjunction with other research topics such as state rent this would also somehow need to get implemented in the rent, to prevent massive unbounded state growth. I currently see too many practical problems with this EIP and also dont really see a practical use for it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.743421052631579
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pinkiebell",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "26/12/2019-15:12:17",
+                    "content": "    jochem-brouwer:  Another problem I see is that you might need to know the length of the stored event. You can of course circumvent this by storing the length in the first bytes32 and then loading the rest, e.g. calling the opcode twice with different lengths.   Assuming the contract does \u2018know\u2019 what the logs represent, this should not be needed.     jochem-brouwer:  What happens when this op is called on a contract which has the opcode, where this contract has been deployed before the fork block? What happens if I call the op? If it returns the last log this means at the block we should somehow query the chain to figure out the latest log data. This imposes a gigantic load on the fork block. Even if a client does not do this it still means it has to retroactively go back in blocks to figure out the latest data.   If you mean the Proxy (DELEGATECALL) situation, this would imply that it indeed has to query for the log in history (before the FORK_BLK).     jochem-brouwer:  In general I think this op is severely underpriced and think it can be used to DoS the network by simply logging gigantic loads of data for a low price. In conjunction with other research topics such as state rent this would also somehow need to get implemented in the rent, to prevent massive unbounded state growth. I currently see too many practical problems with this EIP and also dont really see a practical use for it.   I\u2019m agree that it is important to reduce the state-burden for nodes, but I also think that we should not do that by limiting new capabilities/features;  and instead doing it with a good pricing model. I\u2019m open for any gas-cost recommendations  .  I currently see too many practical problems with this EIP and also dont really see a practical use for it.  The use-case I had in mind was like this:  Light-clients rely on emitted events to store the results of any complex operations, so that the light-clients don\u2019t have to implement & calculate basically the same complex logic again. The contract needs to store the results of that computation and also emits the same results via log events. That means for a full node (with event logs), it is actually cheaper on disk and by computing time (< that\u2019s is a guess) if it only have to deal with the log entries.  Thanks for the feedback! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.56433284457478
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kladkogex",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "30/12/2019-12:40:35",
+                    "content": "I think the correct compromise is making a limited range of logs  (say last week of logs by timestamp) accessible to EVM. There would be a huge benefit to that, and the costs would be tiny. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.703571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pinkiebell",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "02/01/2020-22:30:58",
+                    "content": "Thanks for the feedback! This sounds like a good compromise. I personally did like a larger timeframe for the logs, 1 week is a bit low for certain applications that may need to handle disputes in a bigger timeframe. I will work on some numbers to estimate the storage costs, probably in the next week. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.727678571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pinkiebell",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "14/01/2020-18:47:57",
+                    "content": "Let me propose another compromise here, how about just storing the hash of the log-data? Additionally (as per @kladkogex\u2019s suggestion), we define LOG_RETENTION_EPOCH = <number in blocks> to be the time(in blocks) any unique log event needs to be stored until <blockNumber of the block this log was emitted> + LOG_RETENTION_EPOCH passes. Instead of success = logquery1(memoryPtr, 0, 32, storageTopic) we can do logDataHash = logquery1(storageTopic). IF logquery1(_topic_) EQUALS 0 THEN   <no log with _topic_ emitted or too old/pruned> ELSE   returns the keccak256() hash of the data emitted from the log event  In the case of log4, the node needs to store 4 x 32 bytes (topics) and + 32 bytes for the hash = 160 bytes. Plus any additional metadata for storing/retrieving such values (implementation specific). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.84375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "21/01/2020-20:28:33",
+                    "content": "I want to echo @MrChico\u2019s opinion on the matter.  Logs are write only within the context of a smart contract.  Making them queryable alters a fundamental assumption about how a smart contract works.  The intent is that logs would be useful to programs outside of the smart contract execution environment.  If a smart contract needs storage it should use storage. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.826530612244898
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pinkiebell",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "24/01/2020-13:46:00",
+                    "content": "Thanks for the input guys! I\u2019m going to close the pull request and see you next time around  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                }
+            ]
+        }
+    ],
+    "group_index": "973"
+}

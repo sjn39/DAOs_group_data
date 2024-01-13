@@ -1,0 +1,153 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/maker-vault-protection-score/10532",
+            "title": "Maker Vault Protection Score ",
+            "index": 10532,
+            "category": [
+                "Core Units",
+                "Risk"
+            ],
+            "tags": [
+                "analysis",
+                "research",
+                "risk"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/josolnik",
+                    "index": "#1",
+                    "likes": "15",
+                    "time": "27/09/2021-12:33:43",
+                    "content": " Introduction Following up on @Risk-Core-Unit\u2019s previous vault behavior analyses (1, 2, 3), we decided to continue by creating a methodology for assessing vault level risk. There is no one size fits all in determining whether a vault is secure against a major price downfall. Still, various behavioral patterns can be derived as a signal that a vault is unlikely to be liquidated with current CR just being one of the factors. Vaults that have consistently shown that they have enough funds and know-how to increase their CR during large price downfall events should not be put in the same category as those that haven\u2019t shown similar patterns in the past. There are also automated liquidation protection services (e.g. DeFi Saver) which can help in preventing liquidation events from happening. Whether a vault uses such a service can provide a signal on how secure its position is. For the vaults that haven\u2019t been stress-tested during price shocks and don\u2019t have a large CR, we can quantify how much of a price drop they can experience without being liquidated. Furthermore, when we use such signals to derive a protection score per vault, we can use it both for individual vault investigation and also for protocol-level risk monitoring.  Methodology Protection scores are defined per vault as follows:   Low Risk Vault:  current collateralization ratio > 3 x current liquidation ratio OR CR increase action during at least 3 major OSM price drops in the last 12 months OR protected by DeFi Saver    Medium Risk Vault:  current collateralization ratio > 1.5 x current liquidation ratio AND median CR in last 90 days > 1.5 x current liquidation ratio    High Risk Vault:  satisfies neither Low Risk Vault conditions nor Medium Risk Vault conditions    When looking at major price drop activity in the last 12 month window, we pick the 25 largest daily drops (closing versus opening) per collateral asset and then look whether there were any CR increase actions performed during those. We only take into account the classical CR increase action types: payback, collateral deposit and withdrawal|collateral deposit executed in a single transaction. More insight into protection activity can be found in our previous analysis. While looking at hourly data would provide more granularity, there are many instances where vaults protect themselves when the downward momentum sets in, not necessarily during the largest individual hourly price drops. For this reason we think that the chosen daily price heuristic captures the desired dynamic better. Current CR multipliers were defined by computing a price drop that a vault could experience with no collateralization increase and still not experience a liquidation. For a Low Risk vault that means being protected against a 66% price drop (3x current LR) and for a Medium Risk vault to be protected against a 33% price drop (1.5x current LR).  Analysis To get an insight into a protocol-level risk assessment, we aggregate the protection scores into simple metrics that can then be used for monitoring the system state over time. For now, we are looking at the current state based on the methodology presented above.  Chart 1: Unique Vaults per Protection Score In this chart you can see that most vaults are either scored as Low Risk (55%) or Medium Risk (35%). The remaining 10% is scored as High Risk.  C1_unique_vaults_per_protection_score1200\u00d7800 29.7 KB   Chart 2: Debt Exposure per Protection Score Debt exposure distribution shows us a similar insight but with even more skewness. 71% of debt exposure is scored as Low Risk. The extra relative share comes mostly from Medium Risk share (20% of total debt exposure) and partially also from High Risk (9% of total debt exposure). The outlier effect caused by whales shown in the average vault size where the largest is with vaults scored as Low Risk. Meanwhile, when we take away that dynamic by computing the median, vaults scored as High Risk have the largest vault sizes.  C2_debt_exposure_per_protection_score1200\u00d7800 30 KB   Chart 3: DeFi Saver Protected Debt Exposure per Vault Type (Percent of Total) Vaults being protected by DeFi Saver show a strong indication of security. Currently, vaults from 10 vault types are using their services. Looking at vault type debt exposure being protected by their service, we can find an interesting pattern. More than 40% of DAI debt in BAT-A vault type is being protected by them yet when we look at the number of vaults, we can see that only 1 vault (second largest) actually uses it. ETH-B vault owners have 25% of their debt protected this way which also makes sense considering a low liquidation ratio (130%).  C3_defisaver_de_percentage_protected989\u00d7539 8.29 KB   Chart 4: DeFi Saver Protected Debt Exposure per Vault Type (Total) DeFi Saver Protected DAI debt shows us a different picture. We can see that almost 95% of all protected debt comes from vaults that have ETH as collateral, followed by WBTC-A. Vault size protected by DeFi Saver ranges from 7k to 50m, with a median size of 100k which is almost 5x the overall median vault size in the Maker\u2019s MCD system (22k). Currently, 8% of debt exposure is subscribed to their services.  C4_defisaver_de_total_protected_vault_type989\u00d7552 8.04 KB   Chart 5: Price Drop in Collateral Asset, High Risk Liquidated Debt This chart shows scenario modeling of collateral price drop scored as High Risk and how much debt would be liquidated if they wouldn\u2019t try to protect their CR. This is clearly a conservative scenario, more useful for tail risk modeling. We can see that at a 25% daily price drop, around 78M of debt would be liquidated assuming that Medium Risk and Low Risk vaults don\u2019t get liquidated. That\u2019s 30% of total liquidatable debt (if the price dropped and none of the vaults would protect their CR). With larger price drops, the amount quickly converges to the total debt scored as High Risk (210M).  C5_high_risk_price_drop_debt_liquidated1600\u00d7800 76.8 KB   Screenshot 1: Vaults Debt at Risk in the Maker Risk Dashboard We have also included the protection score into our Vaults Liquidations page which enables continuous monitoring over time. You can find below a screenshot that shows the amount of DAI debt to be eligible for liquidation relative to the price change of collateral assets.  Screenshot from 2021-09-27 14-35-352276\u00d7734 209 KB   Screenshot 2: Vaults at Risk in the Maker Risk Dashboard Another view that has shown a significant engagement from the community is the Vaults at Risk feature. There you can now find the split by protection score. Note that the screenshot shows dummy data simulating a scenario during a large price shock.  Screenshot 2021-09-27 at 13-54-36 Vaults at risk at current next OSM price Block Analitica1540\u00d71031 212 KB   Conclusion and Next Steps We believe that the risk methodology presented above provides both a good heuristic for vault-level risk assessment and also doesn\u2019t stack too much complexity to present a black-box model that would be too difficult to understand. Looking at individual vaults that were scored as High Risk, we could notice quite a few that have shown healthy behavior in the past, they just haven\u2019t been stress-tested enough by price downfall events. We prefer to err on the conservative side of scoring a vault. The best track for a High Risk vault to improve their score is to either increase their CR, subscribe to an automated liquidation protection service or to successfully (no liquidation) protect itself during a future price downfall. All of these are common sense strategies for protecting the system from insolvency risk. Considering vaults that are Low Risk, we would like to clarify that the methodology is not perfect and that those vaults can still be liquidated, they have only shown behavior that indicates a lower probability of that happening. As we experience more collateral asset price shocks, our methodology will also be stress-tested and continue to be improved over time. Our next step is to integrate the insights from this analysis into our quantitative models to keep improving the proposal process of Maker risk parameters. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/maker-vault-activity-metrics/9568",
+                        "https://forum.makerdao.com/t/maker-vaults-market-activity/9787",
+                        "https://forum.makerdao.com/t/maker-vault-liquidation-protection-analysis/10026",
+                        "https://defisaver.com/",
+                        "https://forum.makerdao.com/t/maker-vault-liquidation-protection-analysis/10026",
+                        "https://maker.blockanalitica.com/vaults/liquidation",
+                        "https://maker.blockanalitica.com/vaults/at-risk/",
+                        "https://maker.blockanalitica.com/risk-model/?ilk=ETH-A",
+                        "https://forum.makerdao.com/t/maker-risk-dashboard/8172/11",
+                        "https://forum.makerdao.com/t/maker-relay-ep-64-en-espanol/10548",
+                        "https://forum.makerdao.com/t/maker-relay-ep-64/10540",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-september-24th-30th/10595",
+                        "https://forum.makerdao.com/t/risk-core-unit-month-in-review-september-2021/10659",
+                        "https://forum.makerdao.com/t/should-block-analitica-have-a-2-76m-year-2400-mkr-risk-management-monopoly-and-be-its-gatekeeper/19123/2",
+                        "https://forum.makerdao.com/t/where-to-see-makerdao-liquidation-charts/14992/5",
+                        "https://forum.makerdao.com/t/vault-protection-score-model-validation/15633",
+                        "https://forum.makerdao.com/t/risk-core-unit-month-in-review-june-2022/16316",
+                        "https://forum.makerdao.com/t/vault-user-research-survival-analysis/18715/5",
+                        "https://forum.makerdao.com/t/gno-collateral-onboarding-risk-evaluation/18820"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.393145313681028
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#2",
+                    "likes": "4",
+                    "time": "27/09/2021-15:07:34",
+                    "content": "Fantastic analysis. So if Vault users(collectively of a certain type, ETH-A for example) demonstrate good risk-management behavior, the parameters(Stability Fee, Liquidation Ratio, Colllateralization Ratio, Auction parameters, Debt Ceiling) will be optimized to fit their profile? I am curious how the risk team views the overlap between asset risk assessment and borrower risk assessment in determining parameters for vaults. I see this continued analysis as providing:  Better predictability of liquidations. Better insight into the risk-profile of MakerDAO vault users. Data that can be used as a basis for more specific user targeting. More vision of where risk is coming from.  I\u2019m sure there\u2019s a lot more to add to the list. Great work as usual! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.822066326530612
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "27/09/2021-16:17:46",
+                    "content": "Interesting read.   I will have to scan it more carefully. Is it possible to calculate this on a say a weekly basis and to do it for different price drops? The point here is that now someone has a model for calculating this we should use to to calculate liquidation amounts for different price risk changes and then compare the numbers from the calculation to the actual period. Example: Lets say we calculate 5,10,15,20,25% liquidation risks (these numbers pulled just for example) and the market drops 12.5% during the week.    We can then compare the actual liquidations to the projected ones to determine if the predictive model was under or overestimating liquidations.   Where this is going to be the most important imo is at the 20,25,30,35,40,45,50% levels. Anyway I wanted to say cool report and I when I have time I will have to look more carefully at this to give some constructive feed back beyond the above suggestion/question. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.946428571428571
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/josolnik",
+                    "index": "#4",
+                    "likes": "3",
+                    "time": "27/09/2021-16:31:47",
+                    "content": "Great extension points, @Davidutro. We were discussing this possibility within our team but decided to wait for a bit with incentivization action points until the methodology gets more stress-tested (shows that there\u2019s a strong correlation between the protection score and liquidation probability). Meanwhile, you bringing it up is a valuable signal that we could start thinking more about using it in that (or similar) direction. Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.845238095238095
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/josolnik",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "27/09/2021-16:57:09",
+                    "content": "    MakerMan:  Is is possible to calculate this on a say a weekly basis and to do it for different price drops?   Agreed, this can be valuable. It wasn\u2019t explicitly stated in the post but we have already started tracking debt exposure distribution per protection score on a daily basis. Also, we track why a certain vault was attributed to a particular score on any given day. This can also be extended to look at specific price drops.     MakerMan:  The point here is that now someone has a model for calculating this we should use to to calculate liquidation amounts for different price risk changes and then compare the numbers from the calculation to the actual period.   Important distinction here is that the model is meant for segmentation, not prediction. A vault that is scored as High Risk does not mean that it will be liquidated, only that it has a higher probability of being so given their behavior. We can\u2019t expect this methodology to predict liquidation amounts as that\u2019s not its aim. If we wanted to make a prediction (ML) model, we would need a different approach and map the signals/features that we\u2019d build to the historical data on liquidations (liquidated/not liquidated). Thanks for the comments, any other further feedback much appreciated. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.426895363408521
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "27/09/2021-17:30:20",
+                    "content": "    josolnik:  A vault that is scored as High Risk does not mean that it will be liquidated, only that it has a higher probability of being so given their behavior. We can\u2019t expect this methodology to predict liquidation amounts as that\u2019s not its aim.   But you actually have to calculate actual liquidation amount per the segmented groups.  I guess I am not understanding something.  Is your sample size all user vaults in a class (ETH-A for example)?  I would expect if you are looking at trying to score an individual vault risk that you would want to include every data point possible to get the best statistics for each granular subset.    The point here is set up properly what I am asking about should come out of such a system generally. My problem here is you say this model applies to calculating risk metrics but then say it doesn\u2019t have predictive behavior.   This seems mutually exclusive.   Either your model does have predictive ability or it doesn\u2019t.  If it doesn\u2019t then I don\u2019t see how it could be used as a feed in for any risk model generally.   Which makes me think either I don\u2019t understand the goals, or the model, or something in the presentation/report. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.640865384615385
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/josolnik",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "27/09/2021-19:46:37",
+                    "content": "@MakerMan Understood, I will try to give more context and the goal of the model. A model can have predictive power about something without directly predicting it. As an analogy, an engagement score composed of multiple signals (number of sessions, average session length, user tenure, etc.)  can estimate well probability of user churn (have predictive power) without directly predicting it (engagement is a flipside of churn, an engaged user is unlikely to churn). Yet using \u2018Low engagement\u2019 category to directly predict \u2018Will churn\u2019 doesn\u2019t make much sense, it\u2019s better to build a separate model to predict user churn directly (with probability been 0 and 1) if that\u2019s our intention. Technically it is possible to predict the liquidation amount with the current model but that\u2019s not its purpose otherwise we would choose a different methodology. We can implement the logic from Chart 5 (assuming none of the High Risk vaults would be saved) and compare that to actual liquidated amount given the daily price drop. The problem I find with this approach is the naive assumption that none of the High Risk vaults would be saved. We will definitely track this over time but I\u2019m hesitant of giving too much confidence in the output of this kind of approach. The goal of this model is to track vault protection over time and answering (among other questions): \u201cwhat percentage of our debt exposure is well protected?\u201d. This definitely intersects  with \u201cgiven a price drop, what will the total liquidated amount be?\u201d but doesn\u2019t map directly and using it in such a way would be extending the model\u2019s intention too far. For this reason being able to answer one but not necessarily use the same model to answer the other (transferring predictive power) is not mutually exclusive. When it comes to using this in our risk models, we have a parameter \u201cshare of vaults protected\u201d which is fed as an input to estimate risk premiums per vault type. This is an estimation based on behavioral patterns, a rule of thumb, not directly a prediction. That being said, I would love to build a model that can predict vault liquidations but don\u2019t want to over-promise the predictive potential of our above presented methodology. Hope this makes it more clear. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.430263157894737
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "27/09/2021-20:53:01",
+                    "content": "    josolnik:  A model can have predictive power about something without directly predicting it. As an analogy, an engagement score composed of multiple signals (number of sessions, average session length, user tenure, etc.) can estimate well probability of user churn (have predictive power) without directly predicting it (engagement is a flipside of churn, an engaged user is unlikely to churn   First point.  You didn\u2019t answer the question \u2018context of the goal\u2019 isn\u2019t really a statement of the goal. Also the statement \u201cA model can have predictive power about something without directly predicting it.\u201d makes no sense to me.   Without actual data one wouldn\u2019t even know in your example whether churn had any relation to session number, length or \u2018tenure\u2019.   If the point is that a predictive model can be created from historical data - sure - but then that isn\u2019t a predictive model it is a correlation study.   Two vastly different beasts in a semantic and practical sense. My point here is that while correlation studies are interesting, using those correlation models to create a predictive model is more useful from a risk analysis perspective at least in my own opinion.   I would have thought the end goal here was to do a correlation study to create a predictive model because the job of risk is to quantify risk in the future with rates, fees and other system parameter changes now? But then the above is my own opinion of what the goal of such a study \u2018should be\u2019 vs. what it actually is?    So I am back to the first question: What is the goal of this study? and add a second question How will achievement of the first goal apply to help manage of Maker systemic risk? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.610576923076923
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/nikola_j",
+                    "index": "#9",
+                    "likes": "9",
+                    "time": "27/09/2021-22:33:55",
+                    "content": "On behalf of the DeFi Saver team, I just wanted to say we\u2019re honoured that DFS automated vaults have received the low risk rating. It\u2019s been a long grind since 2019 and it\u2019s absolutely great to be acknowledged like this within the Maker ecosystem of today. Enjoyed the whole post, too. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.45
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#10",
+                    "likes": "3",
+                    "time": "27/09/2021-22:47:07",
+                    "content": "    MakerMan:  What is the goal of this study?   First, please take some time and look what we did here: MakerDAO Risk Dashboard | Block Analitica Essentially it creates protection score for each vault and combined with other scores we plan to assign to each vault next (DAI capital in vault owners wallets/farms coming soon), we can have an aggregated Risk Score metric for each vault type and monitor it in type. If breakdown of low/medium/high risk worsens, we know we need to put on brakes with various risk parameters and vice versa. Jan also explained it here how we can already use it:     josolnik:  When it comes to using this in our risk models, we have a parameter \u201cshare of vaults protected\u201d which is fed as an input to estimate risk premiums per vault type. This is an estimation based on behavioral patterns, a rule of thumb, not directly a prediction.   This is the first of unique attempts at measuring risk differently in DeFi to be honest. We are basically analyzing each user - its protection behaviour and following next its DAI reserves deposited in DeFi. You then analyze how this evolves through time. I like it a lot and it is something different and very aplicable to DeFi ecosystem. For me personally this is one of the most interesting and aplicable things we did at Maker. Don\u2019t forget Maker relies on vault protection because of OSM and how important this aspect is, both from risk perspective and competitive advantage. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.805555555555555
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#11",
+                    "likes": "0",
+                    "time": "28/12/2021-04:47:48",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

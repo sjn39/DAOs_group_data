@@ -1,0 +1,254 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/mitigating-mev-by-reuse-of-pow-as-a-delay-function-for-on-chain-probabilistic-transaction-re-ordering/6667",
+            "title": "Mitigating MEV by reuse of POW as a delay function for on-chain, probabilistic, transaction re-ordering ",
+            "index": 6667,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "pow",
+                "mev"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "16/07/2021-07:36:54",
+                    "content": " DOST (Delayed Ordered Sequence of Transactions) \u2014 An on-chain, probabilistic, transaction re-ordering proposal to mitigate MEV by reusing POW as a delay function This is a Request for Comments for a proposal to mitigate MEV. All comments and feedback are very much appreciated.  Proposal The basic idea is that the POW calculation is already a cheap, on-chain probabilistic delay function \u2014 while theoretically not a Verifiable Delay Function (VDF), POW could be practically reused to create an unpredictable, probabilistic transaction ordering in the mined block to mitigate MEV. The proposal is for the Block Proposer (aka Miner) to do the same POW calculation steps as today, but change a few steps after that to achieve at the final transaction ordering as follows:  Steps same as today:  The Block Proposer chooses any sequence of transactions they wish to include in the block B  The Block Proposer runs the proof-of-work algorithm Ethash to come up with a block nonce H_n as usual   New Proposed Steps:   For each transaction t in the block B, compute Slot_t = KEC(H_n, TransactionHash) where KEC is the Keccak-256() hash function, H_n is the Block Nonce calculated from POW in Step 2 and TransactionHash is the hash of the transaction t   Order the transactions in increasing order of Slot_t. Let\u2019s call this new sequence of transactions as DOST (DelayedOrderedSequence of Transactions)   The mined block will be considered enshrined in the blockchain with the transactions in the new DOST order   Note that the state (\u201cWorld State\u201d, gasUsed, stateRoot etc.) in the block header and the various hashes now technically need to change because of the changed transaction ordering. The key observation is that all these can be deterministically calculated independently by anyone based on the above DOST ordering steps. There are a few choices we have regarding what to include in the mined block header:   Don\u2019t change anything in the block - Other miners can recompute the changes required to the state and the block header deterministically using Nonce and the set of transactions. These don\u2019t need to be stored on chain, just as many other deterministically computable things are not stored on the chain but are present as miner\u2019s data structures   Let the block proposer recompute the block header based on the DOST transaction ordering. Store a single new hash H_DOST = KEC(new block header). Other miners can verify this hash H_DOST as part of their block verification process. This adds some data (32bytes at the most, though we can probably go with a truncated hash) but stores a commitment of the current state in the blockchain that all miners can verify   Note that because the transaction ordering anyway changed after POW, there is no point in computing some fields of the original block header that was input into the POW calculation (eg the original stateRoot, gasUsed etc. will all change after the DOST ordering). So an optimisation is that those fields are zeroed out (or we use BLOCKHASH) before POW, and then after POW and after the DOST ordering is known, those fields are populated based on the final DOST ordering. This saves the need to store any new data in the block header as well as saves the work of block proposer calculating the world state pre-POW      Notes (A) MEV fundamentally originates from the miner being able to dictate the exact sequence (ordered set) of transactions in the blockchain. The basic idea in this proposal is to remove this deterministic control. How to do so permissionlessly on L1 and unpredictably so that it can not be easily gamed by the miner? Luckily, POW itself presents a possible solution to the dilemma - we just use the Block Nonce H_n computed as part of the POW algorithm as the source of pseudo-randomness. (B) Another way to look at this proposal is that POW is already a cheap on-chain probabilistic delay function \u2014 technically not identical to a Verifiable Delay Function (VDF) as VDFs are theoretically defined to be sequential and deterministic, while POW is parallelizable and probabilistic. But POW is good enough and practical for our purpose of introducing a non-trivial time delay in being able to predict the transaction ordering in a block, making the final ordering unpredictable and thus non-gameable. (C) At the same time, it is completely deterministic post-facto for any other miner or client to reconstruct the ordering steps and validate the block. Yet the ordering is non-deterministic from the miner POV at the time they are assembling the block. The block proposer could not easily (computationally) predict the final ordering of the transactions because of the effort required in doing POW in the first place. They an not simply try all combinations because trying out a single combination will need them to solve the POW first. (D) It is reasonable to assume that the DOST mechanism (doing the Keccak hash based on Nonce and content-hash of the transaction) is effectively doing a random permutation of the order of transactions in the block. We can empirically check for this randomness historically. (E) Gas Usage: Note that it is a very small amount of gas to do the extra DOST ordering work, so it is not much cost overhead. After the DOST ordering, recalculating the state and hashes does add extra work - where optimisation mentioned in Step 6.3) above will be useful. (F) Block data usage: See choices under Step 6 above. The worst in terms of extra space used is Step (6.2) which still only adds a single 32B hash to the block. Other choices don\u2019t add anything to the block.  How DOST helps mitigate MEV   The proposal brings unpredictability to the final ordering of transactions. Let\u2019s say the miner wanted to front-run a victim transaction Tv by inserting a new MEV transaction Tn in front of Tv. With DOST ordering, it is equi-probable whether Tv will end up in front of Tn or vice-versa. There is no way for the miner to know upfront, only by running POW and finding the block nonce. Likewise for a backrunning transaction. (Note that the miner can try to play probability games - e.g. by inserting two MEV transactions to increase their chances. All of this increases their cost and lowers expected reward so should disincentivize reordering).   Similarly for a sandwich transaction where the outer transactions T1 and T2 are sandwiching a victim transaction Tv, the probability is \u2159 that the exact sequence of transactions T1->Tv->T2 happens in the final DOST ordering    Where DOST doesn\u2019t help MEV comes in various forms and DOST won\u2019t help in some of them, for example:   This proposal only works on the ordering of transactions that have been already selected by the miner. The miner can still choose to censor (\u201cdelete\u201d) a victim transaction and/or insert their own transaction.   The block proposer is free to not publish a block once they find that DOST ordering does not give them a favourable ordering. In that case, they might be forgoing the POW award which was theirs for the taking since they have already solved the POW puzzle for the block. If all miners do this, it could affect the overall effective hashrate of the network and block mining times. Mitigations could potentially include adjusting Difficulty to account for this system behaviour.    ",
+                    "links": [
+                        "https://eprint.iacr.org/2018/601.pdf"
+                    ],
+                    "GPT-summary": "The post presents a proposal called DOST, which is an on-chain, probabilistic, transaction re-ordering proposal to mitigate MEV by reusing POW as a delay function. The proposal is explained in detail, and the author is asking for feedback. The post also mentions some potential issues with the proposal and how it may not help in certain situations. A 3rd party could give constructive criticism, ask questions, or audit and review the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Privacy, Security and risk management",
+                        "Token economics",
+                        "Interoperability and Scaleability",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.304383116883117
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cgst",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "16/07/2021-19:58:15",
+                    "content": "Hi Pankaj, One potential issue with this approach is that reordering may render some of the transactions invalid because of incorrect account nonces or insufficient funds for implicit gas purchases. If one transaction is invalid, the entire block is invalid and thus ignored by the network, leading to wasted work. In other words, a miner may perform work only to discover the implied ordering invalidates the block. Under adversarial conditions, this scenario may occur with near certainty. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "17/07/2021-05:49:28",
+                    "content": " Same Sender Address Transactions Jaynti has pointed out that as transactions sent from the same sender in a block need to be ordered by transaction nonce nonce_t, ordering by Slot_t as mentioned here won\u2019t work for them. This is fixed easily by the following tweak:  We still first order by Slot_t to get a random ordering of transactions across all txns as in Step 4. (Step 4.2) For each sender address, check if there are multiple transactions \u2013 then order them by nonce_t within the set of slots assigned to those transactions. For example, if the transactions with Slot_t values of 10,20 and 30 belonged to the same sender address with nonce_t values of 6,3 and 4 respectively \u2013 we would in this step do this reordering tweak and ensure that Slots 10, 20 and 30 have transactions reordered as the ones with nonce_t of 3,4 and 6 respectively. This still ensures non-gameability of the global txn ordering while preserving the requirement of nonce_t based ordering within same-sender transactions.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.118055555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "17/07/2021-05:54:22",
+                    "content": "Hi cgst, Thanks for your comments. Please see the reordering tweak re respecting account nonces posted later. Agreed that some txns may be rendered invalid because of gas or any other reason. This is somewhat addressed by Step 6 in the sense of how much explicitly we want the miner to record the changes because of the changed txn ordering, but to specifically talk about valid/invalid txns - the miner could indicate using a valid bit per transaction whether the txn is still valid, or we can roll that information into the the single hash H_DOST mentioned in Step 6.2 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.203571428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cgst",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "17/07/2021-08:28:22",
+                    "content": "Masking out transactions invalidated by reordering might be problematic because it wastes block space, potentially close to 100% of block space under adversarial conditions. I agree ordering may be tweaked to avoid invalid account nonces, but avoiding gas purchase failures post reordering seems much harder because it reels in arbitrarily complex EVM logic. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "17/07/2021-10:34:40",
+                    "content": " Masking out transactions invalidated by reordering might be problematic because it wastes block space, potentially close to 100% of block space under adversarial conditions.    Invalid transactions should be compressible, perhaps just to the information that was required as input to the POW, which could be as little as just the TransactionHash if we did the optimisation of Step 6.3 for instance and did not compute the complete state and the full block-header   Not sure why this would be a big deal though in the first place. We can certainly simulate this on past blocks and calculate the space overhead. Further, the randomized ordering should help overcome consistent adversarial examples \u2013 any adversarial examples you can think of that will consistently beat a randomized ordering and are undetectable prior to POW?    I agree ordering may be tweaked to avoid invalid account nonces, but avoiding gas purchase failures post reordering seems much harder because it reels in arbitrarily complex EVM logic.  Yes, we won\u2019t be able to and should not seek to detect potential gas failures that might happen after the reordering. I think these would be occasional failures anyway as per above. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.156696428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "18/07/2021-20:31:42",
+                    "content": "Isn\u2019t this trivially evaded by a miner? If a miner has a transaction they want included in a specific spot, and there are 100 transactions in a block, they only need to mutate the transaction ~50 times to find one that hashes to the place they want it to be. Also, what happens if the block, after reordering, exceeds the gas limit? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "19/07/2021-04:03:55",
+                    "content": "    Arachnid:  Isn\u2019t this trivially evaded by a miner? If a miner has a transaction they want included in a specific spot, and there are 100 transactions in a block, they only need to mutate the transaction ~50 times to find one that hashes to the place they want it to be.   No, each time a transaction is mutated, the miner will have to redo the POW calculations to find the block nonce again first. Or am I misunderstanding your question?     Arachnid:  Also, what happens if the block, after reordering, exceeds the gas limit?   Yes, this can happen. Similar to the preceding discussion with cgst about txns that might get invalidated post reordering, we can allow the miner to mark the reordered txn list in a few limited ways - eg we can allow them to mark transactions invalidated post reordering because of gas limit. This invalidation can be verified by the other miners too. Please also see Step 6 on discussion about some of the optimisations regarding this. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.895408163265306
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "19/07/2021-04:24:26",
+                    "content": "    pankaj:  No, each time a transaction is mutated, the miner will have to redo the POW calculations to find the block nonce again first. Or am I misunderstanding your question?   Ah, good point.     pankaj:  Yes, this can happen. Similar to the preceding discussion with cgst about txns that might get invalidated post reordering, we can allow the miner to mark the reordered txn list in a few limited ways - eg we can allow them to mark transactions invalidated post reordering because of gas limit. This invalidation can be verified by the other miners too. Please also see Step 6 on discussion about some of the optimisations regarding this.   This seems like a problem. If the block is invalid if the max gas limit is exceeded, an attacker can force a miner to waste resources on invalid blocks. If the block is still valid, the miner can deliberately generate blocks that exceed the block gas limit. And if the miner can choose which transactions to invalidate to keep the block under the limit, they can cause it to deliberately exceed the limit, then \u2018cancel\u2019 transactions they do not want included in the block. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.252551020408164
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "19/07/2021-05:24:35",
+                    "content": "    Arachnid:  This seems like a problem. If the block is invalid if the max gas limit is exceeded, an attacker can force a miner to waste resources on invalid blocks. If the block is still valid, the miner can deliberately generate blocks that exceed the block gas limit. And if the miner can choose which transactions to invalidate to keep the block under the limit, they can cause it to deliberately exceed the limit, then \u2018cancel\u2019 transactions they do not want included in the block.    If the block is invalid if the max gas limit is exceeded, an attacker can force a miner to waste resources on invalid blocks.  This is same as today, anyone can propose invalid blocks.  If the block is still valid, the miner can deliberately generate blocks that exceed the block gas limit.  This would be deterministically verifiable, as today. All the info is still there in the block (or can be added as mentioned in Step 6)  And if the miner can choose which transactions to invalidate to keep the block under the limit, they can cause it to deliberately exceed the limit, then \u2018cancel\u2019 transactions they do not want included in the block.   Since a miner can decide which txns to include in the first place, \u2018cancel\u2019 later does not seem to give any additional power to them in the first place In any case, if this checking is needed, it can be done \u2013 since the ordering is deterministic after POW, another miner can verify whether the txns were canceled because of the exceeding of gas limit.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.083333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "19/07/2021-05:57:55",
+                    "content": "    pankaj:  This is same as today, anyone can propose invalid blocks.   It\u2019s not the same as today, because today nobody can force a miner to propose an invalid block.     pankaj:  This would be deterministically verifiable, as today. All the info is still there in the block (or can be added as mentioned in Step 6)   All you can determine is that the block was valid before reordering and invalid afterwards. You can\u2019t determine if the miner did that deliberately or not.     pankaj:   Since a miner can decide which txns to include in the first place, \u2018cancel\u2019 later does not seem to give any additional power to them in the first place    It absolutely can. They can insert a transaction that will use up more gas if it\u2019s not the first in the block, to create a situation where they have to delete transactions. Then, they can insert a bunch of MEV transactions, and use the fact that the block is over-limit as an excuse to cancel all but the ones that are useful to them in the final ordering. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.7727272727272725
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cgst",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "19/07/2021-07:47:56",
+                    "content": " Not sure why this would be a big deal though in the first place. We can certainly simulate this on past blocks and calculate the space overhead. Further, the randomized ordering should help overcome consistent adversarial examples \u2013 any adversarial examples you can think of that will consistently beat a randomized ordering and are undetectable prior to POW?  You can poison the mempool such that any valid ordering of N malicious transactions pre-POW will turn into almost N invalid transactions after reordering. Certainly, you can give the miners the ability to \u201cmask out\u201d some transactions post-POW, but you will have denied access to legitimate transactions in the first place. (I can elaborate on this adversarial example if you think it\u2019s useful; in short, txns are signed by different accounts and coordinate intra-block with a shared contract to determine their relative order and decide to induce gas purchase errors.) In essence, DOST may enable DoS attacks at a fraction of today\u2019s cost because the attacker need not pay gas for \u201cmasked out\u201d transactions. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.508403361344538
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "19/07/2021-13:16:15",
+                    "content": "    Arachnid:  All you can determine is that the block was valid before reordering and invalid afterwards. You can\u2019t determine if the miner did that deliberately or not.   We shouldn\u2019t need to. The mechanism needs to be robust.     Arachnid:  It absolutely can. They can insert a transaction that will use up more gas if it\u2019s not the first in the block, to create a situation where they have to delete transactions. Then, they can insert a bunch of MEV transactions, and use the fact that the block is over-limit as an excuse to cancel all but the ones that are useful to them in the final ordering.   Let\u2019s try to get concrete for clarity - let\u2019s say we have 9 txns T1,T2,\u2026, Tn included by the miner pre-POW. Let\u2019s say T1 will use up more gas if it\u2019s not the first in the block. When you say \u201cThen, they can insert a bunch of MEV transactions\u201d, you probably mean pre-POW because as mentioned earlier in our thread, miner will need to redo POW calculation otherwise. Now, because of the re-ordering the block is over the block\u2019s gasLimit. Now, can you explain your scenario? Thanks ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.828125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "19/07/2021-13:37:01",
+                    "content": "    cgst:  You can poison the mempool such that any valid ordering of N malicious transactions pre-POW will turn into almost N invalid transactions after reordering. Certainly, you can give the miners the ability to \u201cmask out\u201d some transactions post-POW, but you will have denied access to legitimate transactions in the first place. (I can elaborate on this adversarial example if you think it\u2019s useful; in short, txns are signed by different accounts and coordinate intra-block with a shared contract to determine their relative order and decide to induce gas purchase errors.)   So to understand, somebody has (via a shared smart contract) constructed a sequence of N transactions T1, T2, \u2026 Tn which - if they are not in this precise order - cause nearly all of them to become invalid. Few questions:   Today a miner is free to choose the transactions in whatever order they want. How can an attacker be sure that this is the order their submitted transactions will get included in the block today? If an attacker submits such a set of txns, they have to be prepared to accept even today that this order is not respected by a miner, yes? They can give hints by setting txn gas fees etc, but those are just hints, no?   What happens today if an attacker floods the mempool with such a set of txns? The miner checks and can discard them, right?   If so, here\u2019s a simple tweak to detect this - the miner can try out a couple of random txn reorderings before POW and ensure nothing drastically different happens that will change the state post a random reordering\u2026       cgst:  In essence, DOST may enable DoS attacks at a fraction of today\u2019s cost because the attacker need not pay gas for \u201cmasked out\u201d transactions.   Let\u2019s not jump to conclusions until we have agreed on the construction of the adversarial examples  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.467687074829932
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "20/07/2021-00:20:48",
+                    "content": "    pankaj:  Let\u2019s try to get concrete for clarity - let\u2019s say we have 9 txns T1,T2,\u2026, Tn included by the miner pre-POW. Let\u2019s say T1 will use up more gas if it\u2019s not the first in the block. When you say \u201cThen, they can insert a bunch of MEV transactions\u201d, you probably mean pre-POW because as mentioned earlier in our thread, miner will need to redo POW calculation otherwise. Now, because of the re-ordering the block is over the block\u2019s gasLimit. Now, can you explain your scenario? Thanks   T1 is set to use a lot of gas if it\u2019s not the first transaction in the block. This provides the \u201cexcuse\u201d the miner needs to mask out transactions to bring the block back under the limit. T2\u2026Tn are potential MEV-earning transactions; they are profitable if they randomly get placed in the right position. The miner uses T1 to disable the ones that aren\u2019t profitable. Thinking about this more, this probably doesn\u2019t actually save any gas over just including T2\u2026Tn and having them revert if not profitable. That option certainly seems viable, though, and reproduces the state of the art pre-Flashbots, where much block space was taken up by bots competing for MEV opportunities. It could still be profitable for a miner to do this, but at the significant detriment to the throughput of the chain. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.66015625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cgst",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "20/07/2021-02:24:46",
+                    "content": " if they are not in this precise order - cause nearly all of them to become invalid.      pankaj:   Today a miner is free to choose the transactions in whatever order they want. How can an attacker be sure that this is the order their submitted transactions will get included in the block today? If an attacker submits such a set of txns, they have to be prepared to accept even today that this order is not respected by a miner, yes? They can give hints by setting txn gas fees etc, but those are just hints, no?    Precise ordering and inclusion would be too much to ask; instead, you\u2019d devise a validation rule over the space of all ordered subsets (consisting of your malicious transactions) such that for any given subset of malicious transactions, only ~X% permutations are considered valid. Additionally, the rule has to overlap with tx selection heuristics (e.g., usually higher gas first) such that pre-POW ordering has a good chance to be valid.  What happens today if an attacker floods the mempool with such a set of txns? The miner checks and can discard them, right?  The pre-POW selection is not impacted by these malicious transactions. A miner can greedily append one valid transaction at a time from the mempool to the candidate block. You can flood the mempool with many potential transactions such that a miner\u2019s greedy search will likely find a valid pre-POW ordering of your malicious transactions. (By way of analogy, imagine you had to guess a secret permutation (hard), but you can validate prefixes of your guesses one character at a time (easy!).)  If so, here\u2019s a simple tweak to detect this - the miner can try out a couple of random txn reorderings before POW and ensure nothing drastically different happens that will change the state post a random reordering\u2026  Certainly, you may sample random shuffles pre-POW to determine which transactions appear to be order-sensitive, and I agree the addition of this rule makes it more difficult to craft an adversarial example. By this point though, it\u2019s getting  bit complicated because we have 3 tweaks in place (account nonce ordering tweak, post-order tx mask tweak, and now the shuffle sampling tweak), and these open up more questions:   The adversarial example can be triggered only for select miners as a function of block.coinbase (Ethereum Virtual Machine Opcodes). Thus, a malicious miner can force competitors to expend more time and effort on pre-POW selection. How much are we slowing down miners if they have to do pre-POW shuffle sampling? Will this lead to all other miners poisoning the mempool in a similar way?   Might miners be incentivized to spend incremental resources on finding better nonces (i.e., more advantageous to them) instead of just the first nonce? (e.g., double the hashing power and use it for finding two nonces and pick the one that pays highest MEV post-reorder)   Should miners have the privilege to choose the post-reordering tx mask (i.e., which transactions to remove)? If yes, it opens the door to a different kind of MEV.   Perhaps these questions too can be figured out, but the level of complexity/unknowns exceeds my confidence.   A different adversarial example, perhaps easier to analyze: say there\u2019s a CDP liquidation opportunity at current chain tip. I can send N transactions from different accounts and hope at least one will be randomly ordered early enough in the block to liquidate the CDP. All other transactions remain valid but bail out early if the opportunity is not available anymore. Best case: I capture the opportunity and waste gas for N-1 transactions; worst case: I waste gas for N transactions. You can afford a large N for high enough rewards\u2026 and so can everyone else. Isn\u2019t this going to lead to blocks stuffed with useless front-running attempts? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.2197404887881085
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "20/07/2021-04:57:45",
+                    "content": "    Arachnid:  Thinking about this more, this probably doesn\u2019t actually save any gas over just including T2\u2026Tn and having them revert if not profitable.   This is possible today, right? The proposal does not make it worse - as mentioned in the proposal, it is not meant to solve all forms of MEV. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.385714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "20/07/2021-05:24:58",
+                    "content": "    cgst:  Certainly, you may sample random shuffles pre-POW to determine which transactions appear to be order-sensitive, and I agree the addition of this rule makes it more difficult to craft an adversarial example.   Exactly. A soft claim (hard to prove, but will try) is that randomized ordering is strictly better than status quo (a fixed ordering) with the same cost and some other conditions.     cgst:  By this point though, it\u2019s getting bit complicated because we have 3 tweaks in place (account nonce ordering tweak, post-order tx mask tweak, and now the shuffle sampling tweak),   If you zoom out, this is actually pretty simple and the tweaks are principled. Besides, did we really think that a foundational problem as big as MEV will be solved by a 1-liner DOST reordering formula?      cgst:  How much are we slowing down miners if they have to do pre-POW shuffle sampling?   I don\u2019t have a good sense. Depends on how much is the POW calculation as a fraction of their total mining time? I would imagine POW takes almost all the time in terms of mining a block. If POW took 95% on average e.g., trying out 3 random shuffles will increase the rest of the 5% to at most 15%, or overall increase in work by only 10%     cgst:  Might miners be incentivized to spend incremental resources on finding better nonces (i.e., more advantageous to them) instead of just the first nonce? (e.g., double the hashing power and use it for finding two nonces and pick the one that pays highest MEV post-reorder)   Totally possible, but we have just doubled their cost of something that can be done much easier today and the miner still has only a probabilistic MEV benefit even with double the cost.     cgst:  A different adversarial example, perhaps easier to analyze: say there\u2019s a CDP liquidation opportunity at current chain tip.   But this can be done today at 1/Nth the cost. As clearly mentioned, the proposal is not meant to solve all forms of MEV. Will it lead to new forms of probabilistic attacks? Likely, but at a much higher cost than today. Let\u2019s continue to find more adversarial examples, but randomization really helps I think.  Overall, the invalidating of transactions post-reordering is indeed a new modality and needs to be thought over more to get maturity. But this whole discussion shows that whatever adversarial examples one can think of, they seem to be either:  Easier and cheaper to do already today, so the DOST ordering only makes it more costly to do so plus making it harder (probabilistic) for the attacker to collect the reward Unaffected by DOST ordering - as mentioned, the proposal is only meant to handle certain forms of reordering based MEV  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.4685369097133805
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "20/07/2021-20:29:49",
+                    "content": "    pankaj:  This is possible today, right? The proposal does not make it worse - as mentioned in the proposal, it is not meant to solve all forms of MEV.   No, but if it eliminates efficient flashbots-style MEV and only leaves inefficient \u2018shotgun\u2019 MEV, we may all be worse off than the status quo. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.485714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pankaj",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "21/07/2021-19:10:07",
+                    "content": "    Arachnid:  No, but if it eliminates efficient flashbots-style MEV and only leaves inefficient \u2018shotgun\u2019 MEV, we may all be worse off than the status quo.   I could be wrong but Flashbots-style MEV seems like corrective action to me. This proposal is in contrast an attempt at preventive action on MEV. Philosophically, not trying to prevent extraction so that \u201cefficient extraction\u201d can happen seems backwards to me. Overall, seems like both prevention and correction approaches should happen because this problem is so multi-faceted and complex. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.375
+                }
+            ]
+        }
+    ],
+    "group_index": "1388"
+}

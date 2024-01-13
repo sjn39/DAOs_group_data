@@ -1,0 +1,339 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eips-3336-and-3337-improving-the-evms-memory-model/5482",
+            "title": "EIPs 3336 and 3337: Improving the EVM's memory model ",
+            "index": 5482,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "evm",
+                "core-eips"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "06/03/2021-07:30:19",
+                    "content": "I\u2019ve written up two EIP drafts, 3336 and 3337 that together permit a new efficient way to use EVM memory for storage of ephemeral data such as local variables, function arguments, and return values. I believe that these changes represent a minimal overhead to implementers while making for a significant improvement for compiler writers and users. In short, if implemented we can say goodbye to \u201cstack too deep\u201d errors in Solidity, by making storing locals etc in memory instead of the EVM stack effective in cost and bytecode size terms. Your feedback on the idea, and the details in the EIPs, is very much appreciated. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/3337/files"
+                    ],
+                    "GPT-summary": "The author has written two EIP drafts, 3336 and 3337, proposing a new way to use EVM memory for storage of ephemeral data. The changes aim to improve the efficiency of compiler writers and users while minimizing overhead for implementers. The author is seeking feedback on the idea and the details in the EIPs. Some 3rd parties may provide constructive criticism or ask questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.672979797979798
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "06/03/2021-17:19:55",
+                    "content": "3337 link points to the wrong PR, it should point here:   github.com/ethereum/EIPs         Create EIP for frame-pointer-relative memory addressing   ethereum:master \u2190 Arachnid:frame-pointer            opened 07:26AM - 06 Mar 21 UTC               Arachnid             +102 -0           ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/3337",
+                        "https://github.com/Arachnid",
+                        "https://github.com/ethereum/EIPs/pull/3337/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "3",
+                    "likes": "2",
+                    "time": "06/03/2021-19:45:54",
+                    "content": "Fixed, thank you. (Extra nonsense to make discourse happy) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "09/03/2021-16:33:35",
+                    "content": "A SWAPFP opcode would be useful.  It would save one or two instructions per subroutine call, depending on whether you get the old FP onto the stack before or after setting up the new frame in memory. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.893939393939394
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "09/03/2021-19:54:02",
+                    "content": "I can see how it would potentially be handy - but I\u2019m not sure it\u2019s worth it to remove a couple of cheap stack manipulation opcodes per function call. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 6.3125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "10/03/2021-03:50:06",
+                    "content": "Probably so.  But it helps me the most when it saves two ops and makes intention clear.  This is the calling convention of first creating the new stack frame, leaving the new frame pointer already on the stack, then swapping it with the current frame pointer.  Which takes GETFP  SWAP  SETFP instead of just SWAPFP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.9356060606060606
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "10/03/2021-22:20:38",
+                    "content": "It occurs to me that if this is the common way to do it, we could just replace SETFP with SWAPFP. I\u2019m not sure I understand how it\u2019d be used, though - can you give an example function call prologue? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 3.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "10/03/2021-22:33:10",
+                    "content": "For my work right now I\u2019m assuming I\u2019ve constructed a new frame and its address is already on the stack before setting up the call.  So it\u2019s this SWAPFP PUSH jump address JUMPSUB  versus this GETFP SWAP SETFP PUSH jump address JUMPSUB  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.055194805194805
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "11/03/2021-01:19:23",
+                    "content": "How did you get the address of the new frame on the stack without first calling GETFP? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.965909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "11/03/2021-02:25:43",
+                    "content": "The new frame?  It never was in FP until after the SWAPFF.  Its address gets left on the stack by whatever code constructs the new frame, then swapped with current FP. That is, SWAPFP is just the same as GETFP  SWAP  SETFP, but shorter, sweeter, and cheaper. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.2727272727272725
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "11/03/2021-02:47:21",
+                    "content": "    gcolvin:  The new frame? It never was in FP until after the SWAPFF. Its address gets left on the stack by whatever code constructs the new frame, then swapped with current FP.   But how did the code that constructs the new frame determine the new FP? It seems like it would have to already know what the old FP is for that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.461038961038961
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "11/03/2021-04:00:34",
+                    "content": "No - it just needs to write to new memory relative to the current FP to construct the new frame.  The current FP can then be loaded and used to compute the new FP, but it gets consumed by the ADD.  Still - SWAPFP is a minor convenience, not a necessity. So this PUSH size of current frame PUSH new frame data MSTOREFP ... store more frame data ... GETFP PUSH size of current frame ADD SWAPFP PUSH jump address JUMPSUB  versus this PUSH size of current frame PUSH new frame data MSTOREFP ... store more frame data ... GETFP PUSH size of current frame ADD GETFP SWAP SETFP PUSH jump address JUMPSUB  (Or - less likely - when frames are not allocated as a contiguous array, so the old FP was never needed.) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.43476430976431
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "12/03/2021-15:20:04",
+                    "content": "Just as a first comment: we did actually consider proposing something along these lines coming from the Solidity team as well at some point (actually both EIP 3336 and 3337 independently ;-)), so this is definitely interesting to us in general, although we did not find consensus about which change in this direction with which details would benefit us the most or not, but it\u2019s great to discuss these! Just for a small clarification in 3337: \u201cAn attempt to load data from a negative address should be treated identically to an invalid opcode, consuming all gas and reverting the current execution context.\u201d - do you mean the address given as argument before adding the frame pointer or the sum after adding the frame pointer? I guess negative means 2\u2019s complement negative on the 256-bit word? Anyways does this mean the client needs to do additional verification before the actual memory operation? To me this formulation does not seem entirely clear. Apart from that, the main thing I\u2019m currently wondering about is whether the gas costs for MSTOREFP and MLOADFP can reasonably be kept that low - my guess would be that they cannot and it would be interesting what we can realistically expect and especially how much cheaper these could be kept compared to manually adding the frame pointer to an address before a plain MSTORE or MLOAD (if there is little or no difference in the end, the EIP could be reduced to introducing a single general-purpose register that merely can be used as framepointer by convention). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.1669745484400655
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "14/03/2021-20:11:05",
+                    "content": "    gcolvin:  No - it just needs to write to new memory relative to the current FP to construct the new frame. The current FP can then be loaded and used to compute the new FP, but it gets consumed by the ADD.   But doesn\u2019t it need to be loaded in order to store the old FP in memory for when the function returns? Or are you anticipating it would be stored on the stack instead?     ekpyron:  Just for a small clarification in 3337: \u201cAn attempt to load data from a negative address should be treated identically to an invalid opcode, consuming all gas and reverting the current execution context.\u201d - do you mean the address given as argument before adding the frame pointer or the sum after adding the frame pointer? I guess negative means 2\u2019s complement negative on the 256-bit word? Anyways does this mean the client needs to do additional verification before the actual memory operation? To me this formulation does not seem entirely clear.   The intent was for this to be a restriction on the sum of FP and the passed in value - since the FP is signed, the sum could be negative. But, it might be simpler just to say that the EVM should treat the result as an unsigned int. [quote=\u201cekpyron, post:13, topic:5482\u201d] Apart from that, the main thing I\u2019m currently wondering about is whether the gas costs for MSTOREFP and MLOADFP can reasonably be kept that low - my guess would be that they cannot and it would be interesting what we can realistically expect and especially how much cheaper these could be kept compared to manually adding the frame pointer to an address before a plain MSTORE or MLOAD[/quote] The vast majority of the cost of the cheap opcodes is dispatch and gas accounting; an additional integer addition should not be enough to require increasing the gas cost of the operation.     ekpyron:  (if there is little or no difference in the end, the EIP could be reduced to introducing a single general-purpose register that merely can be used as framepointer by convention)   Can you elaborate on how this would work? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.814779286370196
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "14/03/2021-21:08:06",
+                    "content": "    Arachnid:  But doesn\u2019t it need to be loaded in order to store the old FP in memory for when the function returns? Or are you anticipating it would be stored on the stack instead?   I just meant the old FP needn\u2019t be on the stack to create a new stack frame.  From your spec I thought the old FP would be need to be on the stack for the return \u2013 but I may have misunderstood. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.545454545454546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "15/03/2021-12:24:26",
+                    "content": " The vast majority of the cost of the cheap opcodes is dispatch and gas accounting; an additional integer addition should not be enough to require increasing the gas cost of the operation.  That\u2019s why I was wondering about the exact phrasing of the restriction about the result being negative - last time I brought up something similar to EIP 3336 @chfast mentioned (https://gitter.im/ethereum/solidity-dev?at=5d70d135b3e2fc5793583376) that the main problem in memory design is (besides gas accounting) the required validation, so I guess, if possible, it should be avoided to impose any additional restrictions (although client devs would probably be more qualified to say something about that than me). But just specifying MLOADFP/MSTOREFP to be equivalent to a regular unsigned addition and a regular MLOAD/MSTORE should also work, shouldn\u2019t it? Also why exactly is the frame pointer signed and does it actually matter?  Can you elaborate on how this would work?  Nothing fancy. I just meant that if it turns out that MLOADFP cannot be made cheaper than GETFP ADD on an offset plus a regular MLOAD (and similarly for storing), that then there would be little reason to introduce those two opcodes and what remains would be SETFP and GETFP - so then the frame pointer would just become a general purpose register and not specifically a framepointer. As for a bit more context: we did consider introducing memory frames without any new opcodes in solidity by storing the frame pointer itself in memory, but that requires an additional indirection on accesses, which makes things too expensive - so anything the EVM could provide to cheaply store a value would already help, i.e. even a single register without the special mstore and mload variants. But yeah, that\u2019s - at least to me - the main question: what would client devs estimate as costs for MLOADFP and MSTOREFP. If they can be kept cheap, then it\u2019s of course better to have them than not having them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.554812285415734
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "27/03/2021-20:36:37",
+                    "content": " \u2026 why exactly is the frame pointer signed and does it actually matter?  You can build call stacks from lower addresses up or, traditionally, from higher addresses down.  In the latter case you need negative offsets from the frame pointer.  \u2026 if it turns out that MLOADFP cannot be made cheaper than GETFP ADD on an offset plus a regular MLOAD (and similarly for storing)  The Geth interpreter would use a native 64-bit addition rather than a more expensive 256-bit addition, and the overhead of decoding the ADD would be saved. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.020202020202021
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Alchemist33",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "30/03/2021-12:52:44",
+                    "content": "Sounds very interesting ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "01/04/2021-17:30:08",
+                    "content": "    Arachnid:  But doesn\u2019t it need to be loaded in order to store the old FP in memory for when the function returns? Or are you anticipating it would be stored on the stack instead?   Aha.  Stack.  Sorry if I wasn\u2019t clear.  So at the call site we have something like: ...              ; create frame, leave new FP on stack SWAPFP           ; FP is new FP, old FP is now on stack PUSH jump address JUMPSUB            SETFP            ; restore old FP from stack  And at the return site we have ...              ; old FP must be on stack RETURNSUB  An alternative convention might be to chain frames together with a link field.  Something like ...              ; create frame, leave new FP on stack SWAPFP           ; FP is new FP, old FP is now on stack PUSH 0 STOREFP          ; old FP is now at start of new frame PUSH jump address JUMPSUB PUSH 0 LOADFP           ; retrieve old FP from current frame SETFP            ; restore old FP  Then at the return site we just RETURNSUB with no need to have the old FP on the stack. There are other ways to skin this cat, I haven\u2019t thought through them all. How to create the new frame is another question.  If the stack frames are growing contiguously in one direction it\u2019s not hard.  In an example above I assumed it was growing towards higher addresses. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.361139807162535
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "01/04/2021-23:19:41",
+                    "content": "@Arachnid \u2013 I\u2019ve scribbled a lot of speculative pseudo-code above.  What might better help this EIP-3337 is examples of how it can help improve on the existing Solidity calling conventions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "02/04/2021-00:25:10",
+                    "content": "@Arachnid On 3336, I\u2019m skeptical.  First, I think the quadratic cost function for memory means that most memory usage is going to be well within high-level cache \u2013 kilobytes, not megabytes \u2013 where the relevant boundary is the cache line, not the memory page, and a cache line is typically two EVM words.  So it seems like a lot of complexity and likely performance impact to handle a fairly small amount of memory. A (not so radical) suggestion:  Allow memory to also grow from the top down.  That is, twos-complement, towards negative offsets.  Keep the same cost function.  Ideal for a stack of frames.  Also, twos complement, the frame stack could be aliased with memory via MLOAD and MSTORE. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.4907407407407405
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "17/08/2021-02:27:53",
+                    "content": "@Arachnid.  @chfast dug up some stats that I\u2019ve summarize here.  The median contract uses ~200 bytes of memory and ~13 stack slots, and the most used is ~1.4 megabytes of memory and all 1024 stack slots  gist.github.com   https://gist.github.com/chfast/d303d15d151620d23bba617cd79097af#gistcomment-3859141 README.md This is implemented by [evmone](https://github.com/ethereum/evmone)  in https://github.com/ethereum/evmone/commit/a236b9828f9ae1ac257d7c0cb56f654e3a45c7ea#diff-edccf78e9152726b4c97cee57b2b1433R104-R124  Stats about EVM executions are agregated by 1000 blocks.  - start block - end block - number of executions (samples) - total memory - memory size per execution     This file has been truncated. show original evm-stats-8M.csv 46000,46999,1,96,96,96,96,96,96,96,96,96,96,96,96,96,96,5,5,5,5,5,5,5,5,5,5,5,5,5 48000,48999,22,3072,0,0,0,0,0,0,160,288,288,288,288,288,288,0,0,0,0,0,0,4,9,9,9,9,9,9 49000,49999,41,18880,96,96,96,96,96,96,512,768,960,960,960,960,960,4,4,4,4,4,4,8,16,16,16,16,16,16 50000,50999,105,19168,0,0,0,96,96,96,96,288,416,576,2880,2880,2880,0,0,0,4,4,4,13,16,16,16,16,16,16 51000,51999,285,40800,96,96,96,96,96,96,96,128,288,480,2880,2880,2880,4,4,4,4,4,5,13,16,16,16,16,16,16 52000,52999,403,55808,64,64,96,96,96,96,96,96,256,480,704,3488,3488,3,3,4,6,6,12,16,16,16,16,16,16,16 53000,53999,63,16672,96,96,96,96,96,96,160,1408,1568,1568,1568,1568,1568,4,4,4,4,4,4,13,20,20,20,20,20,20 54000,54999,126,88608,0,0,0,0,0,96,160,2048,3904,6080,6080,10208,10208,0,0,0,0,0,4,13,16,16,16,18,18,18 55000,55999,339,68672,96,96,96,96,96,96,96,992,1568,1632,1728,2304,2304,3,3,3,4,4,4,13,16,16,19,20,20,20 56000,56999,125,34336,96,96,96,96,96,96,128,1472,1504,1504,2016,2016,2016,3,3,3,3,3,3,10,14,16,16,16,16,16     This file has been truncated. show original        ",
+                    "links": [
+                        "https://gist.github.com/chfast/d303d15d151620d23bba617cd79097af#gistcomment-3859141",
+                        "https://gist.github.com/chfast/d303d15d151620d23bba617cd79097af#gistcomment-3859141",
+                        "https://gist.github.com/chfast/d303d15d151620d23bba617cd79097af#gistcomment-3859141"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "28/08/2021-14:11:07",
+                    "content": "Notes on frame stacks \u2014 lists of data frames in memory for arguments and  local variables.  Expanding on previous discussions here, in an EIP draft, and with Nick. Two conventions are typical \u2014 either create the frame before calling the subroutine, or create the frame after the BEGINSUB.  Adding these two instructions to EIP-3337 would ease the way.  They are modeled on the corresponding Intel opcodes.  ENTER _frame_size_   Write the current FP to memory as with MSTOREF at FP - frame_size, then set FP to FP - frame size. This a cheaper shorthand for  MSTOREF GETFP PUSH frame_size SUB SETFP  This should be placed either before a JUMPSUB operation or after a BEGINSUB, depending on the calling convention.  Repeated calls to ENTER create a stack of frames, linked by their previous FP field. The stack grows towards lower addresses in memory, as is the common, efficient practice.  LEAVE   Restores FP to the value which was stored at offset FP in memory by the most recent ENTER, thus popping a frame off of the stack of frames.  This a shorthand for  MLOADF SETFP  This should be placed after the JUMPSUB operation or before the RETURNSUB \u2013 depending on the calling convention \u2013 to pop the most recent frame from the call stack. These operations would be especially useful if the gas formula for memory was changed so that writes from the top of memory down (equivalently, from -1 down, twos-complement) are charged the same gas as writes from the bottom of memory up. The total cost to expand the memory to size a words is currently  Cmem(a) = 3 * a + floor(a ** 2 / 512)  If a, b and memory offsets in general are allowed to be negative a slightly modified formula  Cmem(a) = 3 * |a| + floor(a ** 2 / 512) gives the desired results \u2013 stack memory can grow from the top down, and heap memory can be allocated from the bottom up, without address conflicts or excessive gas charges.  It would also be possible to alias the data stack with the frame stack, as is done by Intel, DEC, and p-code, and other machines.  This would allow for a single, indefinitely deep data stack, pointers to stack items, and variable-size stack items.  An ENTER opcode would also combine well with the code sections supported by the Ethereum Object Format with Wasm-style function tables, providing a structure to define valid sets of entry points into collections of subroutines. And if we really wanted to go to town, we could alias the data stack with the frame stack and interleave data-stack items with stack frames, as is often done.  This would make it easier to support variable-width data items. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.119685374149659
+                }
+            ]
+        }
+    ],
+    "group_index": "1253"
+}

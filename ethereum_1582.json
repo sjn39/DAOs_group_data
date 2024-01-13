@@ -1,0 +1,205 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/charging-rollup-gas-for-l1-to-l2-messages-extractgas-or-payfromorigin/8104",
+            "title": "Charging rollup gas for L1 to L2 messages: EXTRACTGAS or PAYFROMORIGIN ",
+            "index": 8104,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "evm",
+                "gas",
+                "transactions",
+                "layer-2",
+                "rollups"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yahgwai",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "25/01/2022-18:46:22",
+                    "content": "When contracts send messages from Ethereum to a rollup they need to pay for the execution of the message as a tx on the rollup. Arbitrum and Optimism have different approaches to this.  Arbitrum Makes the message sending function on their bridge payable, and expects the caller to send enough value to cover the cost of the L2 execution. The downside of this is that many existing contracts don\u2019t provide the ability to make payable calls, and even if they did the value would potentially need to be passed from the user through all contracts in the path before reaching the payable function. An example of this is the ERC721 standard. ERC721s provide a _checkOnERC721Received function that will be called after transferring to a contract. This could be used to transfer an ERC721 token to a contract and check that it has been received. However rollups that require a payable deposit function cant use this method, since _checkOnERC721Received doesn\u2019t send any value with it. Instead, in order for a user to send value with the deposit they must split the deposit into 2 separate transactions:  Approve a gateway contract to transfer the NFT Execute a transferfrom and send value to the rollup to pay for the L2 execution   Optimism To avoid enforcing a payable interface Optimism dont receive any funds for L2 execution of the messages. Instead they burn gas proportional to the L2 tx gas limit to prevent callers from being able to DOS the rollup nodes into processing arbitrary amounts of L2 gas for free. The downside of this is that the burning the gas takes up L1 block space, which is a valuable resource. Below are two alternative proposals for new Ethereum opcodes that could accept funds without forcing changes on the public interfaces of calling contracts.  EXTRACTGAS: Convert gas to value A new opcode (EXTRACTGAS) that extracts gas from the gas stipend of a transaction, converts it to value and sends it to the current address. The opcode increases gasUsed by gasExtracted and sends gasExtracted*tx.gasprice to the current address. Additionally when calculating the total amount of gas used in a block the total amount of gas extracted would need be subtracted from the gas used to ensure that the block gas limit wasn\u2019t effected: blockGasUsed - blockGasExtracted < blockGasLimit.  PAYFROMORIGIN: Take value from the tx rather than receiving it in a CALL A new transaction type that includes an additional value field called originValue, and a new opcode (PAYFROMORIGIN) that can take some funds from the originValue field and sends it to the currently executing contract. The originValue field isn\u2019t strictly necessary, but may be nice in providing some protection to the transaction sender to prevent a contract from taking arbitrary amounts of value. Edit: This problem could also be solved with 3074. A user could use a batch-capable invoker to first make the relevant contract call (which would internally call the bridge) without supplying a value, then call into the bridge contract after and pay for the previously deposited message. However this does has the overhead of having to make two extra calls. ",
+                    "links": [
+                        "https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts/contracts/L1/rollup/CanonicalTransactionChain.sol#L239",
+                        "https://eips.ethereum.org/EIPS/eip-3074"
+                    ],
+                    "GPT-summary": "The post discusses the different approaches taken by Arbitrum and Optimism for charging rollup gas for L1 to L2 messages. It proposes two alternative proposals for new Ethereum opcodes that could accept funds without forcing changes on the public interfaces of calling contracts. The post also highlights the downsides of the current approaches and suggests ways to overcome them. The author explains the proposal in detail and a 3rd party gives constructive criticism and asks questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Token economics",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.543997668997669
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "26/01/2022-16:56:05",
+                    "content": "With 3074, could the user call directly into the bridge with value and a signed authorization, then the bridge authcalls into the relevant contract? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yahgwai",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "26/01/2022-18:21:45",
+                    "content": "Nice! Yep, that would cut using 3074 down to only one extra call, and in some special cases maybe no extra calls. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.792989417989418
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/DB_1",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "29/01/2022-14:42:12",
+                    "content": "Won\u2019t EXTRACTGAS re-enable generating revenue from transactions (without sending funds)? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/microbecode",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "29/01/2022-18:21:41",
+                    "content": "Do I understand right that EXTRACTGAS would essentially bring back gastokens? Didn\u2019t we just fight to get them gone  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.476190476190476
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yahgwai",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "30/01/2022-12:44:41",
+                    "content": "    DB_1:  Won\u2019t EXTRACTGAS re-enable generating revenue from transactions (without sending funds)?   I\u2019m not sure what you mean about generating revenue without sending funds. EXTRACTGAS takes gas (at a rate of tx.gasPrice) from the transaction\u2019s gas which must be paid for in the usual way.     microbecode:  Do I understand right that EXTRACTGAS would essentially bring back gastokens? Didn\u2019t we just fight to get them gone    Could you explain further? I dont see how this could be used to enable gas tokens. Gas tokens allowed for the storage of gas to be used later via the (now removed) refund. EXTRACTGAS takes gas from the current transaction and pays it to the contract, always reducing the current gas limit. It cant be used to pay for future transactions at future prices. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.7805059523809526
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/DB_1",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "30/01/2022-21:07:18",
+                    "content": "It allows a third party to generate revenue from a crafted transaction via gas. It goes back to a theoretical (I think) attack vector, where one persuades a bot to make a transaction. It may be reverted in case of a loss, but gas value could have been extracted in the past. This may re-enable it. How will it be handled in a reversion? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yahgwai",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "31/01/2022-10:17:07",
+                    "content": "EXTRACTGAS allows a contract to receive funds from the supplied gas. Contracts can already receive funds from msg.value. Gas must be paid for upfront by the user, in the same way as value. All that EXTRACTGAS does is allow you to receive funds from a different source that already been paid for, rather than the msg.value - I dont see what attack vector this opens up. A reverted transaction shouldn\u2019t change any state on the chain except the user\u2019s. So the contract wouldn\u2019t receive the funds from EXTRACTGAS in a reversion. Instead the funds could either be sent back to the tx.origin, or be sent to the block producer like the rest of the gas used. I\u2019d recommend they get sent back to the origin, since the block producer hasn\u2019t done the work proportional to the gas extracted in EXTRACTGAS. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/microbecode",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "02/02/2022-17:00:31",
+                    "content": "    yahgwai:  Could you explain further? I dont see how this could be used to enable gas tokens. Gas tokens allowed for the storage of gas to be used later via the (now removed) refund. EXTRACTGAS takes gas from the current transaction and pays it to the contract, always reducing the current gas limit. It cant be used to pay for future transactions at future prices.   Well this allows the storage of Ether (extracted from gas), but you\u2019re correct that it\u2019s not quite the same as gastokens. I think this is an interesting approach, but would need to be thought ot thoroughly for possible attack vectors / abuses. It\u2019s easy to imagine how some contract extracts some fee from the gas without the user knowing about it. With msg.value the sent value is explicit, but if taken from gas, the extracted value can be sort of hidden. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3484848484848495
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "10",
+                    "likes": "2",
+                    "time": "02/02/2022-22:16:20",
+                    "content": "EXTRACTGAS seems a little dangerous: In the current gas model, a user assigns \u201cgas\u201d to the transaction for execution. It trusts the contract it calls to use that gas for execution. The contract might mis-behave and abuse this gas to grief the user - but can\u2019t make a real profit out of it. Now we open a way for contract to extract value out of this gas-only money. I just can\u2019t wait for the ingenuity of people to extract value out of it. I can\u2019t help it, but it strongly reminds me of Reality Bites \u201cGas to Money\u201d (For those who can\u2019t remember: a caring father want his daughter to work for living, but gives his daughter a refueling card. She uses it to \u201cservice\u201d people at a self-service station, getting cash and paying with her father\u2019s card.) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.318452380952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "03/02/2022-23:59:41",
+                    "content": "My bet is that the first one will be airdrops that steal people\u2019s eth in their claim() function. Next comes more creative stuff such as contract wallets abusing contracts with callbacks, e.g. eip-1363 tokens.  Whenever you give someone an allowance to transferFrom your tokens, they also pay you some eth. I think gas and value need to be kept separate, so PAYFROMORIGIN seems a bit safer and allows the user to declare an intention.  But even then, the intention declaration is not specific enough since it doesn\u2019t say which contract is allowed to withdraw.  Since it\u2019s used to pay for gas, the specified amount will be higher than what actually gets charged, so I expect some contracts to take advantage if called late in the transaction, and grab the leftovers. Batching is indeed a possible solution, and could be used right now without waiting for a protocol change.  A contract wallet or an ERC 4337 wallet can (and should) offer a function that performs both calls. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4337"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.619047619047619
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yahgwai",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "04/02/2022-09:14:04",
+                    "content": "    dror:  EXTRACTGAS seems a little dangerous: In the current gas model, a user assigns \u201cgas\u201d to the transaction for execution. It trusts the contract it calls to use that gas for execution. The contract might mis-behave and abuse this gas to grief the user - but can\u2019t make a real profit out of it. Now we open a way for contract to extract value out of this gas-only money. I just can\u2019t wait for the ingenuity of people to extract value out of it.   Yeah, I agree that this opens up a new way for contracts to trick users. But I would say that there are already many ways to do that - I could send 0.05 ETH to mint an NFT and the contract simply not mint it but keep the funds, or a staking pool could have a broken withdraw function. The amount of mischief with EXTRACTGAS is at least bounded by the gas limit, and if a contract abuses EXTRACTGAS it would become known in the same as other contracts that trick users. Although I wonder if this could become more of a problem if EXTRACTGAS became used widely and for large amounts instead of small - then gas limits would be high allowing for larger amounts to be stolen before being declared malicious.     yoavw:  Batching is indeed a possible solution, and could be used right now without waiting for a protocol change. A contract wallet or an ERC 4337 wallet can (and should) offer a function that performs both calls.   If all user\u2019s had contract wallets then I agree this wouldn\u2019t be a problem. I don\u2019t know, but I would guess, that the vast majority of users have and will continue to have EOAs. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.825878099173554
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "04/02/2022-23:34:10",
+                    "content": "    yahgwai:  But I would say that there are already many ways to do that - I could send 0.05 ETH to mint an NFT and the contract simply not mint it but keep the funds, or a staking pool could have a broken withdraw function.   The difference is that users would soon realize that they\u2019re not getting the service (not getting an NFT or not being able to withdraw - although that\u2019s trickier until withdrawals are enabled). With EXTRACTGAS contracts will be able to provide a service, while the user pays a premium unknowingly.  Something like this - a new dex targeting Uniswap users, so it airdrops tokens to all existing Uniswap projects with a short expiration date to induce FOMO.  Users claim the token, while unknowingly paying for these tokens via EXTRACTGAS.  A token presale disguised as an airdrop. Users will see that they\u2019re getting the claimed token, not realizing that they paid for them. The way to protect the user against such scams will probably be through EOA wallet software like Metamask, which should simulate transactions and clearly warn the user that this transaction is going to pay X to contract Y.  With proper UI it could work.  To help Metamask do that, maybe we should add an extractedGas field to the return value of eth_call or add a new eth_estimateGasWithExtraction call which tells the caller, not just how much gas is used, but also how much gas is extracted by contracts using EXTRACTGAS.     yahgwai:  If all user\u2019s had contract wallets then I agree this wouldn\u2019t be a problem. I don\u2019t know, but I would guess, that the vast majority of users have and will continue to have EOAs.   The ultimate purpose of account abstraction is to replace EOAs.  ERC 4337 is just the beginning and requires creating a contract wallet, but the endgame is that at some point (in a distant future) there will be a hard fork that replaces all EOAs with a proxy contract that points at a precompile wallet emulating an EOA.  Users will then be able to upgrade their proxy in-place to point to more sophisticated wallets. In the short term I see the value of such opcodes, but in the long term it might fall in the \u201censhrining-EOAs-even-further\u201d category. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/we-should-be-moving-beyond-eoas-not-enshrining-them-even-further-eip-3074-related/6538/1"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.610637626262626
+                }
+            ]
+        }
+    ],
+    "group_index": "1582"
+}

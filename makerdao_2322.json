@@ -1,0 +1,468 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/the-target-rate-feedback-mechanism-an-introduction/2319",
+            "title": "The Target Rate Feedback Mechanism: An Introduction ",
+            "index": 2319,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "summary",
+                "rates",
+                "trfm"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#1",
+                    "likes": "18",
+                    "time": "02/05/2020-00:29:53",
+                    "content": "Background The Target Rate Feedback Mechanism (TRFM) has been mentioned a few times in recent memory, for example during governance calls or in forum posts like this one. However, the TRFM is not widely understood, so I\u2019m making this post to provide the community with an easy introduction to the concept. There\u2019s no intent here to suggest implementing this mechanism; rather, I merely want to clearly explain what the TRFM is so that everyone can understand and participate in any discussions into which it enters. The TRFM can be thought of (roughly) as an alternative to the DAI Savings Rate (DSR) that has more flexibility in terms of applying directional pressure to the DAI price. It has been discussed since the early days of the Maker project, although work on it was stopped some time ago. This steemit post describes the mechanism and some of the early research that was done, and is still a good reference. A recent Medium article describes the same idea and is also recommended reading for those wanting to dig deeper. Here, I\u2019ll explain only the most basic ideas needed to understand the TRFM. Definitions Reference Asset An asset the system uses to measure value. This is currently the United States Dollar (USD). Oracle prices must be reported in units of this asset. Market Price (MP) The value, according to the market, of one DAI against the reference asset. This is measured through, for example, DEX trades, and can be seen on sites like https://dai.stablecoin.science/. Target Price (TP) This is the value, in the reference asset, that the system targets for one DAI. I.e., if the system is in equilibrium, the target price and market price are equal. This value is also called the \u201credemption price\u201d. It affects how much DAI can be drawn against a fixed value of collateral, and also how much collateral is received per-DAI during Emergency Shutdown. The target price has been fixed at $1 since the system launched. It is stored in the par variable of the Spotter smart contract. An example: at a 150% collateralization ratio and a $1 target price, 100 DAI can be drawn against $150 of ETH collateral. If the target price is changed to $2, only 50 DAI can be drawn against the same $150 of ETH. Target Rate (TR) The rate at which the target price is changing, usually thought of and expressed as a yearly percentage. Currently, the Target Rate is zero and the system does not track a value for it. Target Rate Feedback Mechanism (TRFM) A feedback mechanism that adjusts the target rate in order to equalize the target price and the market price. The rest of this post will discuss this in more detail, but the diagram below gives a basic illustration.  Implications of the TRFM The TRFM involves a major conceptual shift. The entire world thinks of DAI as being a dollar-pegged stablecoin, but if the TRFM is implemented, then DAI no longer has a fixed peg. It still has a peg (the target price) at any given time, but this peg changes based on the target rate. DAI with a TRFM could instead be thought of as a \u201cvolatility smoothed\u201d or \u201csemi-stable\u201d coin (the term \u201creflex bond\u201d has recently come to be associated with such an asset). Here\u2019s a hypothetical example of how this could play out in practice: suppose DAI initially has a TP and MP of $1, and a TR of 0%/year. Then, an extreme market event causes the MP to drop to $0.90. The TRFM activates and sets the target rate to 10%/year to incentivize supply contraction and demand to hold DAI. Suppose that after 8 months, the TP and MP are equal again, so the TR returns to zero; now the target price (and also the market price, since we said they were the same) will be ~$1.0656. Another important feature of the TRFM is that it can be negative as well as positive. This means that it can deal equally well with DAI prices that are above and below the target price. This contrasts with the present situation in which the DSR is at 0% and cannot be lowered further, despite DAI remaining above peg. In fact, if DAI had a TRFM, having the DSR as well would be of questionable value (and very confusing for users). Further, stability fees could remain at non-zero values regardless of the sign of the target rate, ensuring that the system can still earn risk-premium income while the market overall is driven to resolve the discrepancy between the target and market prices. TRFM Incentives The ways in which the TRFM creates incentives to equalize the target and market prices are somewhat subtle and worth examining in more detail. Market Price < Target Price If DAI is trading below its target, the target rate will be set to a positive value. This implies an increasing target price. Vault user viewpoint As the target price increases, Vault collateralization levels decrease (roughly, the system is viewing DAI as being \u201cworth more\u201d and hence each Vault\u2019s dollar-valued debt is increasing). This incentivizes Vault holders to either buy DAI to repay debt (a good deal, since DAI is trading low) or to add collateral. Only the former will impact the price of DAI and thus the target rate (which a Vault holder would like to see reduced), hence at a high enough target rate this becomes the preferred option and creates demand for DAI, driving up the price. DAI holder viewpoint The rising target price represents and effective savings rate on DAI, incentivizing the holding and acquisition of DAI. Generally, this comes about because the price Vault holders are willing to pay will increase over time (to avoid loss of collateral), and because one DAI will be able to claim a greater quantity of collateral should Emergency Shutdown occur. Market Price > Target Price If DAI is trading above its target, the target rate will be set to a negative value. This implies a decreasing target price. Vault user viewpoint As the target price decreases, Vault collateralization levels increase (i.e. the same amount of DAI debt is regarded as a lesser dollar amount by the system). This frees up Vault holders to mint more DAI without increasing their liquidation risk, incentivizing a DAI supply increase, which should lower the market price. This is functionally similar to a negative stability fee, but note that the system can still collect non-zero fees (albeit in an inflating currency) even with a negative target rate. DAI holder viewpoint Since Vault holders will be willing to accept progressively lower maximum prices for DAI in the future as the target price decreases, DAI holders are incentivized to sell their DAI to lock in the benefits of the current high market price, and those thinking of holding DAI as a store of value are likely to reconsider. There is also the fact that the amount of collateral DAI will be able to claim during ES is decreasing, weakening the potential payoff of holding DAI if ES occurs. Implementing the TRFM Note: this section is intended to address curiosities around how the TRFM might be implemented, and does not represent a proposal for actually doing so\u2013that would require a proper technical design document presented as part of a MIP. At a minimum, three new components would be required to fully implement an automated TRFM in the present DAI Credit System:  a DAIUSD price oracle a target price calculator a target rate controller  The DAI price oracle could be spun up using the existing oracle infrastructure; the target price calculator (which takes the target rate as an input) would be a trivial contract similar to the Pot or Jug (in fact, simpler than either of them). The target rate controller is more involved, as it must specify an algorithm for calculating the target rate. The options for implementing the algorithm that controls the target rate are quite nearly limitless. However, a PID controller is a simple and widely-used process control algorithm that has been explored previously and could be implemented fairly easily on-chain. The purple paper even sets a naming precedent for some of the parameters that would be involved. Alternatively, governance could set the target rate or even the target price directly, reducing the need for smart contract implementations. The downside of this is of course the introduction of the delays and caprices of human decision-making into the process, but something along these lines could serve as a temporary bridge to a fully-automated TRFM (which would likely need some tuning of parameters, at least initially). A trustless, unalterable (or at least predictably alterable) TRFM would be a much more reliable guide to market participants, as it eliminates uncertainty from the choices they must make. ",
+                    "links": [
+                        "https://steemit.com/makerdao/@kennyrowe/digital-money-a-simulation-of-the-deflation-rate-adjustment-mechanism-of-the-dai-stablecoin",
+                        "https://medium.com/@stefan__ionescu/stability-without-pegs-8c6a1cbc7fbd",
+                        "https://dai.stablecoin.science/",
+                        "https://docs.makerdao.com/smart-contract-modules/core-module/spot-detailed-documentation",
+                        "https://docs.makerdao.com/smart-contract-modules/rates-module/pot-detailed-documentation",
+                        "https://docs.makerdao.com/smart-contract-modules/rates-module/jug-detailed-documentation",
+                        "https://en.wikipedia.org/wiki/PID_controller",
+                        "https://nikolai.fyi/purple/#dfn-Vox",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-thursday-may-14-9am-pst-4-00-pm-utc/2497/2",
+                        "https://forum.makerdao.com/t/can-decentralized-stablecoins-scale-with-kurt-barry-on-drinks-with-makerdao-delegates/18679",
+                        "https://forum.makerdao.com/t/mip20-target-price-adjustment-module-vox/3196/4",
+                        "https://forum.makerdao.com/t/mip20-target-price-adjustment-module-vox/3196/3",
+                        "https://forum.makerdao.com/t/mip20-target-price-adjustment-module-vox/3196",
+                        "https://forum.makerdao.com/t/signal-request-adjust-the-wbtc-debt-ceiling-and-risk-premium/2824/21",
+                        "https://forum.makerdao.com/t/maker-relay-episode-3/3199",
+                        "https://forum.makerdao.com/t/dsskiln-a-permissionless-token-purchasing-tool/14943/26",
+                        "https://forum.makerdao.com/t/maker-relay-ep-6/3517"
+                    ],
+                    "GPT-summary": "The post explains the Target Rate Feedback Mechanism (TRFM) as an alternative to the DAI Savings Rate (DSR) that has more flexibility in terms of applying directional pressure to the DAI price. The TRFM adjusts the target rate in order to equalize the target price and the market price. The post discusses the implications of the TRFM and how it creates incentives to equalize the target and market prices. The post also briefly discusses how the TRFM might be implemented.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.38367219350229
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MarianoDP",
+                    "index": "#3",
+                    "likes": "3",
+                    "time": "02/05/2020-17:09:05",
+                    "content": "great explanation Kurt. I would like to see TRFM voted an implemented in the protocol. We may need it in the near future. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "02/05/2020-19:02:26",
+                    "content": "It\u2019s certainly better than adding new collateral hoping that the DAI price will somehow magically return to $1. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.893939393939394
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/freiza",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "02/05/2020-19:45:39",
+                    "content": "I\u2019d say this is the most important project for Maker since the introduction of adding new collateral types.  Given our current monetary levers seem to be insufficient at keeping the arbitrary USD $1 peg, the TRFM would be an ideal fix.  There will be some slight education needed for end-users to understand that we are no longer pegged to the $1 USD, but given our current situation I think people will find this to be a proactive step towards a more dynamic stable currency. There are also competitors seeking to implement reflexive bonds that could hurt Dai adoption. So +1 to supporting this initiative.  What would be the next step to create the MIP?  Sufficient community support?  I hope others can post to express the importance of this project so we can get started on a MIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.008207070707071
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "02/05/2020-20:09:53",
+                    "content": "    freiza:  There are also competitors seeking to implement reflexive bonds that could hurt Dai adoption.   Can we use their approach? I think they want to use reflex bonds as collateral. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Alfablok",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "02/05/2020-22:52:45",
+                    "content": "In principle I like the idea of building some adaptive system that is less reliant in human governance to keep the peg. I find the idea fascinating. Some questions: Say TP goes to 0.25 due to massive demand in dai. How does it translate into actual collateralization? As TP decreases, I understand 1 dai could have less than 1usd worth behind eventually? Personally, I always liked the idea of DeFi being grounded on overcollateralized money, as a departure from the massively undercolateralized fiat system. This will require a new mindset. I guess dai holders will vote with their feet, but I worry about situations where things go out of control, and the system becomes very fragile. Or is there some limit? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.31358225108225
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#8",
+                    "likes": "2",
+                    "time": "03/05/2020-00:09:53",
+                    "content": " Say TP goes to 0.25 due to massive demand in dai. How does it translate into actual collateralization?  This is a very vague question, so I\u2019ll try to answer for a couple different interpretations. In a realistic scenario, the target price would change gradually over time based on the target rate, and the collateralization levels would depend on the actions of Vault holders, etc, over that time period. If one were to artificially (say, by a gov action) just change the TP from $1.00 to $0.25, then collateralization level would increase by 4x (same amount of collateral, but DAI is suddenly worth 4 times less according to the system).  As TP decreases, I understand 1 dai could have less than 1usd worth behind eventually?  I\u2019m not entirely sure how to interpret this question either, but: with a TRFM implemented, DAI has no fixed peg\u2013it could become worth $0.72, $1.29, or really any other value depending on market forces. DAI is still overcollateralized even if a TRFM is implemented (or, at least, it is no more at risk of undercollateralization with the TRFM than without it).  Or is there some limit?  Limit on what? This is all hypothetical right now; in general automated algorithms can and often do have operational bounds put in place to prevent extreme behavior. A TRFM could easily have built-in limits on e.g. the magnitude of the target rate or how often it was allowed to change. Again, this post isn\u2019t an engineering design, it\u2019s just an introduction to a concept. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.78547619047619
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MarianoDP",
+                    "index": "#9",
+                    "likes": "1",
+                    "time": "03/05/2020-01:21:39",
+                    "content": "I also think that once TRFM is in place we could start researching around different models/algos of it which can leads us to a whole new world of mechanism to achieve stability. Stability is largely a manufactured product, not just 1:1 redemption ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.688311688311688
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "03/05/2020-04:57:32",
+                    "content": "    Kurt_Barry:  if DAI had a TRFM, having the DSR as well would be of questionable value (and very confusing for users)   Is the implication here if we added TRFM the DSR would end up on the deprecation path? One of my first thoughts when reading this is \u201cwhat happens to DAI locked in the DSR\u201d, but I can save my specific questions concerning that for now. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.2
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "03/05/2020-10:42:24",
+                    "content": "    Kurt_Barry:  The TRFM can be thought of (roughly) as an alternative to the DAI Savings Rate (DSR)   I do not think this approximation is correct. The TRFM will in all likelyhood be used to offset US inflation only, with the DSR coming on top of this. It is correct that in the present low inflation situation we have had the last decades the DSR is likely to be low, but the two mechanisms still have different function IMHO. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.222222222222222
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MarianoDP",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "03/05/2020-13:39:34",
+                    "content": "Yes, I see them as two separate instruments too, something like\u2026 DSR -> T-bill TRFM -> Continuos Incentive/disincentive Bond ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Alfablok",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "03/05/2020-15:21:52",
+                    "content": "Thank you for your answers. I want to make it clear I think this type of solution is probably where things will end up going. I\u2019m only trying to understand the mechanics and implications. Let me try to make my questions more specific. In the current world, TP = 1usd, and LR is at 150% of Dai minted. As a Dai holder, I know two things:  There should be at least 1,5 dollars\u2019 worth behind every dai, as enforced by the LR. During ES, I should be entitled to claim 1 usd worth of collateral.  In the TRFM world, if TP goes to 0,25, I want to understand how each of those two things change. I understand during ES I\u2019d only be entitled to claim 0,25 worth of colateral. My question was, how does this impact the liquidation rate, and therefore the min colateralization to expect behind a Dai? I hope this is less vague. Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.9944444444444445
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#14",
+                    "likes": "0",
+                    "time": "03/05/2020-17:25:01",
+                    "content": "Yes, that makes more sense, Alfablok: With the TP at $0.25, then you are correct, during ES you can only claim $0.25 worth of collateral (according to the final oracle prices, and assuming the system is not undercollateralized). The liquidation ratio is a separate parameter from the TP. Even if the TP has gone to $0.25, if the liquidation ratio is set at 150% then there\u2019s still at least $0.375 (150%) value backing every DAI (at least under healthy operation of the system) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#15",
+                    "likes": "1",
+                    "time": "03/05/2020-17:31:34",
+                    "content": "The goal of the TRFM is to set an intrinsic interest rate on the DAI price that maintains MP/TP equality. Trying to set a DSR value on top of this will upset that balance. If the target rate is positive, that is no difference from a positive DSR from the perspective of a DAI holder (their buying power is increasing). The big difference is that the target rate can go negative, whereas DSR cannot, allowing the TRFM to respond to any MP - TP deviation (whereas DSR, as we have seen, becomes useless under certain conditions). So I don\u2019t at all agree that TRFM and DSR are independent concepts that can trivially coexist. The have overlapping function and characteristics. Yes, they are not the same, but they are not totally distinct, either. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.109415584415585
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MarianoDP",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "03/05/2020-19:37:46",
+                    "content": "Yes, they are not independent since they are affecting Dai issuance, although I tend to see them affecting different scopes of incentives and time. TRFM - Short time incentive/disincentive DSR - Long time incentive. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.9375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#17",
+                    "likes": "4",
+                    "time": "03/05/2020-19:38:46",
+                    "content": "This seems like a pretty BIG tradeoff to me. I know that the peg is currently in a state that makes this more of an interesting concept, but in more stable economic environments I see DSR as a valuable tool (and key competitive advantage) to drive DAI adoption for more risk-off investors seeking yield. In the brief history that it has existed, we\u2019ve seen very strong adoption so I would be very wary of ideas that abandon it in concept so early in its life. I\u2019m sure that the argument can be made that TRFM is theoretically able to also drive yield for DAI holders, but it appears to me that it also exposes the DAI holder to risks that are difficult to model and reason about which seemingly will hurt adoption. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.926041666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/IslandHunting",
+                    "index": "#18",
+                    "likes": "3",
+                    "time": "11/05/2020-14:45:41",
+                    "content": "The dollar peg is the PMF for Maker. I\u2019d much rather see Maker adopt open market operations than give up on the USD peg. See:    Deribit Insights \u2013 11 May 20    The future of money could be discretionary - Deribit Insights What if the age of central banking is still ahead of us?      ",
+                    "links": [
+                        "https://insights.deribit.com/market-research/the-future-of-money-could-be-discretionary/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/OliverNChalk",
+                    "index": "#19",
+                    "likes": "0",
+                    "time": "11/05/2020-15:27:10",
+                    "content": "Why is the TRFM preferred to a negative DSR? They both achieve the same effect but one breaks DAI\u2019s biggest selling point (parity with USD), while the other does not. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.291666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#20",
+                    "likes": "3",
+                    "time": "11/05/2020-16:00:30",
+                    "content": "One reason to prefer the TRFM is ease-of-implementation: making DSR mandatory would require replacing the DAI ERC-20 contract which would be a major disruption to the ecosystem (probably requires an Emergency Shutdown followed by a full re-deployment, or at least that\u2019s the cleanest way to do it). A TRFM also pays the negative rate to Vault holders by directly increasing their collateralization ratio\u2013in the current system, a negative DSR would instead go to pay MKR holders. Further, I think it\u2019s a little disingenuous to claim that a negative DSR somehow preserves \u201cDAI dollar parity\u201d as if that\u2019s a big advantage, because what they both do is decrease the purchasing power, over time, of holders of DAI, in a way that\u2019s largely the same. And the purchasing power, I think, is what people really care about. A concrete example: suppose you start with 100 DAI, which is at a $1 peg initially. Now consider two scenarios: Negative 10% TRFM for a year: you still have 100 DAI, but it\u2019s worth $90 Negative 10% DSR for a year: you have 90 DAI, worth $90 The loss of purchasing power is identical. Further, in the TRFM case, you could construct a chai-like wrapper token around DAI such that the balance fluctuates but the target value of a single token remains at $1. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.916925465838509
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/OliverNChalk",
+                    "index": "#21",
+                    "likes": "1",
+                    "time": "11/05/2020-16:21:00",
+                    "content": "Funding rates are not a novel invention, we should look to other perpetual synthetics for guidance. You mention that TRFM compensates vault holders directly, while DSR does not. This is an invalid point because you can set negative SC to pay the negative DSR to vault holders. I never said that I thought a negative DSR would preserve purchasing power. My argument was around price parity as DAI is a unit of account in my mind. Of your remaining points, is it fair to say:  TRFM is a lot more plausible to implement because we can avoid a shut down. If negative DSR can be implemented without a shut-down, it would be preferable  I hope to use DAI as a highly liquid USD quote currency one day. If we are going to price things in DAI, we must maintain 1USD = 1DAI. I think introducing a 2nd token creates confusion, reduces the brand and adds complexity. Only something we should consider if the alternative is indeed another difficult migration to new system. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.038602693602694
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#22",
+                    "likes": "1",
+                    "time": "11/05/2020-17:01:27",
+                    "content": " You mention that TRFM compensates vault holders directly, while DSR does not. This is an invalid point because you can set negative SC to pay the negative DSR to vault holders.  That\u2019s why I said \u201cin the current system\u201d. Adding robust support for negative stability fees is indeed possible but requires significant engineering work (including, with high probability, an Emergency Shutdown followed by redeployment). The point is that the TRFM does this only via addition of contracts to the system, not replacing existing core contracts. It is nice to have only one token, which has a constant value in relation to USD, for accounting purposes. It comes down to preference between two scenarios: A) add a TRFM, and create a wrapper token that can serve as a USD-denominated unit of account B) redeploy the system, implementing a mandatory DSR which can be negative and add better support for negative fees as well Both are disruptive changes, but the first can be accomplished much more gradually and without ES (at least in principle). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.182361111111112
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#23",
+                    "likes": "0",
+                    "time": "11/05/2020-19:36:45",
+                    "content": "Only disruptive changes can fix the peg. If we stay too long above the peg, the system will break and the trust will be gone. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.916666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#24",
+                    "likes": "2",
+                    "time": "11/05/2020-20:28:43",
+                    "content": "I disagree that remaining pegged to the dollar is necessary, and think in the mid-long term we want our currency to be independent of other sovereign currencies. It might make sense for us to also have dai-like currencies pegged to usd, eur, yuan, etc. but it seems like it will be hard to keep peg in the future as more countries dip into negative rates. The problem trying to be solved here is stability, not usd parity. People have no problem buying other cryptocurrencies except that their price is extraordinarily volatile. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.99537037037037
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/OliverNChalk",
+                    "index": "#25",
+                    "likes": "1",
+                    "time": "12/05/2020-00:56:50",
+                    "content": "Was TRFM implemented in MCD or is its ease of implementation simply a result of the way the system works (i.e. we could fiddle with existing parameters to implement it into the system)? Introducing the TRFM means we would have two mechanisms to address the exact same issue, DSR & TRFM. This would be a big design flaw to me but makes sense if negative DSR was an oversight and TRFM is the only implementable solution at this time. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.958333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#26",
+                    "likes": "7",
+                    "time": "12/05/2020-02:09:41",
+                    "content": "The TRFM was originally intended to be part of MCD, but at some point it was abandoned when the decision to pursue a dollar-pegged coin was made (and the DSR was introduced to replace it). But the system retained a hook (Spotter.par) that allows it to be added easily just by bolting on a couple contracts. I don\u2019t know if the decision to not allow a negative DSR was an \u201coversight\u201d. I suspect it may well have been a conscious choice, but I have no historical context on that decision-making process and can only speculate. But since an enforceable negative DSR requires a mandatory DSR, it is certainly the case that it is much harder to bolt on a negative DSR than a TRFM (at a minimum, the DAI ERC-20 contract must be replaced, which likely ends up mandating an ES). I agree that having both DSR and TRFM is redundant, and say as much in my original post. But if the TRFM were added, the DSR could simply be set to zero\u2013inelegant, but not a functional issue. I\u2019ll emphasize again that I, personally, do not necessarily advocate adding the TRFM at this point. I think \u201cDAI == $1\u201d may be too firmly entrenched in the social contract and market expectations to make the change except under extreme circumstances. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.00165343915344
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/OliverNChalk",
+                    "index": "#27",
+                    "likes": "2",
+                    "time": "12/05/2020-04:25:29",
+                    "content": "Would be very interested in why negative DSR was not implemented but I understand that the answer might not be documented. I agree that $DAI === $1 is the current social contract and may be too entrenched. One way we could semi maintain the current social contract without needing a negative DSR would be:  TRFM used when $DAI price >= $1  DSR used when $DAI price < target_price && target_price == 1USD  TRFM used when $DAI price < target_price && target_price <= 1USD   This would mean $DAI would still be worth $1 in the long run if on average we have more supply of DAI than demand. Not sure if this is much of an improvement over the model of just wrapping $DAI and creating a synthetic negative DSR. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.909722222222222
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/wil",
+                    "index": "#28",
+                    "likes": "1",
+                    "time": "12/05/2020-04:45:13",
+                    "content": "I\u2019ve thought a lot about open market operations, and the article linked accelerated my thoughts on the matter. I won\u2019t go into detail here as I don\u2019t want to derail the TRFM discussion, so I\u2019ll make a separate topic about it soon with my thoughts and some examples. I will say that open market operations could be performed with transparency under our existing spell infrastructure and governance processes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#29",
+                    "likes": "1",
+                    "time": "26/06/2020-19:09:26",
+                    "content": "If anyone cares to know silk road creator Ross Ulbricht\u2019s thoughts on the matter:    Medium \u2013 26 Jun 20    Remaking the Maker Protocol by Ross Ulbricht Reading time: 12 min read           The Block    Silk Road founder Ross Ulbricht pens column on DeFi platform Maker and March... Ross Ulbricht, the Silk Road dark marketplace founder who is currently serving a double life sentence following a 2015 conviction, published an article on Friday about Maker, the Open Finance credit protocol.      ",
+                    "links": [
+                        "https://medium.com/@RossUlbricht/remaking-the-maker-protocol-4b29f879f11",
+                        "https://www.theblockcrypto.com/linked/69698/silk-road-founder-ross-ulbricht-pens-column-on-defi-platform-maker-and-march-debt-crisis",
+                        "https://www.theblockcrypto.com/linked/69698/silk-road-founder-ross-ulbricht-pens-column-on-defi-platform-maker-and-march-debt-crisis"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving entirely positive feedback on proposal"
+                    ],
+                    "Sentiment": 4.85
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#30",
+                    "likes": "5",
+                    "time": "26/06/2020-21:22:11",
+                    "content": "i like how he called it a \u201cmodest proposal\u201d and then went on to describe an entirely different system . Seems like he is advocating for abandoning the very fundamentals of the protocol with his \u201ccollateral rate.\u201d ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving negative feedback on proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/IslandHunting",
+                    "index": "#31",
+                    "likes": "2",
+                    "time": "11/07/2020-16:37:31",
+                    "content": "No one wants a non-USD dollar-pegged (sorta) stablecoin that isn\u2019t $1. It breaks all the PMF that Dai has. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Hasu",
+                    "index": "#32",
+                    "likes": "1",
+                    "time": "04/10/2020-01:21:03",
+                    "content": "To be fair, no one really advocates for that. TRFM would make the most sense in combination with a Chai-like wrapper. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#33",
+                    "likes": "0",
+                    "time": "04/10/2020-20:28:56",
+                    "content": "    Kurt_Barry:  Then, an extreme market event causes the MP to drop to $0.90. The TRFM activates and sets the target rate to 10%/year to incentivize supply contraction and demand to hold DAI. Suppose that after 8 months, the TP and MP are equal again   Just found this thread. What happened to this discussion? It looks like the TRFM is a very interesting tool to have in MakerDAO governance (maybe never to be used, but always good to have). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.53125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#34",
+                    "likes": "0",
+                    "time": "02/01/2021-20:29:00",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

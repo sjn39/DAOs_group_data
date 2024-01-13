@@ -1,0 +1,253 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/json-utc-version-4/1056",
+            "title": "JSON UTC Version 4 ",
+            "index": 1056,
+            "category": [
+                "Primordial Soup"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "14/08/2018-09:20:11",
+                    "content": "I am currently implementing mnemonic support in WallETH - The importing part was easy (and also solved my main pain point as I wanted to import from a Ether-Card at dAppcon and had to use a different wallet for it at this time) The problem arises when exporting. Currently I am using a key-store as used by geth. Basically a directory with JSON UTC files. Unfortunately you cannot export the mnemonic from a JSON-UTC file as the key is already derived and for exporting a mnemonic you would need the root entropy. So the idea would be to introduce a JSON UTC file format version 4 where instead of the address field that contains a string with the address - we introduce the option of an \u201caddresses\u201d field that contains a list of json objects that map derivation paths to addresses. Unfortunately it looks like JSON UTC was never really standardized (when I am wrong here - which would be great - please point me to the location where it was standardized)  - So I think the first step would be to properly standardize it (Question here: do versions 0\u20262 play a role somewhere still?) - and then add the new feature. What do you think? Feedback/Ideas very much appreciated! ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/notes-fom-the-wallet-workshop-at-web3-ux-unconference-in-berlin/1292",
+                        "https://ethereum-magicians.org/t/pop-up-session-about-key-management-11-30-13-00-in-the-lounge-area/1700"
+                    ],
+                    "GPT-summary": "The author is proposing a new JSON UTC file format version 4 that would allow exporting a mnemonic from a JSON-UTC file. The author is asking for feedback and ideas on the proposal and is also asking questions about the standardization of JSON UTC. A 3rd party could give constructive criticism of the proposal and ask questions about the proposal.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.1454545454545455
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "28/08/2018-12:14:13",
+                    "content": "Digging a bit deeper into this rabbit hole:  The address was part of version 1 but was deprecated afterwards (see: https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition#alterations-from-version-1) Unfortunately it is still present in most files - even worse some implementations fail to import when it is missing - e.g. Trust wallet:   20180828_132353.jpg1152\u00d72048 546 KB  Unfortunately for some cases the address is even needed. E.g. geth needs to know about the address before the user enters the password. The problem is in the end that this file format now fulfills 2 purposes:  key storage inside a node/wallet (e.g. geth or WallETH) key exchange format to pass on keys between different wallets  I think for case 1 it makes sense to have the address (or with the idea of v4 -multiple addresses) inside the file. For case 2 the address should not really be in there - and for sure not be mandatory. Really unsure where to go from there now. Would really like some input here from other members of the wallet ring. One direction I could imagine is to (properly) define a new format for the exchange of keys. We should also think about removing the uuid - was talking with fjl from the geth team about it - and it is really just baggage without a clear use-case. In geth it is just generated but never really used. In WallETH I am also not using it. If you have a real use-case for the uuid here please speak up! ",
+                    "links": [
+                        "https://ethereum-magicians.org/uploads/default/original/1X/13a26220309de52a52af723a92de2a9227afa932.jpg"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.923037190082645
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alejandro-isaza",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "28/08/2018-14:46:30",
+                    "content": "The address is useful to have so that you don\u2019t have to decode the private key to show the list of wallets. I agree that the best way forward would be to define a new format. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.4363636363636365
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/subtly",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "02/09/2018-14:41:54",
+                    "content": "@ligi The key file is the root entropy. Anything like bip32/bip44 is out of scope. The KDF is used to turn the user\u2019s password into a key for AES. A randomly generated seed is also used for the KDF to ensure the same password for two different keys doesn\u2019t produce the same encryption key. Notably, the ethereum clients weren\u2019t intended to double as software for key stores and transaction signing \u2013 it just ended up this way. As such, if you want to export a mnemonic, then export the output of decrypting the json-utc file. Storage and tracking of addresses should be handled by your application. Its not practical for bitcoin nor ethereum clients to store/encrypt more than that in the keystore because the chain itself is canonical for the nonce and not the file. If device A and B have the same key and device B submits a transaction, then without referencing the chain, device A will not be able to successfully create the next transaction. A perfect example of this can be seen with bitcoin: if you create a bitcoin address and create more than 20 transactions, you won\u2019t be able to see your balance when you restore from a mnemonic because bip44 clients only look ahead 20 transactions to see if you\u2019ve used it before. By BIP44\u2019s standards, BTC hodlers should never spend more than 20 outputs  In the case of etheruem, it\u2019d be really expensive to spend all of your funds to a new address every time you perform a transaction. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.809659090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "02/09/2018-15:03:22",
+                    "content": " As such, if you want to export a mnemonic, then export the output of decrypting the json-utc file.  Unfortunately this will not work as far as I see. Because if the mnemonic generated from this export will be imported in some other wallet than the user will not end up with the same address. This will be horrible UX.  If device A and B have the same key and device B submits a transaction, then without referencing the chain, device A will not be able to successfully create the next transaction.  You always need to reference the chain anyway. You also need to do this anyway to create the transaction with EIP-155. Don\u2019t really see your point here. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.96875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/subtly",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "04/09/2018-13:13:36",
+                    "content": "    ligi:  Unfortunately this will not work as far as I see. Because if the mnemonic generated from this export will be imported in some other wallet than the user will not end up with the same address. This will be horrible UX.   If they import the seed output from the mnemonic then the Ethereum client will get the same exact address. I don\u2019t understand. How does this happen (address being different)?   You always need to reference the chain anyway. You also need to do this anyway to create the transaction with EIP-155. Don\u2019t really see your point here.   Exactly my point. Apps have no way of determining the user\u2019s previous addresses and pertinent activities, no matter how entropy is stored. Additional information needs to be retained and managed by the user. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.549242424242425
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "04/09/2018-13:21:04",
+                    "content": "    subtly:  If they import the seed output from the mnemonic then the Ethereum client will get the same exact address. I don\u2019t understand. How does this happen (address being different)?   Because they do a BIP44 derivation \u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.895833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/subtly",
+                    "index": "8",
+                    "likes": "2",
+                    "time": "05/09/2018-14:02:29",
+                    "content": "    ligi:  Because they do a BIP44 derivation \u2026   So there\u2019s the problem. I don\u2019t think any of the main Ethereum clients use BIP44. To this day, I still don\u2019t understand why all the wallets look at Ethereum like it is Bitcoin (it is not; the only shared aspect is secp256k1). We decided not to use BIP44 and there a long list of reasons why. Foremost is that it adds a lot of complexity and injects a standard which is specific to Bitcoin. BIP44 is a layer on top of and strongly bound to secp256k1 and Bitcoin\u2019s UTXO model. And, at the time we developed \u201cJSON-UTC\u201d, BIP44 was optional for Bitcoin and not yet the default. That de facto makes BIP44 optional. BIP32/44 were at an early-stage when we were going through audits and the only non-standard parts of Bitcoin\u2019s cryptography that had gone through a thorough audit was secp256k1 (thanks to Pieter Wuille who also created BIP32). What information might be missing here, and with all wallets, is that BIP32 is very specific to Bitcoin and it has a lot of sharp edges which are counterintuitive. In the context of Ethereum, BIP32\u2019s functionality is redundant and perhaps misleading. BIP32 was NOT created for supporting multiple accounts \u2013 it is for creating multiple LINKED accounts for use with a UTXO model, specifically such that every transaction can be linked to every other transaction. This is juxtaposed to Ethereum\u2019s account and transaction model and poses a risk to privacy. Ethereum could use an HD KDF for accounts, but if we did that, its not clear what happens if future releases support curves other than secp256k1 (in such cases, BIP32s linkability wouldn\u2019t work, rendering it as useless vs. an ordinary HKDF). This wasn\u2019t postulation, as metropolis and serenity were already being considered (both of which hypothetically support non-secp256k1 curves via account abstraction). With BIP44, there\u2019s no reliable way to figure out the user\u2019s current address, which addresses they have balances on and which addresses they don\u2019t \u2013 it is literally a brute-force process. That\u2019s not fun at all. And since Ethereum has nonces and doesn\u2019t use UTXO, BIP32 is redundant and adds unnecessary complexity vs. a normal HKDF. So its simple to support both. When someone restores a mnemonic, you check both. Preferably, a wallet would not ask someone to extract their native Ethereum private key into a mnemonic. I also firmly believe there are safer ways of handling this. Needless to say, I wish I had more time and cycles to work on this. Just not there yet!  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.909722222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "05/09/2018-14:30:27",
+                    "content": "    subtly:  I don\u2019t think any of the main Ethereum clients use BIP44.   As far as I see all clients that support mnemonic use BIP44 - unfortunately it seems this already established as a standard - it just filled a void. Now we have to deal with the reality out there. So as far as I see Metamask is using it - TREZOR is using it - MyCrypto is using it - MEW is using it - Trust wallet is using it  - Ethercards is using it - basically everything I tried is using it. And going away from it means becoming incompatible. If you know a wallet that supports mnemonics and does not use BIP44 - please let me know!     subtly:  So its simple to support both. When someone restores a mnemonic, you check both.   How would I check both? Let\u2019s say there are no funds on either address - no transaction yet. But e.g. by the ethercard where the mnemonic is printed on also has the public key printed on it (which uses BIP44) - as a wallet I have no chance to know this \u2026 What we could do: define a Ethereum specific mnemonic standard that uses different words so wallets can detect what standard is being used. We might even have to change the amount of words as some implementations are not actually checking against the words in the list when importing AFAIK. This one then would not be based on BIP44. I would like and support that actually - but we still have to deal with the current reality - so I would still progress with the current plan. I do not see a blocker in your line of arguments - Sure it is not super nice - but we now have to deal with the reality out there \u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.238224637681159
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/subtly",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "06/09/2018-14:32:25",
+                    "content": "    ligi:  If you know a wallet that supports mnemonics and does not use BIP44 - please let me know!   cpp-ethereum, geth, parity, some custom custody systems and I\u2019m sure there are others. I, and a lot of other people use these clients for signing transactions because they\u2019ve been battle tested. I can also move around accounts from one to the other in complete confidence. I couldn\u2019t sleep at night if I had to use mnemonics to manage my accounts.   the public key printed on it (which uses BIP44) - as a wallet I have no chance to know this   If the user is recovering from a mnemonic, something wrong has happened. Objectively, there is no way to know which of the possible accounts they need to restore. As a recovery operation which requires the user to enter a plaintext secret, it\u2019s can be assumed that the account is compromised. So a solution would be for the wallet to offer to restore all the accounts and flag them as \u201crestored !\u201d with a noticeable warning. A sophisticated user will be able to handle the situation. Its important to point out here that, with non-BIP32 address you will always absolutely know the address. With BIP44 addresses, you have no way of knowing. Further, there are different varieties of BIP44 for Ethereum as not all wallets use the same BIP44 path and some may use different words!   I would like and support that actually - but we still have to deal with the current reality - so I would still progress with the current plan.   Sadly, this is how we got here. Everyone said the same thing and opted to use Bitcoin BIP32 because that was the current reality. The reality is compromising privacy and simplicity for convenience which is completely counter to the purpose of cryptography. Everyone changed from non-BIP32 to BIP32. Just as well, there is nothing blocking the path to building a better and more thought-out standard. I\u2019d really like to see through rebuilding new standards. Plus, we need to sort out how to handle things like encryption, digital signatures, M of N schemes and supporting other cryptography. Doing that will net more traction than wallet usability and will necessarily require deprecating the idea that bip32 is mandatory.   so I would still progress with the current plan   What is the current plan?  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.330442583732058
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "06/09/2018-19:48:41",
+                    "content": "    subtly:   If you know a wallet that supports mnemonics and does not use BIP44 - please let me know!  cpp-ethereum, geth, parity, some custom custody systems and I\u2019m sure there are others. I, and a lot of other people use these clients for signing transactions because they\u2019ve been battle tested. I can also move around accounts from one to the other in complete confidence. I couldn\u2019t sleep at night if I had to use mnemonics to manage my accounts.   geth for sure does not support mnemonics. I am also pretty sure cpp-ethereum does not support mnemonics. Not sure about parity though ( @5chdn can you help here?) Actual users out there use mnemonics - if you like it or not - we really have to deal with this \u2026     subtly:   the public key printed on it (which uses BIP44) - as a wallet I have no chance to know this  If the user is recovering from a mnemonic, something wrong has happened.   What would be the purpose of mnemonics then if not recovering an account from it. People actually use this to backup accounts.     subtly:  What is the current plan?    what I was writing in the initial post here ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.991228070175438
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "07/09/2018-05:10:34",
+                    "content": "Parity wallet UI supported mnemonics, but the Parity wallet UI has been deprecated (no longer officially supported by Parity). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "07/09/2018-05:14:55",
+                    "content": "I recommend everyone involved in the discussion about BIP44 read these threads:   github.com/ethereum/EIPs      Issue: Standardizing of HD wallet derivation paths (BIP32, BIP39, BIP44)  \t \topened by christianlundkvist \ton 2016-03-26 \t \t \t  References: BIP32 BIP39 BIP44 We are now seeing a few different Ethereum HD wallet implementations with different HD derivation paths. When we wrote Lightwallet I considered...   \tERC          github.com/ethereum/EIPs      Issue: Standardizing HD wallet paths for Ethereum Standard Tokens  \t \topened by christianlundkvist \ton 2016-04-01 \t \t \t  After discussions in #84 the community seems to have settled on using the BIP44 standard for Ether HD wallets. The HD...   \tERC        It is long, but if you want some quick summaries (by yours truly):   github.com/ethereum/EIPs      Issue: Standardizing of HD wallet derivation paths (BIP32, BIP39, BIP44)  \t \topened by christianlundkvist \ton 2016-03-26 \t \t \t  References: BIP32 BIP39 BIP44 We are now seeing a few different Ethereum HD wallet implementations with different HD derivation paths. When we wrote Lightwallet I considered...   \tERC          github.com/ethereum/EIPs      Issue: Standardizing of HD wallet derivation paths (BIP32, BIP39, BIP44)  \t \topened by christianlundkvist \ton 2016-03-26 \t \t \t  References: BIP32 BIP39 BIP44 We are now seeing a few different Ethereum HD wallet implementations with different HD derivation paths. When we wrote Lightwallet I considered...   \tERC          github.com/ethereum/EIPs      Issue: Standardizing HD wallet paths for Ethereum Standard Tokens  \t \topened by christianlundkvist \ton 2016-04-01 \t \t \t  After discussions in #84 the community seems to have settled on using the BIP44 standard for Ether HD wallets. The HD...   \tERC        ",
+                    "links": [
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/84",
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/84",
+                        "https://github.com/ethereum/EIPs/issues/85",
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/85",
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/85",
+                        "https://github.com/ethereum/EIPs/issues/84#issuecomment-292324521",
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/84#issuecomment-292324521",
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/84#issuecomment-292324521",
+                        "https://github.com/ethereum/EIPs/issues/84#issuecomment-292402851",
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/84#issuecomment-292402851",
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/84#issuecomment-292402851",
+                        "https://github.com/ethereum/EIPs/issues/85#issuecomment-406811458",
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/85#issuecomment-406811458",
+                        "https://github.com/christianlundkvist",
+                        "https://github.com/ethereum/EIPs/issues/85#issuecomment-406811458"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.894444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/brunobar79",
+                    "index": "14",
+                    "likes": "1",
+                    "time": "07/09/2018-06:00:40",
+                    "content": "I think this is somehow relevant to this conversation: https://github.com/MetaMask/eth-ledger-bridge-keyring/issues/7 Long story short: Per BIP 44 spec,  the derivation of accounts should stop at first account without transaction. AFAIK, That is a problem because there is no easy way in Ethereum to look at all transactions that are relevant to a given account cc: @danfinlay ",
+                    "links": [
+                        "https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.652777777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "07/09/2018-08:55:39",
+                    "content": "Thanks for the links @brunobar79 and @MicahZoltu  - will read deeply after ETHBerlin. But skimming them shallowly (and was aware of some already) reinforces my belief BIP44 plays a role in Ethereum and I am not fully on the wrong path here. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.616666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/5chdn",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "19/09/2018-18:47:37",
+                    "content": "Hi @ligi curl --data '{\"method\":\"parity_newAccountFromPhrase\",\"params\":[\"stylus outing overhand dime radial seducing harmless uselessly evasive tastiness eradicate imperfect\",\"hunter2\"],\"id\":1,\"jsonrpc\":\"2.0\"}' -H \"Content-Type: application/json\" -X POST localhost:8545     wiki.parity.io    Parity Documentation - The `parity_accounts` Module ## JSON-RPC methods  - [parity_allAccountsInfo](#parity_allaccountsinfo) - [parity_changePassword](#parity_changepassword) - [parity_deriveAddressH...      ",
+                    "links": [
+                        "https://wiki.parity.io/JSONRPC-parity_accounts-module#parity_newaccountfromphrase"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 1.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "19/09/2018-19:05:26",
+                    "content": "Thanks. When I look at this documentation correctly you can import but not export - on an API level this does not look so bad - but I really miss this in apps then. Also IMHO has some nasty UX traps. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "21/09/2018-16:43:26",
+                    "content": "    ligi:  JSON UTC   Btw, where does this name comes from? From the fact that the filename usually is an UTC timestamp + address? How about giving it a proper name?  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "24/09/2018-07:29:36",
+                    "content": "I am all for renaming or giving it a name in the first place  Currently leaning a bit towards completely discarding the old standard and creating a completely new one. The old \u201cstandard\u201d carries some baggage we really do not have to carry. For the new one we can even make some automatic check to see if a file complies to the standard so the past do not repeat \u2026 Any good ideas for names? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.488636363636363
+                }
+            ]
+        }
+    ],
+    "group_index": "76"
+}

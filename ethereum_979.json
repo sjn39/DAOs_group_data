@@ -1,0 +1,186 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-2456-time-based-upgrade-transitions/3902",
+            "title": "EIP-2456: Time Based Upgrade Transitions ",
+            "index": 3902,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "forks",
+                "eip-2456"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "06/01/2020-20:36:16",
+                    "content": "Here\u2019s an EIP to adjust how we designate network upgrade blocks.  https://github.com/ethereum/EIPs/pull/2456/files (original pr) https://github.com/shemnon/EIPs/pull/2/files   For Ropsten and Mainnet both of the last two network upgrades have been off by a large number of days in each direction.  This is because of either the unpredictable amount of hashing power being applied to the network or because of the interaction of the Difficulty Bomb, pushing all of them more than two days off of the intended date. The cliff notes version (read the draft for the real version) is that network upgrades would activate at the second \u201cround thousand\u201d of blocks after a specific time on the network, as reported in the blockheader.  Why the second round thousand?  In case the first round thousand is within an ommer re-org and to keep miners from playing too many games lying about the block time. Comments or concerns?  please voice them. ",
+                    "links": [
+                        "https://github.com/shemnon/EIPs/pull/2/files"
+                    ],
+                    "GPT-summary": "The author of the post is proposing an EIP to adjust how network upgrade blocks are designated due to the unpredictable amount of hashing power being applied to the network or the interaction of the Difficulty Bomb. The proposal suggests that network upgrades would activate at the second \"round thousand\" of blocks after a specific time on the network. The author is asking for comments or concerns about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Not a proposal"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.454506802721088
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanschneider",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "07/01/2020-23:24:19",
+                    "content": "Sounds reasonable to me.  With ~15 second block times 1999 blocks is about 8 hours, the actual fork should happen roughly 4-8 hours after the specified time, which seems like a reasonable maintenance window for teams to be on alert.  I guess a miner could try to trigger the fork up to two hours early by using a forward timestamp, so the window is really 2-8 hours. The only real downside I see is that the fork block isn\u2019t fully known ahead of time or explicitly enumerable w/ current JSONRPC methods, so it might be tricky for, say, a block explorer to correctly visualize blocks around the fork, though I can\u2019t think of a concrete example. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.431818181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lucassaldanha",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "08/01/2020-20:54:09",
+                    "content": "I like the proposal. Monitoring forks has become crucial and the ~8h windows time in which the upgrade can happen will definitely make our life easier. On the other hand, I agree with Ryan that not knowing the exact block number ahead of time is kinda of a bummer. However, unless this can introduce any known problems, I\u2019m ok with it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "10/01/2020-08:07:32",
+                    "content": "Also posted this on the PR, but reposting here.  An upgrade will activate at a Transition Eligible Block if all of the following are true:  The upgrade has not activated already. The timestamp of the block is on or after the TRANSITION_TIME. The previous Transition Eligible Block was on or after the TRANSITION_TIME.   If A is the previous TEB, and B is the current TEB, and the third bullet dictates that A is on or after TRANSITION_TIME, then there\u2019s no need for the second bullet, since B is already defined to be after A. (See EDIT below, the reasoning here is incorrect) A separate problem, and IMO probably bigger problem, is that ommer blocks have no restrictions on time. So it\u2019s fully possible to set an ommer block timestamp to one year in the future. Now, the parent of the ommer will be a canon block, so if we require the parent to be past the TRANSITION_TIME, a (malicious) miner can\u2019t include future-fork ommers at will. Not until after TRANSITION_TIME. After TRANSITION_TIME, let\u2019s say there\u2019s another ~week before the next TEB. In that period, miners could include forked ommers (meaning: ommer-blocks with future timestamps, which should be interpreted with the new rules) on every block. It\u2019s a bit unclear how that should be handled, and it may be depending on EIPs. For example, if we have a fork which redefines the PoW, then it means that when importing a block N (pre-fork), we might have to use post-fork rules to determine the header validity for the included ommer PoW. These variations never occur on number-based forks, because we always know that block N only includes ommers with lower numbers, so the ommer can never be subject to future rules. This EIP changes it, so that an ommer can be subject to future fork rules. EDIT: I misunderstood the proposal. My reasoning above is flawed, since only an ommer with a particular (block.number % TRANSITION_INCREMENT) == 0 can be a fork. That means a miner can\u2019t litter the chain with fork-enabled ommers. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.83399209486166
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "10/01/2020-16:51:31",
+                    "content": "One way to think of this is instead of developers picking a block number in an ACD call months in advance the protocol picks a block number 1000-1999 blocks in the future when the timestamp rolls over.  So the upgrade still transitions on a block number. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "21/01/2020-22:16:30",
+                    "content": "I\u2019m  on an implementation of time-based upgrades that requires looking up a bunch of historical headers to decide which VM version applies to a given header. (But I really like the goal of time-based upgrades) Block-number-forking is conceptually clear, and lends itself to an API we\u2019re happy with in Trinity: get_vm(header). It would be a shame to lose that, and be forced to get_vm(header, previous_headers=load_previous_headers(header)). Especially when there might still be other options. As far as I know, the two main concerns about direct timestamp forking are:  It opens new uncle validation edge cases Some risk that miners will have a new incentive to manipulate timestamp away from current \u201ctrue\u201d time  So before we commit to making the VM application rules a lot more complex, let\u2019s see if we can directly address these concerns, instead. For example, maybe adding a rule that \u201cuncles must have a timestamp older than the header that includes them\u201d would get us most of the way there. (So we don\u2019t have to deal with uncles on a future fork when the including header is on an old fork). Also, we probably need to formalize that we only validate uncle PoW, instead of validating all state transitions, and that the PoW validation happens according to the rules of the uncle header\u2019s VM. Also, my intuition is that the small-time timestamp gaming that might happen is not catastrophic. Any larger deviation would require a majority coalition of miners, as far as I can tell. I think the main concern is that miners might be incentivized to delay a fork (say, one that reduces block reward) and choose to increment the timestamp by 1 instead of to the current time. One counterweight is that the difficulty would go up, also reducing their rewards. Another is that miners have similar operational needs for the predictability of the fork. If some miners start using this \u201cstrategy\u201d, then the timestamp can by \u201ccaught up\u201d to the \u201ctrue\u201d time in a single block. So as long as a majority of miners chooses to maintain current timestamp, any effect of a series of short-timed blocks can be erased quickly/easily. Obviously, it\u2019s worth spending a little more time on this, and probably talk to some miners. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.475575560802834
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "28/01/2020-20:43:36",
+                    "content": "Timestamp manipulation might actually be a bigger concern than I originally thought. I also think it affects all the implementations we have discussed so far. Say that an upcoming fork cuts the block rewards in half. Miners have incentive to squeeze as many blocks as possible from the chain before the rewards are cut, even at the cost of doubling the difficulty. For simplicity, say that >50% of miners coordinate a strategy. One strategy is a \u201ctime-squeeze\u201d attack. Miners alternate between incrementing the timestamp by 1s and 18s (and avoid including uncles). This would keep the difficulty steady, and reduce the average timestamp delta to 9.5s, no matter how long they actually take to produce. The header timestamp would drift further and further behind the \u201ctrue\u201d time. (The miner coalition would censor any blocks that try to make the timestamp \u201ccatch up\u201d to the true time). Compared to an average block time of ~14 real seconds, over a period of say 6 months (when the fork is announced to when the block rewards drop), they can squeeze out an extra ~47% more blocks, and cause the timestamp to drift ~58 days behind the true time. Some problems from that are:  Unnecessary block rewards (sad, but least worrying) Fork time is unpredictable again (back to status quo, ugh) Contracts that require a \u201cnear-true\u201d timestamp would break (I don\u2019t have any examples, but it seems problematic)  One possible mitigation is to wait to announce the fork timestamp until a few weeks before the desired fork date. A late announcement gives less time for miners to apply the attack, so they can\u2019t delay it in total as far. We still lose predictability: we would see the timestamp lag by ~7 days over a three week period. A three week announce period is already pretty tight for the upgrade cycle of: timestamp announcement, build, release, and operator upgrades. Though hopefully the benefit of the attack is small enough that it\u2019s less likely to happen at all.  We would only have to consider this \u201clate announce\u201d mitigation on forks that reduce block reward. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.86492673992674
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "28/01/2020-21:18:33",
+                    "content": "One mitigation that is already in place is that major clients do not consider blocks valid if they are too far in the future.  IIRC too far is 15 seconds.  So long as the clients don\u2019t propagate these invalid blocks it would require the selfish cartel to meter out the blocks at an appropriate time. I am also skeptical that it would take anything less than 51% of the miners participating in the mine-ahead approach would make enough money to overcome the development cost of executing the attack.  Although I haven\u2019t run the numbers on this scenario.  This is presuming rational actors too, another potential flaw. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.793560606060606
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "28/01/2020-22:25:51",
+                    "content": "    shemnon:  One mitigation that is already in place is that major clients do not consider blocks valid if they are too far in the future.   The time squeeze attack causes the time to drift backward. I don\u2019t know of any constraint about the timestamp being too far in the past.     shemnon:  I am also skeptical that it would take anything less than 51% of the miners participating in the mine-ahead approach would make enough money to overcome the development cost of executing the attack.   I agree that it\u2019s much easier to see that the attack is possible at >50%. At <50%, any miner can \u201cfast-forward\u201d the block time to the current time. Without the coalition of >50% needed to censor that \u201cfast-forward\u201d block, hopefully fast-forwards happen often enough that the drift never gets too large.     shemnon:  This is presuming rational actors too, another potential flaw.   Sure, although the closer you get to the big revenue, the more effective rational behavior analysis seems to be. If you consider a situation where all block rewards are removed (like a switch to PoS), then it gets even stronger, and I think you might see a \u201csoft\u201d coalition of >50%, even if there\u2019s not direct collaboration. The altruism effect is probably not very strong when the mining rigs are of zero value on Ethereum after a fork. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.285863095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "04/02/2020-00:21:54",
+                    "content": "On the uncle question: future uncles happened rarely, at least in the first 1 million blocks of mainnet. ~0.035% of uncles have a timestamp higher than the timestamp of the including header. 28 uncles were ahead, out of 80,364 total. The furthest ahead uncle was 82 seconds ahead of the including block. Of note: the \u201cahead uncles\u201d are tightly clustered, with all of them happening in block numbers 140,000-220,000. The 10k blocks starting at 170000 have an \u201cahead uncle\u201d rate of ~2.1%. At some point, I\u2019d like to get data for the rest of the blocks, but it\u2019s not at my fingertips right now. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.191964285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "16/02/2020-00:36:48",
+                    "content": "One thing I\u2019ve been considering with my initial proposal is perhaps modifying the \u201clookback\u201d to see if the fork acivates.  Possibly reeling it in from 1000 blocks to 10. My principal motivation for such a large number was to keep a chain re-org from causing the fork to launch then  pull back.  However I think we could handle an abandoned activation. What a lookback of 10 would accomplish is it would keep ommers from containing conflicting activation blocks that may or may not activate.  Clients should be keeping at least 10 blocks in memory to deal with possible chain re-orgs.  (IIRC geth handles up to 300 before issues start developing). Keeping the activation at 1000 blocks reduces the search space that clients would need to examine if they are searching for the activation without any configuration hints.  The EIP would continue to be updated with the observed block for clients to work off of.  Once we get a finality gadget these observed blocks numbers would be as final as the gadget makes the chain. So at x%1000 = 0 we fork if the time of block x%1000=990 is past the activation time. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.813492063492063
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "12/03/2020-21:38:28",
+                    "content": "Just to tie off my previous comments: I\u2019m in favor of immediate timestamp-based forking. I don\u2019t think the time squeezing attack is likely to be effective without 51% collusion. Time spreading is already informally prevented, when clients reject blocks that are more than 15-seconds ahead of their wall clock. We can just formalize this across clients, and test for it in Hive. (traditional consensus testing doesn\u2019t help here) We ought to formalize some things about uncles:  Uncle bodies are not used for validation, only the header. We validate the PoW, difficulty update, etc, but not transactions. Uncles may belong to a fork ahead of the including block. Validation is based on the uncle\u2019s block time. The uncle rewards are based on the including block\u2019s rules.  Last, we need to limit how far an uncle can be ahead of its including block, by timestamp. Allowing an uncle to be as much as 300 seconds in the future should be plenty of flexibility, while still preventing any \u201cfork reassignment\u201d in the future.  Note that in this approach, client devs can\u2019t \u201crefactor\u201d the timestamp fork to a block number fork after activation. Activation needs to permanently be based on time. Refactoring to block number doesn\u2019t play nicely with the p2p fork IDs anyway, so no big loss. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.705128205128204
+                }
+            ]
+        }
+    ],
+    "group_index": "979"
+}

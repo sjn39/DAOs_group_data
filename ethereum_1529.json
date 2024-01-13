@@ -1,0 +1,134 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/ephemeral-networks-and-chain-ids/7674",
+            "title": "Ephemeral networks and chain ids ",
+            "index": 7674,
+            "category": [
+                "Primordial Soup"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fvictorio",
+                    "index": "1",
+                    "likes": "9",
+                    "time": "03/12/2021-14:20:56",
+                    "content": "Ephemeral networks (Hardhat Network, Ganache, geth --dev`) are used as temporary networks during development. This makes them different from the mainnet and testnets, since you can\u2019t assume that they will continue to exist indefinitely. Because of this, some common problems arise:  MetaMask caches some data for each connected network, like the latest block number or the nonce of each account. When a network is ephemeral and a new, empty instance is started, the information that MetaMask uses becomes invalid. This causes some very annoying issues (see invalid block tag, invalid nonce 1, invalid nonce 2, invalid nonce 3). Deployment systems might use the chain id to know which previous deployments were done in each chain. Again, if you are using an ephemeral one, this is problematic. For example, if you deploy something, reset the network, and deploy it again, the second time it won\u2019t be deployed because the system thinks it already did.   Possible solution 1: random/incremental chain id One approach to solving this problem is to use a random or incremental chain id, which would guarantee (or at least increase the chances) that two instances of the same ephemeral network have a different identifier. A downside of this approach is that there\u2019s a small but annoying possibility of using an id that corresponds to an existing chain. The probability of this happening could be reduced if we\u2019d agree on a \u201creserved range\u201d of chain ids for ephemeral networks (say, from 10.000 to 99.999). Another problem is that this is somewhat backward-incompatible. For example, Hardhat Network\u2019s default chain id is 31337 and Ganache\u2019s is 1337. Changing those to a random/increasing one could break something. This doesn\u2019t seem like an insurmountable problem though. Another example of this approach being problematic is that, when you add a new network to MetaMask, you need to specify a (fixed) chain id. So this is not compatible with the idea of a variable chain id but, again, it\u2019s not something that couldn\u2019t be fixed.  Possible solution 2: a new identifier A second possible approach is to add a new RPC method, for example eth_chainInstanceId (the name is debatable) which returns a value corresponding to the network\u2019s instance. If you then kill your node and start a new one, you\u2019ll get the same id but a different chain instance id. Non-ephemeral networks could implement this by simply returning the same value returned by eth_chainId. This solution has some advantages compared to the previous one:  It\u2019s more backward compatible, for the reasons mentioned before. It doesn\u2019t rely on an unenforceable reserved range. Even if not all nodes implement it, tools can use it and, if the RPC method doesn\u2019t exist, they can just assume that the chain is not ephemeral.   I personally think that the second solution is better. The first one feels hackish and it\u2019s the kind of backward-incompatibility that is very subtle (instead of things just crashing, which at least is obvious). ",
+                    "links": [
+                        "https://www.trufflesuite.com/ganache",
+                        "https://geth.ethereum.org/docs/getting-started/dev-mode",
+                        "https://ethereum.stackexchange.com/questions/109625/received-invalid-block-tag-87-latest-block-number-is-0/112214#112214",
+                        "https://github.com/MetaMask/metamask-extension/issues/3479",
+                        "https://ethereum.stackexchange.com/questions/44311/reset-metamask-nonce",
+                        "https://ethereum.stackexchange.com/questions/30921/tx-doesnt-have-the-correct-nonce-metamask",
+                        "https://ethereum-magicians.org/t/testnet-workgroup-paths-out-of-the-goerli-supply-mess/11453/4"
+                    ],
+                    "GPT-summary": "The author discusses the issues that arise when using ephemeral networks during development and proposes two possible solutions. The first solution is to use a random or incremental chain id, while the second solution is to add a new RPC method. The author prefers the second solution, as it is more backward compatible and less hackish. The post explains the advantages and disadvantages of each solution and invites feedback and questions from readers.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.85725677830941
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "2",
+                    "likes": "4",
+                    "time": "03/12/2021-15:10:42",
+                    "content": "I agree with the sentiment as a developer and wallet like metamask could easily improve. I created an issue for metamask here : Whenever I restart a local network like hardhat-network metamask do not detect changes and keep caching old nonces \u00b7 Issue #12211 \u00b7 MetaMask/metamask-extension \u00b7 GitHub And in it I actually mention a solution that is similar to 2) but do not require any new rpc method: the genesis hash can act as network identifier already ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.558080808080808
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fvictorio",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "03/12/2021-15:15:46",
+                    "content": "    wighawag:  the genesis hash can act as network identifier already   The hash of the genesis block? That\u2019s a really interesting idea. Right now Hardhat has the same hash for different instances of the network, but I think we could randomize some field (like the nonce) so that the hash is different each time. EDIT: I was getting the same hash because I was using a project that has a fixed initial date. With the default config, the hash will be different indeed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.492063492063492
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/martriay",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "06/12/2021-04:24:15",
+                    "content": "    fvictorio:  EDIT: I was getting the same hash because I was using a project that has a fixed initial date. With the default config, the hash will be different indeed.   I think the random nonce should go, you\u2019ve just found a scenario where the genesis hash by itself doesn\u2019t work. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.6000000000000005
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fvictorio",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "06/12/2021-19:23:44",
+                    "content": "    martriay:  I think the random nonce should go, you\u2019ve just found a scenario where the genesis hash by itself doesn\u2019t work.   Yes, but I think using the hash of the genesis block won\u2019t be enough: if you run two different instances of a Hardhat network with mainnet forking, the hash will be the same. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/martriay",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "06/12/2021-19:39:04",
+                    "content": "right, hence adding the random nonce into the mix should work, no? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.4642857142857135
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fvictorio",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "08/12/2021-18:53:20",
+                    "content": "No, because that would mean modifying the genesis block of the forked network, and we don\u2019t want to do that (it would be weird to modify data of the forked chain). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 2.96875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sbacha",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "06/02/2022-15:19:29",
+                    "content": "    fvictorio:  A second possible approach is to add a new RPC method, for example eth_chainInstanceId (the name is debatable) which returns a value corresponding to the network\u2019s instance. If you then kill your node and start a new one, you\u2019ll get the same id but a different chain instance id. Non-ephemeral networks could implement this by simply returning the same value returned by eth_chainId.   I really like this eth_chainInstanceId - we made custom ethers provider specific for metamask that changes its behavior (different approach and use case, but similar annoyance with metamask) https://github.com/manifoldfinance/ablative-provider ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.196969696969696
+                }
+            ]
+        }
+    ],
+    "group_index": "1529"
+}

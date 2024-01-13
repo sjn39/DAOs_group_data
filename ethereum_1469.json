@@ -1,0 +1,147 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/add-freeze-opcode/7231",
+            "title": "Add FREEZE opcode ",
+            "index": 7231,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "opcodes"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "08/10/2021-20:35:31",
+                    "content": "I would like to propose to add an opcode to freeze the storage of the current contract in the current call stack. This would be useful to ensure that no state changes can occur after a certain opcode. This could potentially even be validated with static analysis which would be helpful for EIP-3074: AUTH and AUTHCALL opcodes and ERC 4337: Account Abstraction via Entry Point Contract specification - #10 by vbuterin especially in combination with EIP-2937: SET_INDESTRUCTIBLE opcode - #12 by nikolai. The mentioned EIPs limit the use of delegate calls as they can introduce unexpected state changes. By freezing the contract storage it would be possible to eliminate this uncertainty. The scope of the freeze should only be the contract that is calling the opcode. Is anyone else interested in such an opcode or does anyone see anything that would speak against such an opcode? ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc-4337-account-abstraction-via-entry-point-contract-specification/7160/10",
+                        "https://ethereum-magicians.org/t/eip-2937-set-indestructible-opcode/4571/12"
+                    ],
+                    "GPT-summary": "The author proposes adding a new opcode to freeze the storage of the current contract in the current call stack. This would be useful to ensure that no state changes can occur after a certain opcode. The author asks for feedback and if anyone is interested in such an opcode.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Change to proposal pipeline",
+                        "Token economics",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author is advertising proposal"
+                    ],
+                    "Sentiment": 5.5247252747252755
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "08/10/2021-21:36:29",
+                    "content": "Other use cases could be wallet contracts, such as DSProxy, InstaDapp or the Gnosis Safe, which make use of delegatecalls to allow complex interactions with other cobtracts. These interactions normally don\u2019t require state changes on the contracts that performs the delegatecall. Preventing state changes would make these contracts significantly more secure. It could also be useful for reentrancy guards. The commonly used approach that makes use of storage can currently not securely be used in conjunction with delegatecalls. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.363636363636363
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poma",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "10/10/2021-13:57:22",
+                    "content": "If the only usecase is for delegatecall, maybe we should instead do something like StaticDelegateCall opcode (similar to CALL/STATICCALL logic). Note that this currently can be emulated (kind of) by doing a staticcall to a special contract method that does the delegatecall ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.957142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "11/10/2021-07:40:39",
+                    "content": " do something like StaticDelegateCall opcode  This is fundamentally different to the FREEZE logic as it would prevent all stage changes, not only for the calling contract. Having a separate opcode to freeze storage of a specific contract is more flexible and the use with delegatecall is just the most obvious one. I outline this use case before in a different post Add opcode to access storage trie root hash for account ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.7142857142857135
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poma",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "11/10/2021-13:33:15",
+                    "content": "    rmeissner:  only for the calling contract.   In that case this opcode is dangerous, as it might introduce a false sense of safety. If any other contact trusts the current one, bad things can happen. For example if current contract owns some ERC20 tokens, a delegatecall will be able to transfer them even with FREEZE active. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.189814814814815
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "11/10/2021-16:10:45",
+                    "content": " a delegatecall will be able to transfer them even with FREEZE active.  I see your point, but this would be possible even with a call (unless you fully freeze all state). I think what I am rather looking for is a delegate call without the state access, something like an impersonate call. But I would think that this is even more dangerous. In general these options should allow you to scope the risk. I don\u2019t think any user would actually look for the opcode inside a contract. Currently delegatecalls are a all or nothing feature. If they could be better tweeked they could be more securely used in different contexts, which should allow to also minimize the code stored on-chain. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.715277777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nikolai",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "12/10/2021-10:57:33",
+                    "content": "Relevant: Reentry is impossible to prevent when delegate calling \u00b7 Issue #3 \u00b7 nmushegian/wand \u00b7 GitHub Throwing my support behind this, between this an SET_INDESTRUCTIBLE we can really level up the EVM. Hard to justify not having this given that we already have STATICCALL ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.241666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "28/10/2021-14:19:53",
+                    "content": "I will be working on a reference implementation for this, to collect more data and get more people onboard. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "30/10/2021-23:10:00",
+                    "content": "There are different attributes for \u201cfreeze\u201d, each used in different cases:  recurse current contract, next-to-call contract (depth=1), any depth block storage change block balance change logs selfdestruct  So my proposal is make FREEZE have \u201cattributes\u201d parameter, which define what will be frozen.  The current STATICCALL is thus a special case of freeze(depth=1, storage, balance,logs) followed by \u201ccall\u201d The proposed \u201cSET_INDESTRUCTIBLE\u201d is thus freeze(selfdestruct, depth=0)  All \u201cundefined\u201d  bits are required to be zero, so that future  EIP can define more attributes to freeze. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.612244897959183
+                }
+            ]
+        }
+    ],
+    "group_index": "1469"
+}

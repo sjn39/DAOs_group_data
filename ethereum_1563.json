@@ -1,0 +1,570 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4671-non-tradable-token/7976",
+            "title": "EIP-4671: Non-tradable Token ",
+            "index": 7976,
+            "category": [
+                "Tokens"
+            ],
+            "tags": [
+                "erc",
+                "ntt"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "1",
+                    "likes": "6",
+                    "time": "13/01/2022-11:04:52",
+                    "content": "Discussion thread for: EIP-4671: Non-tradable Token by OmarAflak \u00b7 Pull Request #4671 \u00b7 ethereum/EIPs \u00b7 GitHub  Abstract NTTs represent inherently personal possessions (material or immaterial), such as university diplomas, online training certificates, government issued documents (national id, driving licence, visa, wedding, etc.), badges, labels, and so on. As the name implies, NTTs are not made to be traded or sold. They don\u2019t have monetary value. They only serve as a proof of possession.  Motivation US, 2017, MIT published 111 diplomas on a blockchain. France, 2018, Carrefour multinational retail corporation used blockchain technology to certify the provenance of its chickens. South Korea, 2019, the state published 1 million driving licences on a blockchain-powered platform. Each of them made their own smart contracts, with different implementations. We think diplomas, food labels, or driving licences are just a subset of a more general type of tokens: non-tradable tokens. Tokens that represent certificates or labels that were granted to you by some authority. By providing a common interface for this type of tokens, we allow more applications to be developed and we position blockchain technology as a standard gateway for verification of personal possessions.  Specification A single NTT contract, is seen as representing one type of badge by one authority. For instance, one NTT contract for MIT diplomas, one NTT contract for the state driving licences, and so on\u2026  An address might possess multiple tokens, which are indexed. An authority who delivers a certificate should be in position to invalidate it. Think of driving licences or weddings. However, it cannot delete your token. The issuer of a token might be someone else than the contract creator.  // SPDX-License-Identifier: MIT pragma solidity ^0.8.0;  import \"@openzeppelin/contracts/utils/introspection/IERC165.sol\";  interface INTT is IERC165 {     /// @notice Count all tokens assigned to an owner     /// @param owner Address for whom to query the balance     /// @return Number of tokens owned by `owner`     function balanceOf(address owner) external view returns (uint256);      /// @notice Check if a token hasn't been invalidated     /// @param owner Address for whom to check the token validity     /// @param index Index of the token     /// @return True if the token is valid, False otherwise     function isValid(address owner, uint256 index) external view returns (bool);      /// @notice Get the issuer of a token     /// @param owner Address for whom to check the token issuer     /// @param owner Index of the token     /// @return Address of the issuer     function issuerOf(address owner, uint256 index) external view returns (address); }   Extensions  Metadata An interface allowing to add metadata linked to each token, as in ERC721. // SPDX-License-Identifier: MIT pragma solidity ^0.8.0;  interface INTTMetadata {     /// @return Descriptive name of the tokens in this contract     function name() external view returns (string memory);      /// @return An abbreviated name of the tokens in this contract     function symbol() external view returns (string memory);      /// @notice URI to query to get the token's metadata     /// @param owner Address of the token's owner     /// @param index Index of the token     /// @return URI for the token     function tokenURI(address owner, uint256 index) external view returns (string memory); }   Delegation An interface to standardize delegation rights of token minting. // SPDX-License-Identifier: MIT pragma solidity ^0.8.0;  interface INTTDelegate {     /// @notice Grant one-time minting right to `operator` for `owner`     /// An allowed operator can call the function to transfer rights.     /// @param operator Address allowed to mint a token     /// @param owner Address for whom `operator` is allowed to mint a token     function delegate(address operator, address owner) external;      /// @notice Grant one-time minting right to a list of `operators` for a corresponding list of `owners`     /// An allowed operator can call the function to transfer rights.     /// @param operators Addresses allowed to mint     /// @param owners Addresses for whom `operators` are allowed to mint a token     function delegateBatch(address[] memory operators, address[] memory owners) external;      /// @notice Mint a token. Caller must have the right to mint for the owner.     /// @param owner Address for whom the token is minted     function mint(address owner) external;      /// @notice Mint tokens to multiple addresses. Caller must have the right to mint for all owners.     /// @param owners Addresses for whom the tokens are minted     function mintBatch(address[] memory owners) external; }   Implementation The implementation is a bit long. You\u2019ll find it in the PR.  NTT for EIP ? As a first NTT, why not create the EIP Creator Badge ? An NTT created by the Ethereum foundation, and attributed to EIP-standard creators ?  // SPDX-License-Identifier: MIT pragma solidity ^0.8.0;  import \"./NTT.sol\";  contract EIPCreatorBadge is NTT {     constructor() NTT(\"EIP Creator Badge\", \"EIP\") {}      function giveThatManABadge(address owner) external {         require(_isCreator(), \"You must be the contract creator\");         _mint(owner);     }      function _baseURI() internal pure override returns (string memory) {         return \"https://eips.ethereum.org/ntt/\";     } }   Any thoughts or comments are greatly appreciated! ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/welcome-please-readme-first/8/11",
+                        "https://ethereum-magicians.org/t/ens-bounded-non-transferable-nfts/9217"
+                    ],
+                    "GPT-summary": "The post introduces the concept of Non-Tradable Tokens (NTTs) and proposes a common interface for this type of tokens to allow for more applications to be developed and to position blockchain technology as a standard gateway for verification of personal possessions. The post also includes the specification and extensions of NTTs, as well as an implementation example. The author welcomes thoughts and comments on the proposal.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.440789473684211
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maxareo",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "15/01/2022-02:03:38",
+                    "content": "In one sentence, an NTT is an NFT that can only be minted but not transferred, correct? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/a2468834",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "15/01/2022-06:57:07",
+                    "content": " As a first NTT, why not create the EIP Creator Badge ? An NTT created by the Ethereum foundation, and attributed to EIP-standard creators ?  Curious about what does this sentence mean? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.729166666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/paxthemax",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "15/01/2022-08:19:08",
+                    "content": "This is an interesting proposal, i think there are a lot of cases where tokens are informal and effectively non-transferable. I assume that there is no need for a kind of mandated transfer in cases when a recipient address is compromised (private key inaccessible, stolen or lost)? Tokens have to be invalidated and re-issued? I assume implementations might want to combine this into one call to save on gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.7
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "5",
+                    "likes": "2",
+                    "time": "15/01/2022-08:49:49",
+                    "content": "In terms of what you can do with them technically, yes. But the purpose is different. I really like the fact that there\u2019s no speculation involved for once. NTTs, at their core, are just a proof of possession. But that hits so many use cases! You can imagine NTTs for all sorts of achievements (a bit like the playstation online). You can imagine a particular implementation where the tokens can be minted only if there is a consensus of a predefined set of addresses => that could be for scholarships for instance, or something less serious . ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.307291666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "15/01/2022-08:56:45",
+                    "content": "You can imagine that the Ethereum foundation would give a badge to all the people who contributed to create one of their standards. They would send them over mail, you would receive one, clip it on your jacket, and brag about it because only Ethereum contributors have that badge  Since NTTs can be badges (or anything non-tradable that was given to you personally), you can make a NTT for that. If the Ethereum foundation deploys the contract I showed at the end of the post, they can do so. They\u2019ll be able to give a badge by calling giveThatManABadge() (or giveThatGirlABadge() of course, there was a meme intended ). The address of their contract would be well-known and anyone can verify that you personally had a badge delivered by the foundation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "7",
+                    "likes": "2",
+                    "time": "15/01/2022-09:26:13",
+                    "content": "So, actually it would be nice to be able to transfer your token to another of your wallets, however it\u2019s a bit hard to achieve since the whole point is to have non-transferable tokens ^^ Maybe if you can prove you own the other address by signing messages on something\u2026 But then, I try to make the bridge with real world applications and it doesn\u2019t necessarily make sense. When an authority delivers a certificate (say a diploma or driving licence) you can imagine that they wouldn\u2019t want you to be able to change your name, or your address on the official paper. That\u2019s one of the reasons there are isValid()and invalidate() methods. In case: 1- Your certificate expires 2- The authority wants to take it back because of something you did Implementations could vary a lot I guess. But the standard has minimal required methods to work (at least I tried to make it that way). I might add a total() method to get the total number of issued tokens. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.583333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maxareo",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "15/01/2022-15:34:09",
+                    "content": "I suppose ERC721 can achieve the same effect by locking transfer and transferFrom functions. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/numtel",
+                    "index": "9",
+                    "likes": "2",
+                    "time": "15/01/2022-21:36:50",
+                    "content": "How is this different than EIP-1238? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "18/01/2022-20:07:30",
+                    "content": "@maxareo Yes indeed it could if you modify a bit (NTT has an issuer for instance). But I don\u2019t know if it makes sense to implement ERC721 and override transfer methods to do nothing\u2026 Seems weird. @numtel Thank you for pointing that to me! never saw that since I was searching for existing standards on https://eips.ethereum.org It\u2019s basically the same idea but it seems the author never made a proper implementation / PR. I wonder why. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 3.958333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "11",
+                    "likes": "3",
+                    "time": "20/01/2022-18:32:52",
+                    "content": "Vitalik just discussed Non-tradable tokens on the Cobie twitch stream. Talked about getting a certificate for climbing Mt. Everest.   ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "20/01/2022-19:20:29",
+                    "content": "Haha exactly !! Thanks for posting this. Too bad I missed it, I hope the stream is recorded! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.208333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tserg",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "21/01/2022-07:51:43",
+                    "content": "I tried implementing the same in Vyper, if anyone is interested: vyper-contracts/contracts/EIP4671 at main \u00b7 tserg/vyper-contracts \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.694444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "23/01/2022-09:41:29",
+                    "content": "Nice! Good initiative  Let\u2019s hope a discussion starts at some point in the PR! Any of you guys know how much time it usually takes for them to review a proposal ? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.96875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/calvbore",
+                    "index": "15",
+                    "likes": "2",
+                    "time": "24/01/2022-19:33:26",
+                    "content": "I like the idea of transfer function where the NTT must be pulled by the recipient. The recipient would have to provide a signed message from the current owner, the contract verifies the message and transfers the token to the recipient. Maybe an interface to standardize this called INTTConsignable? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "26/01/2022-08:37:01",
+                    "content": "That\u2019s an interesting idea! Thank you! I\u2019m just afraid people would consider this as \u201ctransferable\u201d, because you can always sign a message for someone else. But I mean, that would almost be the same as giving your keys away, just one time. So I think it\u2019s a good idea! I\u2019ll see think about how to standardise it! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.86875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "26/01/2022-08:40:45",
+                    "content": "@tserg I\u2019ve linked your implementation in the EIP  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xzhang",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "27/01/2022-07:28:32",
+                    "content": "Like this idea. It is definitely useful for many use cases. As the main function of the token is to represent a transfer of trust \u2014 by minting and giving it to someone else \u2014 have you considered the name \u201cCredential Token\u201d? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.611111111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "30/01/2022-17:37:20",
+                    "content": "I\u2019ve updated the standard. Here\u2019s how it is now: // SPDX-License-Identifier: MIT  pragma solidity ^0.8.0;  import \"@openzeppelin/contracts/utils/introspection/IERC165.sol\";  interface INTT is IERC165 {     /// Event emitted when a token `tokenId` is minted for `owner`     event Minted(address owner, uint256 tokenId);      /// Event emitted when token `tokenId` of `owner` is invalidated     event Invalidated(address owner, uint256 tokenId);      /// @notice Count all tokens assigned to an owner     /// @param owner Address for whom to query the balance     /// @return Number of tokens owned by `owner`     function balanceOf(address owner) external view returns (uint256);      /// @notice Get owner of a token     /// @param tokenId Identifier of the token     /// @return Address of the owner of `tokenId`     function ownerOf(uint256 tokenId) external view returns (address);      /// @notice Check if a token hasn't been invalidated     /// @param tokenId Identifier of the token     /// @return True if the token is valid, false otherwise     function isValid(uint256 tokenId) external view returns (bool);      /// @notice Check if an address owns a valid token in the contract     /// @param owner Address for whom to check the ownership     /// @return True if `owner` has a valid token, false otherwise     function hasValid(address owner) external view returns (bool); }   Extensions  Metadata An interface allowing to add metadata linked to each token, as in ERC721. // SPDX-License-Identifier: MIT  pragma solidity ^0.8.0;  import \"./INTT.sol\";  interface INTTMetadata is INTT {     /// @return Descriptive name of the tokens in this contract     function name() external view returns (string memory);      /// @return An abbreviated name of the tokens in this contract     function symbol() external view returns (string memory);      /// @notice URI to query to get the token's metadata     /// @param tokenId Identifier of the token     /// @return URI for the token     function tokenURI(uint256 tokenId) external view returns (string memory); }   Enumerable An interface allowing to enumerate the tokens of an owner, as in ERC721. // SPDX-License-Identifier: MIT  pragma solidity ^0.8.0;  import \"./INTT.sol\";  interface INTTEnumerable is INTT {     /// @return Total number of tokens emitted by the contract     function total() external view returns (uint256);      /// @notice Get the tokenId of a token using its position in the owner's list     /// @param owner Address for whom to get the token     /// @param index Index of the token     /// @return tokenId of the token     function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256); }   Delegation An interface allowing delegation rights of token minting. // SPDX-License-Identifier: MIT  pragma solidity ^0.8.0;  import \"./INTT.sol\";  interface INTTDelegate is INTT {     /// @notice Grant one-time minting right to `operator` for `owner`     /// An allowed operator can call the function to transfer rights.     /// @param operator Address allowed to mint a token     /// @param owner Address for whom `operator` is allowed to mint a token     function delegate(address operator, address owner) external;      /// @notice Grant one-time minting right to a list of `operators` for a corresponding list of `owners`     /// An allowed operator can call the function to transfer rights.     /// @param operators Addresses allowed to mint     /// @param owners Addresses for whom `operators` are allowed to mint a token     function delegateBatch(address[] memory operators, address[] memory owners) external;      /// @notice Mint a token. Caller must have the right to mint for the owner.     /// @param owner Address for whom the token is minted     function mint(address owner) external;      /// @notice Mint tokens to multiple addresses. Caller must have the right to mint for all owners.     /// @param owners Addresses for whom the tokens are minted     function mintBatch(address[] memory owners) external;      /// @notice Get the issuer of a token     /// @param tokenId Identifier of the token     /// @return Address who minted `tokenId`     function issuerOf(uint256 tokenId) external view returns (address); }   Consensus An interface allowing minting/invalidation of tokens based on a consensus of a predefined set of addresses. // SPDX-License-Identifier: MIT  pragma solidity ^0.8.0;  import \"./INTT.sol\";  interface INTTConsensus is INTT {     /// @notice Get voters addresses for this consensus contract     /// @return Addresses of the voters     function voters() external view returns (address[] memory);      /// @notice Cast a vote to mint a token for a specific address     /// @param owner Address for whom to mint the token     function approveMint(address owner) external;      /// @notice Cast a vote to invalidate a specific token     /// @param tokenId Identifier of the token to invalidate     function approveInvalidate(uint256 tokenId) external; }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.168202764976958
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "20",
+                    "likes": "4",
+                    "time": "31/01/2022-18:39:42",
+                    "content": "Vitalik himself wrote a post a few days ago talking about \u201csoulbound NFTs\u201d. Essentially NFTs that you cannot trade and that are assigned to you personally. He mentions POAP and Proof Of Humanity, which are great, but these are specific implementations of a more general concept that is Non-Tradable Tokens! I feel really confident about the fact that we need a standard for this now    vitalik.ca    Soulbound      ",
+                    "links": [
+                        "https://vitalik.ca/general/2022/01/26/soulbound.html"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.923611111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "21",
+                    "likes": "1",
+                    "time": "01/02/2022-12:16:19",
+                    "content": "I do think NTTs are a major necessity. The list of applications is endless. A new one: mint a specific NTT to all the Genesis accounts. Any account holding the token can now be identified as genesis by smart contracts. Or mint a warning token to known hacker/scammer accounts. Does the spec include a \u201cmintTo\u201d type function? Also, could my idea of \u201cNFT Entanglement\u201d be woven into this EIP? (NTT whose ownership is atomically linked to some other transferrable token.)     Idea: NFT entanglement EIPs       When you buy a car, you don\u2019t buy the hood, and then the steering wheel and then the rear axle\u2026 you buy it all together as one piece.  In Ethereum NFT land, there\u2019s no option to bundle things together permanently. NFTs that should go together have to be transferred 1-by-1, which is messy, expensive and limiting.  This idea is to create \u201cNFT Entanglement\u201d where a new NFT can be minted but instead of having normal transfer mechanisms, it is immediately and permanently wedded to some existing NFT, \u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.874756493506494
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sak",
+                    "index": "22",
+                    "likes": "1",
+                    "time": "01/02/2022-16:03:48",
+                    "content": "what about a hash function? (or a more broader getAttr(attribute_name) interface INTTMetadata is INTT { ...     /// @return the hash of the NTT     function hash() external view returns (string memory);  ...}  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "01/02/2022-17:57:40",
+                    "content": "That\u2019s a very interesting idea. So, about the hash, I think that would be great, but the tokenURI could really be pointing to anything, including a normal webpage (not necessarily a JSON file, or image, etc.) and so the hash won\u2019t always make sense. Any thoughts on this ? Regarding getAttr(attribute_name) , that\u2019s interesting I never thought of that. I initially wanted to make a function store() returns (address) that returns the address of another contract that contains metadata in structs. But since solidity doesn\u2019t support generics or inheritance for structs, I could not make a standard interface for the store. I would have loved something like: interface IMetadataStore {     function getData(address contract, uint256 tokenId) returns (Data);     function setData(address contract, uint256 tokenId, Data data); }  But I can\u2019t make a struct that inherit from Data to make this work for everything. So your solution with getAttr(attribute_name) could do the work (although it\u2019s not really cool that the method can fail to retrieve data, if the key doesn\u2019t exist for instance). What would be the return type ? String ? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.96875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "01/02/2022-18:06:12",
+                    "content": "    cyrus:  Or mint a warning token to known hacker/scammer accounts. Does the spec include a \u201cmintTo\u201d type function?   Haha I really like that application !  The standard itself doesn\u2019t really need to describe how to \u201cmint\u201d a token. You can take a look at ERC20, ERC721 for reference. But implementations of the standard will contain that function. Ideally people don\u2019t implement directly the standard but extend from an existing implementation (like the ones of OpenZeppelin). I made an implementation myself: Non-Tradable-Token/contracts at master \u00b7 OmarAflak/Non-Tradable-Token \u00b7 GitHub You can check the EIPCreatorBadge to see what you would actually need to do to create a NTT: Non-Tradable-Token/EIPCreatorBadge.sol at master \u00b7 OmarAflak/Non-Tradable-Token \u00b7 GitHub I\u2019ll read your EIP idea and get back to you, I wanted to answer the first part of your message first  ",
+                    "links": [
+                        "https://github.com/OmarAflak/Non-Tradable-Token/blob/master/contracts/EIPCreatorBadge.sol"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.895833333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sak",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "01/02/2022-18:21:35",
+                    "content": "I think returning a string should cover the majority of use cases. Of course, there also should be setAttr(string attr_name, string attr_value) and maybe getAttrs() (if there are no attributes/metadata it return a empty array) \u2013 In case someone need to store the hash of the NTT, he can use this funcionality\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "02/02/2022-17:55:26",
+                    "content": "Another use case: Identifying and marking synthetic EOAs Synthetic EOAs are EOAs whose public address has been derived by computing a single TX and without the private key via the method described here (see proffered solution 1). statechannels.discourse.group/t/reliable-and-safe-generation-of-synthetic-signatures/165` And it is also possible, if you know the address, digest and value of \u201cc\u201d, for a smart contract to know if an EOA is synthetic (i.e. if it was created with the above method). statechannels.discourse.group/t/reliable-and-safe-generation-of-synthetic-signatures/165/4 Without EIP-4671, you\u2019d need to run this computation each time you needed to check if the EOA is synthetic. This is relatively gas-expensive and gas-variable because you may need to cycle through a few values of r and run ecrecover multiple times. Not great. With EIP-4671, a NTT could be created that checks if an account is synthetic, then issues the EOA a token identifying it as such. Now any smart contract wishing to identify synthetic EOAs and coded to assume the presence (or absence) of this NTT can simply check the address in question for the NTT. Three benefits:  Synthetic-ness can now be checked w/o the digest and \u201cc\u201d Less gas usage Predictable gas usage  As I said before, the uses cases for this EIP will be myriad and impactful. IMO, it should be finalized and adopted ASAP. ",
+                    "links": [
+                        "https://statechannels.discourse.group/t/reliable-and-safe-generation-of-synthetic-signatures/165/4"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.817051820728292
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ra-phael",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "03/02/2022-16:50:41",
+                    "content": "This is really cool @omaraflak! I\u2019ve been interested in this idea of NTTs and been working on some proposals for it that I just published: https://github.com/ethereum/EIPs/issues/1238#issuecomment-1029055365 As mentioned, I think this EIP is a duplicate of EIP-1238 but let\u2019s combine our efforts?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party wants to collaborate on proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.71875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/saginawj",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "24/02/2022-20:59:38",
+                    "content": "@omaraflak I love this concept, and find it very relevant. I see instances where it would make sense to make this pull-oriented and push-oriented.  Curious if you\u2019re envisioning the implementation of both scenarios? Also I see this potentially (eventually) tying into Self Sovereign Identity (SSI) and Decentralized ID (DID) use cases.  Not sure if this has been considered. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.67
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "27/02/2022-19:00:54",
+                    "content": "Hi @saginawj, I\u2019m not sure what you mean by pull/push oriented. Could you expand a bit ?  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.59375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/skyttedk",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "28/02/2022-21:48:15",
+                    "content": "What about options for revoking when minting, and a corresponding revoke function.   function mint(address owner, bool revokable)     function mint(address owner, uint256 expiryDate)     function revoke(uint256 tokenId)  external   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "31",
+                    "likes": "1",
+                    "time": "03/03/2022-19:14:02",
+                    "content": "I think there are no situations where the token should not be revokable. A certificate can always be delivered by mistake, and the authority who delivers should be able to revoke it. Although the record should show that you once owned a token from that contract, so it must not \u201cdisappear\u201d. This is why each token has a isValid(tokenId) returns (bool) property. But I didn\u2019t specify how the token should be invalidated (or revoked) because it seems as an implementation detail. It\u2019s more general to have a boolean that states if the token is valid or not. Different implementation could choose how exactly to invalidate the token, e.g. based on an expiry date as you suggested, or anything else. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.3
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "32",
+                    "likes": "2",
+                    "time": "03/03/2022-19:16:40",
+                    "content": "@calvbore I talked to people from Ethereum about this particular subject. I ended up implementing this idea of pulling the token by providing a signed message from the owner  https://github.com/ethereum/EIPs/pull/4671#discussion_r818979629 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/saginawj",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "27/03/2022-20:07:28",
+                    "content": "Yes sorry-  I envision both self-mints and airdrops being relevant use cases.  So I\u2019m just curious if there\u2019s an expectation to assign a token that can\u2019t be traded, but maybe can be burned.  For example, maybe a professor assigns a NTT to a student.  The student can\u2019t sell/trade it, but can burn. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.666666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "30/03/2022-18:17:37",
+                    "content": "I feel that it depends how you see these NTT in general. If you want to burn a token it means you\u2019re not happy that it\u2019s been assigned to you publicly. For instance if it\u2019s a criminal record (even though I don\u2019t think this would ever be on the blockchain). There is no good solution: 1- If you allow people to burn tokens, then it doesn\u2019t fit the use-case of the criminal record example or any other where you\u2019re labeled against your will (which is a good thing I think, we don\u2019t want to end up with a social score on the blockchain\u2026). 2- If you don\u2019t allow to burn tokens, you can be assigned tokens from random contracts you might not want to be associated with. I think the way to see this is that non-tradable tokens are not meant to represent anything too sensitive that you don\u2019t want to expose. They\u2019re only a proof of (good) achievement(s). Something that you\u2019re willing to display publicly. And the importance tied to a NTT should come from the  authority that delivered it. If some random guy gives you a jail-token, it shouldn\u2019t matter because that person is nobody. Also, this is why the standard outlines a NTT Store, which is a way for you to expose in one place a subset (possibly all) of our tokens, and share them with an external service. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.889583333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "30/03/2022-18:24:42",
+                    "content": "The Non-Tradable Token standard has been merged as a draft!   Ethereum Improvement Proposals   EIP-4671: Non-Tradable Tokens Standard A standard interface for non-tradable tokens, aka badges or souldbound NFTs.      I\u2019m planning on changing a few things. Mainly:   Currently the NTT Store allows you to make a display/collection of NTTs coming from different contracts but that only belong to one address. I think in practice people will have their tokens delivered to different addresses. So I want to make it possible to build that collection from multiple sources addresses.   I want to add a hash of the data associated to tokenURI   (to be discussed) I want to add a key/value store to a token contract. The hash could be one of the keys\u2026   ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4671",
+                        "https://ethereum-magicians.org/t/eip-4974-fungible-non-tradable-tokens-or-exp/8805/3"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.9
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "05/04/2022-09:51:19",
+                    "content": "    omaraflak:  Metadata An interface allowing to add metadata linked to each token, as in ERC721. // SPDX-License-Identifier: MIT pragma solidity ^0.8.0;  interface INTTMetadata {     /// @return Descriptive name of the tokens in this contract     function name() external view returns (string memory);      /// @return An abbreviated name of the tokens in this contract     function symbol() external view returns (string memory);      /// @notice URI to query to get the token's metadata     /// @param owner Address of the token's owner     /// @param index Index of the token     /// @return URI for the token     function tokenURI(address owner, uint256 index) external view returns (string memory); }    I think it\u2019d be better if EIP-4671 referenced ERC721\u2019s and implemented its interface. I also gave soulbound tokens a shot, and I think that\u2019s the better approach as it\u2019d allow ERC721 wallets to be instantly compatible with Non-tradable tokens. I\u2019ve outlined that idea here: EIPs/eip-4966.md at 9754700b44b8e63d5503b563d16c99a2552b8c2e \u00b7 ethereum/EIPs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omaraflak",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "10/04/2022-11:03:44",
+                    "content": "Thanks for the prompt Tim! I think that\u2019s a good idea. I\u2019ll probably update Metadata as well as Enumerable  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "38",
+                    "likes": "1",
+                    "time": "10/04/2022-15:39:34",
+                    "content": "What is being defined in ERC-4671 is beyond the scope of what a standardized Solidity interface can guarantee. For me, I\u2019d have no issue just standardizing the \u201cNon-Tradable Token\u201d as defined in the \u201cSpecification\u201d section. However, I think most of the extension code isn\u2019t useful to have in an EIP. Ultimately, we\u2019d like machines to be able to rely on an interface that doesn\u2019t change and where we can safely expect a reasonable behavior implemented below. For E.g. it\u2019d be outrageous if ERC20's transfer function would do something else but transfer tokens. However, with e.g. IERC4671Consensus I doubt every other implementer is capable of replicating a compatible behavior or usefulness from this interface definition. My suggestion is simply to standardize the first \u201cNon-Tradable Token\u201d section. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.602272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/anjimkofy",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "13/04/2022-08:48:14",
+                    "content": "Untradable and absolutely bound to the wallet is based on the assumption that one person, one wallet. In fact, wallets will be changed for various reasons, such as private key leaks, and I think it should be transferable, limited to non-exchangeable tokens, and better only to be sent. But this led to a new problem, the private key was leaked and my \u201cgraduate certificate\u201d was transferred. To simulate a graduation certificate, can we change our thinking, keep the graduation certificate information on the contract address, and use it to prove that it belongs to me by binding the query word or query code. Or use the connection wallet address to query.In this way, even if my private key is leaked, the tokens in it can be transferred while keeping \u201cmy diploma\u201d. The graduation certificate should contain all relevant information, such as name and ID card. Key privacy information such as ID card number can be verified by password. The password is similar to the private key and needs to be recorded by the owner. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.291233766233766
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/koolamusic",
+                    "index": "40",
+                    "likes": "1",
+                    "time": "29/05/2022-19:12:17",
+                    "content": "@TimDaub thanks for making the call for compatibility. So far I am aware of #ERC-1238 \u2013 #ERC4671 \u2013 #ERC-4966 which all provide different perspectives to the implementation of NTTs or Soulbound Tokens. However I feel like the core features of the ERC-721 should be baked in balanceOf ownerOf name symbol tokenURI  So that we can use existing tooling that can recognize + index NFT tokens to display NTT to users ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/peersky",
+                    "index": "41",
+                    "likes": "1",
+                    "time": "05/06/2022-21:28:48",
+                    "content": "Hi guys! @omaraflak, thkx for great work on this EIP. I am seeing potential in this and find this great point to jump in this magical forum to join the conversation Proposal for this standard: Replace isValid/hasValid and revoke()  with burn() Motivation:  Structure is similar to ERC721Burnable without transfer methods, meaning less adaption friction for the standard. Checking ownership of the token becomes easier (checking side can just make sure that token is not listed in enumeration). Token standard heads toward Non-Tradability, however one should not put limitations on ability to non-tradable transfer scenario. Which burn is -  I assume it is true. Revoking and re-issuing token takes form mint-burn-mint which is convenient approach which many developers use already today More secure. Token could be flash-toggled and contracts relying on this must assume that state of the token can toggle multiple times over a block. Resulting tradability of token state. In Mint/Burn scenario checking token ownership by id allows to rely on that state can change only once - to burn.  Also what is purpose use of holdersCount/emittedCount and why Enumerable does not has totalSupply() interface? Thats my first post on the forum, if this discussion fits more in github or elsewhere just let me know, Cheers Peersky ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.37037037037037
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bitcoinbrisbane",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "17/10/2022-05:00:20",
+                    "content": "Also I started EIP-1753: Smart Contract Interface for Licences.  We should all work together! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.3392857142857135
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bitcoinbrisbane",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "17/10/2022-17:41:26",
+                    "content": "Checkout eip-1753 too  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1563"
+}

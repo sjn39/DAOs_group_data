@@ -1,0 +1,398 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip31-active-reserve-via-amm/5639",
+            "title": "MIP31: Active Reserve Via AMM ",
+            "index": 5639,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#1",
+                    "likes": "16",
+                    "time": "12/12/2020-12:06:31",
+                    "content": " MIP31: Active Reserve AMM (dss-ara)  Preamble MIP#: 31 Title: Active Reserve AMM (`dss-ara`) Author(s): Alexis Contributors: n/a Type: Technical Status: TBD Date Proposed: <2020-12-15> Date Ratified: <yyyy-mm-dd> Dependencies:  keg module Replaces: n/a License: AGPL3+   References  pre implementation Uniswap V2 contract AMM   Sentence Summary This MIP is a technical proposal for an active reserve based on Uniswap V2 contract.  Paragraph Summary This MIP will adapt the open source contract from Uniswap to create a reserve DAI/MKR. It will keep the main method, the swap, remove the fix fees to be changeable via a governance parameter. It will also remove the \u2018share\u2019 token creation as we will be the only owner and modify the add and remove liquidity part to be more direct, accessible only by the governance and fees-less. It will also refactor the flash minting part to be moved out the swap and add a poke call during the update.  Component Summary MIP31c1: Parameter Definitions: List of governance parameters MIP31c2: Functions: List of functions MIP31c3: swap(): Specification for the swap function MIP31c4: deposit(): Specification for the deposit function MIP31c5: withdraw(): Specification for the withdraw function MIP31c6: flashLoan(): Specification for the flash loan functionality MIP31c7: flashMint(): Specification for the flash mint functionality MIP31c8: extra feature: extra feature not linked to any functions MIP31c9: Proposed code: Contains snippet of proposed implementation. MIP31c10: Test cases: Lists existing test cases, including integration tests MIP31c11: Spell: Spell for deployment/install MIP31c12: Security: Comments on the security implications of using CropJoin MIP31c13: Economic / Governance considerations: Discusses insolvency and liquidity risks, governance and example parameters MIP31c14: Licensing: States the license under which the proposal and code are distributed.  Motivation Currently, governance uses the surplus buffer as reserve, but in fact the surplus buffer hasn\u2019t been designed to serve this purpose due to the nature of it. The surplus buffer is meant to be a protocol security reserve for Dai owners in case of failure. Therefore to some extent, It should be considered part of the collateral as it is redistributed to Dai Owner in case of emergency. This proposal aims to add an missing piece to Maker, the Maker Reserve. It is a technical proposal to create a Maker Owner active reserve based on Uniswap V2 AMM. It uses DAI and MKR as asserts inside the liquidity pool. The DAI/MKR will be the trading pair. As a side effect it should bring :  burn process efficiency - swap vs dutch auction more MKR price stability by creating a buffer an important piece for future improvement  small amount Liquidation decrease burning inefficiency Oasis swap onchain oracle etc \u2026 (DeFi is based on AMM)    The AMM on DAI/MKR pair will have a similar effect of the burn mechanism. Instead of burning we will stack 1/2 of MKR and 1/2 of DAI. The module will allow governance to withdraw DAI, MKR or Both. It will be plugged to the keg.  How does it work? The initial deposit (50% DAI,50% MKR) needs to be relatively high to have some liquidity - probably around 1M each. Smaller the deposit is, higher the slippage is. Then the idea here is to divert some % of the DAI from the MKR burning mechanism and redirect it into the AMM. When the Dai is inside the AMM, it will move the MKR price down and create an incentive to buy the MKR against the market. Note, the slippage should decrease when the liquidity increase. ( with 1M Dai inside the AMM and a 1000 Dai put inside we should have around 0.1% slippage) We can adjust the % taken to control the slippage. A small fee is collected each swap and the fee is managed by governance (Uniswap uses a fixed percentage). Although I would advise to match the PSM fee, 0.1% or event less 0.04% as curve. We should not forget that we charge for the DAI inside and MKR was supposed to be burned. Ultimately, I expert the AMM to be more efficient than the dutch auction. Furthermore, we can add more reserve based on Dai. We can redirect small liquidation to it and decrease the dust. We can swap MKR to burn. We can add the swap to oassis. etc \u2026  Specification The overall logic is based on uniswapV2 contract The swap mechanism won\u2019t change dramatically, we will add fee as parameter, a poke() call during the update and non used mechanism will be clean up. mint and burn, will be replaced by deposit and withdraw. The flash minting part will be moved outside the main method to be independent and fees will be setted separately. They will respect the new standard introduced by Sam.  MIP31c1: Parameter Definitions   fees       : percentage of the amount takes as fees for each swap.  flash_fees : percentage of the amount takes as fees for each flashmint/flashloan.  period     : period of time between each poke() call  poker      : pocker contract interface with the poker.   MIP31c2: Functions there are forth external functions :   swap() : uniswap function to swap two token.  flashLoan() : Allow flash loan on the token from the reserve.  flashMint() : Allow flash mint on the dai from the reserve.  getReserves() : To get the reserve  there are five admin functions :   deposit() : to deposit some liquidity or reserve.  withdraw() : to withdraw the reserve.  file(bytes32 what, data) : To change parameters  rely(address contract) : To add authorized address  deny(address contract) : To remove authorized address   MIP31c3: swap()   Three parameters are needed amount0Out, amount1Out, addressTo   Should allow swap between two tokens using uniswap formula.   A fees is taken during the swap amount * fees parameter   Update the reserve after each swap    MIP31c4: deposit()   No parameter is needed   Should be allowlisted.   The call will update the reserve and take into account the tokens send to the contract.    MIP31c5: withdraw()   Three parameters are needed amount0Out, amount1Out, addressTo   Should be allowlisted.   Should be able to withdraw any amount of both tokens.    MIP31c5: flashLoan()   Three parameters are needed receiver, amount, data   Allow flashLoan on the token inside the AMM   A fee is taken, the fee is equal at : amount * flash_fees   The amount is return before the end of the transaction.   Update the reserve after each flashLoan    MIP31c6: flashMint()   Three parameters are needed receiver, amount, data   Allow flashMint on the dai inside the AMM   A fee is taken, the fee is equal at : amount * flash_fees   The amount is return before the end of the transaction.   Update the reserve after each flashMint    MIP31c7: extra feature   poker.poke() is called during the update phase.   poke() sends 5 parameters addressToken, priceDaiCumulativeLast, priceTokenCumulativeLast, daiReserve, tokenReserve, daiBalance, tokenBalance   It is call only if the period after the last call is over.   The balance is updated after poke() is called    MIP31c8: Proposed Code dss-ara  MIP31c9: Test Cases dss-ara test  MIP31c10: Spell ActiveReserveSpell  MIP31c11: Security  Uniswap contract Errors or security vulnerabilities in the Uniswap contract. The contract has been used and well tested.  Contract Modification technical risk In addition to the technical risk inherent to Uniswap contract, this implementation add some risk too. However, due to the design and the separation from the main system, the worst-case losses is limited to the deposited inside the AMM.  MIP31c12: Economic / Governance considerations  Economic risks impermanent losses  Difference between AMM and burn  1/2 MKR and 1/2 DAI are locked vs 100% MKR burn With the AMM, MKR supply doesn\u2019t decrease Due to impermanent losses and the AMM nature, amount of token stacked inside will change depending of the price fluctuation. AMM reserve can be retrieve. MKR burn can\u2019t be retrieve but can be minted again.  Nice plus The Dai reserve increase when MKR decrease which it is probably when we will need the reserve. On the other hand Dai reserve decrease when the MKR increase, but that should not be a problem as we can mint MKR instead.  MIP31c13: Licensing  AGPL3+  ",
+                    "links": [
+                        "https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/UniswapV2Pair.sol",
+                        "https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/UniswapV2Pair.sol",
+                        "https://github.com/alexisgayte/dss-ara/blob/main/src/DssAra.sol",
+                        "https://github.com/alexisgayte/dss-ara/blob/main/src/DssAra.t.sol",
+                        "https://github.com/alexisgayte/dss-ara/blob/main/src/spell/ActiveReserveSpell.sol",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/weekly-mips-update-41/8892",
+                        "https://forum.makerdao.com/t/maker-relay-ep-49-en-espanol/8795",
+                        "https://forum.makerdao.com/t/maker-relay-ep-49/8763",
+                        "https://forum.makerdao.com/t/weekly-mips-update-40/8759",
+                        "https://forum.makerdao.com/t/weekly-mips-update-39/8606",
+                        "https://forum.makerdao.com/t/weekly-mips-update-38/8486",
+                        "https://forum.makerdao.com/t/weekly-mips-update-37/8309",
+                        "https://forum.makerdao.com/t/mips-update-36/8125",
+                        "https://forum.makerdao.com/t/weekly-mips-update-35/7962",
+                        "https://forum.makerdao.com/t/weekly-mips-update-34/7668",
+                        "https://forum.makerdao.com/t/weekly-mips-update-33/7573",
+                        "https://forum.makerdao.com/t/weekly-mips-update-32/7464",
+                        "https://forum.makerdao.com/t/weekly-mips-update-31/7232",
+                        "https://forum.makerdao.com/t/proposed-mechanism-to-dampen-mkr-mint-burn/7208",
+                        "https://forum.makerdao.com/t/weekly-mips-update-30/7083",
+                        "https://forum.makerdao.com/t/weekly-mips-update-29/7000",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35-en-espanol/6949",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35/6932",
+                        "https://forum.makerdao.com/t/weekly-mips-update-28/6791",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33/6694",
+                        "https://forum.makerdao.com/t/weekly-mips-update-27/6649",
+                        "https://forum.makerdao.com/t/maker-relay-ep-32/6596",
+                        "https://forum.makerdao.com/t/maker-relay-ep-31/6450",
+                        "https://forum.makerdao.com/t/maker-relay-ep-30/6303",
+                        "https://forum.makerdao.com/t/weekly-mips-update-26/6291",
+                        "https://forum.makerdao.com/t/maker-relay-ep-29/6214",
+                        "https://forum.makerdao.com/t/maker-relay-ep-28/6118",
+                        "https://forum.makerdao.com/t/weekly-mips-update-25/6092",
+                        "https://forum.makerdao.com/t/weekly-mips-update-24/6052",
+                        "https://forum.makerdao.com/t/governance-at-a-glance-2021-01-07/5959/6",
+                        "https://forum.makerdao.com/t/maker-relay-ep-27-happy-2021/6016",
+                        "https://forum.makerdao.com/t/random-idea-about-generating-income-for-both-mkr-holders-and-collateral-depositors-while-increasing-dai-liquidity/5923/2",
+                        "https://forum.makerdao.com/t/weekly-mips-update-23/5914",
+                        "https://forum.makerdao.com/t/brainstorm-2021-mission-and-objectives/5809",
+                        "https://forum.makerdao.com/t/mip31-amm-de-reserva-activa-dss-ara/5776",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/9",
+                        "https://forum.makerdao.com/t/mip45-liquidations-2-0-liq-2-0-liquidation-system-redesign/6352/46",
+                        "https://forum.makerdao.com/t/strategic-direction-integration-with-defi-or-protocol-base-layer/5646",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-122-thursday-december-17-16-00-utc/5608/5",
+                        "https://forum.makerdao.com/t/proposal-market-making-proposal-from-wintermute-trading/10629/4",
+                        "https://forum.makerdao.com/t/weekly-mips-update-47/9648",
+                        "https://forum.makerdao.com/t/weekly-mips-update-46/9532",
+                        "https://forum.makerdao.com/t/weekly-mips-update-45/9427",
+                        "https://forum.makerdao.com/t/weekly-mips-update-44/9303",
+                        "https://forum.makerdao.com/t/weekly-mips-update-43/9190",
+                        "https://forum.makerdao.com/t/weekly-mips-update-42/9010"
+                    ],
+                    "GPT-summary": "The post is a technical proposal for an active reserve based on Uniswap V2 contract. The proposal aims to create a Maker Owner active reserve using DAI and MKR as assets inside the liquidity pool. The post explains how the AMM on DAI/MKR pair will work and how it will bring efficiency to the burn process, more MKR price stability, and decrease liquidation. The post also provides a detailed specification of the proposal and discusses economic and governance considerations.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Grants, Funding and resource allocation",
+                        "Privacy, Security and risk management",
+                        "Law and regulations"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.258813188575093
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "12/12/2020-14:22:12",
+                    "content": "This is super cool. Has the Risk Team taken a look? I know they are pretty backed up, but I think it\u2019s important to make sure we\u2019re not exposing ourselves to potential attacks on the LP we set up. One other note, it looks like the \u201cpre implementation\u201d link is broken, I\u2019d love to take a look when that is fixed so I can have a better idea of what\u2019s going on the backend with this proposal. Overall, really love the idea and as long as it doesn\u2019t expose us to extra risk (seems like the Uni platform risk is about to exist anyway) I\u2019m all for it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.9527777777777775
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "12/12/2020-14:55:53",
+                    "content": "    prose11:  One other note, it looks like the \u201cpre implementation\u201d link is broken   I switched the repo to public, sorry for that.     prose11:  as long as it doesn\u2019t expose us to extra risk (seems like the Uni platform risk is about to exist anyway) I\u2019m all for it.   Uni platform is a different contract, however I believe we will need an audit. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.232142857142857
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#4",
+                    "likes": "6",
+                    "time": "14/12/2020-08:18:51",
+                    "content": "@alexis, I am fully aware that you got a bunch of likes for this proposal but I am going to stir the pot by opposing it. In my opinion there is no point adding complexities such as a fund when financing of worthy activities can be achieved by simply siphoning off some portion of the continuous revenue. After we have added a fund we need rules for spending it and someone to sit and watch it and periodically evaluate it. All this is adding complexity. I want the opposite. I want smaller and simpler, enabling us to move people out of the running of the protocol. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party giving entirely negative feedback on proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.486111111111112
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "14/12/2020-08:36:50",
+                    "content": "I don\u2019t think it will be use to finance worthy activities but more as an insurance, that we don\u2019t have. This found react systematicaly at the opposites of maker. If we are in trouble the dai increase. Worthy activities can be financed by minting MKR. But we can\u2019t mint MKR during bad event. Tho I see it more as a feature. A first block to plug stuff on it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.726190476190476
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "14/12/2020-08:47:11",
+                    "content": "    alexis:  Worthy activities can be financed by minting MKR.   MKR will only be printed to refinance the system in case of undercollateralization as happened in March. That is the only reason MKR will ever be printed.     alexis:  But we can\u2019t mint MKR during bad event.   Yes we can. It is just that the price will not be high. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.793333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "14/12/2020-08:49:37",
+                    "content": "    Planet_X:  Yes we can. It is just that the price will not be high.   Well that is exactly my point, you print at 1/3 of the price. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.025
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/zenithlight",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "14/12/2020-08:54:26",
+                    "content": "So we should set the surplus buffer at an appropriate level for the level of risk. Or we can take out actual insurance from an insurance platform. I don\u2019t see how adding another system with complex economics helps with this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "14/12/2020-09:03:53",
+                    "content": "One can go with the other. I am at 100% to increase the surplus buffer, after we get the peg back, find demand for dai boring and decrease our exposure on USDC. As currently increasing the surplus buffer mean increasing the USDC vault by the same amount. I am not sure if it is very smart. Back to AMM, But what happen if we have a surplus buffer of 10M, lost 20M. the surplus buffer is negative, how do you want to withdraw found from it? . as I said surplus buffer is dai owner reserve not a maker reserve. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.145535714285714
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#10",
+                    "likes": "1",
+                    "time": "14/12/2020-09:09:47",
+                    "content": "@alexis If the surplus buffer is DAI 10 million, but losses are DAI 20 million then MKR will be printed to make up the remaining 10 million. It is that simple. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#11",
+                    "likes": "0",
+                    "time": "14/12/2020-09:32:11",
+                    "content": "at which price? 200 dollars That is the whole point of this reserve. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#12",
+                    "likes": "2",
+                    "time": "14/12/2020-09:38:59",
+                    "content": "    alexis:  at which price?   A rather poor price. That is suboptimal but fully acceptable. Reserves will never be able to backstop the system. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/jernejml",
+                    "index": "#13",
+                    "likes": "1",
+                    "time": "14/12/2020-10:31:35",
+                    "content": "I agree. Reserves will not be sufficient for larger defaults anyway. I think it\u2019s foolish to try to avoid printing MKR. It\u2019s basically market giving us \u2018fair\u2019 price when all risks are taken into account. Also, market should get used to printing MKR occasionally. Reserves only reduce number of such events. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "14/12/2020-10:56:05",
+                    "content": "Well this reserve, it is here to mitigate this issue. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/swakya",
+                    "index": "#15",
+                    "likes": "2",
+                    "time": "14/12/2020-13:18:42",
+                    "content": "Unfortunately I don\u2019t think this is a great time to devote resources to this. I fully sympathize with the intent and really appreciate the work that was put into it! We are already biting almost more than we can chew with tasks related to Maker\u2019s core mission. Once the dust settles after we\u2019ve moved past integrating new collateral types, giving more control to domain teams, improving vote participation/delegation, we may look at moving some of the reserves to a hedge such as this AMM concept (with no need to change the core protocol). On the idea itself, I am not sure I get how it is economically better than reserve+dilution. Could you give a worked out example? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.766528925619835
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Replenish2030",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "14/12/2020-13:28:30",
+                    "content": "I think this idea can be merged with the Strategic Reserves Fund by being more specific about how we want to use the Strategic Reserves Fund, the same effect that is being proposed here can be achieved by diverting some percentage of protocol income and then mainly using the SRF to provide liquidity in MKR pairs on uniswap/balancer/sushiswap. A possible advantage of directly providing liquidity on other protocols this way, rather than creating our own AMM protocol, is that we then get to sell directly to a pre-existing userbase rather than having to bootstrap a new userbase for this new AMM from scratch. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.7338154269972454
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#17",
+                    "likes": "2",
+                    "time": "14/12/2020-15:01:21",
+                    "content": "The current proposal is about issuing DAI (Maker liability) to generate DAI and MKR assets (or maybe issue MKR liability as well not sure). This would increase the Maker risk with the MKR price volatility (it is strictly worse than having MKR vaults). Having some DAI on the asset side and almost the same number on the liability side doesn\u2019t have any impact. If we take that road I would go directly to ETH/DAI and ETH/MKR for profitability or DAI/WBTC for business development. The current issue I have with Strategic Reserves (beside not having much time) is that it doesn\u2019t play well with the DAI system. It basically mean you have to pay cash all the asset in the Strategic Reserves. At the same time the world want Maker to live at credit (big demand of DAI). Notice that we can hedge the volatility of ETH by issuing DAI and borrowing ETH with a positive carry (as everyone ants to do the opposite). Basically, we make money by lending DAI vs borrowing ETH and we make money by having a DAI/ETH LP. And the icing on the cake is that it\u2019s a risk free arbitrage if we keep the same amount of ETH on the asset and liability side. But no idea how to blend this concept of balance sheet management with the current Maker system, but MIP31 is probably a first step. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.103275401069519
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#18",
+                    "likes": "1",
+                    "time": "14/12/2020-15:59:26",
+                    "content": "    swakya:  Unfortunately I don\u2019t think this is a great time to devote resources to this   Yes true, tho we need to gather more idea, get it voted, audited, get it voted again \u2026 It is clear that won\u2019t happen before Q3 2021, but if we don\u2019t start the process now. we won\u2019t get anything. Also worse noted, it is dependent of Keg module, which is not planned before end Q1-Q2.     SebVentures:  If we take that road I would go directly to ETH/DAI and ETH/MKR for profitability or DAI/WBTC for business development.   The code is DAI based, any pair with Dai. MKR/DAI is the cheapest to start with, as we have both of them.     SebVentures:  This would increase the Maker risk with the MKR price volatility   It is the opposite AMM works on the opposite sense MKR decrease DAI reserve increase, MKR increase DAI reserve decrease. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.527777777777779
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ejbarraza",
+                    "index": "#19",
+                    "likes": "0",
+                    "time": "14/12/2020-16:01:13",
+                    "content": "This is a great idea. Maybe the LP rewards can be used to fund NXM premiums. Kill multiple birds with one stone. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/charlesstlouis",
+                    "index": "#20",
+                    "likes": "1",
+                    "time": "15/12/2020-18:29:43",
+                    "content": "Hi @alexis, posting this message on this proposal as well: If you could kindly fork the MIPs repo and make a PR to the RFC branch for this proposal that would be great. Once that\u2019s done, I will do the review and move it to Request for Comments (RFC) status. This is a requirement for it to enter the RFC. If you have any other questions regarding MIP requirements or the MIPs Lifecycle, please check out the MIP Lifecycle overview in MIP0 or reach out to me on Rocket.chat (@charlesstlouis). ",
+                    "links": [
+                        "https://github.com/makerdao/mips/blob/Accepted/MIP0/mip0.md#mip0c3-the-mip-lifecycle"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#21",
+                    "likes": "1",
+                    "time": "15/12/2020-23:29:06",
+                    "content": "Hi @charlesstlouis , thanks for the link, I have created a pull request for it :   github.com/makerdao/mips         MIP31: Active Reserve AMM (`dss-ara`)   makerdao:RFC \u2190 alexisgayte:MIP31            opened 10:55PM - 15 Dec 20 UTC               alexisgayte             +169 -0           ",
+                    "links": [
+                        "https://github.com/makerdao/mips/pull/139",
+                        "https://github.com/alexisgayte",
+                        "https://github.com/makerdao/mips/pull/139/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.166666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/charlesstlouis",
+                    "index": "#22",
+                    "likes": "0",
+                    "time": "16/12/2020-21:13:52",
+                    "content": "Pasting my response to MIP32 here as it applies to MIP31 as well:     MIP32: Peg Stability Module - Compound Mixed Exposure Conception       Thanks for pushing the PR! It would be helpful if you could use the Technical MIPs template as a reference for the structure of a Technical MIP. Additionally, some great examples of well written technical MIPs are:   MIP25 MIP20 MIP30.  For now, I\u2019m going to go ahead and make some formatting changes to MIP21 and MIP32 as well as make some comments for you to consider when the proposals get moved to RFC.     Thanks, Alexis! ",
+                    "links": [
+                        "https://github.com/makerdao/mips/blob/Accepted/MIP0/Technical-MIP-Template.md",
+                        "https://github.com/makerdao/mips/blob/Accepted/MIP25/mip25.md",
+                        "https://github.com/makerdao/mips/blob/Accepted/MIP20/mip20.md",
+                        "https://github.com/makerdao/mips/blob/RFC/MIP30/mip30.md"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.928571428571429
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#23",
+                    "likes": "1",
+                    "time": "26/01/2021-10:20:03",
+                    "content": "I have edited the MIP to be more conform with the general template. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#24",
+                    "likes": "2",
+                    "time": "04/02/2021-15:52:09",
+                    "content": "I have updated the specification to reflect changes from the code. Main update :  flashMint reintegrating ( was inside uniswap contract) but outside the swap method and using Sam ERC-3156. Clean up/tidy up Increase test coverage add an extra call poke() during the update phase.  Edit : update poke parameter to include future balance ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.533333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#25",
+                    "likes": "1",
+                    "time": "14/05/2021-19:33:50",
+                    "content": "@alexis Is the case the same with this MIP as MIP44?Can we mark this proposal withdrawn and archive it? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ]
+}

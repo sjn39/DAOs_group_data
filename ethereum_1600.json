@@ -1,0 +1,211 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4788-beacon-state-root-in-evm/8281",
+            "title": "EIP-4788: Beacon state root in EVM ",
+            "index": 8281,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "cancun-candidate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "13/02/2022-21:03:01",
+                    "content": "Discussion thread for EIP-4788: Beacon state root in EVM. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/shanghai-core-eip-consideration/10777/20"
+                    ],
+                    "GPT-summary": "The post is a discussion thread for EIP-4788, which proposes adding the beacon state root to the Ethereum Virtual Machine (EVM). The author is seeking feedback and there are questions being asked about the proposal. It is not entirely clear if there is any 3rd party feedback or auditing happening yet.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "14/02/2022-02:52:07",
+                    "content": " By including the ommersHash validation, clients can use existing code with only minimal changes (supplying the actual state root) during block production and verification. Having the beacon state root value in the ommers field means that it is fairly straightforward to provide the value from the block data to the EVM execution context for client implementations as they stand today.  I would like to get validation from execution client teams that this is actually of meaningful value.  It may be just as easy to completely remove the uncle validation code entirely as it would be to pseudo-replace it with this.  If so, then I would strongly advocate for changing this into a single 32-byte hash rather than an array of 1 item. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.835119047619047
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "17/02/2022-23:19:38",
+                    "content": "Should the storage address be added to warm addresses by default (EIP 2929?) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "17/02/2022-23:44:54",
+                    "content": "Correct me if I am wrong but this should also have a rule that if you CALL the storage address, this should not get removed from the state. I am pretty sure that accounts which have non-empty storage, but no code, nonce 0 and balance 0 are DEAD and should therefore get removed from the MPT (thus clearing the storage). The alternative could be to just send 1 wei to this address, but it should be noted in the EIP anyways. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mkalinin",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "18/02/2022-13:36:35",
+                    "content": "A couple of things: Epoch/slot/timestamp as a fork trigger requires support of two EL blocks at the same height with different consensus rules and/or structures. AFAIK, this is not currently supported by client implementations and might result in additional complexity. I am echoing Vitalik\u2019s comment on slot vs block number. Imagine an application that securely (with a proof) reads validator record from a beacon state, an interface of this app will have to do slot to block height translation to specify the right beacon block root for the proof verification process. Using slot number allows to avoid this complexity, reads will look like slot.validator(i).effective_balance. Though, this approach requires slots to be passed to EL block, perhaps slot numbers are suitable replacement for difficulty values. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.029761904761904
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "18/02/2022-15:03:57",
+                    "content": "For the reading of the value it would be possible to include code at the address, and require a CALL to be made to the address as opposed to a dedicated opcode. This would be similar to EIP-210. This does raise the question why not also do the same for RANDAO(n) in EIP-4399: Supplant DIFFICULTY opcode with RANDOM. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-4399-supplant-difficulty-opcode-with-random/7368"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "20/02/2022-09:15:35",
+                    "content": "IIUC, the two arguments are:  Changing the shape of the block makes it easier to differentiate between blocks of different eras as you can just look at the block\u2019s shape to know \u201cwhen\u201d the block was from. Changing the shape of the block can break existing code that depends on block shape to decode.  I think the question we need to answer is which of these is likely to have a larger negative impact on the Ethereum ecosystem long term.  If (1), then adding a new field to the end and (optionally, if we want to save 32 bytes per block) deleting OmmersHash from the middle is the ideal strategy.  If (2), then changing the interpretation of OmmersHash to be BeaconRoot is the optimal strategy. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.4289772727272725
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bbuddha",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "28/07/2022-18:30:29",
+                    "content": "This EIP is useful for liquid staking protocols that want to prove new balance updates for their validators and account fault with the highest security. Most LSDs rely on a small oracle committee to supply them this sort of information. In addition, there are tons of new applications that will be built given the trustless access to more detailed protocol parameters. Seems like a win. What are implementation barriers for this sort of thing? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.576704545454546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "29/07/2022-14:26:19",
+                    "content": "there are many many many applications unlocked by this EIP the implementation barriers are not really the blocking ones, the bigger issue is simply prioritizing this feature amongst all other things we want to do to make ethereum better  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.109375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bbuddha",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "30/07/2022-05:39:29",
+                    "content": "Agreed! What\u2019s the process of getting this prioritized? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ralexstokes",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "30/07/2022-16:57:31",
+                    "content": "im happy to help you argue for it on ACD sooner or later i can say that it will be hard to prioritize against validator withdrawals and work around 4844 and currently ACD is very focused on a successful merge so we haven\u2019t really done any serious Shanghai planning and I\u2019m not sure now is the right time. perhaps we revisit after the merge has occurred? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.680357142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bbuddha",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "30/07/2022-20:29:11",
+                    "content": "Totally. Appreciate it. Thanks for the responses, excited for this  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.958333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kanewallmann",
+                    "index": "13",
+                    "likes": "2",
+                    "time": "27/09/2022-02:15:56",
+                    "content": "My understanding is that to be able to prove some value in the beacon state, we also need to know the generalised index of the property we wish to prove (or more generally the depth of the merkle tree representations of the objects in the path with which we can compute the generalised indices of properties). It seems likely (and is already the case in Capella) that the consensus spec containers will be appended to in future forks and so the depth of their tree representation may increment and therefore all the generalised indices of the existing properties will change too. The consequence of this is that any smart contract that verifies proofs will need some sort of upgradability to be forwards compatible with future changes to the beacon state object. This seems to break some of the fundamental usefulness of having the state root available on the EVM because proof verification logic cannot be made immutable. Previously, we had to trust an oracle to submit the correct state about the beacon chain. Now, we have to trust the contract owner to upgrade the proof verification logic as required by future consensus spec changes. Unless the proof verification logic was also made part of the EVM via a precompile or something. Am I missing something? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.5898268398268405
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dapplion",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "10/11/2022-17:16:48",
+                    "content": "This EIP requires changes to the consensus layer and engine API. Where should those be spec\u2019ed? I recall EIP4844 having similar issues. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Holterhus",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "17/02/2023-08:15:07",
+                    "content": "We\u2019ve discussed an idea that seems to solve this issue on discord, so I will also write it down here for anyone interested. Basically, if you assume that the data containers are only ever appended to, then the tree depth increasing is really just adding an extra \u201cleft\u201d movement to the start of the path from the root to the leaf in question. For example, if the leaf element you are interested in is currently \u201cright\u201d then \u201cleft\u201d from the root, your verifier smart contract would probably look like this: function verify(bytes32[] proof, bytes32 root, bytes32 node) internal {     node = keccak256(abi.encodePacked(node, proof[0]));     node = keccak256(abi.encodePacked(proof[1], node));     require(root == node); }  The point we are making is that any time the tree depth increases from newly appended properties, the existing container properties will be in the left subtree, so the verifier could have just been implemented like this: function verify(bytes32[] proof, bytes32 root, bytes32 node) internal {     node = keccak256(abi.encodePacked(node, proof[0]));     node = keccak256(abi.encodePacked(proof[1], node));     for (uint256 i = 2; i < proof.length; ++i) {         node = keccak256(abi.encodePacked(node, proof[i]));     }     require(root == node); }  to allow longer proofs if they are needed in the future. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.344266844266844
+                }
+            ]
+        }
+    ],
+    "group_index": "1600"
+}

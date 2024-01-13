@@ -1,0 +1,72 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/core-eip-cold-hot-accesses-within-the-context-of-a-block/13400",
+            "title": "[Core EIP] Cold/Hot Accesses within the context of a Block ",
+            "index": 13400,
+            "category": [],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/green",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "18/03/2023-08:10:17",
+                    "content": "(This is messy, I just want to start an informal discussion) Considering cold/hot accesses (for storage, or accounts) in the context of a block, instead of the context of a transaction. Cons:  probably hard to implement, since it breaks many assumptions and the clients would have to add a bunch of complexity whoever lands first in the block, pays the cold load for everyone else (but, that\u2019s a \u201cfairness\u201d con, since they\u2019re already paying for it)  Pros:  cheaper gas for users. more reasonable gas pricing, more aligned with the costs  Uniswap has been using big routers to do things, and now there\u2019s permit2. Permit2 is arguably healthy for the protocol (less bytecode on new deployed tokens). But it\u2019s punished by the gas pricing, since users have to do more cold accesses. (making up numbers now) let\u2019s say that in most blocks there are 20 redundant permit2 cold accesses. The execution clients are benefiting from less cache misses, due to interacting with this contract, so there\u2019s a pricing mismatch here. Obviously, this occurs with way more things:  delegating calls to highly used contracts (Safe, Blur) most relevant rollups are, even when they ossify, delegating calls  Is this worthwhile to implement, or is this too difficult and unpractical for execution clients? ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.499326599326599
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bawtman",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "18/03/2023-16:27:48",
+                    "content": "Hi @green , I am not sure this is possible because there would be no way to estimate the gas in advance. Maybe if it were the last block it would be feasible. It would also put an unfair burden on whom ever had to pay depending on what is in the other transactions entail. Would be interested in hearing more on how this could be implemented. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.796875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/green",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "19/03/2023-12:03:46",
+                    "content": " there would be no way to estimate the gas in advance  Just like now, then. Wallets should estimate the worst case scenario, as regular, as if all the accesses that used to be cold, continue to be cold.  Maybe if it were the last block it would be feasible  Accounts or storage (= space) that were last accessed last block, can still be cheaper to load compared to space that was last accessed 100 blocks ago. However this would be even more cumbersome to implement. In this case, the problem at hand is that, since every node is validating the transactions in the same block, that space has been accessed <1 second ago, so it\u2019s very likely to remain in cache. The cost to access them is, on average, way lower compared to the cost of accessing space last accessed in the previous block.  It would also put an unfair burden on whom ever had to pay depending on what is in the other transactions entail  In this case, I don\u2019t think fairness is a problem. Gas costs would either be the same, or less. It\u2019s not unfair if the other transactions get a discount and you don\u2019t, because if you\u2019re the first transaction to open the block, you access them cold. You would have previously accessed them cold as well, so, from your perspective, you\u2019re doing whatever you could do before. You can\u2019t tell if other transactions will want to also access those spaces in the same block. There\u2019s also MEV considerations. Users are paying priority fees in order to get their transactions to be executed first. In a way, being the transaction that opens up the way for the other transactions on the block to be cheaper, is a priority fee as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.366666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bawtman",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "19/03/2023-16:07:55",
+                    "content": "Hey @green, OK I am warming up to this idea after reading your rebuttals. How would we go about implementing this, Can you give an example or some code that points to a solution? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/green",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "19/03/2023-19:09:47",
+                    "content": "I don\u2019t work on the execution clients so I won\u2019t resort to writing code to convey the idea of the proposal, without getting feedback about whether if it\u2019s worthwhile or not. The EVM is currently keeping track of access sets (EIP-2929) within the context of a transaction. Here\u2019s some code in geth linking to the implementation. The idea of the proposal here is, simply, have those access sets work block wide, instead of transaction wide. Implementation:  From EIP_???_FORK_BLOCK onwards, eip-2929 access sets will work within the context of the block. they don\u2019t reset when a transaction begins, only when a new block begins.  The implementation sounds easy but it might break a lot of assumptions the execution clients have been doing. For example (i can\u2019t assert this, but\u2026) blocks might not have been required to hold state until now, and this EIP would break the assumption and introduce unwanted complexity. You can check this file to understand the complexity and technical debt that a Core EIP can inflict upon the clients. go-ethereum/gas_table.go at ee8e83fa5f6cb261dad2ed0a7bbcde4930c41e6c \u00b7 ethereum/go-ethereum \u00b7 GitHub ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum/blob/ee8e83fa5f6cb261dad2ed0a7bbcde4930c41e6c/core/vm/operations_acl.go#L103",
+                        "https://github.com/ethereum/go-ethereum/blob/ee8e83fa5f6cb261dad2ed0a7bbcde4930c41e6c/core/vm/gas_table.go"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.483164983164983
+                }
+            ]
+        }
+    ],
+    "group_index": "405"
+}

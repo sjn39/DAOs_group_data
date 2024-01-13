@@ -1,0 +1,145 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4881-deposit-contract-snapshot-interface/8554",
+            "title": "EIP-4881: Deposit Contract Snapshot Interface ",
+            "index": 8554,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "standards-adoption",
+                "consensus-layer",
+                "interfaces",
+                "interop"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ethDreamer",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "08/03/2022-16:16:17",
+                    "content": "Discussion thread for EIP-4881: https://eips.ethereum.org/EIPS/eip-4881 Standardizing the format and endpoint for transmitting a snapshot of the deposit Merkle tree ",
+                    "links": [],
+                    "GPT-summary": "The post is an explanation of EIP-4881, which is a proposal to standardize the format and endpoint for transmitting a snapshot of the deposit Merkle tree. The post also invites discussion and feedback on the proposal, including questions and constructive criticism.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ethDreamer",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "08/03/2022-18:06:28",
+                    "content": "Initial discussion on discord ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ethDreamer",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "08/03/2022-18:07:12",
+                    "content": " Existing Implementations  lighthouse nimbus  ",
+                    "links": [
+                        "https://github.com/status-im/nimbus-eth2/commit/372c9b798c005102c7777a16aaa7c822267330fa"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ajsutton",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "14/05/2022-01:35:10",
+                    "content": "In MerkleTree.generate_proof the code references node.left and node.right but these properties don\u2019t actually exist in MerkleTree.  For a non-empty tree you would always wind up with a Node instance which does have those properties  but for an empty tree the root would a Zero instance and I believe the method would fail. It would probably be clearer if this duck typing was avoided in any case. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ajsutton",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "14/07/2022-03:02:02",
+                    "content": "I\u2019m slightly confused about the SSZ format for DepositTreeSnapshot.  It\u2019s initial defined as: DepositTreeSnapshot {     finalized: Vector[Hash32],     deposits: uint64,     execution_block_hash: Hash32, }  but no length is given for the finalized vector. In the reference implementation finalized is defined as a List but no maximum length is specified. List<Bytes32> seems to be the right data structure but we\u2019d need to specify a maximum length for it to have a complete SSZ object definition. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.982142857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ethDreamer",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "19/07/2022-16:30:00",
+                    "content": "(post deleted by author) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ethDreamer",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "19/07/2022-16:57:20",
+                    "content": "Hi Aj! Thanks for your feedback. I omitted error/sanity checking to avoid cluttering the code. But I did try to allude to error cases in my comments. Looks like I missed this one. I could simply add:     def get_proof(self, index: uint) -> Union[Hash32, List[Hash32]]: +       # omitted check to ensure tree is not empty         # omitted check to ensure index > finalized deposit index   It would probably be clearer if this duck typing was avoided in any case.  Not sure of a good way to do that here given that left and right are not properties of all classes that extend MerkleTree. Did you have any ideas? It shouldn\u2019t happen for any Leaf as they only occur at depth = 0. As long as the check about index > finalized index is enforced, it wouldn\u2019t happen for any Finalized type either. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.519841269841271
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ethDreamer",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "19/07/2022-17:00:54",
+                    "content": "Hi Aj! Thanks for your feedback! The maximum size of the finalized array is the depth of the deposit tree (32). But it\u2019s a variable length array; the length depends on how many deposits are in the snapshot. I see in the ssz specs:    vector: ordered fixed-length homogeneous collection, with N values notation Vector[type, N], e.g. Vector[uint64, N] list : ordered variable-length homogeneous collection, limited to N values notation List[type, N]    So perhaps this confusion stems from me defining it initially as a Vector instead of a List? I can change it to a List if that\u2019s more clear. In regards to the reference implementation, I don\u2019t see mention of using this second parameter to define a maximum length for List[T] in the typing library I imported\u2026 The reference implementation does pass the test cases if I define the snapshot like this: class DepositTreeSnapshot:     finalized: List[Hash32, DEPOSIT_CONTRACT_DEPTH]     deposits: uint64     execution_block_hash: Hash32  though the tests will also pass if I define as finalized as List[Hash32, 1] which suggests the second parameter is just being ignored\u2026 I can define it that way, though I worry that people might mistake it as a fixed length vector of size 32 instead of specifying a maximum length. Open to suggestions though. ",
+                    "links": [
+                        "https://docs.python.org/3/library/typing.html"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.689285714285715
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ajsutton",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "13/09/2022-00:41:16",
+                    "content": "Slow on this, but the List[Hash32, DEPOSIT_CONTRACT_DEPTH] is the right syntax from what I understand.  Teku\u2019s implementation of List does enforce the maximum length (and demands to have one specified). Agreed it should be variable, hence the List instead of Vector.  That also affects the SSZ serialisation as a vector doesn\u2019t include any indication of length but a List adds an extra node to the SSZ tree to record the list length. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.976190476190476
+                }
+            ]
+        }
+    ],
+    "group_index": "1642"
+}

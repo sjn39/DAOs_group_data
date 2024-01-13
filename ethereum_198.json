@@ -1,0 +1,80 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-draft-mint-arbitrary-number-of-tokens-erc-721-via-eip-2309/11589",
+            "title": "EIP Draft : mint arbitrary number of tokens(ERC-721) via EIP-2309 ",
+            "index": 11589,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft",
+                "erc-721",
+                "gas",
+                "eip-2309"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sciNFTist.eth",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "03/11/2022-14:08:24",
+                    "content": "EIP Draft :  ERC721FancyMint eip: eip-draft_ERC721FancyMint title: ERC721FancyMint  author: scinftist.eth  (shypink@protonmail.com) status: draft not submitted type: ERC created: 2022-11-3 requires (*optional): <EIP 165 721 2309>  Abstract This standard proposes another implementation to IERC721 Non-Fungible Tokens (NFTs) to eliminate minting fee of fixed length collection.  Motivation As of today there is 3 way to create a collection.   Minting the tokens ahead so people can see it and find it trough market places. this includes minting fee for creators!   create a contract and people mint the tokens, with first come first served strategy.  people cant see the Tokens before hand. and users don\u2019t know what they get.   using just in time minting or Lazy minting. that is only accessible trough one platform. this limits the creators to one platform.   this implementation is like creator minted arbitrary number of tokens before hand without using gas fee on minting process. benefits:   no minting fee, any number of token mint in constructor with O(1) execution.   user can view the tokens before purchasing.   tokens are accessible trough all Ethereum platforms.   caveat   any number of tokens should be minted at deployment time, an there is no further _mint() or _safeMint() function available.   this token does not support _burn() function.    Specification   maxSupply is desired number of token that we want to mint  preOwner is the address that all tokens will be transferred to   Interface  this interface is needed for Enumerable extension (IERC721Enumerable) of this contract.  // get the preOwner of a tokens function preOwner() public view returns(address);   // get the maxSupply of a token function maxSupply() public view returns(uint256);   The maxSupply_ MUST NOT be 0. The preOwnwer_ MUST NOT be 0x0 (i.e. zero address).  Implementation proposed changes to // OpenZeppelin Contracts (last updated v4.7.0) (token/ERC721/ERC721.sol) for full Implementation see Reference Implementation. //proposed changes  contract ERC721FancyMint is     Context,     ERC165,     IERC721,     IERC721Metadata,     IERC2309 {      *@dev my proposal      */      //max     uint256 private _maxSupply;     //NFT owner     address private _preOwner;           constructor(         string memory name_,         string memory symbol_,         uint256 maxSupply_,         address preOwner_     ) {          require(preOwner_ != address(0), \"preOwner can NOT be address(0)\");         require(0 < maxSupply_, \"maxSupply_ should not be zero!\");         _name = name_;         _symbol = symbol_;          //@dev my proposal          _maxSupply = maxSupply_;         _preOwner = preOwner_;         // blance of preOwner         _balances[preOwner_] = maxSupply_;          // see eip-2309 examples for batch creation         emit ConsecutiveTransfer(0, maxSupply_ - 1, address(0), preOwner_);     }      function _ownerOf(uint256 tokenId) internal view virtual returns (address) {         address owner = _owners[tokenId];         if (owner == address(0) && (tokenId < _maxSupply)) {             return _preOwner;         }         return owner;     }       //-----------------------     function maxSupply() public view returns (uint256) {         return _maxSupply;     }      function preOwner() public view returns (address) {         return _preOwner;     }  // and _mint() _safeMint() _burn() are removed from openZeppelin ERC721 Implementation V4.7.0    }     Rationale since EIP-2309 make the creation of arbitrary number of Tokens possible. this changes make this possible. since the default value of _balances mapping is 0.   At creation time we assigned maxSupply to _balances[preOwner]  from IERC721 interface point of view, preOwner has maxSupply number of tokens as it\u2019s balance.   this contract consider tokenIds range from 0 to ( maxSupply - 1 ).   to handle owners addresses, _ownerOf(tokenId) has been changed, If the _owners[tokenId] is the defualt value 0x0 (i.e address(0) )  & the tokenId is smaller than maxSupply it returns preOwner. else it returns the value that is stored in mapping.   these changes wont affect the functionality of IERC721.  the interface is consist of two public functions, they are necessary for Enumerable (IERC721Enumerable) extension of this standard.  /**      * @dev See {IERC721-ownerOf}.      */     function ownerOf(uint256 tokenId) public view virtual override returns (address) {         address owner = _ownerOf(tokenId);         require(owner != address(0), \"ERC721: invalid token ID\");         return owner;     }        function _exists(uint256 tokenId) internal view virtual returns (bool) {         return _ownerOf(tokenId) != address(0);     }  for values greater equal than maxSupply, _ownerOf(tokenId) will alweys return   0x0 i.e address(0). therefore token _exist() is false for these values. for values smaller than maxSupply, if _owners[tokenId] is not 0x0 address(0) the owner is the returned value. since there is no other function that uses _ownerOf(tokenId), the behavior of the contract is the same as ERC721 implementation of ERC721 by OpenZeppelin Contracts (last updated v4.7.0) (token/ERC721/ERC721.sol) these function that where omitted  _burn(uint256 tokenId) _mint(address to, uint256 tokenId)  _safeMint(address to, uint256 tokenId, bytes memory data) _safeMint(address to, uint256 tokenId)   Backwards Compatibility this standard is fully compatible with all IERC721.   since this implementation does not support any _burn function event Transfer() to 0x0 (i.e. address(0) ) will never happen.   Transfer() event from account from address 0x0 (i.e. address(0) ) won\u2019t happen because there will be only 1 minting event that happens in constructor() and token creation emits via ConsecutiveTransfer() event   ConsecutiveTransfer(0, maxSupply_ - 1, address(0), preOwner_)   Test Cases Test cases were Implemented in PR: \u2026/assets/eip-draft_ERC721FancyMint/testCase.sol some of the tokens has been listed for sale for testing Test Case 1 on goerli testnet with 5000 tokens Test case 1 on OpenSea with 5000 tokens some of the tokens has been listed for sale for testing but this test case includes 6000 token but opensea fails to show some tokens (tokenId 5000 to 5999), i think it\u2019s due to bad implementation of EIP-2309, I\u2019m getting in touch with them, and I wish to hear about your thoughts on this matter. see EIP-2309 examples  \u201cBatch token creation: emit ConsecutiveTransfer(1, 100000, address(0), to Address);\u201d  Test Case 2 on goerli testnet with 6000 tokens Test case 2 on OpenSea with 6000 tokens  Reference Implementation Test cases where Implemented in PR: \u2026/assets/eip-draft_ERC721FancyMint/ERC721FancyMint.sol  Security Considerations This EIP standard can completely protect the rights of the owner, the owner can change the NFT user and use period at any time. but if some how user burns a token, the owner of token will be set to 0x0 (i.e. address(0) ) the token won\u2019t be destroyed and it will assigned to preOwner. I don\u2019t know if it occurs or not, since the _burn() function is removed and _trandfer() function has require that prevent transfer _to address(0) 0x0. I wish to hear from you if you can assure me on this. require(to != address(0), \"ERC721: transfer to the zero address\");   Copyright Copyright and related rights waived via CC0. ",
+                    "links": [
+                        "https://goerli.etherscan.io/address/0xae3a99bd429238a6d2a48749a1e007c1fcf39053",
+                        "https://testnets.opensea.io/collection/fancy-first-try",
+                        "https://eips.ethereum.org/EIPS/eip-2309",
+                        "https://goerli.etherscan.io/address/0x39095ebb95f3576f522a16fba4a21c2c109f4e98",
+                        "https://testnets.opensea.io/collection/fancy-second-try",
+                        "https://github.com/shypink/EIP-draft_ERC721FancyMint/tree/master/assets/eip-draft_FancyMint/ERC721FancyMint.sol",
+                        "https://ethereum-magicians.org/t/idea-minting-one-billion-nfts-or-2-256/11613",
+                        "https://ethereum-magicians.org/t/proof-of-concept-minting-2-256-1-erc721-with-ierc721enumarable-capability/12467",
+                        "https://ethereum-magicians.org/t/batch-minting-in-constructor-with-ierc721enumarable-interface/12403"
+                    ],
+                    "GPT-summary": "The post is an EIP draft proposing a new implementation to IERC721 Non-Fungible Tokens (NFTs) to eliminate the minting fee of fixed-length collections. The author explains the motivation behind the proposal and the benefits of the implementation. The post also includes the specification, interface, and implementation of the proposed changes. The author provides test cases and security considerations and asks for feedback and collaboration on the proposal.",
+                    "GPT-proposal-categories": [
+                        "Token economics",
+                        "Smart contract updates",
+                        "Interoperability and scalability",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.059722222222223
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "04/01/2023-17:45:55",
+                    "content": "Thanks for the draft. Congrats on your first drat. Some technical feedback I\u2019ve not figure out a strong rationale why an extra function preOwner is necessary when you could just do contract FancyMint {   mapping (uint256 => address) _owners;   address _preOwner; // initalize in the constructor or set somewhere, or just use the owner from IOwnable   function ownerOf(uint256 tokenId) view return(address) {     if (tokenId < _maxSupply {       return _owners[tokenId] ? _owners[tokenId] : _preOwner;     }   } }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.736111111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sciNFTist.eth",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "04/01/2023-19:02:54",
+                    "content": "Thank you for your time and the energy that you gave me. also thanks for the code it\u2019s elegant. originally I was thinking about of Enumerable batch minting ERC721Enumerable /* is ERC721 */ {     function totalSupply() external view returns (uint256);     function tokenByIndex(uint256 _index) external view returns (uint256);     function tokenOfOwnerByIndex(address _owner, uint256 _index) external view returns (uint256); }  and there was few more steps needed to make this IERC721Enumerable compatible. function totalSupply() public view virtual override returns (uint256) {         return ERC721FancyMint.maxSupply();     }  /**      * @dev handling tokens index virtualy      */     function tokenByIndex(uint256 index)         public         view         virtual         override         returns (uint256)     {         require(             index < ERC721FancyMintEnum.totalSupply(),             \"ERC721Enumerable: global index out of bounds\"         );         return index;     }   function tokenOfOwnerByIndex(address owner, uint256 index)         public         view         virtual         override         returns (uint256)     {               address _preOwner = ERC721FancyMint.preOwner();          require(             index < ERC721FancyMint.balanceOf(owner),             \"ERC721Enumerable: owner index out of bounds\"         );         if (_preOwner == owner) {             return preIndex(index);         } else {             return _ownedTokens[owner][index];         }     }  function _beforeTokenTransfer(         address from,         address to,         uint256 tokenId     )  needed some more tweaks with some new functions _addTokenToPreOwner() , _removeTokenFromPreOwner() the file on the github ERC721FancyMintEnumRef.sol If you find the time to check this too, I\u2019ll be grateful. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.718344155844156
+                }
+            ]
+        }
+    ],
+    "group_index": "198"
+}

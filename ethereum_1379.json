@@ -1,0 +1,70 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/state-management-review/6602",
+            "title": "State Management Review ",
+            "index": 6602,
+            "category": [
+                "State Management"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/norswap",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "05/07/2021-15:27:34",
+                    "content": "Hey everyone, I\u2019m taking part in the core developer apprenticeship, and as a part of that I did a deep dive on the various concerns and proposals connected to state management in Ethereum. Link to the review I thought I\u2019d post it here for exposure. I\u2019m very open to comments / suggestions / contributions! ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "05/07/2021-18:00:53",
+                    "content": "Nice write up @norswap! In the future if you wouldn\u2019t mind, it\u2019s generally preferable to write the text in the post itself. It makes quoting easier   To give you an idea, a full node (which maintains the state, but does only keeps the N (usually N=128) latest blocks) must currently store > 400 GB (or more than double that if using Geth). This is still better than archive nodes (who keep the whole block history), which must store a whopping 7.5 TB.  Generally the state is one of the smaller portions of data fast synced nodes store. Depending on the exact storage model, should be something like 30-60 GB. Headers, block bodies, receipts, and caches take up a lot of the rest of the data. Not sure how much keeping the last N blocks worth of state takes up, but generally these aren\u2019t simple copies, they\u2019re state diffs.  or more than double that if using Geth  Geth nodes I\u2019ve synced recently are closer to 430 GBs.  A Merkle tree is a radix tree (a compressed trie)  I think you mean a Modified Patricia Merkle Tree   a contract might not know in advance which state it is going to access \u2014 which makes it impossible to provide proof for  This is called Dynamic State Access (DSA)!  If a transaction wants to access older state, it must use a special instruction to regenerate the state, supplying the state\u2019s value, along with a witness (proof) for that value.  I don\u2019t think an instruction (as in an EVM instruction) would be the main mechanism that hydrates a state element. I expect a new transaction type will support witnesses and at the beginning of the transaction the state will be inserted into the current active state.  First, it requires some nodes to keep the checkpointed state. This can be a significant amount of data (twice the size of the normal state if implemented naively). Because it\u2019s so much data, nodes will keep at most the state of a single checkpoint \u2014 meaning you\u2019ll have to download the hundreds of GB of the checkpoint state before your source nodes move on to the next checkpoint.  I don\u2019t think this is true. Fast sync isn\u2019t checkpointed like warp sync or something, the db you\u2019re syncing is always changing under you. The network isn\u2019t storing old checkpoints AFAIK. It\u2019s just using the pivots that are inherent to geth\u2019s handling of block reorgs. \u2013 Overall, awesome write up. Thank you for sharing! ",
+                    "links": [
+                        "https://etherscan.io/chartsync/chainarchive",
+                        "https://en.wikipedia.org/wiki/Radix_tree",
+                        "https://en.wikipedia.org/wiki/Trie",
+                        "https://ethresear.ch/t/state-provider-models-in-ethereum-2-0/6750"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.684157422438672
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/norswap",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "06/07/2021-12:39:50",
+                    "content": "Thanks, this is exactly the kind of review I was looking for!  In the future if you wouldn\u2019t mind, it\u2019s generally preferable to write the text in the post itself. It makes quoting easier  Noted! Edit: wouldn\u2019t have worked, as I can only put two links in a post as a \u201cnew user\u201d :\u2019(  Generally the state is one of the smaller portions of data fast synced nodes store. Depending on the exact storage model, should be something like 30-60 GB. Headers, block bodies, receipts, and caches take up a lot of the rest of the data. Not sure how much keeping the last N blocks worth of state takes up, but generally these aren\u2019t simple copies, they\u2019re state diffs.  Amended that section to be more precise. Can the size of the state be tracked somewhere, short of running a node with custom code and measuring it there?  Geth nodes I\u2019ve synced recently are closer to 430 GBs.  Do you know what explains the discrepancy with https://etherscan.io/chartsync/chaindefault ?  I think you mean a Modified Patricia Merkle Tree   Got to push back a bit here - a patricia tree is a radix tree! In fact, the wikipedia page for radix tree says:  Donald R. Morrison first described what Donald Knuth, pages 498-500 in Volume III of The Art of Computer Programming, calls \u201cPatricia\u2019s trees\u201d in 1968.[6] Gernot Gwehenberger independently invented and described the data structure at about the same time.[7] PATRICIA trees are radix trees with radix equals 2, which means that each bit of the key is compared individually and each node is a two-way (i.e., left versus right) branch.  \u201cmodified patricia tree\u201d is a term that is almost 100% associated with Ethereum. For someone that\u2019s not into blockchains but has a CS background, you can immediately tell what a radix tree, whereas a patricia tree is a much more obscure term. I\u2019ll add the term though, it\u2019s good to have it mentionned.  This is called Dynamic State Access  (DSA)! I don\u2019t think an instruction (as in an EVM instruction)  \u2026  True, included!  I don\u2019t think this is true. Fast sync isn\u2019t checkpointed like warp sync or something, the db you\u2019re syncing is always changing under you. The network isn\u2019t storing old checkpoints AFAIK. It\u2019s just using the pivots that are inherent to geth\u2019s handling of block reorgs.  You\u2019re right, I must have gotten warp & fast sync conflated. I\u2019ll read up & update that section. Tell me if you know a good writeup on this.  Overall, awesome write up. Thank you for sharing!  Thanks  ",
+                    "links": [
+                        "https://ethresear.ch/t/state-provider-models-in-ethereum-2-0/6750"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.929685140440954
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "06/07/2021-13:23:00",
+                    "content": "    norswap:  Can the size of the state be tracked somewhere, short of running a node with custom code and measuring it there?   Geth added some db introspection with v1.10.0, maybe that helps? I think Erigon also has similar tools.  Do you know what explains the discrepancy with https://etherscan.io/chartsync/chaindefault ?  Usually if you compare a recently fast synced node to a full node that was fast synced awhile ago, you\u2019ll see a discrepancy. This is because pruning is really hard. There may also be things that are generated for newly full synced blocks (after fast sync completes) that you don\u2019t have for pre-fast-synced blocks.     norswap:  Got to push back a bit here - a patricia tree is a radix tree! In fact, the wikipedia page for radix tree says:   Yes absolutely, but a merkle tree itself is not a radix trie. That is a very specific flavor. ",
+                    "links": [
+                        "https://blog.ethereum.org/2021/03/03/geth-v1-10-0/"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.399305555555555
+                }
+            ]
+        }
+    ],
+    "group_index": "1379"
+}

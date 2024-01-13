@@ -1,0 +1,647 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-1193-ethereum-provider-javascript-api/640",
+            "title": "EIP-1193: Ethereum Provider JavaScript API ",
+            "index": 640,
+            "category": [
+                "Working Groups",
+                "Provider Ring"
+            ],
+            "tags": [
+                "eip-1193"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "1",
+                    "likes": "8",
+                    "time": "02/07/2018-22:47:57",
+                    "content": "Hey everyone, After synthesizing the discussions in ethereum/interfaces#16 and EIP 1102, we\u2019ve come up with a proposal to standardize an Ethereum Provider API. Here is a link to the EIP. We would like to encourage discussion here with feedback and comments or suggestions for improvement. We will be working on an initial implementation in Mist this week. Cheers! ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/forming-a-ring-provider-ring/1852"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "02/07/2018-22:50:51",
+                    "content": "The opening post had a max limit of links, so here are the links to the relevant discussions: ethereum/interfaces#16 EIP 1102 ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/1102"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "02/07/2018-23:40:33",
+                    "content": "All evergreen browsers support async/await and Promises now and there are polyfills for promises when not available.  I recommend having ethereum.send return a promise and not take a third parameter, rather than continuing to follow the legacy JS paradigm of callbacks.  The API needs to be specified in a lot more detail.  As currently specified there is not enough information available.  Personally, I would recommend including TypeScript definitions for everything and be ultra-specific.  For example, does params array support numbers or only 0x prefixed hex encoded numbers? Is the provider API expected to match the JSON-RPC API exactly or is it limited in what is supported? Does the ethereum provider support the pub-sub methods (stuff that normally only works over a persistent connection like a websocket)? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.240259740259741
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "02/07/2018-23:42:49",
+                    "content": "I recommend constraining the error in the ethereum.send callback to be of type Error (and strictly specifying this).  Writing client code to interface with this will be much simpler if the client has a strong guarantee of the types it can receive. On a similar vein, is the result just whatever the JSON-RPC sent back? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.791666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "5",
+                    "likes": "2",
+                    "time": "02/07/2018-23:45:32",
+                    "content": "ethereum.on('network_changed', ...) and ethereum.on('account_changed', ...) would remove the top two causes for frequent polling of the provider. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "6",
+                    "likes": "2",
+                    "time": "03/07/2018-00:03:07",
+                    "content": " All evergreen browsers support async/await and Promises now and there are polyfills for promises when not available. I recommend having ethereum.send return a promise and not take a third parameter, rather than continuing to follow the legacy JS paradigm of callbacks.  Sounds good to me.  Personally, I would recommend including TypeScript definitions for everything and be ultra-specific. For example, does params array support numbers or only 0x prefixed hex encoded numbers?  Sure we can look into providing TypeScript definitions with the EIP. Open to discussion about supporting numbers, I think it would be fine.  I recommend constraining the error in the ethereum.send callback to be of type Error (and strictly specifying this).  Sure.  On a similar vein, is the result just whatever the JSON-RPC sent back?  I think it would be smart to.  ethereum.on(\u2018network_changed\u2019, \u2026) and ethereum.on(\u2018account_changed\u2019, \u2026) would remove the top two causes for frequent polling of the provider.  Open to adding these events, they seem important from the perspective of an app. Could we resend the \u2018connect\u2019 event if the network changes or new accounts are connected? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.977032227032227
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "03/07/2018-00:47:58",
+                    "content": "If you want to re-use connect, it seems like sending end then connect would be more correct? The problem with re-using the connect event is that dapps can\u2019t constrain how much state they destroy based on context.  For example, when the account changes I may retain internal dapp state of logs I have fetched (like trading history), but I may delete state related to the specific account (like balance), but when the network changes I may blow away all state. For network change, I can\u2019t think of any state I would want to retain but there may be value in having a special event for it so the dapp can appropriately message the user about what happened, whereas an end-connect pair is a bit ambiguous as to what happened (maybe the user disabled the browser plugin, or the browser restarted, or they changed networks, or they got logged out and back in). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.578571428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "03/07/2018-00:53:28",
+                    "content": "Re: numbers Whether the API supports numbers or not IMO depends on whether the API is just trying to wrap the existing JSON-RPC API or if it plans on providing an entire NON LEAKY new API on top of it.  Just using JSON-RPC is way simpler in terms of engineering required and the spec.  Creating a new API that doesn\u2019t suck would be a significantly better dapp developer experience, though it would mean that dapps need to implement JSON-RPC separately. I dislike the JSON-RPC API personally, so I\u2019m not outright against creating a new API, but I do not think that task should be undertaken lightly or done half-way.  For now, unless someone expresses a strong interest in championing a whole new non-leaky API and can prove that they can succeed my vote is to just have this be a thin wrapper around JSON-RPC. If this is a thin wrapper around JSON-RPC API, then we should not accept numbers because the JSON-RPC API does not (should not?) accept numbers. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.523674242424242
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "03/07/2018-02:51:02",
+                    "content": "Re: events, gotcha. accountsChanged definitely seems appropriate to start. By the way in Mist we allow you to connect multiple accounts at once. For networkChanged, it might make sense to stick to \u2018end\u2019 then \u2018connect\u2019 because I don\u2019t think any node can instantly switch like that without \u2018rebooting\u2019 by ending the network session first. We could just always re-pass the ethereum provider on \u2018connect,\u2019 and then the dapp can check the ethereum.info object to see if the network (or anything else) is different than what they were already on. Re: JSON-RPC API, yes I think a thin wrapper is best. The JSON-RPC spec says that it supports the four primitive types of JSON: Strings, Numbers, Booleans, and Null. I think it makes sense to just pass the params directly to the node as given, I don\u2019t see a benefit in interfering\u2026thoughts? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.805555555555556
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "03/07/2018-03:44:06",
+                    "content": "JSON-RPC spec supports string, number, boolean, null, but the Ethereum JSON-RPC API does not (I believe).  For most of its payloads it only supports numbers hex encoded as a string.  I think there are a few places where it accepts/excepts an actual number, but it is unclear where these are other than by poking at it. If this is going to be a thin wrapper around the Ethereum JSON-RPC API then you are right, it is probably best to have params in ethereum.send just be an Array<any>. // JSON-RPC requests ethereum.send(method, params): Promise<result: Object?, error: Error?>  I think this should change to // JSON-RPC requests ethereum.send(method: string, params: Array<any>): Promise<any>;  Note in particular that it returns a promise of any. If an error occurs during processing, then the promise will be rejected with an Error from the provider.  If an error comes back from the JSON-RPC API call, then response.error will be wrapped in a JS Error and the promise rejected with that.  If no errors occurs then the promise will resolve with whatever was in the JSON-RPC response.result.  (all of this should be spelled out clearly using MUST wording like:  If the Ethereum JSON-RPC API returns response object that contains an error property then the Promise MUST be rejected with an Error object containing the response.error.message as the Error message, response.error.code as a code property on the error and response.error.data as a data property on the error. If an error occurs during processing, such as an HTTP error or internal parsing error then the Promise MUST be rejected with an Error object containing a human readable string message describing the error and SHOULD populate code and data properties on the error object with additional error details. If there is no error on the response and there is a result on the response then the promise MUST resolve with the response.result object untouched by the implementing wrapper.  Though, after typing the above I realize that some providers may not be interfacing with an external JSON-RPC API provider and instead may be fulfilling requests themselves, so someone should probably reword that to indicate that the above apply only if your provider is wrapping external calls, and if your wrapper is not talking to an external JSON-RPC API provider then it should ensure that the promise is rejected with an Error that matches the above shape in the case of an error or it should resolve with an object that matches the JSON-RPC API object as specified in the Ethereum JSON-RPC documentation. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.316043083900227
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "03/07/2018-17:56:43",
+                    "content": "Thanks Micah, just updated with your helpful contributions. Let me know if there are any other considerations! I will keep working on writing out the MUST spec for the pub-sub subscriptions and events. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.109375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bitpshr",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "03/07/2018-21:45:46",
+                    "content": "Thanks for working to formalize a provider API @ryanio! I think this looks good so far. After a quick verbiage review, I\u2019d suggest removing the note about the provider request return value in the \u201csummary\u201d section since this is covered by EIP-1102. I\u2019d also suggest modifying the \u201cusage\u201d section slightly to only show provider API usage, not how it\u2019s requested. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.383333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "09/07/2018-10:43:07",
+                    "content": "Why doesn send talks about JSON RPC? The ideas of this provider is to hide the JSON RPC stuff behind the provider, and therefore only accept method and params. In the future there can be other means by which the browser or middle ware talks to a node. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.475
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "09/07/2018-10:45:55",
+                    "content": "I am not convinced of the requesting of ethereum providers. They should be there by default. As for protecting the users privacy we simply don\u2019t return any accounts (only an empty array), until the user allows accounts to be visible. Without accounts, the dapp can only access common information from the blockchain which is not a problem. Also from a usability perspective, nobody wants to click OK for every website he visits. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.214285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "09/07/2018-16:29:26",
+                    "content": " Why doesn send talks about JSON RPC? The ideas of this provider is to hide the JSON RPC stuff behind the provider, and therefore only accept method and params. In the future there can be other means by which the browser or middle ware talks to a node.  The send method does only accept method and params.  I am not convinced of the requesting of ethereum providers. They should be there by default. As for protecting the users privacy we simply don\u2019t return any accounts (only an empty array), until the user allows accounts to be visible. Without accounts, the dapp can only access common information from the blockchain which is not a problem.  We should have more discussion around this, what do other people think? I do think EIP 1102 makes a good argument for the behavior against fingerprinting attacks. I also like the idea of having a standard way you can explicitly request the provider and expect to receive it, instead of relying on it being available in the global namespace. I don\u2019t think a dapp should have automatic access to the provider due to the potential for abuse (a rogue dapp sending eth_getBlockByNumber 10000 times locking up your machine before you even understand what\u2019s going on.) We could introduce rate limiting in the provider, or maybe how the nodes are designed to handle something like that, but I don\u2019t think a normal webpage should have default access to a provider.  Also from a usability perspective, nobody wants to click OK for every website he visits.  I believe you only visit a small number of dapps, and giving explicit permission the first time you visit a new dapp is okay for most users in such a sensitive environment. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.418560606060606
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "11/07/2018-15:43:16",
+                    "content": "The spam attacks from a dapp is a valid concern, but you could do that with javascript today as well. Simply open a 1000 alert windows. Though as we have seen browser protect against that, so could Mist and others, when the see that to many requests are fired by one dapp\u2026 I think usability and easy access by dapps is key. Similar like the chrome object, which is also just \u201cthere\u201d. But i am happy to hear more opinions on that. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.595238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "17",
+                    "likes": "2",
+                    "time": "15/07/2018-12:11:39",
+                    "content": "I believe the argument for not revealing web3 enabled browser is that it gives away information about the user, particularly that they use ETH.  This allows advertisers to target you more specifically as well as allows attackers to create more targeted attack vectors (for example, that don\u2019t show up for non-web3 users to reduce the time until they are found). This is similar to user agents, in that by telling Google I am using Firefox via User Agent, it can advertise to me to use Chrome.  Similarly, an attacker can have their attack only execute against Chrome users that are vulnerable to the attack, and lie dormant for Firefox users. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.476190476190475
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bitpshr",
+                    "index": "18",
+                    "likes": "2",
+                    "time": "16/07/2018-12:26:02",
+                    "content": "@frozeman: Without sidetracking the discussion around the actual provider API, I feel strongly that exposing either a provider object or web3 globally by default is objectively different than the Chrome browser exposing a chrome global (or any other global on the window object.) A browser-specific utility object like chrome offers no identifying information beyond browser brand, which is already deducible by other means. The mere presence of an Ethereum-specific object uniquely identifies Ethereum users regardless of whether an account is exposed. A more-accurate comparison of this behavior would be if your fiat bank blindly injected an identifying object on every website you visited so any site could know what bank you specifically used (and in some cases, your account number.) MetaMask recently saw a wave of successful, high-profile phishing attempts that specifically targeted users based on web3 availability. Like @MicahZoltu said, the genesis of opt-in exposure is privacy, not spam-prevention. Further, EIP-1102 lays out a protocol for user-approved provider access, but it doesn\u2019t mandate any specific UX. For example, what if dapp browsers cached which sites a user has approved so it\u2019s a one-time approval? It\u2019s still possible to provide a near-\u201calways there\u201d experience while still maintaining necessary user privacy and giving them control over which sites know they\u2019re Ethereum users. @ryanio: I think the API is coming together very nicely. Do you plan to define the proposed eth_changeNetwork RPC method, or is this outside the scope of this proposal? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.306746031746031
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "16/07/2018-19:00:10",
+                    "content": "    bitpshr:  @ryanio: I think the API is coming together very nicely. Do you plan to define the proposed eth_changeNetwork RPC method, or is this outside the scope of this proposal?   Thanks! Hm, I\u2019m not sure if it\u2019s outside scope, but after thinking about it since every implementing provider will need to handle the request differently, we could include a spec line like this under send:  If the method eth_changeNetwork is sent with params [networkId: String], the implementing provider MUST change the network and on success MUST emit the event networkChanged with the new networkId. If the provider cannot handle changing to the requested network or encounters any other error in the changing process, the provider MUST reject the Promise with an Error object containing a human readable string message describing the error and SHOULD populate the code and data properties on the error object with additional error details.  What do you think? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5456818181818175
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bitpshr",
+                    "index": "20",
+                    "likes": "1",
+                    "time": "21/07/2018-22:58:49",
+                    "content": "I think the eth_changeNetwork specification as written above makes sense. However, since this proposal is meant to be specific to the JavaScript provider API, not the underlying RPC API, I worry slightly about this newly-suggested method getting lost. I\u2019d suggest proposing this change directly to the RPC specification, and then retroactively updating the abstracted JavaScript API via this proposal. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.916666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "22/07/2018-17:16:52",
+                    "content": "That sounds like a good idea. After finishing our implementation in Mist, I will see if I can propose eth_changeNetwork as an addition to the RPC specification. Thanks again for your help. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "07/08/2018-07:23:34",
+                    "content": "I would also say that account change etc should be future subscriptions. The reason why I introduced the new subscription model back then was to allow many new subscription types like: account changed, state changed, balance changed, etc. to be implemented and added in the future. This would require no change to the basic subscription ali proposed here, just anew type with or without extra Params. On the other hand the unsubscribe should also work for \u201cnetworkChanged\u201d and such. This is currently not specified. @ryanio you proposal also says it should implement the sendAsync method to be backwards compatible. I would not do that, as the web3 provider used since 2 years has send function being a sync, I would rather let libraries like web3.js deal with handling the different provider types like legacy web3.currentProvider ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.269886363636363
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "07/08/2018-18:49:10",
+                    "content": "    frozeman:  I would also say that account change etc should be future subscriptions. The reason why I introduced the new subscription model back then was to allow many new subscription types like: account changed, state changed, balance changed, etc. to be implemented and added in the future. This would require no change to the basic subscription ali proposed here, just anew type with or without extra Params.   I like the idea. I am a fan of as thin as a provider as possible, so having those events as subscriptions sounds smart. How would we go about implementing the new subscription types though, would we need to propose them to the node teams (geth, parity, etc.) to implement? The way it is currently set up, it is much easier for the provider clients (Mist/MetaMask/Status/etc.) to implement and emit when the user changes which accounts are authenticated to the dapp or when the user changes the network.     frozeman:  On the other hand the unsubscribe should also work for \u201cnetworkChanged\u201d and such. This is currently not specified.   Right now  those events are specified to be emitted using EventEmitter so you would just use window.ethereum.removeAllListeners('networkChanged'). The subscribe/unsubscribe methods as currently defined are meant to explicitly be used for the pub-sub spec.     frozeman:  @ryanio you proposal also says it should implement the sendAsync method to be backwards compatible. I would not do that, as the web3 provider used since 2 years has send function being a sync, I would rather let libraries like web3.js deal with handling the different provider types like legacy web3.currentProvider   Ok sounds good, I would much prefer not needing to provide methods to make it compatible. Is there someone on the web3.js team I can get in contact with to help enable the provider as defined in this sample implementation to work as a web3.js provider? I had to provide sendAsync to get it working as expected, but if we could handle it inside web3.js itself that would be great. I think the lib would need to recognize the EthereumProvider object and use send and then manage the callbacks itself inside the lib\u2019s request manager. At least that\u2019s my understanding of what you meant, let me know if I\u2019m interpreting it incorrectly. Thanks Fabian! ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md#sample-class-implementation"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.580387205387205
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dpyro",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "07/08/2018-21:40:54",
+                    "content": "I\u2019m using Typescript syntax since it\u2019s straightforward to test. ethereum.send(method: String, params?: Array<any>): Promise<any>;  Why not also return the response ID?  ethereum.subscribe(subscriptionType: String, params?: Array<any>): Promise<String|Error>;  Javascript Promises already reject with Error that is caught using .catch(). There\u2019s no need for an Error return type on top of that. ethereum.subscribe(subscriptionType: string, params?: any[]): Promise<string>;   ethereum.unsubscribe(subscriptionId: String): Promise<Boolean|Error>;  Same reasoning as above. ethereum.unsubscribe(subscriptionId: string): Promise<boolean>;   ethereum.on('accountsChanged', listener: (accounts: Array<String>) => void): this;  I think the casing of the account addresses needs to be specified. What about considering this alternative? ethereum.on('account.added', listener: (account: string) => void) ethereum.on('account.removed', listener: (account: string) => void)  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.017857142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "07/08/2018-22:00:24",
+                    "content": "    dpyro:  Why not also return the response ID?   Is there any benefit to have it? (What would you do with it? How would you want it returned?)     dpyro:  Javascript Promises already reject with Error that is caught using .catch() . There\u2019s no need for an Error return type on top of that.   Great point, I\u2019ll update.     dpyro:  I think the casing of the account addresses needs to be specified.   I\u2019m not sure, I think it adds more complexity. I\u2019m thinking dapps should be smart enough to react on the accountsChanged array of addresses. Having an event per account doesn\u2019t make much sense if the user adds or removes multiple accounts at once, just creates more handling logic rather than the dapp reevaluating its state on accountsChanged. What do you think? Thx! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.438492063492064
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alcuadrado",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "10/12/2018-20:40:28",
+                    "content": "Thanks for your work on this proposal @ryanio. I really like the idea of having a standard provider API. I\u2019m concerned that forcing the provider constructor\u2019s name to be EthereumProvider is too restrictive, as it makes it harder to extend  a provider by composing it. As an example, this provider wouldn\u2019t be conforming with the standard: class WrappedEthereumProvider {     constructor(provider) {         this._provider = provider;     }      async send(method, params) {         if (this.isSpecialCase(method, params)) {             return this.specialCase(method, params);         }          return this._provider.send(method, params);     }      // Rest of the implementation... }  As a workaround one could always name the provider classes EthereumProvider, but that would create confusion. I suspect this restriction was added to let developers check if window.ethereum is EIP-1193 without having to expose its class (ie: no window.ethereum instanceof EthereumProvider available). If that\u2019s the case, adding a method isEIP1193Provider() : boolean may be an alternative solution. Any thoughts? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.583333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alcuadrado",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "10/12/2018-20:46:41",
+                    "content": "Also, the EIP suggests that web3.js 1.0.0-beta37 implements this standard, but it doesn\u2019t. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alcuadrado",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "15/12/2018-00:06:12",
+                    "content": "I have two more comments:   eth_requestAccounts returns an array of public keys, not their addresses. This makes it impossible to mimic the behavior in a provider that connects via HTTP to a node. Why not addresses? It\u2019s not clear if accountsChanged should me emitted right after eth_requestAccounts.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.069047619047619
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "15/12/2018-18:02:22",
+                    "content": "    alcuadrado:  eth_requestAccounts returns an array of public keys, not their addresses. This makes it impossible to mimic the behavior in a provider that connects via HTTP to a node. Why not addresses?   You\u2019re right it should be addresses, I will update the language of the EIP soon. I thought public key === address, but turns out the address is just the last 20 bytes of the public key.     alcuadrado:  It\u2019s not clear if accountsChanged should me emitted right after eth_requestAccounts .   Yes I believe that if accounts ever change, for example after eth_requestAccounts or for any other reason like user choice, accountsChanged should always emit so the dapp knows to update its state.     alcuadrado:  Also, the EIP suggests that web3.js 1.0.0-beta37 implements this standard, but it doesn\u2019t.   It seems like it\u2019s still in progress so I will update that, it should be in an upcoming version soon. Thanks.     alcuadrado:  I\u2019m concerned that forcing the provider constructor\u2019s name to be EthereumProvider is too restrictive, as it makes it harder to extend a provider by composing it.   In this case could you just set the name to EthereumProvider in your own constructor? If its interface behaves similarly then it accomplishes the goal of still being an EthereumProvider, even if it is wrapped, the dapp or end js app doesn\u2019t really need to know - just that it can use the standard interface it\u2019s expecting (send, etc.) Thanks for your thoughts & comments! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.231516290726818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alcuadrado",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "15/12/2018-21:52:06",
+                    "content": "    ryanio:  You\u2019re right it should be addresses, I will update the language of the EIP soon. I thought public key === address, but turns out the address is just the last 20 bytes of the public key.   I get it now, thanks for your answer.     ryanio:  Yes I believe that if accounts ever change, for example after eth_requestAccounts or for any other reason like user choice, accountsChanged should always emit so the dapp knows to update its state.   Can this be clarified in the EIP? I think the more precise an EIP is, the better.     ryanio:  In this case could you just set the name to EthereumProvider in your own constructor? If its interface behaves similarly then it accomplishes the goal of still being an EthereumProvider, even if it is wrapped, the dapp or end js app doesn\u2019t really need to know - just that it can use the standard interface it\u2019s expecting (send, etc.)   You can\u2019t do that if you want to extend from the provider. EthereumProvider extends EthereumProvider is a syntax error. You can workaround this by separating them in different modules and importing the original one with an aliased import. But then, isn\u2019t this worth it? Wouldn\u2019t a boolean field be simpler and even easier to check? And one more question: If I understand correctly eth_subscribe and ssh_subscribe only work with WebSockets or IPC providers. What should an EIP-1193 compatible HTTP provider do if someone does one call like these?  provider.on('notification', ...) provider.send('eth_subscribe', ...) provider.send('eth_unsubscribe', ...) provider.send('shh_subscribe', ...) provider.send('shh_unsubscribe', ...)  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.933928571428572
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alcuadrado",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "16/12/2018-00:07:22",
+                    "content": "I think this also needs some clarification:  Events are emitted using EventEmitter.  Does it mean that EthereumProvider MUST extend EventEmitter? Or that it MUST implement its interface? Both of them will contradict the initial section that says that EthereumProvider only has two methods. Another option that comes to my mind is that the intention of that phrase is to spec the order in which listeners are called, copying EventEmitter.prototype.emit semantics. Thanks! Patricio ",
+                    "links": [
+                        "https://nodejs.org/api/events.html#events_emitter_emit_eventname_args"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.921875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "21/12/2018-16:22:09",
+                    "content": "    alcuadrado:  Can this be clarified in the EIP? I think the more precise an EIP is, the better.   Yes for sure.     alcuadrado:  You can\u2019t do that if you want to extend from the provider. EthereumProvider extends EthereumProvider is a syntax error. You can workaround this by separating them in different modules and importing the original one with an aliased import. But then, isn\u2019t this worth it? Wouldn\u2019t a boolean field be simpler and even easier to check?   Gotcha, I am trying to keep the interface as simple/minimal as possible. Would there be a way to achieve this without a new method?     alcuadrado:  What should an EIP-1193 compatible HTTP provider do if someone does one call like these?  provider.on('notification', ...) provider.send('eth_subscribe', ...) provider.send('eth_unsubscribe', ...) provider.send('shh_subscribe', ...) provider.send('shh_unsubscribe', ...)    I can make a new error code for \u201cUnsupported Method\u201d that could be returned.     alcuadrado:  Does it mean that EthereumProvider MUST extend EventEmitter ? Or that it MUST implement its interface? Both of them will contradict the initial section that says that EthereumProvider only has two methods. Another option that comes to my mind is that the intention of that phrase is to spec the order in which listeners are called, copying EventEmitter.prototype.emit semantics.   Right, the intention is mostly to have the emit and on semantics, but I like the idea of requiring extending EventEmitter because then you get all the goodies along with it that others may find useful. Thanks for your thoughts and ideas! -Ryan ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.1385122230710465
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/benjamincburns",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "01/02/2019-01:56:39",
+                    "content": "What was the rationale for the EthereumProvider class name requirement? I worry that this requirement will make debugging things quite difficult when we stack multiple providers together in the future (for example, see truffle-hdwallet-provider). Is it the intention for this requirement to be enforced by web3 and similar libs in all execution environments, or just in the browser? Either way, I think this requirement is an overstep, as different provider implementations should be capable of differentiating themselves by class name within a single namespace/scope. Also\u2026  Gotcha, I am trying to keep the interface as simple/minimal as possible. Would there be a way to achieve this without a new method?   Right, the intention is mostly to have the  emit  and  on  semantics, but I like the idea of requiring extending EventEmitter because then you get all the goodies along with it that others may find useful.  I find these two statements to be at odds with one another. In the browser who\u2019s definition of EventEmitter should the provider extend? If I bundled my own, how will this requirement be enforced? In the interest of minimizing the footprint required to meet the goals of this EIP, it should be sufficient that only some pieces of the EventEmiter interface are required, but encourage inclusion of the full EventEmitter interface via whatever means are appropriate for the code in question. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.718952922077922
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alcuadrado",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "01/02/2019-14:06:33",
+                    "content": "    ryanio:  Gotcha, I am trying to keep the interface as simple/minimal as possible. Would there be a way to achieve this without a new method?   I agree with the goal of keeping the interface minimal, but I think that\u2019s better achieved by adding a method or field (e.g. public readonly isEIP1193: boolean) than by imposing a name. The latter makes the name part of the interface, and that has way more implications than a field.     ryanio:  I can make a new error code for \u201cUnsupported Method\u201d that could be returned   That would be super useful.     ryanio:  Right, the intention is mostly to have the emit and on semantics, but I like the idea of requiring extending EventEmitter because then you get all the goodies along with it that others may find useful.   I also like the idea of having the full EventEmitter functionality, specially if we could get that by just extending EventEmitter, but I\u2019m afraid that there\u2019s no canonical EventEmitter implementation to extend from. As @benjamincburns pointed out, it\u2019s not clear which one should be used. To make things slightly worse, node.js\u2019 interface of EventEmitter is not really stable, a few methods have been added in the last couple of versions (e.g. EventEmitter.prototype.off). IMO the best way to go would be to spec the behavior of on, emit, and removeListener to mimic node\u2019s EventEmitter, but without imposing any particular implementation. This way, implementers can still extend from it, but dapp developers can be sure on what\u2019s available across different dapp browsers. PS: Sorry for the super late answer @ryanio ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6636065084340945
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "06/02/2019-04:57:53",
+                    "content": "Thanks @benjamincburns and @alcuadrado for the feedback and suggestions. I am submitting a PR now to remove the class name requirement in favor of a public read-only value isEIP1193 as well as defining a minimum viable implementation of EventEmitter (on, emit, removeListener) Please let me know if you have any additional thoughts. Best regards, Ryan Ghods ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/davidmurdoch",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "10/02/2019-19:40:39",
+                    "content": "Hey! Ganache maintainer here, sorry I\u2019m so late to the party! Here are some of my initial thoughts on the spec:   The provider is designed to be minimal containing 2 methods:  send  and  on .  I wonder if should off be required as well? web3.js currently uses it (via removeListener) here: https://github.com/ethereum/web3.js/blob/599851753b4a35b5c11f902c7c592b111e190073/packages/web3-providers/src/providers/EthereumProvider.js#L55-L81      ryanio:  I am submitting a PR now to remove the class name requirement in favor of a public read-only value isEIP1193   I don\u2019t think this property is necessary. If there is another provider-related EIP in the future that changes the provider interface, we\u2019ll either have to add another isEIPnnnn property or add a version property/getter, while still keeping the isEIP1193 property for backwards compatibility. Also, just because a provider implements this flag does not ensure that it is compliant with the EIP, for instance: Ganache will not be fully compliant due to the addition of eth_requestAccounts (we are fine with the proposal, but likely won\u2019t adhere to it by default). Additionally (and pedantically), \u201cEIP\u201d means \u201cEthereum Improvement Proposal\u201d, which makes the name of this proposed flag a bit strange to me. IMO, provider consumers, like web3.js, should either assume that the given provider is an Ethereum Provider or just check that the required send and on methods exist on the provider instance. e.g.: if (typeof provider.send === \"function\" && typeof provider.on === \"function\") {   return this.providersModuleFactory.createEthereumProvider(provider); }    It is intended to be available on  window.ethereum .  Why recommend that all providers call themselves by the same name? Why recommend that they place themselves in the global namespace at all? I think naming the instance should be up to the user of the library. With that said, referencing window in the spec at all seems out of place, as there are many use cases where a provider will not be used in a browser.   If the implementing Ethereum Provider would like to be compatible with  web3.js  prior to  1.0.0-beta38 , it  MUST  provide two methods:  sendAsync(payload: Object, callback: (error: any, result: any) => void): void  and  isConnected(): Boolean.  web3.js (pre 1.0.0-beta.38) does not require that the provider implement isConnected (ganache-core doesn\u2019t currently implement this property). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.8464912280701755
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "11/02/2019-17:15:43",
+                    "content": "Hey David, thanks for your comments!     davidmurdoch:  I wonder if should off be required as well? web3.js currently uses it (via removeListener ) here:   I think removeListener covers what\u2019s needed. I did start with an off for side effects like cancelling subscriptions based on the call, but figured it was too much logic in what was hoping to be a minimal provider wrapper.     davidmurdoch:  I don\u2019t think this property is necessary. If there is another provider-related EIP in the future that changes the provider interface, we\u2019ll either have to add another isEIPnnnn property or add a version property/getter, while still keeping the isEIP1193 property for backwards compatibility. Also, just because a provider implements this flag does not ensure that it is compliant with the EIP, for instance: Ganache will not be fully compliant due to the addition of eth_requestAccounts (we are fine with the proposal, but likely won\u2019t adhere to it by default). Additionally (and pedantically), \u201cEIP\u201d means \u201cEthereum Improvement Proposal\u201d, which makes the name of this proposed flag a bit strange to me. IMO, provider consumers, like web3.js, should either assume that the given provider is an Ethereum Provider or just check that the required send and on methods exist on the provider instance. e.g.: if (typeof provider.send === \"function\" && typeof provider.on === \"function\") {   return this.providersModuleFactory.createEthereumProvider(provider); }    Sure, makes sense - thanks. I will remove the property. Checking send and on like you exampled seems like a good way to reliably determine if it\u2019s a provider.     davidmurdoch:  Why recommend that all providers call themselves by the same name?   The goal is for JavaScript dapps to all be written in the same way where they can consistently expect an Ethereum provider to live, so they can run cross platform over time without modification.     davidmurdoch:  web3.js (pre 1.0.0-beta.38 ) does not require that the provider implement isConnected ( ganache-core doesn\u2019t currently implement this property).   Ok great ty will update. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.8757215007215
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/davidmurdoch",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "11/02/2019-23:02:58",
+                    "content": "Thanks @ryanio! Note:  discourse won\u2019t let me put more than two links\u2026 so some of my links are mangled.     ryanio:  I think removeListener covers what\u2019s needed. I did start with an off for side effects like cancelling subscriptions based on the call, but figured it was too much logic in what was hoping to be a minimal provider wrapper.   Ah, there is just some ambiguity in the EIP; at the top it states that:  The provider is designed to be minimal containing 2 methods: send and on.  And then later:  [\u2026] the provider MAY provide as many methods as it can reasonably provide, but MUST provide at least on, emit, and removeListener.  I\u2019m wondering if requiring that the provider expose an emit method is necessary. Obviously the provider itself needs to be able to emit events/notifications, but the mechanism in which it does so probably doesn\u2019t matter to the dapp. Of course I could be totally wrong here; maybe there are valid use-cases for dapps to emit events via the provider?      ryanio:  The goal is for JavaScript dapps to all be written in the same way where they can consistently expect an Ethereum provider to live, so they can run cross platform over time without modification.   Ah OK, that makes sense. I do still have concerns though, though they are mostly related to the discussions in EIP-1102 than they are to EIP-1193:  Defining the entry point in this EIP seems like in may be in the domain of an IETF RFC (the IETF documents Internet standards; RFCs are those documents). The reason this may be in the IETF RFC domain is because we may run into compatibility problems with future RFCs that may need to implement an interface on window.ethereum in the future. For example: https [colon] //bugzilla [dot] mozilla [dot] org/show_bug.cgi?id=1075059 and https [colon] //bugzilla [dot] mozilla [dot] org/show_bug.cgi?id=1102219 document issues where individual libraries polluting JS prototypes caused naming issues for browsers. It is possible that in the future browsers (other than Mist) may want to include a window.ethereum object themselves, and this current spec may not be in line with the needs of browsers in the future. polluting the global namespace by default is usually frowned upon. what if a dapp wants to use multiple providers?  (EIP-1102 is discussing this already)  I think the recommendation for using window.ethereum is outside the scope of this provider implementation API, and should likely just be documented as the intended namespace for browsers, browser extensions, etc. that inject their own Ethereum Provider into the global context; client libraries like ganache-core should not behave this way. Or perhaps we could just link to EIP-1102 for details on how browsers and extensions should expose their provider API? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.298832923832924
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/benjamincburns",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "12/02/2019-00:24:09",
+                    "content": "Given that @nivida is already hard at work implementing things in web3.js while we\u2019re still revising the draft, I think we should do our best to expedite consensus on this EIP so he doesn\u2019t need to track too much of a moving target. I\u2019d like to propose that we schedule an open-invite zoom call next week or the week after to discuss this EIP. We can create a thread in the providers ring for the necessary people to weigh in on timezones & availability, and we can announce it at the all core devs call on Friday. I think having all of the concerned parties discussing this synchronously will get us to consensus a lot quicker. I\u2019d also suggest we do the usual thing the foundation does and stream/post the call to YouTube for added transparency/recordkeeping. @ryanio - if you agree with this, perhaps you could start the scheduling thread? If you don\u2019t have the bandwidth for it at the moment, David or I can set it up. Also assuming we move forward with the idea, we should link to the scheduling thread over on this web3 issue as well, as I think there are a number of people watching that case who weren\u2019t well represented in initial discussions of this EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.470238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "12/02/2019-23:17:24",
+                    "content": "Thanks @benjamincburns, yes agreed. If you want to take the lead on organizing a call, @marcgarreau and I would be happy to support getting people together to attend. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "12/02/2019-23:39:19",
+                    "content": "    davidmurdoch:  Ah, there is just some ambiguity in the EIP; at the top it states that:  The provider is designed to be minimal containing 2 methods: send and on .  And then later:  [\u2026] the provider MAY provide as many methods as it can reasonably provide, but MUST provide at least on , emit , and removeListener .    Thanks I will reword/clarify that.     davidmurdoch:  I\u2019m wondering if requiring that the provider expose an emit method is necessary. Obviously the provider itself needs to be able to emit events/notifications, but the mechanism in which it does so probably doesn\u2019t matter to the dapp. Of course I could be totally wrong here; maybe there are valid use-cases for dapps to emit events via the provider?   Yeah, I\u2019ve heard dapps are already using the provider to emit their own events and I don\u2019t think it should be used that way. The only events the provider should emit are what is being specified in the EIP. If most people are extending EventEmitter, I\u2019m not sure if there\u2019s a way to make emit private like that though - please let me know if there is.     davidmurdoch:  I think the recommendation for using window.ethereum is outside the scope of this provider implementation API, and should likely just be documented as the intended namespace for browsers, browser extensions, etc. that inject their own Ethereum Provider into the global context; client libraries like ganache-core should not behave this way. Or perhaps we could just link to EIP-1102 for details on how browsers and extensions should expose their provider API?   Understood, thanks. Yes it is intended mostly as a recommendation since we\u2019re seeing the ecosystem fragment based on which primary provider a dapp is designing around (MetaMask, Status, Mist, etc). JS dapps should easily be compatible across all providers so they can run in any environment, but that\u2019s not the case today. Consistently expecting a provider to show up on window.ethereum seemed to be the best way to achieve that. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.830246913580247
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/davidmurdoch",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "13/02/2019-19:30:48",
+                    "content": "Thanks @ryanio! Gauging interest for the call here: EIP 1193: Provider Ring Call/Meeting ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/davidmurdoch",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "13/02/2019-20:36:13",
+                    "content": "    ryanio:  Yeah, I\u2019ve heard dapps are already using the provider to emit their own events and I don\u2019t think it should be used that way. The only events the provider should emit are what is being specified in the EIP. If most people are extending EventEmitter, I\u2019m not sure if there\u2019s a way to make emit private like that though - please let me know if there is.   Agreed that dapps shouldn\u2019t be using the provider\u2019s event emitter for their own use. There\u2019s no reasonable way of forcing node\u2019s EventEmitter's emit method to be private; i\u2019m only suggesting that the EIP doesn\u2019t require that the method exist as part of the public Provider API \u2013 the mechanism in which the provider emits events should be up to the provider. A rudimentary implementation of a provider could be something like:   // EthereumProvider.js example that just emits an event for   // all calls to `send`    const _emit = Symbol('_emit');   const _subscriptions = new WeakMap();    class EthereumProvider {     constructor() {       _subscriptions.set(this, {});     }      // _emit is a private method because it can't be accessed     // without having access to the _emit Symbol.     [_emit](name, data) {       if (_subscriptions.get(this).hasOwnProperty(name)) {         _subscriptions.get(this)[name].forEach((callback) => {           callback(data);         });       }     }      on(name, callback) {       let subscription;       if (_subscriptions.get(this).hasOwnProperty(name)) {         subscription = _subscriptions.get(this)[name];         subscription.push(callback);       } else {         _subscriptions.get(this)[name] = [callback];       }     }      removeListener(name, callback) {       if (_subscriptions.get(this).hasOwnProperty(name)) {         if (!callback) {           delete _subscriptions.get(this)[name];         } else {           const subscription = _subscriptions.get(this)[name];           const index = subscription.indexOf(callback);           if (index >= -1) {             subscription.splice(index, 1);           }         }       }     }      send(method, data) {       return new Promise((resolve) => {         this[_emit](method, data);         resolve();       });     }   }    module.exports = EthereumProvider;  And example usage (should only log \"data\" to the console once):   const ethereum = new EthereumProvider();    function echo(data) {     console.log(data);   }    ethereum.on(\"echo\", echo);    await ethereum.send(\"echo\", \"data\");    ethereum.removeListener(\"echo\", echo);    await ethereum.send(\"echo\", \"data\");  Maybe there are valid use cases for dapps to use a Provider\u2019s emit, though? I\u2019d like to discuss this on our upcoming call. It\u2019s likely not going to cause a problem for anyone if we do require emit as part of the provider\u2019s public API, even though Dapps may abuse it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.517379679144385
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alcuadrado",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "21/02/2019-15:23:05",
+                    "content": "Hi, I missed the last few messages, so sorry for this long reply. @davidmurdoch, you made some really good points in your last few messages! I agree with you that there are some things that should be out of scope of this proposal. Modifying the DOM being part of an RFC seems right. Also, I think that how to feature detect if a provider implements this proposal should probably be discussed there too. Keeping this proposal focused just on the API of the Ethereum Provider would make it move forward much faster.     ryanio:  Sure, makes sense - thanks. I will remove the property.   I proposed the isEIP1193 field because it would be useful for dapp and libraries authors, but I agree with removing it. I\u2019m not sure how detection would work without it. Checking for send and on function would incorrectly tell you that a MetaMask provider as injected today implements this EIP. Anyway, I don\u2019t think this should be discussed here nor mentioned in the EIP, but in another document.     davidmurdoch:  Ganache will not be fully compliant due to the addition of eth_requestAccounts (we are fine with the proposal, but likely won\u2019t adhere to it by default)   I\u2019m interested in this EIP because Buidler exposes a provider to their users. Unlocking accounts doesn\u2019t make sense there either. I think we could make the initial locked state of the accounts optional. With some explanation that it is a security sensitive decision. Probably some clarification about accountsChanged should be added in case of the provider starting with its accounts unlocked. Should it be emitted anyway? When? I think emitting events at arbitrary times (e.g. when initializing it) will lead to race conditions. When should dapp developers subscribe to it? If we agree that exposing the provider to dapps should be treated in another document, I think the initial state of accounts should also be there. It seems to be a dapp browsers and wallet extensions specific problem.     davidmurdoch:  i\u2019m only suggesting that the EIP doesn\u2019t require that the method exist as part of the public Provider API   I agree. Having that method should be up to the implementation. Some implementations would end up extending from EventEmitter and exposing it, and that\u2019s ok. But there\u2019s no need to forcing all of them to expose it.     davidmurdoch:  I wonder if should off be required as well   I think having an off method would be nice to have a more consistent API. My concern is that many implementations would extend node\u2019s EventEmitter, and it only has off in node 10+. Maybe we should go with addListener & removeListener which have been available since EventEmitter was added. The thing is that on is far more used than addListener, so on & removeListener doesn\u2019t seem like a bad option to me. The last thing I\u2019d like to comment is that the proposal assumes that the provider has a sateful connection, and requires from it to emit connect and close events. There\u2019s no such a thing as \u201cconnection\u201d in Buidler, and AFAIK there isn\u2019t in ganache-core. Also, as I mention before, I think firing events in arbitrary times (e.g. when the internal provider connection is open) will lead to race conditions. I think an optional section for stateful providers can be added, or another document can extend this one with that. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.503422619047619
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/benjamincburns",
+                    "index": "45",
+                    "likes": "1",
+                    "time": "14/03/2019-07:44:38",
+                    "content": "I said as much on discord, but I\u2019ll repeat myself here for completeness. On the original issue which was the basis for this EIP it seemed like there was a strong consensus that the goal behind the discussion was to define the API for ethereum browser environments. That goal seems to have been lost in translation when the EIP was written. In fact, it seems like the EIP doesn\u2019t state any reason for its own existence. @ryanio, can I please request that the EIP be updated to clearly define its goals? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.090277777777777
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "20/03/2019-19:54:36",
+                    "content": "Just found out about this EIP and I love it already! This is very complementary with WalletConnect v1.0 Protocol and shares a lot of the same API endpoints which I\u2019m very happy with I have one proposal for this EIP, could we use chainId instead of networkId. Complying to the EIP-155, chainId won\u2019t conflict while there is no restrictions for networkId. Additionally it would make the Ethereum Provider Javascript API instantly compatible with any EVM blockchain I would replace the networkChanged event with the following chainChanged  chainChanged The provider emits  chainChanged  on connect to a new network. ethereum.on('chainChanged', listener: (chainId: String) => void): this;  The event emits with  chainId , the new chain returned from  eth_chainId .  [EDIT] I wrote a Twitter thread on my main arguments for using chainId over networkId   twitter.com          Pedro Gomes (pedrouid)     THREAD: Why we should be using chainId instead? \ud83e\udd13  Currently, the most common pattern to detect if a dapp/wallet is connected to mainnet or testnet is to use the networkId which is provided by the JSON-RPC method net_version  2:51 AM - 21 Mar 2019     4          2             ",
+                    "links": [
+                        "https://twitter.com/pedrouid/status/1108667372330774528",
+                        "https://twitter.com/pedrouid/status/1108667372330774528"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.659382284382284
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nivida",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "21/03/2019-16:56:10",
+                    "content": "I think a prefixed name like client_networkChanged and client_accountsChanged would be the most accurate name for it and if required we can also add a client_chainChanged. But we should not forget that this EIP-1193 should just define the provider and environment specific events should be specified in a separate EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/olaf89",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "21/03/2019-20:24:41",
+                    "content": "Ethereum JSON-RPC spec supports also Batch requests is there a reason why those are not included in the provider api? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "49",
+                    "likes": "4",
+                    "time": "24/03/2019-09:51:32",
+                    "content": "I started working on a browser plugin that functions as a web3 provider and came to realize that the patterns followed by the community currently, and encouraged in this EIP, are not supported by browsers and in fact browsers take steps to try to prevent this sort of pattern. When a browser extension interacts with a page, they see a sandboxed version of that page that does not share JavaScript objects between each other.  This means that a plugin cannot (without resorting to some pretty terrible hackery) add an ethereum object to the window and expect page scripts to be able to see/use that. While I recognize that I\u2019m late to the game, I would encourage the community to adopt practices for communicating with browser extensions that are more widely supported by the browser community, rather than using techniques that browsers are actively trying to discourage/block. For example, we could use messages for communicating with the ethereum provider, which is something that has wide browser support and is the \u201ccorrect\u201d way to have a page communicate information to a plugin, or a parent window (in the case where someone builds a wrapping page for providing Ethereum access, rather than a plugin). While I understand that there are backward compatibility issues with changing the mechanism by which dapps communicate with ethereum providers, I think that it would not be terribly difficult for someone to author a simple adapter that would just convert from window.ethereum.* to window.postMessage(*). ",
+                    "links": [
+                        "https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.586309523809524
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/callmenick",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "25/03/2019-21:45:55",
+                    "content": "I think we got down into this rabbit hole in the first place because of the web3 library. We wanted a way to give the convenience of the web3 library to dapps / browsers in the same way that it\u2019s handy inside a node. The way a dapp developer instantiates web3 is with new Web3(window.ethereum)\u2026 so extensions like MM have done everything possible to facilitate this. I agree with your points strongly btw, but I think unless we get a full fledged dapp-to-extension convenience library that wraps the post message interface with all the rpc calls, then we\u2019re shit out of luck  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.785634118967452
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "51",
+                    "likes": "2",
+                    "time": "26/03/2019-07:33:04",
+                    "content": "If someone were to author an adapter library that converted window.ethereum calls into window.postMessage to conform to the recommendations for communication between page/extension or page/iframe host (https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Content_scripts#Communicating_with_the_web_page), is there interest in updating this EIP to follow that instead? Long term, dapps really should be using window.postMessage directly (likely through the use of a library like ethers or web3) rather than doing window.ethereum.sendAsync or window.web3.currentProvider.sendAsync, but for backward compatibility reasons I do agree that an adapter library will be necessary (likely injected using MetaMask\u2019s horrific hackery solution). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.291666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "21/05/2019-12:02:01",
+                    "content": "I think this could be easily fixed by managing the ethereum provider as part of the Dapp. If Dapp developers installed the ethereum provider library instead of expecting an injected provider we could then build the hooks using window.postMessage and communicate to browsers extensions just as easily. I think this wouldn\u2019t necessarily change the interface for EIP-1193 but I agree that it would be a better practice than injecting the provider into the webpage. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.291666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "53",
+                    "likes": "3",
+                    "time": "21/05/2019-12:17:30",
+                    "content": "I\u2019ve made a PR to the ethereum/EIPs repo to include the proposed change of replacing the networkChanged event with chainChanged event.   github.com/ethereum/EIPs       Change networkChanged to chainChanged on EIP-1193     by pedrouid   on 12:16PM - 21 May 19 UTC   1 commits   changed 1 files   with 5 additions   and 4 deletions.       ",
+                    "links": [
+                        "https://github.com/pedrouid",
+                        "https://github.com/ethereum/EIPs/pull/2057",
+                        "https://github.com/pedrouid",
+                        "https://github.com/ethereum/EIPs/pull/2057"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adrianmcli",
+                    "index": "54",
+                    "likes": "0",
+                    "time": "05/07/2019-09:07:49",
+                    "content": "There seems to be some confusing language regarding ethereum.enable and steps forward. EIP-1193 [1] depends on EIP-1102 [2]. But EIP-1102 says that ethereum.enable() is deprecated in favour of eth_requestAccounts . However, eth_requestAccounts was recently removed [3] from EIP-1193. So what is the right way forward? [1] https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md [2] https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md#providerenable-deprecated [3] https://github.com/ethereum/EIPs/pull/2092/files ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md#providerenable-deprecated"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.976190476190476
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanio",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "05/07/2019-19:34:48",
+                    "content": "Sorry for the confusion. eth_requestAccounts is what you should be using moving forward. In my opinion it was removed from the EIP prematurely, since it should have been defined in another EIP first so it could be properly linked before being completely removed from 1193. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "56",
+                    "likes": "1",
+                    "time": "16/08/2019-01:28:39",
+                    "content": "Hello everyone, I\u2019ve opened a PR to simplify the error codes defined in this EIP: Simplify EIP 1193 error codes by rekmarks \u00b7 Pull Request #2240 \u00b7 ethereum/EIPs \u00b7 GitHub For context, I discussed this matter with @ryanio earlier this week, although he has not spoken for or against these changes. I greatly appreciate your feedback. Edit: Ryan merged it. Thanks everybody  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "57",
+                    "likes": "0",
+                    "time": "19/08/2019-14:21:10",
+                    "content": "Made a package implementing all JSON RPC 2.0 and EIP 1193 errors: https://www.npmjs.com/package/eth-json-rpc-errors Includes support for serializing errors in a standard-compliant way while e.g. handling RPC  requests. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alcuadrado",
+                    "index": "58",
+                    "likes": "0",
+                    "time": "22/10/2019-03:57:34",
+                    "content": "As we agreed in the Devcon EIP1193 meeting, I created an issue to discuss that EIP. It has a summary of the meeting and a list of next steps.   github.com/ethereum/EIPs      Issue: Discussion: EIP-1193  \t \topened by alcuadrado \ton 2019-10-22 \t \t \t  As agreed at Devcon 5, I'm creating this issue to move the EIP-1193 discussion here. It's been fragmented in multiple places,...        ",
+                    "links": [
+                        "https://github.com/alcuadrado",
+                        "https://github.com/ethereum/EIPs/issues/2319",
+                        "https://github.com/alcuadrado",
+                        "https://github.com/ethereum/EIPs/issues/2319"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "59",
+                    "likes": "1",
+                    "time": "15/11/2019-00:56:52",
+                    "content": "Why does this re-use the send name instead of using a new name?  ethereum.send(options, callback) is an existing method that some providers are providing in the wild today and dapps rely on.  This change makes it so ethereum.send now has a different call signature, but it does not provide a mechanism for detecting whether the provider is using the new signature or the old one. If this used a different function name, then dapp code could do if ('newMethod' in window.ethereum) await window.ethereum.newMethod(...) else await promisify(window.ethereum.newMethod)(...)  However, since the name of the method is the same, only the signature changes, and JS doesn\u2019t provide an easy way of checking call signatures, I now don\u2019t have a reasonable mechanism for being compatible with both old and new providers. Another potential option would be to provide a version field or something on window.ethereum that allows me to check to see what exactly is implemented.  Then I could do if (window.ethereum.version >= 2) await window.ethereum.send(...). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5687229437229435
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/alcuadrado",
+                    "index": "60",
+                    "likes": "0",
+                    "time": "26/04/2020-20:55:10",
+                    "content": "Just in case someone here isn\u2019t following this EIP\u2019s discussion, it has been moved to Last Call, and will be finalized in 6 weeks. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1351"
+}

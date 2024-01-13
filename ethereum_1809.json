@@ -1,0 +1,128 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/last-call-eip-5216-erc1155-approval-by-amount/9898",
+            "title": "[Last Call] EIP-5216: ERC1155 Approval By Amount ",
+            "index": 9898,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "pr-review",
+                "erc1155"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ivanmmurcia",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "11/07/2022-08:55:49",
+                    "content": "Hi everyone, After been discussed in this forum, I created an EIP PR for the initial idea of my draft (https://ethereum-magicians.org/t/working-draft-new-extension-for-erc1155). I open this topic to discuss here said PR. In case that I missed some step, feel free to comment and I\u2019ll change it. Thank you very much. PR: https://github.com/ethereum/EIPs/pull/5216 ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/5216"
+                    ],
+                    "GPT-summary": "The author of the post has created an EIP PR for the initial idea of their draft and is asking for feedback on the proposal. They provide a link to the PR and invite comments. The post may also be of interest to those who want to audit and review the proposal, ask questions about it, or provide constructive criticism.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.925
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ivanmmurcia",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "05/09/2022-15:42:19",
+                    "content": "UPDATE: This EIP is now in Last Call. I need the help of the community so feel free to check it, test the code and find bugs. Let\u2019s discuss about the implementation and move it forward. Thank you in advance! EDIT.- This is the EIP: EIPs/eip-5216.md at master \u00b7 ethereum/EIPs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "03/11/2022-15:53:57",
+                    "content": "Hi @ivanmmurcia thanks for the EIP-5216 QQ: why is approve disallowing the caller to be the operator? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ivanmmurcia",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "05/11/2022-12:20:22",
+                    "content": "Hi @xinbenlv, thanks for your feedback. I have realized that reversing a call because of this check is silly, and also reviewing the OZ\u2019s ERC-20 _approve function implementation, I have seen that what I should check instead, is that neither the owner nor the operator are zero address: require(owner != address(0), \"ERC20: approve from the zero address\"); require(spender != address(0), \"ERC20: approve to the zero address\");  What do you think? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.546875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "08/11/2022-23:52:39",
+                    "content": "That sounds good. Can you create a new PR to update the spec accordingly? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.090909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ivanmmurcia",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "11/11/2022-17:04:37",
+                    "content": "Of course, I\u2019m on my way. Thanks dude! EDIT: Update EIP-5216 with zero address control in _approve function like EIP-20 by ivanmmurciaua \u00b7 Pull Request #5917 \u00b7 ethereum/EIPs \u00b7 GitHub here is the PR  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joestakey",
+                    "index": "7",
+                    "likes": "2",
+                    "time": "12/11/2022-17:29:09",
+                    "content": "Hi @ivanmmurcia , love this EIP, the lack of a proper approval pattern is a big problem with ERC-1155, this EIP will definitely help to make it a more robust standard. A couple things regarding the reference implementation: 1-The proposal states safeTransferFrom MUST Subtract the transferred amount of tokens from the approved amount if msg.sender is not approved with setApprovalForAll But in the reference implementation, the allowance is decremented in all cases. In the case of an operator being approvedForAll, this means _allowances[from][msg.sender][id] can underflow and lead to an allowance being silently inflated. You can add a check before decrementing:         require(             from == msg.sender || isApprovedForAll(from, msg.sender) || allowance(from, msg.sender, id) >= amount,             \"ERC1155: caller is not owner nor approved nor approved for amount\"         ); +       if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {         unchecked {             _allowances[from][msg.sender][id] -= amount;         } +       }         _safeTransferFrom(from, to, id, amount, data);  2-There is a tiny logic issue in safeBatchTransferFrom: The error string line 89 in safeBatchTransferFrom will never be reached, because_checkApprovalForBatch never returns false, it either returns true or reverts line 111 if one of the ids to be transferred does not have sufficient allowance. You can amend the _checkApprovalForBatch so that it returns false instead of reverting if the allowance is not enough. -            require(allowance(from, to, ids[i]) >= amounts[i], \"ERC1155ApprovalByAmount: operator is not approved for that id or amount\"); +           if (allowance(from, to, ids[i]) < amounts[i]) { +               return false; +           }             unchecked {                  _allowances[from][to][ids[i]] -= amounts[i];                 ++i;              }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "3rd party asking questions about proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.0576923076923075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ivanmmurcia",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "14/11/2022-18:46:43",
+                    "content": "Hey @joestakey, thanks for the great feedback. 1- Yes totally, and I\u2019ve detected this but in my defense I have to say that I wrote the reference implementation and the testing suite in 0.8.15, i.e the compiler avoids the underflow you\u2019ve said\u2026 however, this EIP could be implementated in any version of Solidity, so I\u2019ll change. 2- Was my mistake, I only checked that everything worked fine and reverted with the appropiate message but was a tiny logic issue, changed  Cheers! ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 6.180555555555555
+                }
+            ]
+        }
+    ],
+    "group_index": "1809"
+}

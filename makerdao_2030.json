@@ -1,0 +1,57 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/endgame-asset-liabilities-management-alm-technical-design/19182",
+            "title": "Endgame Asset & Liabilities Management (ALM) Technical Design ",
+            "index": 19182,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "psm",
+                "d3m",
+                "alm",
+                "endgame"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#1",
+                    "likes": "21",
+                    "time": "15/12/2022-14:35:02",
+                    "content": "Please note this is my personal view and is not an official position of Protocol Engineering. This document will build upon @SebVentures ALM Framework to lay out possible technical solutions to convert Maker into the Endgame state. The model of Maker moving forward is that every ilk into the vat is a D3M now. While this is not strictly true due to the vaults (ETH-A, WBTC-A, etc) you can mentally picture the user vaults as a single D3M that extends credit to a vault engine similar to how Compound and Aave D3Ms work. The important part is not that everything is an actual D3M, but the mental model of assigning credit lines to arbitrary investment vehicles is useful. Please note that the Pregame components are to be prioritized at the highest level, but this document should serve as a target of where we want to go (if we so choose). It\u2019s also possible that some items here can be done in parallel. There are 3 main components that need to be in place to convert to the Endgame model:  D3M V3 - Contains upgrades to support SubDAO accounting and dealing with more advanced liquidation requirements + reporting. ALM Controller - Instead of picking fixed debt ceilings for various collateral types we will define a list of constraints that takes into account peg management, duration risk, ROI, etc, and use a solver to allocate target debt ceilings. PSM V2 - Second iteration of the PSM will combine all the innovations of the space to build the most robust peg management tool. This includes things like pooling liquidity, bank run deterrence via dynamic bonding curves, AMOs, etc.   D3M V3  4442\u00d72832 610 KB  V2 of the D3M covers most of the features required for the Endgame however there are a few additions that are needed:  Cash Flow Manager In addition to the Plan and Pool contracts that accompany each D3M, there needs to be a cash flow manager which deals with what to do with profit and losses. In the case of existing D3Ms to Aave and Compound this is simple in that it just sends all the profit or losses to the Maker surplus buffer (vow). SubDAOs have their own junior treasuries though, so any income (with fee splits to Maker Core) should be directed there. The D3MHub will continually track asset vs liabilities for each D3M and dai will be minted or seized accordingly from the junior surplus buffer. It is incumbent on each D3M connector to provide reasonably accurate Oracle pricing to get a good determination of profit vs losses.  Extend Protocol Reporting External protocols should report the following information:  Net Asset Valuation (NAV) - Already exists Liquidity Profile Capital at Risk (CaR)   Net Asset Valuation (NAV) All D3Ms need to report NAV to the best of their ability. This exists already as the pool.assetBalance() which returns the total value of the position in units of DAI. For manual deals such as MIP65 this can be done via a reporting multi-sig similar to what @SebVentures is doing here. Having accurate on-chain asset reporting is essential not only for determining cash flows to the SubDAO, but also for the new version of the PSM which will adjust redemption curves based on solvency of the system. In the long term work should be done to make these reporting mechanisms independent, resilient and decentralized as much as possible.  Liquidity Profile SubDAO investment vehicles will define their liquidity profile. For example: 20% in Cash (liquidate immediately) 50% in Money Market Fund (liquidate in 7 days) 30% in Private Credit (liquidate in 1 year)  The ALM Controller is aware of these constraints when solving for debt ceiling allocations. The logic for liquidations can be done entirely in the ALM Controller which will be elaborated on below. For something like a crypto money market it may look like: 80% in Cash / Unused DAI (liquidate immediately) 20% in crypto-loans (liquidate in 3 months)  In this case a liquidation order may be interpreted as instructions to raise the fees on DAI loans until people close their positions. We can automate this process with Maker Core vaults too.  Capital at Risk This can be defined by off-chain processes under the scopes framework and set by governance. It is used to determine the risk adjusted return of the asset(s), surplus buffer requirements, cost of capital, etc.  ALM Controller  3396\u00d73489 467 KB  It\u2019s important to switch from allocating fixed debt ceilings for each collateral type to using a constraint-based ALM Controller. The status quo involves chopping off chunks of the stablecoin excess demand and putting into fixed sized instruments such as the 1.6b deal to Coinbase. While this is okay for now, it will not scale. We need to define top-down rules on how to allocate the balance sheet and have an automated controller do enforcement. The ALM Controller is a place to define all the constraints of the system. This will include things like max total exposure, liquidity, peg management, \u201cfairness\u201d between SubDAOs, etc. Some form of solver will be attached to this to determine the optimal configuration (max. risk adjusted return or similar) which satisfies all the constraints. This controller will be the boss to the SubDAOs telling them when they have new debt capacity available and when they need to close out positions. The output of the ALM Controller is a list of target debt allocations for each of the D3Ms. It is then up to each D3M on how to meet those requirements. Some D3Ms such as Aave and Compound can respond almost immediately whereas D3Ms to RWA protocols such as Centrifuge may take time to deploy investments or liquidate positions. This will combine nicely with the switch to the SubDAO structure in that rules can be defined in advance for the relationship between SubDAOs and Maker Core. Liquidation orders should be made into discrete chunks to prevent a bunch of small orders being put through in rapid succession. Failure to meet these requirements will result in capital being seized from the SubDAO\u2019s surplus buffer. This is an initial high-level design, but as we proceed the requirements should be iterated on and improved. More advanced options can be designed in the future if needed such as the ability to bypass full durations if Maker Core pays a penalty, etc. To get started soon the scopes framework should begin developing off-chain processes to manually begin this process. We can iterate and improve on the Liquidity & Stability + Risk scopes to eventually encode the rules in a smart contract ALM Controller.  PSM 2.0 There has been a lot of innovation in the space since the first version of the PSM. Built out of necessity it is the most naive implementation, and probably will not prove to be robust during more adverse market conditions. We should take the learnings from the space and incorporate them into Maker\u2019s PSM. This includes things such as:  Pooled Liquidity There is no need to have separate PSMs for USDC, USDP, GUSD, etc. It should be consolidated into one pool of \u201ccash-like\u201d liquidity to be either held in the reserve or deployed into AMOs.  Dynamic Bonding Curves As outlined in my previous post, we are not set up for panic scenarios. Gyro Finance has developed a more robust way to do stablecoin redemptions that provides market incentives to counteract bank runs / panics. In a nutshell this system uses oracle pricing to determine solvency of the system and adjust redemption curves accordingly. Some assets do not have liquid secondary markets and are entirely off-chain such as MIP65. While we are in this pre-tokenization stage we will also need the PSM to respond to extreme market conditions within the governance delay where there is a panic, but it\u2019s not clear on-chain what is causing this panic. As the world gets tokenized and secondary markets form oracle pricing data should improve, and Maker will be more resilient for it. Able to withstand more sizable losses with a market-driven path to recovery.  Algorithmic Market Operations (AMOs) The term coined by Frax Finance this refers to directly injecting DAI liquidity into 3rd party protocols. We already do this in an inefficient way with the G-UNI DAI/USDC vaults. This will simply move things over to be protocol controlled instead of user vaults. This is not high priority, but should be done eventually. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/endgame-v3-pregame-products-lod-summary/17687",
+                        "https://forum.makerdao.com/t/mip65-monetalis-clydesdale-liquid-bond-strategy-execution/13148",
+                        "https://dune.com/SebVentures/makerdao-mip65",
+                        "https://forum.makerdao.com/t/mip81-coinbase-usdc-institutional-rewards/17703",
+                        "https://forum.makerdao.com/t/discussion-on-existential-exposure-and-mitigation/18931",
+                        "https://gyro.finance/",
+                        "https://forum.makerdao.com/t/mip65-monetalis-clydesdale-liquid-bond-strategy-execution/13148",
+                        "https://frax.finance/",
+                        "https://forum.makerdao.com/t/automating-asset-and-liability-matching/20063",
+                        "https://forum.makerdao.com/t/weekly-forum-recap/16247/38"
+                    ],
+                    "GPT-summary": "The author of the post presents a technical design proposal for the Endgame Asset & Liabilities Management (ALM) for Maker. The proposal builds upon the ALM Framework of @SebVentures and outlines possible technical solutions to convert Maker into the Endgame state. The proposal includes three main components: D3M V3, ALM Controller, and PSM V2. The author explains each component in detail and provides suggestions for improvements. The post also invites feedback and suggestions from the community.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.616424052138338
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "16/03/2023-20:35:32",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

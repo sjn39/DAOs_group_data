@@ -1,0 +1,316 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-proposal-create2-contract-factory-precompile-for-deployment-at-consistent-addresses-across-networks/6083",
+            "title": "EIP Proposal: CREATE2 contract factory precompile for deployment at consistent addresses across networks ",
+            "index": 6083,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "precompile"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "1",
+                    "likes": "3",
+                    "time": "23/04/2021-20:13:04",
+                    "content": "Moving here a conversation started on Twitter to further discuss before going into opening an EIP. The idea behind this EIP is adding a precompile that executes a CREATE2 with whatever data is sent to it and a fixed salt. The rationale for it being a precompile is not performance, but rather being available at the same address across all networks. This allows any contract deployed through this factory to also have the same address across all networks where it\u2019s deployed. The aim is to provide a more robust alternative to Nick\u2019s method, used for example in the deployment of the 1820 registry. Nick\u2019s method requires hardcoding the gas price of the deployment tx, which may be reasonable for a chain at a certain time, but not so much in other chains which use a different currency altogether. With the proliferation of EVM-compatible sidechains and L2s, it\u2019s critical to have consistent addresses across chains for well-known contracts that provide global services, such as EIP3074 invoker contracts. I\u2019m curious to hear others\u2019 thoughts about this idea, before turning it into a full-fledged EIP. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-1820#single-use-registry-deployment-account",
+                        "https://ethereum-magicians.org/t/discussion-to-eip-3788-strict-enforcement-of-chainid/7001/12"
+                    ],
+                    "GPT-summary": "The author of the post is proposing an EIP to add a precompile that executes a CREATE2 with a fixed salt to provide consistent addresses across all networks. The author is asking for feedback on the idea before turning it into a full-fledged EIP. A 3rd party is giving constructive criticism and asking questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.524801587301588
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "23/04/2021-21:10:13",
+                    "content": "That is a good point that gas price is hard coded in, that certainly complicates things. I\u2019m not sure if there is bandwidth for something like this atm, but it does seem like a reasonable proposal. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.572619047619048
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "05/05/2021-20:59:16",
+                    "content": "Individual projects are already capable of doing this without a precompile, so I\u2019m opposed. Nick\u2019s method can be expanded by signing additional transactions with different gas prices. It won\u2019t matter which confirms but you can use whichever according to how much you use to fund the deployer address. I recommend powers of 10: 1 wei, 10 wei, 100 wei, etc. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "05/05/2021-21:11:21",
+                    "content": "    wjmelements:  Nick\u2019s method can be expanded by signing additional transactions with different gas prices. It won\u2019t matter which confirms   But don\u2019t you get different deployment addresses? The whole goal of this is getting consistent addresses across chains. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "05/05/2021-21:32:01",
+                    "content": "If I understand it correctly, you shouldn\u2019t get a different address. The result address of a creation is only based on sender and nonce, so it is easy to duplicate addresses across chains. If they only sign the deployer contract deployment transactions (intentionally without replay protection), it should be secure and permissionless to deploy that standard anywhere. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.694444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "06/05/2021-13:32:33",
+                    "content": "    wjmelements:  The result address of a creation is only based on sender and nonce   The problem is having a trustless sender. Nick\u2019s method works by not knowing the private key of the sender, but rather setting up a random signature and deriving the sender address from that, so any change on the signed tx payload (such as gas price) yields a different sender, and thus a different address. The alternative is having someone in control of the private key used for signing the deployment, who can sign deployment txs with multiple gas prices as you say, but there are no guarantees that that someone won\u2019t send another tx with the same key that takes up the deployment nonce and hence the address. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "06/05/2021-18:33:38",
+                    "content": " The alternative is having someone in control of the private key used for signing the deployment, who can sign deployment txs with multiple gas prices as you say, but there are no guarantees that that someone won\u2019t send another tx with the same key that takes up the deployment nonce and hence the address.  I see the limitation of Nick\u2019s method now; I didn\u2019t previously see how the signature was generated. To sign with a private key of similar security you can do a \u201ctrusted setup\u201d similar to EY Nightfall where the private key is generated and destroyed in some docker image live on some streaming platform for everyone to verify the steps and the cleanup, It should be possible to verify the process was live by pulling some data that could not have been known in advance, while showing the hashes of every program and library used as well perhaps as the entire system image, e.g. Docker. Even then, it is possible that the private key was recorded by some emulator enveloping the whole charade, so I am not sure how to guarantee security on the key, except that whoever was generating the signatures probably had no motivation to exploit, and as soon as funds needed to deploy such a contract (likely minimal in value) were stolen on one network the process would need to be repeated by someone who was not now living in disgrace. So I suspect a complete trustless setup might not be necessary from a cost-benefit analysis, though posterity would appreciate whatever diligence we can engineer. Separately, if EIP-1820 is no-good due to your gas price observation, this provides an opportunity to optimize the deployment contract by rewriting it in assembly and scrapping the features it does not truly need, such as support for ERC-165. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.988113897596656
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "01/09/2021-15:20:56",
+                    "content": "Looping back on this: we found a chain (Celo) which enforces EIP155-like replay protection for security reasons. This breaks Nick\u2019s method there, since the pre-signed tx is network-independent by design. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "07/09/2021-23:58:04",
+                    "content": "    spalladino:  The rationale for it being a precompile is not performance, but rather being available at the same address across all networks   But cannot this proxy be just deployed on all the networks via the same CREATE2 method to achieve the same address?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "08/09/2021-14:30:22",
+                    "content": "    axic:  But cannot this proxy be just deployed on all the networks via the same CREATE2 method to achieve the same address?    Maybe I\u2019m missing something, but an EOA cannot do a CREATE2, only a regular CREATE, so we\u2019re stuck with Nick\u2019s method for this which is a bit unreliable. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.8
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "08/09/2021-14:43:44",
+                    "content": "You can still deploy a create2 proxy contract on any chain and re-deploy the same via it to a deterministic address. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "08/09/2021-14:51:40",
+                    "content": "    axic:  You can still deploy a create2 proxy contract on any chain and re-deploy the same via it to a deterministic address.   But doesn\u2019t the address determined by CREATE2 depend on the deployer, which would be this proxy contract in question? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "08/09/2021-15:52:15",
+                    "content": "Yes, but you could use the same EOA for it on multiple chains. Can\u2019t you? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "09/09/2021-16:39:54",
+                    "content": "True, but that doesn\u2019t work for a \u201cpublic\u201d contract, like the EIP1820 registry. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "28/09/2022-21:09:51",
+                    "content": "Seems like this didn\u2019t receive any attention for a long time. But I would like to pick this up again as this would be valuable for counterfactual deployment across multiple chains. Are any of the original posters still active on this? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.239583333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "28/09/2022-22:03:44",
+                    "content": "I\u2019m active, though not on this. Happy to help in pushing it forward if there\u2019s more people interested, I still think it\u2019s valuable. However, I\u2019m afraid a problem in incentives here may be that this is an EIP to be adopted by Ethereum devs to benefit all chains that are not Ethereum. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party wanting to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.816666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "29/09/2022-05:56:53",
+                    "content": "These are both deployed to Etherceum mainnet, and anyone on any other EVM chain should be able to deploy them to their blockchain without any permission or special access.  I think some chains have manually deployed them as part of an irregular state chain in some cases as well. Without salt: GitHub - Zoltu/deterministic-deployment-proxy: An Ethereum proxy contract that can be used for deploying contracts to a deterministic address on any chain. With salt: GitHub - Arachnid/deterministic-deployment-proxy: An Ethereum proxy contract that can be used for deploying contracts to a deterministic address on any chain. ",
+                    "links": [
+                        "https://github.com/Arachnid/deterministic-deployment-proxy/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.220238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "20/10/2022-14:53:04",
+                    "content": "    MicahZoltu:  anyone on any other EVM chain should be able to deploy them to their blockchain without any permission or special access   Problem is with chains that require the chainId to be part of the signature (EIP155 states should, but some chains have implemented it as a must), so that pre-signed tx is no good. It also breaks with chains for which 100 gwei is not a valid gas price, and have no PBS-like structure to sneak in the tx anyway. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.477678571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "22/10/2022-08:42:41",
+                    "content": "    spalladino:  Problem is with chains that require the chainId to be part of the signature (EIP155 states should, but some chains have implemented it as a must), so that pre-signed tx is no good. It also breaks with chains for which 100 gwei is not a valid gas price, and have no PBS-like structure to sneak in the tx anyway.   For those chains, an precompile or irregular state change can get them deployed so they maintain EVM compatibility. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "01/11/2022-08:10:06",
+                    "content": "    MicahZoltu:  For those chains, an precompile or irregular state change can get them deployed so they maintain EVM compatibility.   Still would make sense to somehow agree on the factory and an address to use. If it is not defined as a \u201cstandard\u201d it is unlikely that any \u201cderivative\u201d chain would do an \u201cirregular state change\u201d or custom precompile. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "22",
+                    "likes": "1",
+                    "time": "02/11/2022-07:37:00",
+                    "content": "    rmeissner:  If it is not defined as a \u201cstandard\u201d it is unlikely that any \u201cderivative\u201d chain would do an \u201cirregular state change\u201d or custom precompile.   I forget which (maybe it was Optimism) but at least one EVM compatible change already did this, so I think we can assert it isn\u2019t out of the question at least.  I\u2019m hesitant to bake this into Ethereum when it can be baked into other chains as needed instead.  At the same time, I appreciate your desire to have all of the chains standardize on one of the many implementations. Would it make sense to create an ERC around one of the existing Ethereum deployments (mine or Nick\u2019s or both, depending on whether you want deployment transaction compatibility or salt support) and then Ethereum (and several other chains) can defacto support it because those contracts are already deployed there, and other chains can have something to rally around? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.458333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/YamenMerhi",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "23/01/2023-13:46:13",
+                    "content": "What\u2019s the progress on this? This would be super helpful because there is an ongoing increase in the need for contract-at the same address, especially moving towards account abstraction, and the ability to have accounts on the same address across different chains. After researching nick-method deeply in this article, I would say that it\u2019s a nice workaround currently. Still, it\u2019s not ideal to be a long-lasting solution because of the limitations described in this section such as networks disallowing unprotected transactions and considering future gasPrices and potential changes in opcode gas. And considering the replies about having to manually store a private key, to ensure deploying the factory on the same address across different chains is a very bad solution (centralized and risky). While spamming the EIP repo with non-sense standards, having an EIP for a simple CREATE2 precompile contract can be very helpful, simple, and gas efficient and I think most of the chains would consider adopting it as everyone is opting towards multi-chain contracts, and if some chains don\u2019t want it then good for them. @spalladino Are you still willing to continue with this proposal ? ",
+                    "links": [
+                        "https://yamenmerhi.medium.com/nicks-method-ethereum-keyless-execution-168a6659479c#dcb3"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.265942028985507
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/spalladino",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "23/01/2023-14:18:16",
+                    "content": "    YamenMerhi:  @spalladino Are you still willing to continue with this proposal ?   I\u2019d prefer to pass over ownership to whoever wants to keep pushing it. It\u2019s also worth considering Micah\u2019s proposal above, since it does not require a change in Ethereum itself but in all other chains. But I\u2019m not sure how to best distribute it to make sure adoption in other chains does not require too many custom steps. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.125
+                }
+            ]
+        }
+    ],
+    "group_index": "1322"
+}

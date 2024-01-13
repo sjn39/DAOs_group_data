@@ -1,0 +1,197 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/flappy-friday-clip-and-flap-analysis/12790",
+            "title": "Flappy Friday - CLIP and FLAP Analysis ",
+            "index": 12790,
+            "category": [
+                "Core Units",
+                "Risk"
+            ],
+            "tags": [
+                "liq-20",
+                "flap-auctions",
+                "flappy-friday"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#1",
+                    "likes": "40",
+                    "time": "23/01/2022-16:19:08",
+                    "content": "Hey all, Below is analysis and data from Collateral Auctions (CLIPs) and Surplus Auctions (FLAPs) that occurred on 22nd January (21st in US). TL;DR is that collateral auctions performance was good in terms of outcome for Maker as all penalty fees got collected, but less efficient when looking at the amount of collateral received back by certain larger vault owners that got liquidated. As for FLAPs, the slippage or the auction inefficiency was much lower than initially expected, thanks to community bidding through Flap UI and helping protocol to avoid 0 bids.  CLIPs - Collateral Auctions Overall protocol managed to liquidate all collateral within the price range that enabled full collection of penalty fees (15.5m). This liquidation event was the largest in MakerDAO\u2019s history and a certain amount of slippage was expected. The largest average slippage (settled price to market price) was made on ETH-A and WBTC-A vaults where larger collateral chunks got auctioned at once (average slippage of 5.68% on ETH-A and 7.28% on WBTC-A). Although this slippage is quite severe in terms of what we have observed in the past (2-3%), it is still in range that protects Maker and what keepers normally earn at other protocols such as Aave and Compound.  1600\u00d7302 290 KB  1600\u00d7945 189 KB  Source: MakerDAO Risk Dashboard | Block Analitica Looking at individual larger auctions, we can see this slippage was more severe: The largest liquidation of ETH-A vault having 57m in debt took 49 minutes to settle (normally it takes about 30 minutes) and the measured slippage was 9%. Note that this inefficiency or cost is carried by vault holder since Maker can take up to 20% slippage to OSM to still collect penalty fee and about 28% slippage before it leads to bad debt (assuming starting liquidation CR of 140%).  1382\u00d71200 147 KB  Source: MakerDAO Risk Dashboard | Block Analitica Similarly we observed higher slippage for two WBTC-A vaults having about 12m in debt each. One of these two vaults got liquidated with 11.81% slippage to market price. This is quite concerning since we dealt with similar WBTC sizes in the past but keepers were much more efficient. Also the arbitrage between DEX and this auction was possible at a much lower slippage. It might be that the amount of liquidations at Maker and DeFi as a whole was so overwhelming at the time that the keepers needed more time to arbitrage between them.  1388\u00d71216 156 KB  Source: MakerDAO Risk Dashboard | Block Analitica Looking at the unique addresses that bid in CLIP auctions (see first table in the post) we can see there were 23 unique takers for ETH-A auctions and 13 unique takers for WBTC-A auctions. This is up from 6 to 8 takers we have seen in May 2021 when we had the last larger liquidation event (not as big though, 42m liquidated versus 119m now). In sum, the collateral liquidations could have been more efficient for larger vault sizes while the amount of keepers participating and protecting Maker from losses improved greatly. We will think about potentially adjusting auction parameters, where we might decrease the slope of the auction\u2019s price curve so that we decrease auction slippage. This has other risk factors though, such as increased market risk due to slower settlement of auctions.  7-siblings vault owner Probably the biggest concern in my eyes would be the potential outcome if the 7-siblings vault owner that had 632m debt in total got fully liquidated. Assuming liquidation chunks of about 65m (the current limit on ETH-A auctions throughout), we would be liquidating this vault for about 10 hours, assuming 10% slippage was made each time. Most likely the user would react before the end, but this could still be a very severe liquidation event that keepers and AMMs couldn\u2019t handle. Most probably it also leads to systemic risks and price spiraling event.  1600\u00d71168 173 KB  Source: MakerDAO Risk Dashboard | Block Analitica What can we do about it? Ideally we want this user to be more aware of his position and have an automatization process implemented, but this is not something we can enforce. We did however monitor this user in the past and it was treated as low risk in our risk models. You can see below how well this user protected one of his 7 vaults in the last year, always maintaining a collateralization ratio between 180% and 200%, trying to maximize his capital efficiency and yield when utilizing DAI for liquidity mining. What exactly went wrong last Friday remains to be a question, but I did notice the vault owner wasn\u2019t making any adjustments in days prior to this event although the ETH price was quite unstable and the owner normally reacts faster. If we knew who this user is, we could perhaps avoid this situation.  1600\u00d71161 207 KB  Source: MakerDAO Risk Dashboard | Block Analitica We can not do much in terms of adjusting auction parameters to prevent this kind of situation. We could however lower the ilk.hole parameter (auction\u2019s throughput) so that this vault user has more time to react, but we increase market risk of remaining underwater debt positions that are supposed to be liquidated. Ideally we should think of implementing an upgrade to Liq 2.0 where auction\u2019s throughput rate limiting works with a decay. This is because we still want to liquidate as much as possible in the initial auction cycles, but we may want a slower output in next auction cycles so that it doesn\u2019t lead to systemic risks and cascading liquidations. This implementation still has many tradeoffs - the most obvious one is that a large vault owner then knows his debt can not be liquidated within a day and he has even more time to react.  FLAPs - Surplus Auctions Soon after collecting more than 15.5m DAI of penalty fees from collateral auctions, Surplus Auctions (FLAPs) were triggered. I won\u2019t go into details of why the current setting of FLAPs isn\u2019t ideal and how it can be mitigated. You can read more on this topic here. The dataset I analyzed contained 433 FLAP auctions (30k DAI each) with a total amount of about 13m. Out of 433 auctions 340 of them got triggered within a few minutes and all of them had 0 bid. Community had 30 minutes to react to each of these auctions in order to prevent 0 bids and protocol distributing DAI for free. Thanks to available UI for bidding and campaigns made on twitter and community discord we had the largest participation in Surplus auctions ever. There were 41 unique addresses bidding in a span of about 2 hours and we had only two 0 bids making it through. Job well done.  1044\u00d71198 235 KB  Source: Data Insights CU & Makerburn Of course the outcome was less than ideal since the bids weren\u2019t as efficient as they normally are (on average about 3-4% slippage measured historically). The effective slippage of these auctions was 19.55% which means protocol overspent about 2.5m DAI for MKR collected. Assuming regular slippage of 3-4%, the inefficiency cost of this event measures about 2.1m. The average DAI/MKR rate of settled auctions was 2,520 (12.62 MKR/DAI), while the average market price was 1,913. Please take this overspent amount with a grain of salt, because the slippage is based on the MKR market price at the time of the DEAL and we saw how volatile it was. Also some bidders spent their own MKR holdings which didn\u2019t have an effect on market price - if we had FLAP auctions set up as CLIP auctions where direct arbitrage with AMMs is possible, the measured slippage would have probably been much lower even at effective DAI/MKR prices of realized auctions and Maker could potentially collect and burn even less MKR in aggregate.  Chart1200\u00d7742 21.8 KB  Source: Data Insights CU & Makerburn ",
+                    "links": [
+                        "https://maker.blockanalitica.com/auctions/?date=2022-01-21&vault=ETH-A",
+                        "https://maker.blockanalitica.com/auctions/?date=2022-01-21&vault=WBTC-A",
+                        "https://maker.blockanalitica.com/whales/",
+                        "https://maker.blockanalitica.com/vaults/ETH-A/vaults/15990",
+                        "https://forum.makerdao.com/t/so-is-someone-going-to-say-anything-about-yesterdays-flap-auctions/12781/13",
+                        "https://forum.makerdao.com/t/monthly-governance-review-january-2022/13052",
+                        "https://forum.makerdao.com/t/signal-request-bring-back-the-mkr-burn-part-ii/13146",
+                        "https://forum.makerdao.com/t/gfx-labs-delegate-platform/11556/26",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-january-20-27-2022/12887",
+                        "https://forum.makerdao.com/t/relay-semanal-18-24-de-enero-de-2022/12876",
+                        "https://forum.makerdao.com/t/on-the-state-of-the-auctions-uis/12844",
+                        "https://forum.makerdao.com/t/signal-request-bring-back-the-mkr-burn/12837",
+                        "https://forum.makerdao.com/t/weekly-relay-january-18-24-2022/12829",
+                        "https://forum.makerdao.com/t/relay-semanal-25-al-31-de-enero-de-2022/13007",
+                        "https://forum.makerdao.com/t/signal-request-sourcecred-stop-paying-people-who-are-already-paid-by-makerdao/12971/9",
+                        "https://forum.makerdao.com/t/risk-core-unit-month-in-review-january-2022/12958",
+                        "https://forum.makerdao.com/t/weekly-relay-january-25-31-2022/12953",
+                        "https://forum.makerdao.com/t/urgent-signal-request-stop-mkr-burning/12806",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-jan-27-feb-3-2022/13019",
+                        "https://forum.makerdao.com/t/the-risk-core-unit-2022-year-in-review/19372",
+                        "https://forum.makerdao.com/t/collateral-auctions-analysis-parameter-updates-september-2022/18063"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.787863756613757
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "23/01/2022-17:12:23",
+                    "content": "Thanks for an exhaustive summary!     Primoz:  Ideally we should think of implementing an upgrade to Liq 2.0 where auction\u2019s throughput rate limiting works with a decay   In the event of the price of ETH continuing to drop, would such a decay in the auction throughput not make things worse for Maker? It seems like handling liquidations of such large vaults (100MM or larger) is a really hard problem, no matter how we do it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.420386904761905
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aes",
+                    "index": "#3",
+                    "likes": "7",
+                    "time": "23/01/2022-17:37:25",
+                    "content": "Appreciate the timeliness of this analysis Primoz - as it will aid the community tremendously in assessing how we can improve the CLIP and FLAP process and become much more efficient. I\u2019d like to discuss the FLAP portion of the analysis which has already been brought up. Cross-posting Kurt\u2019s post from the thread for visibility (emphasis mine) - I strongly support pausing burns until a more robust mechanism is put in place to improve the efficiency of FLAPs. As a community we effectively took a $2.1M loss (excluding anything @rune reimburses), missing out on burning an additional ~1,000 MKR. We should not have to rely on the community to \u2018come to the rescue\u2019 every time the market dumps. Members of the PE team and community have already been discussing a number of short-term improvements that can be made quite quickly, and I believe @hexonaut has been writing a smart contract to enable mass bidding across all FLAP auctions. While the community comes to a consensus on both short and long-term solutions, we should immediately pause burning.    So is someone going to say anything about yesterday's FLAP auctions?   There should probably be an org-wide postmortem on the process failures that led to this, and I don\u2019t want to jump the gun too much with my own perspective here. But since I\u2019m apparently writing this post anyway: the risk of this sort of event has been known for a long time and repeatedly brought up, particularly but not exclusively by members of the Risk and PE teams. We got into a \u201cworst of both worlds\u201d scenario where a subset MKR holders strongly wished to continue burning in the short term, but no one pushed hard for auction improvements. The technical teams probably should have been more vocal about the risks; MKR holders probably should have given more weight to those risks when brought up. For example, if you read the replies to this recent signal request, you\u2019ll see that many within the community were aware of the issue of low competition in Flap auctions, but the discussion failed to spur any policy or priority changes despite a clear (IMO) conclusion that continuing to flap under current conditions was unsafe:   Overview: Over the past month we have seen the burn kick back into action. This has given us some data as to the efficiency of the burn auctions and how the system handles burns over some time. Examining the data it is shown that there is some inefficiencies when it comes to how we buy back MKR. For the auctions in November/December 2021 the average price of bought MKR was 3,62% over market price and the median was 3,47%. Due to a few outliers the median seems to give the more correct picture. \u2026   In short, this was a systemic malfunction due to competing priorities and underweighting of risks.  What is engineering doing about this?  PECU doesn\u2019t have the kind of mandate from governance that is required to just \u201cdo something\u201d. I, as a PECU member, recommend that burns be turned off in the short term and a more robust mechanism be put in place before they are resumed (there are many good options for this, including some pretty low-hanging ones, like throughput limitations\u2013the roadblocks are not technical). As soon as governance can reach some consensus on the path forward, action can be taken.   ",
+                    "links": [
+                        "https://forum.makerdao.com/t/so-is-someone-going-to-say-anything-about-yesterdays-flap-auctions/12781/13"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.714415113871636
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#4",
+                    "likes": "3",
+                    "time": "23/01/2022-17:37:59",
+                    "content": "    AstronautThis:  In the event of the price of ETH continuing to drop, would such a decay in the auction throughput not make things worse for Maker?   The models that I used for this presentation certainly suggested that there are risks if collateral is liquidate too quickly onto a distressed market. In that situation, feedback loops might start to form where the liquidations drive prices down which in-turn causes more liquidations. Suffice to say that market risk is probably preferable to a situation like that. will say though I\u2019m not 100% sold on the idea of the decay. The current (fixed throughput) system seems to prevent that well enough, but it would be interesting to see that modeled. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.546031746031746
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#5",
+                    "likes": "2",
+                    "time": "23/01/2022-17:52:28",
+                    "content": "    Andy_McCall:  The models that I used for this presentation  certainly suggested that there are risks if collateral is liquidate too quickly onto a distressed market. In that situation, feedback loops might start to form where the liquidations drive prices down which in-turn causes more liquidations.   Very true, but we\u2019re not the only ones liquidating. The same thing is probably happening at Compound and Aave so us slowing down auction throughput might not stop the price spiral due to cascading liquidations. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5925044091710765
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Spidomo",
+                    "index": "#6",
+                    "likes": "4",
+                    "time": "23/01/2022-19:12:28",
+                    "content": "    Primoz:  Looking at the unique addresses that bid in CLIP auctions (see first table in the post) we can see there were 23 unique takers for ETH-A auctions and 13 unique takers for WBTC-A auctions.   The number of participants would probably increase dramatically if we achieved integration with major DEX aggregators (e.g. Cowswap, 1inch, 0x). Perhaps MakerDAO should take the lead in funding those integrations. Alternatively, spin up a Core Unit to provide engineering resources. In the case of Cowswap a MakerDAO CU could even implement its own solver which integrates liquidations (and later, surplus auctions), and earn solver income. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.455357142857143
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ber10",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "23/01/2022-22:15:55",
+                    "content": "So the main problem was that there were not enough bidders because people dont know that those auctions even exist? Whats the reason for the time limit, can an auction not just go on for days until a minimal treshhold is reached which is within 20% of the marketprice ? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.111111111111111
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/sirverik",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "24/01/2022-02:39:31",
+                    "content": "I recommend turning off burning until a fix can be implemented. A simpler burn system could work without auctions. Let the burner provide DAI liquidity against MKR at a fixed price, and burn the MKR. Using executive proposals, set a greedy burn price, and let AMMs do the rest when the market price dips. Calibrate those burn prices in the same way that stability fees are calibrated (in this case to minimize instead of maximize). The budget for the burner can be automated in the same way as the current system. On the upside, using swaps instead of auctions requires less transactions, does not require calls to oracles, does not require keepers, and has no slippage. On the downside, establishing a policy for setting the burn prices requires significant governance overhead. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.256944444444445
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/twblack88",
+                    "index": "#9",
+                    "likes": "1",
+                    "time": "24/01/2022-04:59:39",
+                    "content": "Seconded on pausing burns, we should get a signal request going so we can align timelines around how long adjusting the flaps will take. Pretty sure @hexonaut crushed the mass bid through this weekend GitHub - hexonaut/flapper-mass-bid     Primoz:  Thanks to available UI for bidding and campaigns made on twitter and community discord we had the largest participation in Surplus auctions ever. There were 26 unique addresses bidding in a span of about 2 hours and we had only two 0 bids making it through. Job well done.    ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.984375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/GWintery",
+                    "index": "#10",
+                    "likes": "1",
+                    "time": "24/01/2022-11:50:42",
+                    "content": "I am not against stopping the burn, but I think we should not overthink regarding the FLAP auctions. Just limiting the amount of FLAP auctions at a time is sufficient. The main issue on the last one IMO is due to too many FLAPs being triggered at the same time. If say we limit it to 5 FLAPs at a time, this wouldn\u2019t happen. Anyways, we don\u2019t really care about surplus DAI in the buffer while the auctions go through one by one. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.618055555555555
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "24/01/2022-15:21:05",
+                    "content": "    Primoz:  The dataset I analyzed contained 433 FLAP auctions (30k DAI each) with a total amount of about 13m.   I\u2019m curious does this dataset only include winning bids? Anecdotally I\u2019ve spoken to three people that bid, but didn\u2019t win any auctions. It would be good to know the numbers on these as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.583333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#12",
+                    "likes": "2",
+                    "time": "24/01/2022-20:00:23",
+                    "content": "    AstronautThis:      Primoz:  Ideally we should think of implementing an upgrade to Liq 2.0 where auction\u2019s throughput rate limiting works with a decay   In the event of the price of ETH continuing to drop, would such a decay in the auction throughput not make things worse for Maker?   Probably yes and there are tradeoffs for sure. At the end it mostly depends whether vault owner saves himself, because this is the most capital efficient way to avoid any bad debt scenario. Throughput decay should solve for less slippage and avoiding cascading liquidations, but there is always this risk of not liquidating fast enough despite \u201ca bit higher\u201d slippage because prices keep falling anyway. Pretty much similar tradeoff we have with either having too steep or to flat auction\u2019s curve.     Spidomo:  The number of participants would probably increase dramatically if we achieved integration with major DEX aggregators (e.g. Cowswap, 1inch, 0x).   Agree, I think this is the lowest hanging fruit here.     Ber10:  So the main problem was that there were not enough bidders because people dont know that those auctions even exist? Whats the reason for the time limit, can an auction not just go on for days until a minimal treshhold is reached which is within 20% of the marketprice ?   In english type auction where duration is long, the \u201cgood\u201d bids usually come only at the end, because this is the preferred and most rational tactic. Nobody wants to lock up his bid for too long close to market prices. But yes, in a rare event such as this one longer duration would have probably been better (you lower probability of 0 bids), but I think everyone agrees dutch auctions and rate limiter are the real solution. The other reason why shorter duration is preferred is because protocol wants to buy and support MKR at discounted prices right after collateral auctions.     LongForWisdom:  I\u2019m curious does this dataset only include winning bids? Anecdotally I\u2019ve spoken to three people that bid, but didn\u2019t win any auctions. It would be good to know the numbers on these as well.   Yes, good point. There was actually 41 unique FLAP bidders, the 27 unique I mentioned are only those winning auctions. I will make edit in the post. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.95328073089701
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/0xdeniz",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "25/01/2022-15:45:59",
+                    "content": "Wanted to add to the discussion by sharing some comments on the state of auction UIs. Check it out here: On the State of the Auctions UIs ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/maker_question_asker",
+                    "index": "#14",
+                    "likes": "0",
+                    "time": "31/01/2022-18:02:58",
+                    "content": "Excellent analysis, thank you. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#15",
+                    "likes": "0",
+                    "time": "03/05/2022-00:03:06",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

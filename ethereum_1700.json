@@ -1,0 +1,74 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5018-directory-standard/8958",
+            "title": "EIP-5018: Directory Standard ",
+            "index": 8958,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "data",
+                "storage"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/qizhou",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "18/04/2022-19:32:16",
+                    "content": "  eip: 5018 title: Directory Standard description: A standard interface for filesystem directories. author: Qi Zhou (@qizhou) discussions-to: TBD status: Draft type: Standards Track category: ERC created: 2022-04-18  Abstract The following standard allows for the implementation of a standard API for filesystem directories within smart contracts. This standard provides basic functionality to read/write binary objects for any size, as well as allow reading/writing chunks of the object if the object is too large to fit in a single transaction.   github.com/ethereum/EIPs         Create eip-5018   ethereum:master \u2190 qizhou:qizhou-dir            opened 07:30PM - 18 Apr 22 UTC               qizhou             +125 -0       When opening a pull request to submit a new EIP, please use the suggested templa\u2026te: https://github.com/ethereum/EIPs/blob/master/eip-template.md  We have a GitHub bot that automatically merges some PRs. It will merge yours immediately if certain criteria are met:   - The PR edits only existing draft PRs.  - The build passes.  - Your GitHub username or email address is listed in the 'author' header of all affected PRs, inside <triangular brackets>.  - If matching on email address, the email address is the one publicly listed on your GitHub profile.       ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/5018",
+                        "https://github.com/qizhou",
+                        "https://github.com/ethereum/EIPs/pull/5018/files",
+                        "https://github.com/ethereum/EIPs/pull/5018"
+                    ],
+                    "GPT-summary": "The post introduces EIP-5018, a proposed standard interface for filesystem directories within smart contracts. The author provides a brief description of the standard and its basic functionality. The post also includes instructions for submitting a new EIP and mentions a GitHub bot that automatically merges some pull requests. A third party could ask questions about the proposal, provide constructive criticism, or audit and review the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.3461850649350655
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "20/05/2022-20:14:49",
+                    "content": "I have a couple non-formatting related comments:  What makes this EIP filesystem-like? It seems like it\u2019s really a key-value store? What data structure do you envision backing this interface? Why use chunk ids instead of byte ranges?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/qizhou",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "21/05/2022-05:51:30",
+                    "content": "    SamWilsn:  What makes this EIP filesystem-like? It seems like it\u2019s really a key-value store?   Thanks for the comment. I agree that the current interface is quite similar to a key-value store.  The reason is that we want a filesystem-like smart contract with minimal necessary interfaces that can host a decentralized website:  chunked-based functions are needed because we want to support reading a large BLOB, which cannot be fit in a single tx;  ls (list directory contents) may not be needed in the minimal version as most websites do not offer it to users; sub-directory can be achieved by allowing \u201c/\u201d's in the filename, e.g., \u201c/a/b/c/d\u201d, so we may not need an explicit interface of sub-directory.  Note that, a key-value store may not have 1. Moreover, if the applications do need 2 or 3, we can create the extension EIPs to include the features (similar to the extensions to ERC-20/ERC-721).     SamWilsn:  What data structure do you envision backing this interface?   Thanks for the comment.  Current EVM supports two types of storage.  local contract storage via SLOAD/SSTORE; and contract-code-based via CREATE/CREATE2/EXTCODECOPY.  The first storage is efficient for 32-bytes operations, but if the data is large with dynamic size, using contract-code-based storage can be more efficient in both gas and IO.  The following is a table of the gas for different storage (note that the gas for put only accounts for the the-first-time put):      OPCODE 1k 4k 8k 12k     Local contract (get) SLOAD 96212 310514 596473 882688   Local contract SSTORE 771051 2949132 5853295 8757522   Code-based storage EXTCODECOPY 30502 (1/3.15x) 38987 (1/7.96x) 50525 (1/11.8x) 62319 (1 / 14.1x)   Code-based storage CREATE 387383 (1/ 2x) 1128673 (1/2.61x) 2117788 (1/2.76x) 3104698 (1 / 2.82x)    We have implemented both types of storage following the standards and the code can be found here GitHub - web3q/evm-large-storage, where  For local contract storage, we use keccak256(filename || chunkId) as the key, and the value is an optimized version of solidity bytes storage  For contract-code-based storage, we use keccak256(filename || chunkId) as the key, and the value is a contract, whose code contains the corresponding chunk data.  Furthermore, the code is deployed to Rinkeby to store ENS and Uniswap homepages, and works very well:  ENS Homepage: ENS App @ 0x9e081Df45E0D167636DB9C61C7ce719A58d82E3b Uniswap Homepage: Uniswap Interface @ 0xC100d49e8F3d621E4438E82E4f95CF505b3E2a28      SamWilsn:  Why use chunk ids instead of byte ranges?   A good design question!  To support large BLOB, we can definitely do bytes ranges as UNIX read/write do.  However, this seems to be complicated in some cases such as read-modify-write - if a write overrides multiple physical storages (e.g., storage slots or contract code), the contract needs to read existing data/override the data/rewrite the data.  Using chunk ids, we can simplify the logic and let the off-chain application determine how to use them (and do read-modify-write off-chain).  What do you think? ",
+                    "links": [
+                        "https://galileo.web3q.io/ensdomains.eth:4/",
+                        "https://galileo.web3q.io/uniswaps.eth:4/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.4609073359073355
+                }
+            ]
+        }
+    ],
+    "group_index": "1700"
+}

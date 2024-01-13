@@ -1,0 +1,43 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/blipper-extending-the-clipper-to-support-b-protocol-liquidation-mechanism/11057",
+            "title": "Blipper - extending the Clipper to support B.Protocol liquidation mechanism ",
+            "index": 11057,
+            "category": [
+                "Governance",
+                "Proposal Ideas"
+            ],
+            "tags": [
+                "rfc"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#1",
+                    "likes": "2",
+                    "time": "17/10/2021-13:37:50",
+                    "content": " References   The proposed Blipper implementation.   An on-chain poll declaring the DAO\u2019s intention to integrate with the B.Protocol liquidation mechanism.    Sentence Summary This proposal provides a smart contract that extends the Clipper implementation, with a Blipper which tries to execute the liquidation over B.Protocol, and if it fails, it reverts to the standard Clipper liquidation process.  Paragraph Summary B.Protocol democratizes the liquidation process by allowing the community to pool funds towards liquidations, and share the liquidation premium among the community members. As a result, protocols enjoy higher and more transparent on-chain liquidity and can offer lower liquidation ratio (higher capital efficiency) to their borrowers. The Blipper contract extends the Clipper auction contract by trying to first facilitate the liquidation from B.Protocol DAI pool. The liquidation price is determined by a fixed discount (e.g., 5%) over a price oracle real time price (e.g., MakerDAO\u2019s medianizer). If the Blipper fails to execute the liquidation over B.Protocol, then a standard liquidation auction is triggered according to the original Clipper logic.  Governance Parameters  bprotocol [address] The address of the DAI pool liquidity contract. The B.Protocol contract implements the following prototype: function prep(bytes32 ilk, uint256 amt, uint256 owe, uint256 mid) external; A call from the Blipper to this function will give vat.hope allowance to the Blipper and with owe qty of vat.dai available for the Blipper. The function may revert if there is insufficient amount of liquidity, or if the sanity check on the liquidation price fails.  bee [ray] The liquidation premium. The discount on market price that B.Protocol gets when repaying the user debt.  oracle [address] The address of a real time oracle that returns the current gem to USD price.  Additional parameters Besides the above mentioned parameters, the Blipper also consists of all the Clipper's governance parameters. E.g., see here.  Auction Initiation As in the original Clipper implementation, a kick function is called by the dog module. The kick function first tries to carry the liquidation via B.Protocol, by calling the blink function. If the blink function reverts, then the original Clipper.kick function is executed.  blink function The blink function first fetches the current gem/USD price, and adds a markup on it according to the bee value. The markup price is used to calculate the required amount of collateral that will be given for B.Protocol for repaying the debt. If the amount exceeds the lot value, then we first check if the lot is sufficient to cover the original user debt (prior to the addition of the dog.chop liquidation penalty). If it does not, the function will revert, and the standard Clipper.kick function will be called. Once the debt and collateral amounts are calculated, the function calls BProtocol.prep function. The function is assumed to make the desired amount of DAI available for withdrawal by the Blipper contract. In the case the execution of the external call is reverted, the default Clipper.kick is executed. Otherwise, the function withdraws the DAI and sends back the calculated amount of ETH to B.Protocol and to the liquidated vault. If the BProtocol address acted maliciously, the execution will revert (and execute the kick). Finally, the function also sends the usual tip and chip incentive to the executor of the kick function, and reset the Dirt value in the Dog. This last part is identical to the original Clipper functionality.  B.Protocol functionality A reference for possible B.Protocol functionality is implemented here. In this implementation a user deposits funds that are automatically redirected to Compound\u2019s cDai deposit. The prepare function simply withdraws the needed amount of DAI from the cDai and deposits it to the vat. Finally a swap function offers the liquidated gem for sale in return to DAI. The concrete B.Protocol implementation will be discussed at a later stage along with concrete collateral parameters.  Risk considerations We claim that the Blipper mechanism strictly improves the overall liquidation system. Note however that an analysis for the optimal LR it can support should be done ad-hoc for every specific collateral type, and also depends on the amount of liquidity that is locked in B.Protocol. Nevertheless, we do identify three potential pitfalls. We present each of them, along with explanations on how they can be mitigated.   Price oracle attack: The Blipper relies on a real time price oracle, e.g., the medianizer to determine the collateral amount to liquidate. In general, an attack on the oracle could lead to a black-Thursday-like liquidations where almost 0 dai was paid for the entire collateral. To mitigate this concern, the blink function will revert if the collateral amount is not sufficient to cover the original debt. In such a setting, an attack on the price feed could still lead to user loss of funds, however it will not compromise the solvency of the MakerDAO protocol. As no additional bad debt will occur.   disincentivizing the current keeper community: It is our hope that over time 100% of the liquidations will go via the blink function, and not via the kick function. Hence, the incentive for liquidation bots to work towards building liquidation systems for the collateral is smaller. This concern could be initially mitigated by using our system only for collateral types like WBTC-B, who already have a live liquidator community for it\u2019s WBTC-A. This way the WBTC liquidation bots are incentivised to build systems that will facilitate WBTC-A, and the same code can be used also for WBTC-B.   Clipper.kick gas cost increase. The costs for the kick functions are potentially higher. This could be mitigated by offering higher tip and/or chip values.    Licensing AGPL3+ ",
+                    "links": [
+                        "https://vote.makerdao.com/polling/QmYzt3ub?network=mainnet#vote-breakdown",
+                        "https://forum.makerdao.com/t/mip45-liquidations-2-0-liq-2-0-liquidation-system-redesign/6352#clipper-buf-ray",
+                        "https://forum.makerdao.com/t/mip45-liquidations-2-0-liq-2-0-liquidation-system-redesign/6352#the-auction-initiation-function-clipperkick-takes-four-caller-supplied-arguments",
+                        "https://github.com/backstop-protocol/Maker-Backstop/blob/mip/src/bammJoin.sol",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-october-14th-october-21st/11135",
+                        "https://forum.makerdao.com/t/b-protocol-v2-integration-technical-review/12019",
+                        "https://forum.makerdao.com/t/wbtc-b-and-wbtc-bprot-a-review-and-plan-of-action/11191"
+                    ],
+                    "GPT-summary": "The proposal suggests a smart contract that extends the Clipper implementation, with a Blipper which tries to execute the liquidation over B.Protocol, and if it fails, it reverts to the standard Clipper liquidation process. The post provides details on the Blipper contract, governance parameters, auction initiation, blink function, B.Protocol functionality, and risk considerations. The post explains the proposal in detail and provides constructive criticism and suggestions for improvement. The post does not advertise the proposal, but rather explains it and invites questions and feedback.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.37505073051948
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,719 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5164-cross-chain-execution/9658",
+            "title": "EIP-5164: Cross-Chain Execution ",
+            "index": 9658,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "chain-agnostic"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "1",
+                    "likes": "7",
+                    "time": "17/06/2022-19:24:57",
+                    "content": "This thread is for discussion pertaining to EIP-5164 Many thanks to @anna-carroll, @Amxx, @mintcloud, @rafso, @auryn, @nginnever for their contributions. If anyone else would like to add their thoughts please speak up! Let\u2019s get this finalized and moving forward. I\u2019ll be reaching out to more bridges and other stakeholders in the meantime so that we can broaden the consensus. original pull request. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/5164",
+                        "https://ethereum-magicians.org/t/eip-draft-multi-chain-governance/9284/28"
+                    ],
+                    "GPT-summary": "The author of the post is seeking feedback on EIP-5164 and has thanked several contributors for their input. The author plans to reach out to more stakeholders to broaden the consensus. The post also invites others to share their thoughts and feedback on the proposal.",
+                    "GPT-proposal-categories": [
+                        "Interoperability and Scalability",
+                        "Smart contract updates",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Karp",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "18/06/2022-01:44:39",
+                    "content": "Is this compatible with the merkle root approach that Nomad uses? I believe in Nomad calls are batched not as a list but as a merkle root. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nambrot",
+                    "index": "3",
+                    "likes": "2",
+                    "time": "18/06/2022-14:36:11",
+                    "content": "Great work everybody, happy to see you @Brendan leading standardization here! I\u2019m curious and still wrapping my head around the spec, but why does the CrossChainRelayer.relayCalls(Call[] calldata calls) function specify no concept of the destination chain for a batch of calls? IIUC correctly the Call struct does not sufficiently encode enough information to determine the right CrossChainReceiver? I guess there will be an implicit mapping via the nonce in the respective events, but is that really enough for consumers of this abstraction? In the Nomad taxonomy (as the one I\u2019m familiar with), would CrossChainRelayer be the GovernanceRouter on the origin chain? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.475446428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "19/06/2022-09:26:33",
+                    "content": "Hey Karp, Nam!     Karp:  Is this compatible with the merkle root approach that Nomad uses? I believe in Nomad calls are batched not as a list but as a merkle root.   In Nomad, the Home contract hashes each message blob to incrementally build a merkle tree. We can put anything we want into that blob! My understanding of Nomad is that you send messages through a Home contract. Each message sent to the Home contract includes a domain code, which determines the merkle root to which the message should be added. Replica contracts on other chains allow users to sign and attest merkle root updates for a particular domain. In this way, the Home contract has no idea who is replicating its state. (@anna-carroll correct me if I\u2019m wrong :)) The Home contract\u2019s lack of knowledge of the receiver address is why I went with the 1-to-n approach. The receivers are aware of the relayer, but not vice-versa.     nambrot:  In the Nomad taxonomy (as the one I\u2019m familiar with), would CrossChainRelayer be the GovernanceRouter on the origin chain?   Yes, they roughly similar. The Nomad domains were excluded because they\u2019re specific to Nomad. The CrossChainReceivers are simply executing Calls that are passed into the CrossChainRelayers. In a way, the receivers are like an extension of the relayer. One problem with this approach is that the Relayer contract can only determine the message destination based on either the sender address or some configuration in storage. We lost the ability to target a particular domain or target address. A Relayer contract can\u2019t practically serve more than one message \u201cchannel\u201d. We\u2019d need to deploy a new Relayer if we changed the bridge. Message handling is the big difference between Nomad and, for example, the Polygon bridge. Nomad has domains (broadcast 1-to-n), while Polygon has a target contract address (1-to-1 messages). Both of them require additional \u201cmagic values\u201d (i.e. data from off-chain), whether it\u2019s the Nomad domain or the address of a contract on another chain in the case of Polygon. Allowing Relayers to Send to More than One Receiver Perhaps it\u2019s worth defining a channel argument that allows users to include implementation-specific data. Something like: interface ICrossChainRelayer {   function relay(bytes calldata channel, Call[] calldata calls) external; }  The \u201cchannel\u201d could be the target contract address or Nomad domain, it just depends on the type of bridge. Now a single Relayer contract can be used for multiple \u201cchannels\u201d. Receiving Bridged Messages vs Executing The Receiver is also not ideal, because it both listens to the bridge and executes the calls. If we need to swap the bridge, then the contract executing the calls changes. We\u2019d need to update any Ownables or other permissions. To make the Receiver more swappable, we could separate the bridging code from execution. Imagine we had the developer supply an Executor contract: interface ICrossChainExecutor {   function execute(address from, Call[] calldata calls) onlyReceiver; }  The developer would implement an executor and bind it to a particular receiver. To swap bridges they just change the receiver that the executor is bound to. The from is the original \u201cfrom\u201d address on the sending chain; I just added that. Thoughts? It\u2019s late but I wanted to get some ideas out there; hopefully this makes sense! There are lots of ways we can tackle this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.457987012987013
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nambrot",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "20/06/2022-02:26:12",
+                    "content": " My understanding of Nomad is that you send messages through a Home contract. Each message sent to the Home contract includes a domain code, which determines the merkle root to which the message should be added.  I of course do not want to speak for Nomad, but I believe there is a separate home contract for each desired destination domain/chain. EDIT: There is a single merkle root per home contract, messages of different destination domains are added to the same tree.  Allowing Relayers to Send to More than One Receiver  Yeah I\u2019d be very curious to hear from the consumers of this abstraction whether that is a requirement or not. I\u2019m biased, but I would suspect so? I even wonder whether it is necessary to have this channel data more standardized so that underlying transport channels can be more easily swapped out. IIUC, if I\u2019m Tally and I would like to use this EIP, in its current form, it would still need very transport channel specific logic? I would imagine that bridges like Nomad are more norm than the exception going forward.  Receiving Bridged Messages vs Executing If we need to swap the bridge, then the contract executing the calls changes.  Is that necessarily true? I think swapping bridges is probably going to be very custom, but it still seems expressible to me? Isn\u2019t that what the RelayerSet event is for? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.993968253968253
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "20/06/2022-07:47:20",
+                    "content": "Hello, Some feedback from just reading the draft:  I don\u2019t like the  When a user wishes to send cross-chain messages, they will create a CrossChainRelayer and a CrossChainReceiver.  This is an interpretation of how the ERC could be used, but is not a general truth. In particular, the ERC should not forbid reusing relayer/receiver, or sharing them.  Call currently does not include a gas amount. I believe this is needed. The execution outcome can obviously differ depending on the amount of gas allocated, and IMO the caller should specify the amount required by the call. Most bridge mechanisms currently include that.  I think  The message receiver always authenticates the sender. This is the case whether contracts live on the same chain or across chains. That\u2019s why the relayer is unaware of the receiver, but the receiver is aware of the relayer.  Is a bad design. Its overly restrictive. IMO, the ERC should discuss abstract relayer and receiver, and makes a little assumption about what is actually going to be checked internally. In particular, requiring the receiver to authenticate the sender, but not specifying this authentication method is not good. It creates a lot of ambiguity, which you don\u2019t want in ERCs. I see two big approaches to this ERC being used:  in a \u201cprivate\u201d context, where an entity (for example a DAO) uses a relayer and receiver to propagate actions everywhere (the routing is missing from this ERC, so I assume it would be a broadcast). In that case, the emitter would be restricting call requests, and the receivers don\u2019t case what the DAO\u2019s address is, as long as the emitter is the right one. The emitter could even be the DAO itself \u2026 I don\u2019t really like this case because it assumes the \u201cprivate\u201d entity will have the knowledge to build this relaying system from the ground up, and will maintain them. in a \u201cpublic\u201d context, where anyone can send any message to anyone on the receiving end. This would IMO be the #1 use-case. Technically the ERC is enough because the \u201crelaying on L2\u201d mechanism is not in scope \u2026 but still, inside the scope of the relaying, having the address of the caller is essential (because it would have to be exposed to the callee). So we need the message sent between the relayer and the receiver to include that info.  To accommodate the second usecase, and also because I think the first usecase could use it, I would add  interface CrossChainReceiver {    messageSender() returns (address) }  If called during the execution of a cross-chain Call, MUST returns the address of the account that submitted the call on the relayer If called outside the execution of a cross-chain Call, MUST returns the default value 0x000000000000000000000000000000000000dEaD   I would argue that by default the relayer should not be re-configurable. Allowing that would cause  lot of governance issues. Some people may want a governed relayer, but I don\u2019t think the RelayerSet event should be a default thing. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.085175241425242
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "20/06/2022-10:55:46",
+                    "content": "Also, it goes without saying that I would add a sender or caller param to the events. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/drinkcoffee",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "23/06/2022-00:21:11",
+                    "content": "Have you considered using the same APIs as provided by the function call layer of the Crosschain Protocol Stack? In that way, any crosschain application can work with any crosschain function call approach, with any crosschain messaging layer. For example, Nomad could be the messaging layer, and GPACT or a non-atomic function call approach could be used. For example, the API for calling a function on a different chain is here:  entethalliance.github.io   Enterprise Ethereum Alliance Crosschain Interoperability Technical... This document, the Enterprise Ethereum Alliance Crosschain Interoperability Technical Specification, defines the implementation requirements for Enterprise Ethereum clients that wish to do cross-blockchain communications.      Crosschain Protocol Stack: Enterprise Ethereum Alliance Crosschain Interoperability Technical Specification Draft Version 1.0 Function Call Layer: Enterprise Ethereum Alliance Crosschain Interoperability Technical Specification Function Call Interface Draft Version 1.0 Messaging Layer: Enterprise Ethereum Alliance Crosschain Interoperability Technical Specification Messaging Interface Draft Version 1.0 ",
+                    "links": [
+                        "https://entethalliance.github.io/crosschain-interoperability/draft_crosschain_techspec_function.html#sec-CrosschainFunctionCallInterface",
+                        "https://entethalliance.github.io/crosschain-interoperability/draft_crosschain_techspec.html",
+                        "https://entethalliance.github.io/crosschain-interoperability/draft_crosschain_techspec_function.html",
+                        "https://entethalliance.github.io/crosschain-interoperability/draft_crosschain_techspec_messaging.html"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/drinkcoffee",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "23/06/2022-00:23:48",
+                    "content": "An important feature that in my quick read through didn\u2019t see is crosschain authentication. You need the ability to do something similar to require(msg.sender == authenticated) for crosschain. Did the call come from an authorised contract on a certain blockchain. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.18452380952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/geogons",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "23/06/2022-18:13:57",
+                    "content": "Hi @Brendan, a question from the ChainBridge team: What\u2019s the rationale behind making CrossChainRelayer nonpayable? How would it be possible for the bridge to charge fees on the source chain? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "25/06/2022-00:07:21",
+                    "content": "Hey everybody, excuse the delay I was busy with some events.  Public vs Private Bridge @Amxx articulated a very important design consideration: whether the ERC supports public or private bridges. Public bridge: a bridge that anyone can use to send messages. It\u2019s generalized, such that the receiver knows the caller on the origin chain. Many bridges are like this; Optimism, Polygon, and others. Private bridge: a bridge is specific to a dapp. This is like Nomad\u2019s home and replicas (i.e. relayer and receiver). Replicas need to be censorable by a dapp, so Nomad considers them dapp-specific. The above EIP is essentially a private bridge; which means a user would need to deploy wrappers for some existing bridges. It\u2019s compatible with Nomad, but precludes public bridges. Not ideal. By having the EIP support public bridges it will be compatible with both approaches. A public design would still allow the user to deploy their own for a private bridge, but would support public bridges as well. This is why I was thinking the spec should support bridge swaps @nambrot, because in its current design the receiver executes the call, making it a privileged part of the protocol. To swap the bridge we\u2019d need to update the receiver. Not ideal. Btw @nambrot, you asked why we would swap: for chains such as Optimism I\u2019d prefer to use the native bridge for slow-moving pieces like governance. However, when tech like Nomad is more robust and has an incentivized censorship layer we\u2019d be able to switch to it for faster bridging.  Additional Fields  Gas     Amxx:  Call currently does not include a gas amount. I believe this is needed.   That\u2019s smart- I like it. Should we have a special value? I.e. if gas is zero then it\u2019s considered no-limit?  Caller     Amxx:  I would add a sender or caller param to the events   100%. Going with a public approach would necessitate this.  Payable     geogons:  [can] it be possible for the bridge to charge fees on the source chain?   That\u2019s a cool idea! The send message function should be payable.  Summary  Update the EIP to be public, not private Make relayCalls payable Add gas limit and caller  Note: by making the bridge public the receiver contract will be verifying the caller as being their desired bridge. We won\u2019t have to worry about authentication @drinkcoffee, as it\u2019s dapp-specific (imagine a dapp that has a public function that can be called across a bridge). I\u2019ve updated the EIP with the above changes view the new version here. Please review and comment so that we can continue iterating!  Open Questions Should we have a relayData call that relays a simple bytes data param? Or perhaps the Calls struct could be an extension? Would be curious to hear anyone\u2019s thoughts. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.249926561533704
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "04/07/2022-13:19:08",
+                    "content": "    Brendan:      Amxx:  Call currently does not include a gas amount. I believe this is needed.   That\u2019s smart- I like it. Should we have a special value? I.e. if gas is zero then it\u2019s considered no-limit?   I\u2019m not sure how detailed the ERC should be. I personally see an approach that would be similar to what GnosisSafe does for their multisig  If the gas value is non zero, then the call must be performed with AT LEAST this value (we check that 1/64 of this value is remaining after the call).  If the call is a success, then all good (and it should not be replayed) If the call is a failure despite the gas requirement being met, then the call is non-retriable (we gave it a fair chance and it failed).   If the gas value is zero, then any amount provided is forwarded.  If the call is a success, then all good (and it should not be replayed) If the call is a failure, then we create a \u201cretriable ticket\u201d that anyone can try to run. with any amount of gas. If the retry call fails, the ticket remains available. If the retry successed, we burn the ticket to prevent double execution.    ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.496867167919799
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kladkogex",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "04/07/2022-16:06:01",
+                    "content": "Congrats on the EIP ! Please take a look at SKALE IMA bridge since it impements a generic messaging framework that resonates well with this EIP https://docs.skale.network/ima/1.3.x/getting-started It is currently running on SKL main net and allows to send a message from any SKL chain to any other SKL chain and to ETH main net If there is an industry wide EIP we at SKALE are happy to make our messaging compliant. The hardest feature is actually assigning and reimbursing gas costs correctly ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.454166666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "06/07/2022-22:06:18",
+                    "content": "Hey @kladkogex thanks for chiming in!  I poked through the docs but the setup didn\u2019t jump out at me. Can you include a snippet? Or perhaps have a look at the EIP and see if we\u2019re missing anything? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "06/07/2022-22:28:49",
+                    "content": "@Amxx Regarding the retry logic: it seems like that it implementation-specific, no? I hesitate to include that in the EIP.  As you said earlier, different bridges have different retry logic. I do like your additional specification around the gas field. However, it feels like there are two elements to this: how much gas the CrossChainReceiver#receiveCalls fxn uses, and how much each of the calls in the batch should use. Here\u2019s a diagram of the EIP in its current form:  Screen Shot 2022-07-06 at 3.10.48 PM1990\u00d71228 154 KB  There are a couple of issues here:  The CrossChainReceiver#receiveCalls() fxn is called by the bridge layer.  The bridge will only know the gas usage after the receiveCalls function is executed. This makes it hard to know costs up-front. Each Call struct currently has a gas value, but really it\u2019s up to the user-implemented CrossChainReceiver to respect that value.  It\u2019s not used directly by the ERC.  I noticed that in your bridge code it defines the call along the lines: Bridge.crossChainCall(address target, bytes memory message, uint32 gasLimit) This ERC has essentially encoded a batch of calls in the message.  In your bridge, however, the gas limit essentially applies to the CrossChainReceiver#receiveCalls function. This makes a lot more sense to me, as it is deeply functional for the bridge: the bridge now knows the expected gas limit for the CrossChainReceiver#receiveCalls function. This is made available on the sending chain as well, so the bridge could even take a payment on the sending side based on the required gas (a la the payable relayCalls fxn) This makes me think we should follow the same logic as your bridge by adding a gas limit: interface CrossChainRelayer {     function relayCalls(CrossChainReceiver receiver, Call[] calldata calls, uint gasLimit); }  We would then remove the gas field from the Call struct. I don\u2019t think the CrossChainReceiver needs to know the gas limit, because the limit is simply applied to the call by the bridge. Thoughts? ",
+                    "links": [
+                        "https://github.com/Amxx/openzeppelin-labs/blob/3e843ccaa374a5147a92528ae2fbaa28bb70b797/crosschain-contracts/contracts/modules/CrossChainEnabledArbitrumL1.sol#L22"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.317982456140351
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "12/08/2022-09:02:44",
+                    "content": "    Brendan:  @Amxx Regarding the retry logic: it seems like that it implementation-specific, no? I hesitate to include that in the EIP. As you said earlier, different bridges have different retry logic.   The thing is to have a retry logic that is NOT implementation specific, and that is standard to the bridge. It could technically be achieved in an extension ERC. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "12/08/2022-09:09:47",
+                    "content": "    Brendan:  Here\u2019s a diagram of the EIP in its current form:    I honestly don\u2019t like this dependency on \u201creceiveCalls\u201d. It messes the ABI, and would be difficult to implement if the calls are arbitrary. IMO the ERC-5164 CrossChainRelayer (on the sending chain) should call one dedicated contract on the receiving chain (we\u2019ll need a name for that), which will in turn relay the call to the user contracts, just like the AMB and Optimism bridges do today. I believe this will be cleaner. It would also put most of the logic on the receiving end in a contract that is reused, instead of requiering every user contract to ship it (in some cases this code can be really big) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "12/08/2022-09:13:14",
+                    "content": "    Brendan:  I don\u2019t think the CrossChainReceiver needs to know the gas limit, because the limit is simply applied to the call by the bridge.   As mentionned above, the cross chain signal should not go directly to the user contract. It should go to a bridge contract, which forwards the calls one by one (which a minimum amount of gas specified in the Call structure). This bridge contract would be able to see if execution fails, and could (in the futur?) include retry mechanisms ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.083333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "12/08/2022-09:42:21",
+                    "content": "My vision was more something like this:  Again, i believe it would be way more versatile for the user contract on the receiving side not having to implement the calls going through a dedicated receiveCalls. This receiveCalls would be part of the red \u201cimplementation specific\u201d interface between the two sides of the bridge. To give some image, I\u2019d like the bridge to be a bridge, with two sides, and that you can take in both direction. Not a catapult that sends you somewhere where a mattress is needs to catch you fall. Each side of the bridge would have an address, in a city, and would ideally know the address (and the city) of the other side. Note: the user contract would still have to be \u201cbridge aware\u201d so that they recover the correct sender when msg.sender == bridge \u2026 but that is a very small piece of logic that could easily support multiple bridges (as long as they implement the same \u201cuser facing\u201d interface). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.916666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "12/08/2022-16:47:22",
+                    "content": "    Amxx:  Not a catapult that sends you somewhere where a mattress is needs to catch you fall.    I like to of it as a one way street; when you combine two it becomes a two-way street. Although a catapult would be more fun to watch! I agree with you in that I\u2019d like the user space \u201creceiver\u201d to be as simple as possible. The trick is that we want the receiver to recognize both the bridge contract (to authorize the transport layer) and the caller on the other side (to authorize the action). Passing the caller explicitly seems like the simplest 80 IQ approach\u2026but what else are you thinking? Perhaps the GSN-style extra calldata bytes for the sender? You know what is interesting- the CrossChainRelayer (receiver) in your diagram is basically an implementation of the CrossChainReceiver. I quite like this as it specifically defines how the Call[] batch is handled, instead of leaving it up to a user-space implementation. Quick update for everyone else: Pierrick from PoolTogether is starting work on ERC-5164 implementations for the native Optimism, Arbitrum, and Polygon message bridges. We\u2019re going to collaborate with @Amxx and use his prototype work. The implementations will help us refine the spec, then when we\u2019re ready we\u2019ll finalize the ERC and audit the bridges. Then we\u2019ll have standardized bridges that everyone can use! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.878787878787879
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "12/08/2022-17:46:21",
+                    "content": "    Brendan:  Passing the caller explicitly seems like the simplest 80 IQ approach\u2026but what else are you thinking?   You know what the meme says, sometimes the most stupid things are also the smartest ones. I would love to see contracts do something like this: interface ICrossChainReceiver {     function foreignChainId() returns (uint256); // returns the chainId of the foreign chain     function foreignSender() returns (address); // returns the address of the cross chain sender if during a crosschain call }  contract BridgeAware {     mapping(address => bool) isBridge;     mapping(uint256 => mapping(address => bool) authorized;      modifier onlyAuthorized() {         bool isCrossChain = isBridge[msg.sender];         address chain = isCrossChain ? IBridge(msg.sender).foreignChainId() : block.chainid;         address sender = isCrossChain ? IBridge(msg.sender).foreignSender() : msg.sender;         require(authorized[chain][sender], \"Not authorized\");         _;     } }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.075000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "12/08/2022-20:24:15",
+                    "content": "Hmmm\u2026 the trouble with the foreign chain id is that it can\u2019t be enforced or verified; it\u2019s just a value set by the creator of the CCReceiver contract.  I think it makes more sense to use the address of the CCReceiver itself to authenticate the transport layer, because then the user contract can verify the transport layer using the basic msg.sender == receiver. This also aligns better with Nomad- because Replicas don\u2019t actually track the sending chain id. For the foreignSender; it feels like that would be gas-intensive wouldn\u2019t it? It would need to do a 5k SSTORE to track the sender across calls, then each call would need do to an external call to the bridge to check (1k+). I swear you were going to suggest the hidden call argument approach!  What do you think about that? It would look something like: interface ICrossChainReceiver { }  contract BridgeAware {     address crossChainReceiver;     address foreignCaller;      modifier onlyAuthorized() {         require(msg.sender == crossChainReceiver, \"not transport layer\");         require(_foreignCaller() == foreignCaller, \"not authorized\");     }      function _foreignCaller() internal view returns (address caller) {         assembly {             caller := shr(96, calldataload(sub(calldatasize(), 20)))         }      } }  It does mean that the CrossChainReceiver would need to pack in the extra calldata when it calls the user contracts: interface ICrossChainReceiver {     function receiveCalls(...) {         ...         (bool success, bytes memory returndata) = req.to.call{gas: req.gas, value: req.value}(             abi.encodePacked(req.data, foreignCaller)         );         ...     } }  I think this would be the most gas efficient. Users would need to use a tiny lib to interpret the foreignCaller, but it would be easy enough. Thoughts? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.43359375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "29/08/2022-16:09:48",
+                    "content": "    Brendan:  I think it makes more sense to use the address of the CCReceiver itself to authenticate the transport layer, because then the user contract can verify the transport layer using the basic msg.sender == receiver. This also aligns better with Nomad- because Replicas don\u2019t actually track the sending chain id.   I agree that the transport layer identification should be done using the CCReceiver address. The foreignChain() would be metadata, that helps identifying, without being trustworthy by default (like name or symbol for ERC20). In my example above the bridges are whitelisted, so I assume checking the foreignChainId they return would be part of the whitelisting process. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "29/08/2022-19:01:11",
+                    "content": "    Brendan:  I swear you were going to suggest the hidden call argument approach ! What do you think about that?   That is EIP-2771. I\u2019m actually listed as one of the author. Its really not a bad idea:  For many bridges, I assumed foreignCaller() would just be a proxy, and not need storage. But in some cases storage will be needed.  EIP-1153 would make that cheaper if implemented, but that is not something we should rely on. EIP-2771 is a meta-tx relay mechanism, and for sure the bridge matches this logic. It is probably the smartest move here.  ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-2771",
+                        "https://eips.ethereum.org/EIPS/eip-1153"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.141666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Pierrick",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "21/10/2022-15:48:45",
+                    "content": "Hello magicians, It\u2019s been a while since we gave you an update. The EIP entered the Draft stage on September 22. And we have been working on several implementations using native bridges for Arbitrum, Optimism and Polygon. This work is available in this repository:   GitHub    GitHub - pooltogether/ERC5164 Contribute to pooltogether/ERC5164 development by creating an account on GitHub.      All this work helped us test our interfaces with various bridges, which outlined the short comings of the EIP. Bridges process messages in various ways and we have realized that our EIP should only define how messages are being relayed to other chains and traced. Execution and authentication of these messages is left to the developers to implement. Transaction ordering is not specified but developers can use the nonce if they wish to enforce it in their application. The updated EIP is available in the following PR: Update EIP-5164: Move to review by PierrickGT \u00b7 Pull Request #5808 \u00b7 ethereum/EIPs \u00b7 GitHub We are awaiting your feedback before this EIP enters the review stage. ",
+                    "links": [
+                        "https://github.com/pooltogether/ERC5164",
+                        "https://github.com/ethereum/EIPs/pull/5808"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3374999999999995
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Pierrick",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "07/11/2022-17:11:14",
+                    "content": "EIP-5164 entered the Review stage on October 31.  Ethereum Improvement Proposals   EIP-5164: Cross-Chain Execution Defines an interface that supports execution across EVM networks.      The ERC-5164 repository has been updated with the latest changes made to the interface. A how to section has also been added to the README: GitHub - pooltogether/ERC5164 It should make it easier for people to use the various bridges and also contribute. We are awaiting your feedback before the EIP enters the Last Call stage. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-5164",
+                        "https://github.com/pooltogether/ERC5164"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "30/11/2022-17:54:53",
+                    "content": "Tomorrow there will be a C4 auditing contest for the above ERC-5164 reference implementation. It will be a great time to find any faults with the implementation, because you\u2019ll get paid! The prize pool is ~$30k USDC. The contest starts tomorrow, on Dec 1st at 12:00 PST. The contest will run for three days. The audit will cover the current implementation, which includes:  Bridge from Ethereum to Optimism Bridge from Ethereum to Arbitrum Bridge from Ethereum to Polygon  Hopefully in the future we\u2019ll see more implementations for L2s such as zkSync and for bridges such as Nomad, Hyperlane and others! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.071428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "09/12/2022-20:34:43",
+                    "content": "First of all, really excited to see this all coming along! I know I\u2019m jumping in late to the conversation here but Hop is going to release a cross-chain messenger soon so this is top of mind for us. I generally agree that a standard as @Amxx suggested is very much needed even if this EIP doesn\u2019t go that direction. Both Optimism and Arbitrum built their bridges with this pattern from the beginning and we\u2019re using this pattern for our messenger as well. I also really like your idea @Brendan to use the hidden call argument approach instead of the callback approach currently used. Either way, a standard way to validate crossChainSender and crossChainChainId after receiving a call would be very useful. I\u2019m also admittedly confused about who is intended to implement ICrossChainReceiver. If every project is deploying their own ICrossChainReceiver and they all still need to do authentication against non-standard message bridge contracts, (e.g. https://github.com/hop-protocol/contracts-v2/blob/master/contracts/connectors/L1ArbitrumConnector.sol#L33-L34) then who benefits from this being standardized? But if many projects all intended to use the same CrossChainReceiver, why should receiveCalls be standardized? I would think projects consuming this standard only care about how to validate the crossChainSender and crossChainChainId when a call is received from the CrossChainReceiver and not implementation details of how CrossChainReceiver receives the calls. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.653356481481482
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "29",
+                    "likes": "1",
+                    "time": "09/12/2022-20:55:24",
+                    "content": "Hey Chris! Nice to see you here. I had a look at what you were referring to and agreed, but then I realized that the link at the top was outdated! Here is the latest EIP-5164 It\u2019s exactly as you said- receiveCalls is not part of the spec. Here is the reference implementation on Github. (the code is easy to grok) Are we going to see a Hop implementation? I\u2019d love to see it One last thing: yes the CrossChainRelayers and Executors are intended to be reused! ",
+                    "links": [
+                        "https://github.com/pooltogether/ERC5164"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.427083333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "09/12/2022-21:00:13",
+                    "content": "There are two goals we\u2019d really like to see a cross-chain messaging standard achieve:   Contracts could really use a standard way to validate crossChainSender and crossChainChainId after receiving a call from a messenger. Currently, Optimism and Arbitrum have slightly varied interfaces and don\u2019t account for crossChainChainId since they\u2019re only dealing with a single chain-to-chain connection. This could be done the way @Amxx suggested or with the hidden call argument approach.   Off-chain messaging explorers could use a standard way to track cross-chain messages being sent and completed. This just requires standard events for message sending, relaying, and reverts.   Something like this seems relatively unopinionated and achieves both goals: interface ICrossChainSource {     event MessageSent(         bytes32 indexed messageId,         address indexed from,         uint256 indexed toChainId,         address to,         bytes data     ); }   interface ICrossChainDestination {     event MessageRelayed(         bytes32 messageId,         uint256 fromChainId,         address indexed from,         address indexed to     );      event MessageReverted(         bytes32 messageId,         uint256 fromChainId,         address indexed from,         address indexed to     );      function getCrossChainSender() external view returns (address);     function getCrossChainChainId() external view returns (uint256); }  Could this live alongside the current suggested standard or would it be a competing standard? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.036556036556037
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "09/12/2022-21:02:35",
+                    "content": "    Brendan:  Are we going to see a Hop implementation?   Yes! Hop implementation coming soon!  I looked through the 5164 and definitely easy to grok too ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "09/12/2022-21:25:07",
+                    "content": "This is basically what\u2019s the in spec. With a few notable differences:  The 5164 includes a gasLimit, but early reports from auditors suggests that it\u2019s not needed. This may be taken out. 5164 batches messages instead of sending them individually 5164 does not catch reverts; they simply revert as normal. This was in case they needed to be retried, or what have you  Someone that you\u2019ve added, which is interesting, is the targetChainId on the Relayer. We avoided adding this because it\u2019s kind of out-of-band information, in the sense that it would be just arbitrarily set by the Relayer contract and not really guarantee anything.  Additionally, indexers or whoever is watching the relayer would have to know what the corresponding Executor is anyway on the receiving chain. It already needs to know information that isn\u2019t available on-chain. PS: I did wonder whether batching was absolutely necessary for the EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.770833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "09/12/2022-21:47:20",
+                    "content": "Ok after catching up the latest, here are some thoughts:   It\u2019s great that validation using the hidden call parameter approach is defined! interface CrossChainExecutor {   bytes calldata = abi.encode(Call.data, nonce, sender); // Can also use abi.encodePacked }  What\u2019s the reason for including nonce here if replay protection is handled by the ICrossChainReceiver though?   Would it make sense to rename nonce to messageId or something like that and use bytes32? I think there\u2019s some expectation for nonces to be sequential like they are on Ethereum even though it\u2019s not part of the definition of a nonce. We use a hash as the message unique identifier so it would just be a giant random uint256 which works but isn\u2019t ideal.   I also like that a gaslimit is not included for individual messages in the batch in . Is it needed at all though? interface CrossChainRelayer {   function relayCalls(Call[] calldata calls, uint256 gasLimit) external payable returns (uint256 nonce); }    ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.348484848484849
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "34",
+                    "likes": "1",
+                    "time": "09/12/2022-21:54:26",
+                    "content": "I really like the batching! Any thoughts on including a relayCall option as well? I can get some more data on it but I think the gas savings could be non-trivial and it\u2019s two less words of calldata. interface CrossChainRelayer {   function relayCall(Call calldata call, uint256 gasLimit) external payable returns (uint256 nonce); }  I think everything else could stay as is too. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.729166666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "09/12/2022-21:55:18",
+                    "content": "    cwhinfrey:  What\u2019s the reason for including nonce here if replay protection is handled by the ICrossChainReceiver though?   On the Relayer side, there is a definite order to the calls. However, we don\u2019t require strict ordering on the Executor side because that would open the ability to grief for some bridges (Arbitrum, in particular). Instead, the Executor just uses the nonce to prevent replay attacks. However, we make the ordering available to the Receiver so that it at least has the ability to detect out-of-order messages.     cwhinfrey:  Would it make sense to rename nonce to messageId or something like that and use bytes32?   Because of the above rationale, no.     cwhinfrey:  I also like that a gaslimit is not included for individual messages in the batch in . Is it needed at all though?   Yes! It might get pulled because the auditors didn\u2019t like it either  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.666666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "09/12/2022-21:57:40",
+                    "content": "Yeah; I like the single call option. What changes to the events would you make to support single + batching? i.e in terms of harmonizing them ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.642857142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "09/12/2022-22:00:45",
+                    "content": "And then lastly, the standard is fairly opinionated that CrossChainRelayer CrossChainExecutor pairs should be between just two chains. We\u2019ll support 5 chains so I think we\u2019d need to deploy 5 + 4 + 3 + 2 + 1  = 15 different CrossChainRelayer CrossChainExecutor pairs and it could get out of hand as we support more chains. How should multi-chain message bridges think about supporting this? Would it make sense to have two separate standards, one that\u2019s one-to-one and one that\u2019s many-to-many? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.208333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "09/12/2022-22:03:17",
+                    "content": "No strong opinion here. I think I\u2019d loosely lean toward no change since it\u2019s simpler and you could just do something like for single calls   emit RelayedCalls(     nonce,     sender,     [call],     gasLimit   );  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.391636141636141
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "09/12/2022-22:07:33",
+                    "content": "    Brendan:  On the Relayer side, there is a definite order to the calls. However, we don\u2019t require strict ordering on the Executor side because that would open the ability to grief for some bridges (Arbitrum, in particular).   That makes a lot of sense. Our issue is more related to being a many-to-many chain message bridge. For one-to-one message bridges a sequential nonce is enough to have a unique id for the message. But for many-to-many, you\u2019d have collisions across the different sources. That\u2019s why we use a hash instead. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.1342592592592595
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "09/12/2022-22:21:53",
+                    "content": "Ok, I feel like have the full picture now. If toChainId was added to relayCalls interface CrossChainRelayer {   function relayCalls(uint256 toChainId, Call[] calldata calls) external payable returns (uint256 nonce); }  and fromChainId was appended to the validation data interface CrossChainExecutor {   bytes calldata = abi.encode(Call.data, nonce, sender, fromChainId); // Can also use abi.encodePacked }  it would be compatible with many-to-many chain message bridges. And we\u2019d love to adopt it and could have a second reference implementation for you really soon!  I wasn\u2019t following this comment though so maybe I\u2019m missing something.  Someone that you\u2019ve added, which is interesting, is the targetChainId on the Relayer. We avoided adding this because it\u2019s kind of out-of-band information, in the sense that it would be just arbitrarily set by the Relayer contract and not really guarantee anything.  Contracts receiving messages can verify the source chain id in our system and that data is transported the same way the original sender address is. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.955357142857142
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "09/12/2022-22:35:48",
+                    "content": "    cwhinfrey:  We\u2019ll support 5 chains so I think we\u2019d need to deploy 5 + 4 + 3 + 2 + 1 = 15 different CrossChainRelayer CrossChainExecutor pairs and it could get out of hand as we support more chains. How should multi-chain message bridges think about supporting this? Would it make sense to have two separate standards, one that\u2019s one-to-one and one that\u2019s many-to-many?   This is a very interesting question! I looked at the native Polygon, Optimism, Arbitrum, and Nomad bridges to see what the lowest common denominator was, and found that the 1-to-1 (or really a kind of a multicast in the case of Nomad) was the best fit. The current spec requires contracts on the sending chain to know the addresses of the contracts on the receiving chain.  Why not also the receiving chain id? That being said, perhaps that\u2019s the answer: it\u2019s optional.  Some Relayers might ignore the chainId while others, like Hop, will use it. This does mean, however, that Executors will need to include the sending chain id on the other side. For some that might be kind of redundant, and opens up for human error. But, if the contract is audited and re-used it\u2019s far less likely. I see you posted a response above     cwhinfrey:  interface CrossChainRelayer {   function relayCalls(uint256 toChainId, Call[] calldata calls) external payable returns (uint256 nonce); }  and fromChainId was appended to the validation data interface CrossChainExecutor {   bytes calldata = abi.encode(Call.data, nonce, sender, fromChainId); // Can also use abi.encodePacked }    Yes, this is exactly the change that would be needed. You know- I think what we could do is add this to the spec, but also add something along the lines of:  Relayers MAY ignore the passed chainId if they are bound to a particular chain  But- we could require the Relayer to include the chainId in the Event (as you initially wrote). Likewise for the Executor. Really, the critical thing about this spec is:  A consistent call interface A consistent way to check the original sender / chain  We can allow Relayer and Executor implementations to take shortcuts in certain ways, as long as they adhere to the fundamentals. Ok let\u2019s review:  Add a relayCall fxn Add a chainId param to the relay, but allow the relay to ignore it The relay should emit the target chain as part of the relayed event The executor should include the receiving chainId in the event and append it to the calldata  I like these changes! @Pierrick curious to hear your thoughts too. Chris- do you want to make a PR with the changes and tack your name on to the authors? It\u2019d be great for you to be part of this. I think these changes are straightforward, and we can update our code to match. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.987012987012987
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "42",
+                    "likes": "2",
+                    "time": "09/12/2022-22:44:34",
+                    "content": "    Brendan:  Chris- do you want to make a PR with the changes and tack your name on to the authors? It\u2019d be great for you to be part of this.   Would love to! And totally agree with everything above. We\u2019ll get going on the implementation too and should have something soon  Thank you! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party wanting to collaborate on proposal",
+                        "3rd party giving entirely positive feedback on proposal"
+                    ],
+                    "Sentiment": 6.78125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "43",
+                    "likes": "1",
+                    "time": "10/01/2023-19:24:20",
+                    "content": "Thank you for the draft. This is going to be an impactful EIP. QQ: Have you considered adding an extension field to this function turning interface CrossChainRelayer {   function relayCalls(Call[] calldata calls, uint256 gasLimit) external payable returns (uint256 nonce); }  into interface CrossChainRelayer {   function relayCalls(Call[] calldata calls, uint256 gasLimit, bytes calldata extraData /*EIP-5750 field*/) external payable returns (uint256 nonce); }  and so it can be \u201cfuture expandable\u201d for things like this:  someone wants to send raw eth or wrapped eth along with the call achieve something like a commit-reveal or commit-timelock with EIP-5732 Commit Interface achieve additional authorization with something like EIP-5453 Endorsement Interface to query EIP-1271 in one or both chains of the cross-chain  See EIP-5750 for more details: EIP-5750: General Extensibility for Method Behaviors ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4326923076923075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "10/01/2023-22:15:04",
+                    "content": "Hi @xinbenlv! @cwhinfrey is currently working on a big update to the EIP.  The PR is awaiting more changes, but you can keep an eye on the EIP-5164 Update PR on Github for updates. The PR should be updated within a few days. Where we landed was to have the events and the Executor semantics as part of the core EIP, and the sending function as an optional extension within the EIP (like 721 metadata). Just as you say, there could be many additional parameters or returns values depending on the bridge. The critical functionality is the receiver semantics with the encoded sender appended to the calldata, and it\u2019s really nice to have standardized events so that calls can be traced with common infrastructure. So all that being said, what do you think about allowing diff send functions rather than having a data blob? curious to hear if you have any more thoughts around that ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/auryn",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "09/03/2023-00:12:11",
+                    "content": "Returning to this thread after a long while, since I\u2019m working on a bridge aggregator implementation. Wondering about the types used here: interface MessageDispatcher {   event MessageDispatched(     bytes32 indexed messageId,     address indexed from,     uint256 indexed toChainId,     address to,     bytes data,   ); }  interface SingleMessageDispatcher is MessageDispatcher {   function dispatchMessage(uint256 toChainId, address to, bytes calldata data) external payable returns (bytes32 messageId); }  Specifically, I\u2019m wondering if to and from (and perhaps even chainId) should all be bytes32? The rationale being that this might allow for:  some extra room that could be used for things like chain-specific addresses (not strictly necessary given chainId is explicitly provided). greater flexibility for interoperability with networks that don\u2019t conform to the EVM\u2019s 20-byte account namespace.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.45
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/auryn",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "09/03/2023-00:53:23",
+                    "content": "I also noticed that dispatchMessageBatch() requires one toChainID for all batched messages. I see no reason why a batch of messages should not be able to include messages to multiple chains. interface BatchedMessageDispatcher is MessageDispatcher {   function dispatchMessageBatch(uint256 toChainId, Message[] calldata messages) external payable returns (bytes32 messageId); }  Perhaps it would be better for this information to be in the Message struct? struct Message {     address to;     bytes data;     uint256 toChainId; }  I also wonder if dispatchMessage() is even necessary? The interface and implementation could be simplified by only exposing the batch versions of the functions and events. Users can still choose to send a single message via these functions if they wish. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.663265306122449
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Brendan",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "09/03/2023-18:18:16",
+                    "content": "Hey Auryn! Welcome back      auryn:  Specifically, I\u2019m wondering if to and from (and perhaps even chainId) should all be bytes32?   That\u2019s an interesting idea. It would definitely offer more flexibility in terms of dispatching messages to non-EVM chains. It does make me think:  Is bytes32 sufficient for the majority of non-EVM chains? I\u2019m not familiar enough with other chain encodings to speak to this. Is bytes32 too abstract? For EVM chains the casting is obvious, but would simply have a 256-bit \u201cbucket\u201d leave the encoding too ambiguous for other blockchains? Supporting non-EVM chains would only cover the dispatch of messages; the execution of messages would be open to interpretation.  It seems like we\u2019d need additional ERCs or extensions to codify other blockchains.  So, I guess tldr; is the question of whether bytes32 is enough for all chains, and if we\u2019re okay that it only covers that dispatch side for non-EVM chains.  Would be curious to hear your thoughts on this.     auryn:  I also noticed that dispatchMessageBatch() requires one toChainID for all batched messages. I see no reason why a batch of messages should not be able to include messages to multiple chains.   I think that\u2019s a good observation.  IIRC our assumption was that batching would mostly be done for one chain, so we\u2019d save calldata by defining the toChainId only once.  But the flexibility might be worth it! That would simplify the signature to:   function dispatchMessages(Message[] calldata messages) external payable returns (bytes32 messageId);  Which I do like.     auryn:  I also wonder if dispatchMessage() is even necessary?   IIRC we added that because it would likely be the most common use case.  However, that function could easily be provided by wrapper function in a library. This would also mean that there would be a single way to call an ERC5164 dispatcher, so it would ensure that implementations would be swappable (vs having multiple ways of dispatching). @cwhinfrey What are your thoughts on this? We went back and forth quite a bit over the two function signatures!  I\u2019d be happy consolidating them into the batch fxn and adding chainId to a Message struct. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.696097883597884
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/auryn",
+                    "index": "48",
+                    "likes": "1",
+                    "time": "09/03/2023-18:56:42",
+                    "content": "    Brendan:  This would also mean that there would be a single way to call an ERC5164 dispatcher, so it would ensure that implementations would be swappable (vs having multiple ways of dispatching).   Right, so the entire interface could look like this: struct Message {     address to;     uint256 toChainId;     bytes data; }  interface MessageDispatcher {     event MessageDispatched(         bytes32 indexed messageId,         address indexed from,         uint256 indexed toChainId,         address to,         bytes data     );      function dispatchMessages(Message[] memory messages) external payable returns (bytes32[] memory messageIds); }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.918154761904762
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "16/03/2023-00:21:31",
+                    "content": "Hey @auryn, great to see you (back) in here!     auryn:  Specifically, I\u2019m wondering if to and from (and perhaps even chainId) should all be bytes32?   I think this is more of a subjective question about the scope of the EIP. My vote would be to keep this scoped to EVM chains to avoid getting too generalized. I think that would maximize adoption on Ethereum but definitely open to other options and opinions on this.     auryn:  I also wonder if dispatchMessage() is even necessary?   I wanted to add some color behind some of the discussions and design decisions here and it might be worth adding some of this to the EIP itself if we stay on this course. This is my understanding of the design decisions of the EIP after a lot of discussion with @Brendan @Pierrick and others: The taxonomy of cross-chain messages and how they\u2019re initiated is very broad. We can approach this standard by just supporting a subset or keep it extensible like it currently is. I attempted to break down some of the different messaging paradigms here but please push back, poke holes, or let me know if something should be added: An Incomplete Taxonomy of Cross-Chain Messages \u00b7 GitHub The top level interfaces MessageDispatcher and MessageExecutor standardize two things:  The events emitted when initiating and executing messages or message batches. This is useful for offchain indexers. How the contract receiving a message can parse out the messageId, fromChainId, from needed for validation and event logging. This has sometimes been referred to as the \u201cmessage receiver interface\u201d in discussions.  Both of these standards are useful for all the messaging paradigms described in the link above. However, standardizing the send/dispatch interface is very hard or impossible without cutting out many use cases that would benefit from the standardized events and receiver interface. A messenger that supports one message paradigm can\u2019t necessarily be swapped out for a messenger that supports another even if we can get all the necessary data into a single interface anyway. It was this reason that drove the idea to allow for extensions of MessageDispatcher that each can define an interface for a given messaging paradigm. Contracts sending messages can use these interfaces knowing they can swap out a different messenger if it supports the same type of messaging which is the primary advantage of standardizing the send/dispatch interface in the first place. The EIP defines two extensions but you can see in the link above that there are many unique extensions that could be standardized in the future for the many different messaging paradigms that aren\u2019t necessarily compatible with each other under a unified interface. Would love to hear any thoughts on all of this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.453004171754172
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cwhinfrey",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "16/03/2023-00:32:53",
+                    "content": "Regarding the batched messages, if nothing changes, we should probably clarify in the EIP that the batches are atomic so that message senders can rely on consistent functionality across BatchedMessageDispatcher implementations. Non-atomic batches could be sent and handled as individual single messages and therefore have different chainIds. Atomic batches obviously need to get executed all on one chain though. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.178571428571429
+                }
+            ]
+        }
+    ],
+    "group_index": "1782"
+}

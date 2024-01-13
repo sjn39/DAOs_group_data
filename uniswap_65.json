@@ -1,0 +1,87 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://gov.uniswap.org/t/what-exactly-is-the-proposal-code/12403",
+            "title": "What exactly is the proposal code? ",
+            "index": 12403,
+            "category": [],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://gov.uniswap.org/u/franciscodwd",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "21/05/2021-17:08:13",
+                    "content": "I have been reading the docs and it says a proposal is executable code that modifies the governance contract or treasury, and that this code is executed in the timelock contract. But is the proposal code another contract which then calls the uniswap\u2019s contracts? Or is it code that\u2019s written directly inside a function in the Timelock contract? How does the proposal code interact with Uniswap\u2019s contracts? If anyone could provide some insight, I would appreciate it. ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://gov.uniswap.org/u/kenneth",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "26/05/2021-01:29:10",
+                    "content": "    franciscodwd:  I have been reading the docs and it says a proposal is executable code that modifies the governance contract or treasury, and that this code is executed in the timelock contract.   UNI borrows the COMP contracts - Compound | Docs - Governance but also check out fish.vote, it\u2019s a UI for simple proposals and funded by UNI grants program ",
+                    "links": [
+                        "https://fish.vote"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://gov.uniswap.org/u/jcp",
+                    "index": "3",
+                    "likes": "3",
+                    "time": "26/05/2021-02:57:28",
+                    "content": "When someone creates a proposal, they basically create a set of contract functions to call and the inputs to pass to those functions. All that data gets packed together into an array of bytes that is submitted with the proposal. Then, when a proposal gets passed and \u201cexecuted,\u201d UNI\u2019s governance contracts can basically just read the data in the proposal and call the appropriate functions with the right inputs. fish.vote has a UI that allows you to construct such a proposal, but only supports \u201cAutonomous Proposals\u201d right now. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.226190476190476
+                },
+                {
+                    "author_link": "https://gov.uniswap.org/u/franciscodwd",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "26/05/2021-21:09:57",
+                    "content": "Thank you for the reply. However there is something that is still not entirely clear to me. When you say \u201cthey basically create a set of contract functions to call and the inputs to pass to those functions\u201d, where are those functions executed? Do they need to be deployed in a new smart contract ? Or does the gov or timelock contract take these functions and execute them? I checked the fish.vote site and I could see as @kenneth said, you can create simple proposals there where you directly call some functions in the governance contracts. But it was limited to a couple of functions. What if someone wanted to change something else? Do they do it by directly calling the propose() function in the governor bravo contract? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.306586270871985
+                },
+                {
+                    "author_link": "https://gov.uniswap.org/u/jcp",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "26/05/2021-21:35:49",
+                    "content": "Yes, that\u2019s simply a UI limitation. Technically, literally any smart contract function call can be made. A proposal consists of the data related to which contracts and function calls should be made. When the proposal is executed, the Timelock contract reads that data and calls the appropriate functions on whatever smart contract addresses were included. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.773809523809524
+                },
+                {
+                    "author_link": "https://gov.uniswap.org/u/JFrankfurt",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "26/05/2021-23:44:25",
+                    "content": "Check out this code I\u2019ve linked below. There should be enough there to piece together how the system works and illustrate the (excellent) description from @jcp. Proposals enter the system via Governor#propose  github.com   Uniswap/governance/blob/master/contracts/GovernorAlpha.sol#L149-L163                       Proposal memory newProposal = Proposal({               id: proposalCount,               proposer: msg.sender,               eta: 0,               targets: targets,               values: values,               signatures: signatures,               calldatas: calldatas,               startBlock: startBlock,               endBlock: endBlock,               forVotes: 0,               againstVotes: 0,               canceled: false,               executed: false           });                      proposals are then executed by Governor#execute  github.com   Uniswap/governance/blob/master/contracts/GovernorAlpha.sol#L188-L196                       function execute(uint proposalId) public payable {               require(state(proposalId) == ProposalState.Queued, \"GovernorAlpha::execute: proposal can only be executed if it is queued\");               Proposal storage proposal = proposals[proposalId];               proposal.executed = true;               for (uint i = 0; i < proposal.targets.length; i++) {                   timelock.executeTransaction.value(proposal.values[i])(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], proposal.eta);               }               emit ProposalExecuted(proposalId);           }                      which calls out to Timelock#executeTransaction  github.com   Uniswap/governance/blob/master/contracts/Timelock.sol#L92-L102                       if (bytes(signature).length == 0) {               callData = data;           } else {               callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), data);           }                       // solium-disable-next-line security/no-call-value           (bool success, bytes memory returnData) = target.call.value(value)(callData);           require(success, \"Timelock::executeTransaction: Transaction execution reverted.\");                       emit ExecuteTransaction(txHash, target, value, signature, data, eta);                     ",
+                    "links": [
+                        "https://github.com/Uniswap/governance/blob/master/contracts/GovernorAlpha.sol#L149-L163",
+                        "https://github.com/Uniswap/governance/blob/master/contracts/GovernorAlpha.sol#L188-L196",
+                        "https://github.com/Uniswap/governance/blob/master/contracts/GovernorAlpha.sol#L188-L196",
+                        "https://github.com/Uniswap/governance/blob/master/contracts/Timelock.sol#L92-L102",
+                        "https://github.com/Uniswap/governance/blob/master/contracts/Timelock.sol#L92-L102"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.53125
+                }
+            ]
+        }
+    ],
+    "group_index": "65"
+}

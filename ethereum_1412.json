@@ -1,0 +1,99 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-3643-proposition-of-the-t-rex-token-standard-for-securities/6844",
+            "title": "EIP-3643 : Proposition of the T-REX token standard for securities ",
+            "index": 6844,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "token",
+                "security-token"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Joachim-Lebrun",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "12/08/2021-12:22:21",
+                    "content": "This is the discussion topic for EIP-3643: T-REX token standard for securities. This standard is used to tokenize securities and is based on ERC-20, on top of which we added 2 permission layers :  the first permission layer being linked to the identity of the transaction\u2019s receiver and its eligibility following preset rules defined by the token issuer (using ERC 734/735 for the identities and checking if the required claims are present on the identity and are signed by the trusted claim issuers) the second permission layer being based on global restictions applied to the token as such, e.g. maximum amount of token volume per day, maximum amount of token holders, \u2026  ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-42-proposition-of-the-t-rex-token-standard-for-securities/5429/9"
+                    ],
+                    "GPT-summary": "The post introduces the EIP-3643 proposal for a new token standard called T-REX, which is designed to tokenize securities. The proposal explains that the T-REX standard is based on ERC-20 and includes two permission layers to ensure compliance with preset rules defined by the token issuer. The post also invites discussion and feedback on the proposal.",
+                    "GPT-proposal-categories": [
+                        "Token economics",
+                        "Smart contract updates",
+                        "Identity and reputation systems",
+                        "Privacy, Security and risk management",
+                        "Law and regulations"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wschwab",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "12/08/2021-14:59:55",
+                    "content": "Hi! I wanted to ask if you are aware of previous efforts to make a securities-compliant token, and if so, why you decided to go with a new implementation. This isn\u2019t a field I really have much knowledge in, so I\u2019m interested in what goes in to the architecting here. Cheers! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.776830808080808
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Joachim-Lebrun",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "13/08/2021-07:53:41",
+                    "content": "Hello, we are well aware of the existence of the other security token standards, but we decided to have a different approach, as we wanted to have the possibility to process more complex compliance & eligibility checks onchain, that\u2019s why we decided to go for another implementation, including the use of onchain identities and specific compliance contracts tailor-made for each token, but working through a standard interface, as described in ICompliance doc. It is also important to note that T-REX tokens are used for about 3 years now in the industry and that >8,5 billion \u20ac of securities are already tokenized with this token standard, therefore it is not really a new implementation, what is new is the request that we made to add the standard in the EIPs library cheers! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.330492424242425
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/luzius",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "13/08/2021-09:37:04",
+                    "content": "(Copied from add eip TREX security token standard by Joachim-Lebrun \u00b7 Pull Request #3643 \u00b7 ethereum/EIPs \u00b7 GitHub) I believe that this approach is fundamentally broken as it comingles concerns from different legal layer into one big monolithic technical blob. As an adverse side-effect, it makes basic operations like transfers significantly more expensive than a simple ERC-20 token. Furthermore, giving the issuer total control over the issued tokens does not only go against the spirit of decentralization, it might also violate investor protection laws designed to protect token holders from the issuer in case of conflicts of interest. Here is a concrete example: let\u2019s assume that the founder of a successful company wants to use his tokenized shares in that company as a collateral to get a credit. He won\u2019t be able to use a DAI-style DeFi protocol as they require the ability to take exclusive control over the deposited assets that serve as collateral. So he asks his bank for a credit. The bank would love to provide the credit, but their compliance department is reluctant to approve the collateral because they know that the founder has access to the admin key, enabling the founder to \u201csteal\u201d the collateral at any time. I say \u201csteal\u201d in quotes as such an action would not legally qualify as stealing, because the taken assets still belong to the founder when used as a collateral, so it is not exactly theft. Further, the bank\u2019s cyber insurance says they cannot provide insurance coverage for assets that are not truly under the control of the bank and the regulator is worried about the bank being able to auction off the asset in case of a default of the founder, so they do not recognize the collateral as risk-reducing when calculating capital requirements. All of this could be solved if the token offered the possibility to provide exclusive control over the token to the current holder. As a side note, Swiss law explicitely recognizes the possibility to use crypto securities as a collateral, but it requires that it is technically ensured that the creditor has exclusive control over the crypto securities in case of a default. The reasoning behind this requirement are scenarios like the above. So what is the correct way out? The correct way out in my opinion is to depart from the monolithic \u201cone size fits all\u201d approach and to go for a layered design, distinguishing four layers.  The bottommost layer is the infrastructure layer. In our case, this would be the Ethereum blockchain, fulfilling basic requirements regarding data integrity, transparency, and so on. On top of that is the register layer, which essentially is an ERC-20 token that fulfills all constitutive legal requirements to represent a security token, but none of the circumstancial compliance rules that depend on the token holder, jurisdiction, involved intermediaries, etc. Legally, compliance rules are also added on a different layer than the basic rules that define what a security actually is and what it takes to create one. Also, compliance rules come and go whereas the basic rules about the issuance and transfer of securities last for decades. It makes sense to separate these different legal concerns also in the technical implementation. So the register layer ideally is a minimal ERC-20 contract with a few features added that are strictly necessary to make the tokens legally recognized securities (under Swiss law, the only feature that is missing in the ERC-20 standard is a link to a document called the \u201cregistration agreement\u201d that specifies what the token actually represents and other general terms the tokens are subject to). Ideally, this base contract is not upgradable at all, potentially providing the token holders with a very high level security. On top of the register layer, there is an administrative layer that adds all kind of administrative features, for example token recovery in case of a loss of private keys. Ideally, these features are added by wrapping the token and not by extending its functionality, making sure that it is possible to free the basic token on the register layer from all administrative backdoors if necessary, for example under the circumstances described in the example. Also, having this layer separated from the register layer creates a lot of flexibility, for example implementing a different set of rules for one jurisdiction than in another jurisdiction. One should also be careful to not call this layer \u201ccompliance\u201d layer as \u201ccompliance\u201d is usally used in the context of financial intermediation and AML rules, which in general do not apply directly to issuers. So the administrative layer is really reserved for token administration through the issuer, not for fulfilling the compliance requirements of individual custodians or other financial intermediaries that might hold the tokens at some point in time. The latter requirements, the compliance rules of individual intermediaries, should be implemented on the contractual layer. Often, such rules are defined in the general terms applicable to the relation between an individual token holder and a financial intermediary. Even within jurisdictions, they might differ from intermediary to intermediary, for example requiring different levels of identity verification. All these kind of requirements are implemented on top of the other layers, usually without the involvement of the issuer. Also, this layer might contain smart contracts to automatically enforce shareholder agreements and the like. It is important to have such a separation to cleanly deal with examples like the following (again coming from Swiss law, not sure how this works in other jurisdictions): assume an employee received tokenized shares from an issuer as part of an employee participation plan. The employee is not allowed to sell the shares according to his employment agreement, but does so anyway. The company refuses to execute the transfer of the tokens, saying that the transfer would violate the employment agreement. The empoyee goes to court and the court orders the company to approve the transfer because the refusal of a share transfer requires an according clause in the articles of association, which the company is lacking. Nonetheless, the employee is liable for violating the employment agreement. This example shows that the legal situation also has different layers, with the contractual agreements on upper layers not being able to supercede the applicable terms on lower layers. Of course, the company could have implemented an additional smart contract on the contractual layer to lock the shares of the employees and to enforce compliance with the employment agreement, but it is in general not allowed to use the terms of the register layer to enforce contractual agreements that have been made on a higher layer. Let me know if you\u2019d like to know more. The Swiss Blockchain Federation is working on an update to their Circular on Security Tokens, outlining these concerns in more detail. ",
+                    "links": [
+                        "https://user-images.githubusercontent.com/3128389/129317714-affc527d-fb16-4bf2-9f49-bd2c532639e3.png"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4539985994397755
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Joachim-Lebrun",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "13/08/2021-11:14:23",
+                    "content": "Hi, As you are probably  expecting, we cannot agree with you. We tried to provide a short and concise answer below to all the incongruences in your post:  In regards of the law-related remarks, please note that the T-REX standard is already approved in its fundamental approach by all our customers lawyers (including some of the major European banks) and it has already been used to tokenise more than 8,5 billion \u20ac of assets across the globe. Also Tokeny Solutions, creator of the T-REX token standard is backed by Euronext who never rose any legal concerns of this kind. In facts what you have to understand is that the fundamental approach of T-REX is coming from years of discussion with the various actors of the industry, as well as decades of experience from our team members in the world of securities (stock exchanges, central banks, major CSDs, etc). When it comes to the gas use, we are well aware of the additional costs of such transactions, especially on Ethereum Main Net. The standard might not be cheap to use but if you had a better understanding of our customers (mostly handling private placements) and the traditional financial industry, you would know that it remains a much better options than already existing frameworks for many reasons. Also as it is developed in solidity it can be used on any EVM based blockchain, T-REX tokens are already deployed on the polygon network for instance when dealing with customer targeting retails and facing important number of transactions. Last but not least, T-REX is indeed a centralised and permissioned protocol deployed on top of a decentralized infrastructure. If you think it should be fully decentralized, we strongly advise you to DYOR about the legal obligations of issuers and agents of securities In Switzerland (as it seems to be your focus) and everywhere else in the world. Every T-REX token is deployed in parallel with a full legal paperwork describing the issuer and its agents obligations. Such actors are for most of them regulated by their respectives local authorities. They will not \u201csteal\u201d security tokens from investors. We are not in DeFi here. Every actor is identified with a unique ONCHAINID and responsible for what they do, therefore it is not possible to \u201crugpull\u201d a T-REX token. Hopes it helps to bring a bit of light in your thoughts    ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.892045454545455
+                }
+            ]
+        }
+    ],
+    "group_index": "1412"
+}

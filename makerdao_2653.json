@@ -1,0 +1,344 @@
+{
+    "poll_list": [
+        {
+            "title": "Inclusion Poll for Real World Assets - Off-Chain Asset Backed Lender (MIP21)- October 12, 2020",
+            "index": "3917",
+            "option": "Yes",
+            "supporting_mkr": "31,261",
+            "highest_fraction": 1.0
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip21-real-world-assets-off-chain-asset-backed-lender/3917",
+            "title": "MIP21: Real World Assets - Off-Chain Asset Backed Lender ",
+            "index": 3917,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "collateral",
+                "collateral-onboard",
+                "mips",
+                "real-world-finance",
+                "mip-accepted"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/mrabino1",
+                    "index": "#1",
+                    "likes": "10",
+                    "time": "01/09/2020-21:08:11",
+                    "content": "MIP21: Real World Assets - Off-Chain Asset Backed Lender MIP#: 21 Title: Real World Assets - Off-Chain Asset Backed Lender Author(s):  Matthew V Rabinowitz (@mrabino1 or [email\u00a0protected]) Contributors: Lev Livnev (@equivrel) & Christopher Mooney (@cmooney) Type: Technical Status: Accepted Date Proposed: 2020-09-01 Date Ratified: 2020-10-27 Dependencies: MIP13c3-SP4 (Declaration of Intent - Off-Chain Asset Backed Lender to Onboard Real World Assets as Collateral for a DAI loan) Replaces: n/a License: n/a  References  MIP13c3-SP4 - Declaration of Intent Link  prototype source code  Sentence Summary This proposal defines a MakerDAO Module implementation for DAI borrowing with Real World Asset Backed Lenders. Paragraph Summary With the proposed on-boarding of Real World Assets as collateral into the Maker protocol, we will be requesting a technical MIP as we need to trailblaze a new way to engage the \u201creal-world\u201d while still having an umbilical to the blockchain. This will require some technical modifications to how the system handles collateral / liquidations etc. as well as adding some smart contracts (as outlined below) to handle the minting and repayment process. This Technical MIP is being submitted in parallel (with the Declaration of Intent) for MKR governance consideration. Component Summary MIP21c1: Collateral Parameters where the per-collateral asset parameters are defined. MIP20c2: Smart Contract Components where the contracts novel to this proposal are listed and described. MIP20c3: Liquidation Oracle where the details of the liquidation oracle contract are described. MIP21c4: Write-offs where the process for writing off losses is described. MIP20c5: Proposed Code where the proposed code is linked. MIP20c6: Test Cases where the test cases are listed. MIP20c7: Security Considerations is See Below MIP20c8: Auditor Information and Report is See Below Motivation See paragraph summary above. Specification MIP21c1: Collateral Parameters   Liquidation remediation period (tau):  Asset document hash (doc):  MIP21c2: Smart Contract Components Inserting real world assets via an off-chain asset backed lender, where the liquidations are handled by a third-party requires certain changes to how a module would interact with the Maker protocol. Specifically,  Minting Repayments Liquidations Write-offs  The above said, many items remain un-changed from the current mechanism:  Debt computation Interest Rates Debt Ceiling Constraint  The smart contracts implementing the new functionality are as follows:   RwaLiquidationOracle: which acts as a liquidation beacon for an off-chain enforcer.  RwaFlipper: which acts as a dummy liquidation module in the event of write-offs.  RwaUrn: which facilitates borrowing of DAI, delivering to a designated account.  Administrative items to be completed prior to implementation   RwaDeploySpell: which deploys and authorises the components for RWA collateral types.  RwaInitSpell: which activates a new RWA collateral type. Auxiliary wallet contracts for handling disbursement and repayment of DAI.  RwaLiquidateSpell: which allows MakerDAO governance to initiate liquidation proceedings.  RwaRemedySpell:  which allows MakerDAO governance to dismiss liquidation proceedings.  RwaWriteoffSpell:  which allows MakerDAO governance to write off a loan which was in liquidation.  MIP21c3: Liquidation Oracle Instead of performing liquidations via on-chain public auctions, triggered by a continuously updated price feed, liquidation is triggered manually by MakerDAO governance and is enforced off-chain by a third party. The standard oracle and auction infrastructure are replaced by a \u201cliquidation oracle\u201d contract. MakerDAO governance can initiate liquidation proceedings, when they deem it necessary, by calling tell() on the RwaLiquidationOracle. This starts the countdown, and after the remediation period has passed the oracle will start to report that the position is under liquidation. If the cause for triggering liquidation has been remedied, or if the original liquidation trigger was illegitimate, during the remediation period, or after, MakerDAO governance can dismiss the liquidation proceedings by calling cure(). An off-chain enforcer (such as a trustee, etc.) can periodically check the liquidation status of the position by calling good(). good() will report that the position is in liquidation if and only if MakerDAO governance has triggered liquidation with tell() and the remediation period has passed without cure() being called. MIP21c4: Write-offs If at the end of the liquidation process there is still debt remaining on the position, and MakerDAO governance believes that the debt will not be paid off, it can trigger a write-off by calling cull(). Write-off works by setting the system\u2019s collateral value to zero, which will cause the position to proceed to on-chain liquidation via bite(), etc. Unlike the liquidation modules for existing collateral types, the specialised liquidation module RwaFlipper does not attempt a sale of the underlying collateral and instead just marks the loss on the system\u2019s balance sheet by allowing system debt to be created. MIP21c5: Proposed Code (WIP) Real World Assets Example MIP21c6: Test Cases  Add Real World Asset Module Mint DAI Repay DAI Modify Annual Interest Rate Emergency Shutdown Liquidate Vault Write-off any associated losses  MIP21c7: Security Considerations The framework surrounding minting and repaying DAI is rather battle-hardened. Further, the computation on interest rate calculations and debt ceilings is equally hardened. Counterintuitively, the majority of the functionality related to liquidations will be completed by real world people that are using legal documents to govern their actions. Thus many of the features that might otherwise cause security vulnerability may be disabled as they are effectively outsourced to a Trust company or the legal system in general. Prior to any executive vote, the smart contracts domain team shall determine if formal verification is necessary. MIP21c8: Auditor Information and Report The code has not been audited. Prior to any executive vote, the smart contracts domain team shall determine if an audit and bug bounty program is necessary. Additional Information Mint Process All smart contracts below are owned by and controlled by MKR Governance, not LendCo.   With a smart contract triggered by LendCo and another MKR holder, the DAI created is sent to a \u201cTax Favorable Entity\u201d (\u201cTFE\u201d) ETH address.  Minting was \u201cgated\u201d by LendCo but not caused by LendCo DAI is now created and at the TFE The ETH address for the TFE is controlled and may be subsequently modified by MKR Governance.    Anyone with MKR may trigger the smart contract to move the DAI from the TFE to the Trust (w/ one exception. LendCo is specifically excluded as a party that can cause this).  DAI is now being borrowed (from the TFE to the Trust). The DAI is now at the Trust. The ETH address for the Trust is controlled and may be subsequently modified by MKR Governance.    LendCo may then borrow DAI / USD (1*) from the Trust.  The LendCo recipient target ETH address is changeable by MKR Governance. LendCo\u2019s ETH address shall be a confirmed / validated, constant address for a registered broker-dealer OTC desk FBO of LendCo. (Note: based on (1*), it might be the Trust or Trustee that has the broker-dealer OTC desk account.)    The above process removes the custody risk for the DAI and inserts a process for accounting to track that DAI was minted into existence to a TFE, then moved from TFE to a jurisdiction specific \u201ctrust\u201d account (or its equivalent). From there, the DAI is borrowed from the Trust when it is called upon by LendCo. In reverse,  LendCo sends fiat wire to the broker-dealer OTC desk. (1*) OTC desk converts fiat to DAI. OTC desk orders the transfer of DAI to a previously validated ETH address (which is a smart contract) which was requested by LendCo That Smart contract address is and represents the \u201cTrust.\u201d Thereafter anyone that has MKR can cause that DAI to be transferred to the TFE ETH address. Finally anyone can cause the TFE ETH address to pay down the Vault balance.  The above said, the underlying functionality will always exist that will allow anyone to pay down this vault.    (Note: based on (1*), it might be the Trust or Trustee that has the broker-dealer OTC desk account, not LendCo.) Note: None of the addresses above are \u201cowned\u201d or controlled by LendCo. The addresses are Always with MKR governance. Important add-on: it is important for the DAI to have a source of origination; a stop in TFE; another stop in the Trust;. and then to its final destination. In all cases, LendCo / the Trust / TFE need a paper trail for accounting and regulatory compliance. The reasons for the gating of DAI minting and movements is that DAI loans may not be caused from minting to LendCo without the explicit assistance from someone else in the MKR community.) Operational Security Given the size and centralization of an off-chain asset backed lender, OpSec is a critical component to be hardened prior to any material debt ceiling being allocated. To that end, it is presently contemplated that LendCo will have its Vault adapter be modified away from the default (where DAI is returned to the originating ETH address) since we are planning to implement the above minting and repayment process. The foregoing serves three purposes:  To minimize the attack surface to as little as possible on the minting of DAI To allow for LendCo to clear a financial audit, as Broker / Dealer will issue account statements that outline the arrival of DAI and the sales/purchase price. The Broker / Dealer has already completed KYC / AML on all of the cash that is used in exchange for the DAI (in both directions).   Footnotes 1*  - At present, it is unknown if the Trustee will require direct engagement to provide the loans from the Trust to LendCo to facilitate each closing or not. Further, it is unknown if the Trustee will allow the conversion of DAI to USD to be done at LendCo or if they will require that they do the conversion with an account that is in their name F/B/O the Trust. This MIP is giving latitude for adjustment surrounding the flow of DAI / USD to meet the requirements of the Trust Company to be willing to serve as the Trustee of the Trust. ",
+                    "links": [
+                        "https://github.com/livnev/rwa-example",
+                        "https://github.com/livnev/rwa-example",
+                        "https://forum.makerdao.com/t/doi-off-chain-asset-backed-lender-to-onboard-real-world-assets-extended-q-a/4296",
+                        "https://forum.makerdao.com/t/a-walkthrough-of-the-6s-capital-trust-structure/8594",
+                        "https://forum.makerdao.com/t/sixs-rwa-001-collateral-onboarding-risk-evaluation/5352",
+                        "https://forum.makerdao.com/t/signal-request-should-real-world-asset-collateral-onboarding-be-prioritised-in-the-short-term/4075",
+                        "https://forum.makerdao.com/t/sixs-rwa-001-collateral-onboarding-oracle-assessment-mip10c3-sp18/5378",
+                        "https://forum.makerdao.com/t/rwa-120db-mip6-application-120db-films-entertainment-finance-specialists/9415",
+                        "https://forum.makerdao.com/t/maker-relay-ep-26/5759",
+                        "https://forum.makerdao.com/t/rwa004-ht2drp-htc-drop-mip22-token-protocol-engineering-domain-team-assessment/8416",
+                        "https://forum.makerdao.com/t/rwa-006-p1-drop-collateral-onboarding-oracle-assessment-mip10c3-sp32/8402",
+                        "https://forum.makerdao.com/t/rwa-005-fft1-drop-collateral-onboarding-oracle-assessment-mip10c3-sp31/8401",
+                        "https://forum.makerdao.com/t/rwa-004-htc-drop-collateral-onboarding-oracle-assessment-mip10c3-sp30/8400",
+                        "https://forum.makerdao.com/t/rwa-003-cf-drop-collateral-onboarding-oracle-assessment-mip10c3-sp29/8399",
+                        "https://forum.makerdao.com/t/rwa003-cf4drp-cf-drop-mip22-token-protocol-engineering-domain-team-assessment/8382",
+                        "https://forum.makerdao.com/t/guide-navigating-feedback-from-governance-and-the-greater-makerdao-community/8303",
+                        "https://forum.makerdao.com/t/new-silver-onboarding-executive-presentation/7373",
+                        "https://forum.makerdao.com/t/real-world-finance-core-unit-report-2021-03/7289",
+                        "https://forum.makerdao.com/t/maker-relay-ep-37-en-espanol/7168",
+                        "https://forum.makerdao.com/t/maker-relay-ep-37/7154",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/22",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-133-thursday-march-18-17-00-utc/6982/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-36-en-espanol/7053",
+                        "https://forum.makerdao.com/t/maker-relay-ep-36/7039",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/21",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-132-thursday-march-11-17-00-utc/6859/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35-en-espanol/6949",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35/6932",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/20",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-131-thursday-march-4-17-00-utc/6737/10",
+                        "https://forum.makerdao.com/t/maker-relay-ep-34-en-espanol/6815",
+                        "https://forum.makerdao.com/t/maker-relay-ep-34/6802",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/19",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-130-thursday-february-25-17-00-utc/6651/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33/6694",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/18",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-129-thursday-february-18-17-00-utc/6506/5",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/17",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-128-thursday-february-11-17-00-utc/6367/5",
+                        "https://forum.makerdao.com/t/real-world-finance-core-unit-report-2021-01/6310",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-125-thursday-january-21-17-00-utc/6050/3",
+                        "https://forum.makerdao.com/t/maker-relay-ep-29/6214",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/12",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-125-thursday-january-21-17-00-utc/6050/7",
+                        "https://forum.makerdao.com/t/maker-relay-ep-26-en-espanol/5768",
+                        "https://forum.makerdao.com/t/2020-year-end-schedule/5218",
+                        "https://forum.makerdao.com/t/mip21-edge-case-scenarios/5430",
+                        "https://forum.makerdao.com/t/rwa-001-erc20-token-smart-contract-domain-community-assessment/5363",
+                        "https://forum.makerdao.com/t/mip30-adaptador-de-cusdc-farmeable-cropjoin/5226",
+                        "https://forum.makerdao.com/t/mip30-farmable-cusdc-adapter-cropjoin/5163",
+                        "https://forum.makerdao.com/t/collateral-onboarding-call-8-centrifuge-6s-capital-wednesday-september-16-17-00-utc/4062",
+                        "https://forum.makerdao.com/t/maker-relay-ep-20-en-espanol/5084",
+                        "https://forum.makerdao.com/t/maker-relay-ep-20/5078",
+                        "https://forum.makerdao.com/t/implementation-updates-for-real-world-assets-mip21-mip13c3-sp4-for-6s-capital/5059",
+                        "https://forum.makerdao.com/t/next-steps-for-real-world-asset-onboarding-risk-parameters-for-the-recently-accepted-mip21-and-mip13c3-sp4-for-6s-capital/5052",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-117-thursday-november-5-16-00-utc/4929/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-19/4975",
+                        "https://forum.makerdao.com/t/mip4c2-sp6-calendar-exceptions/4546/6",
+                        "https://forum.makerdao.com/t/mip21-activos-del-mundo-real-prestador-respaldado-por-activos-off-chain/4957",
+                        "https://forum.makerdao.com/t/weekly-mips-update-19/4935",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-pt-br-portugues/4891",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-en-espanol/4882",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18/4881",
+                        "https://forum.makerdao.com/t/weekly-mips-update-18/4847",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-pt-br-portugues/4810",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-en-espanol/4804",
+                        "https://forum.makerdao.com/t/octobers-monthly-mips-governance-poll-is-live-go-vote/2842",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17/4798",
+                        "https://forum.makerdao.com/t/weekly-mips-update-17/4746",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-pt-br-portugues/4722",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-en-espanol/4719",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16/4710",
+                        "https://forum.makerdao.com/t/signal-request-approve-maker-representatives-as-an-oversight-role-for-real-world-assets-october-2020/4656",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-111-thursday-september-24-16-00-utc/4239/3",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-111-thursday-september-24-16-00-utc/4239/2",
+                        "https://forum.makerdao.com/t/relay-ep-14-en-espanol/4457",
+                        "https://forum.makerdao.com/t/maker-relay-ep-14/4450",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-111-thursday-september-24-16-00-utc/4239/5",
+                        "https://forum.makerdao.com/t/agenda-discussion-collateral-onboarding-call-8-wednesday-september-16-17-00-utc/4062/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-108-thursday-september-3-16-00-utc/3850/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-13-en-espanol/4313",
+                        "https://forum.makerdao.com/t/maker-relay-ep-13/4310",
+                        "https://forum.makerdao.com/t/weekly-mips-update-15/4243",
+                        "https://forum.makerdao.com/t/maker-relay-ep-12/4153",
+                        "https://forum.makerdao.com/t/maker-relay-ep-11/4041",
+                        "https://forum.makerdao.com/t/weekly-mips-update-14/4028",
+                        "https://forum.makerdao.com/t/rwa009-huntingdon-valley-bank-collateral-onboarding-oracle-assessment/16069",
+                        "https://forum.makerdao.com/t/rwa-008-ofh-evaluacion-del-oraculo-para-la-incorporacion-de-garantias-traduccion/15281",
+                        "https://forum.makerdao.com/t/rwa-008-ofh-collateral-onboarding-oracle-assessment/15268",
+                        "https://forum.makerdao.com/t/rwa008-ofh-mip21-token-ces-domain-team-assessment/15239",
+                        "https://forum.makerdao.com/t/mip72-delegated-collateral-attachment-rwa-arranger-application-6s-capital/14482",
+                        "https://forum.makerdao.com/t/pecu-q4-highlights-and-looking-forward-to-2022/12430/4",
+                        "https://forum.makerdao.com/t/6s-capital-state-of-the-business/4420/36",
+                        "https://forum.makerdao.com/t/centrifuge-collateral-a-way-forward-with-a-delaware-statutory-trust-and-the-arranger-model/11566",
+                        "https://forum.makerdao.com/t/rwa-007-solarx-collateral-onboarding-oracle-assessment-mip10c3-sp40/10070",
+                        "https://forum.makerdao.com/t/rwa007-solarx-mip21-token-protocol-engineering-domain-team-assessment/10016",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-144-thursday-june-3-17-00-utc/8459/2",
+                        "https://forum.makerdao.com/t/rwa006-pp1drp-p1-drop-mip22-token-protocol-engineering-domain-team-assessment/8418",
+                        "https://forum.makerdao.com/t/rwa005-ff1drp-fft1-drop-mip22-token-protocol-engineering-domain-team-assessment/8417"
+                    ],
+                    "GPT-summary": "The proposal, MIP21, defines a MakerDAO Module implementation for DAI borrowing with Real World Asset Backed Lenders. The proposal requests a technical MIP as it requires modifications to how the system handles collateral/liquidations and adding smart contracts to handle the minting and repayment process. The proposal includes collateral parameters, smart contract components, liquidation oracle, write-offs, proposed code, test cases, security considerations, and auditor information and report. The proposal also includes additional information on the mint process and operational security.",
+                    "GPT-proposal-categories": [
+                        "Change to proposal pipeline",
+                        "Smart contract updates",
+                        "Token economics",
+                        "Interoperability and Scalability",
+                        "Law and regulations"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.577235650152317
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "02/09/2020-02:25:08",
+                    "content": "I am still trying to digest this so right now I only have one question. IF (and I consider this becoming less and less likely for multiple reasons) an ES is activated exactly how would this facility be settled for DAI holders? My concern here is that this particular facility will have to recify differently during an ES than other collateral types that are \u2018non-binding\u2019 in the sense that anyone owning DAI can redeem for their share of MCD assets within what 24-48hrs after an ES and that there is little to no impairment for the DAI holders to do this. (they don\u2019t have to be reg-D investors or another type of financial manager) Rather than me speculate as to how this would be handled for this particular facility perhaps you and/or Lev could explain how this facility would be handled with respect to an ES. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.240433673469388
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mrabino1",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "02/09/2020-09:36:39",
+                    "content": "answered in the MIP13 thread.     MIP13c3-SP4 Declaration of Intent & Commercial Points - Off-Chain Asset Backed Lender to onboard Real World Assets as Collateral for a DAI loan Conception   @MakerMan excellent question\u2026  Following on with @g_dip 's comment, the Trust views the MKR tokens holders as the beneficiaries. The Trust is a legal entity with a Trust company as the Trustee. Unless they are specifically noticed, they will make the assumption that all is well and no \u201cliquidation\u201d has been instructed.  So now insert the edge case of the Emergency Shutdown of the Maker protocol. It is also important to recognize there are fundamentally two scenarios for the ES.  1.) Something ba\u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Akiva",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "02/09/2020-12:38:54",
+                    "content": "Overall great post.  Rather than pricing the interest rate comparative to the Maker \u201cBase Rate,\u201d this proposal contemplates competing directly on terms the financial system uses today which means that we should use the Wall St. Prime Rate as the benchmark with a spread above or below (as LIBOR is in process of retiring).  Can you elaborate more on this? Generally MakerDAO uses the Base Rate mechanism to match its assets to liabilities. Any deviation from such practices could interfere with the system. Consider if 50% of the portfolio was RWA priced without Base Rate then any DSR hike would be amplified by 2x to the remaining Vault users that had a Base Rate determined SF. I imagine that would be an undesirable outcome. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.8125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mrabino1",
+                    "index": "#5",
+                    "likes": "2",
+                    "time": "02/09/2020-13:42:55",
+                    "content": "@Akiva Excellent topic to discuss. A few observations first to frame the response. There have been multiple discussions in the past RE the Base Rate and needing a new model. Events like yield farming have already shown a need for a new structure for how RP will be implemented in the future. I do not want to opine too much on how that should be done as I am sure the Maker team has a plan. The above said, for a revolver, this needs to be a \u201cmarket\u201d transaction that competes with (and beats) the traditional system. The traditional system prices a spread +/- off of Prime. For thus structure, my proposal would do the same. As was debated last year at length and also in a recent post of mine (Economics behind Real World Assets (\u201cRWA\u201d) - Part 2), real world assets (emphasis on those that are credit backed) have interest rate sensitivity that the rest of the crypto market just doesn\u2019t have (yet). Based on the MIP13 proposal, there is room for the DSR to be included. The end borrower rate (the ultimately cost of capital) is what was proposed based on an industry metric. How that is broken down behind the scenes is for the community to decide. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.003577441077441
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#6",
+                    "likes": "2",
+                    "time": "04/09/2020-01:35:15",
+                    "content": "Hey @mrabino1 + @equivrel , Gonna go through and leave notes. Hopefully they\u2019re useful.     mrabino1:  MIP13c3-SP4 - Declaration of Intent   This should link to the github version at some point. Possibly in addition to the forum thread.     mrabino1:  With the proposed on-boarding of Real World Assets as collateral into the Maker protocol, we will be requesting a technical MIP   This is that technical MIP?     mrabino1:  Paragraph Summary   This should be a summary of what is actually in the MIP, rather than motivation which should go in the Motivation section.     mrabino1:  Component Summary   This heading isn\u2019t for listing smart contract components, it\u2019s for listing and summarizing the components of this MIP. So this should include:  Proposed Code Test Cases Security Considerations Auditor information and report  etc. In addition each of these should have a MIP component code. IE: MIP21c1, MIP21c2, etc. If you want to list the smart contract components, that seems sensible, and I\u2019d probably provide links to the code as well. I would suggest that goes into the proposed code section.     mrabino1:  Proposed Code   There should be more detail here, and explanation of how the new code works, and why it works in that way. I\u2019d like to see links to the different components, descriptions of what they do, etc. Compare to MIP22c4.     mrabino1:  Test Cases   This should go into more detail. What do these tests cover? Why are they important? Which version of the code have they been run against? Does this cover the full spectrum of functionality? Edge cases, etc.     mrabino1:  Security Considerations   I don\u2019t have a great idea of the security considerations, so going to reserve judgement here. This might be fine, would like to get an opinion from the Smart Contracts domain.     mrabino1:  The code has not been audited.   Is this planned to be audited at some point? If not be an auditor, at least by the Smart Contracts domain team?     mrabino1:  Additional Information   There\u2019s a lot in this section, which I suppose makes sense because there is a lot to cover. I\u2019d much prefer if this section was broken up into its own components with their own MIP-Component codes though. This makes it easier to reference and easier to consume. Will hold off on reading over and understanding the content for the time being because it\u2019s late. I will do so in the near future. Hopefully after this has been structured to more closely follow the MIP templates and guidelines. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.011143177809845
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/charlesstlouis",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "09/09/2020-17:13:15",
+                    "content": "This proposal has been moved to the Request for Comments (RFC) phase and will have a 1 month feedback period before being eligible for Formal Submission. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#8",
+                    "likes": "10",
+                    "time": "30/09/2020-16:17:32",
+                    "content": "I\u2019ve reviewed both the declaration of intent and this technical MIP, as well as the prototype code.  As a member of the Smart Contracts Domain Team, I think this is ready for a vote. There is still work to be done in the code, but it\u2019s mostly trivial and should not block the process of this MIP.  The prototype still needs some example spells to perform governance actions, some unit tests, and a small fix to the flip contract to bring it up-to-date with LIQ-1.2. On the engineering side, once this MIP is ratified, we can continue by freezing the code for a final review and possible formal verification, audits, and bug bounty.  As I understand it, while this process is happening, @mrabino1 will be putting in a considerable amount of off-chain work and expense to ensure the legal structures are in place to support this MIP.  This should give the technical stake holders time to complete their due diligence. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/maker-relay-ep-15-en-espanol/4576",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15/4574",
+                        "https://forum.makerdao.com/t/weekly-mips-update-16/4536"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party extending to proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3913690476190474
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mrabino1",
+                    "index": "#9",
+                    "likes": "3",
+                    "time": "01/10/2020-15:59:46",
+                    "content": "This proposal has been moved to the Formal Submitted phase. While the proposal itself cannot change, please continue to ask questions publicly or privately. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/joel",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "15/10/2020-18:33:25",
+                    "content": "@mrabino1 Hey, I know I\u2019m late to the table. Some thoughts I\u2019d love to get your feedback on.  The above said, for a revolver, this needs to be a \u201cmarket\u201d transaction that competes with (and beats) the traditional system. The traditional system prices a spread +/- off of Prime. For thus structure, my proposal would do the same.  Is that not concerning? There are professionals who compete daily to provide the best interest rates, balancing risk and reward. Given that we\u2019d definitely be worse at this than these professionals, would we have a winner\u2019s curse of getting debt that the market doesn\u2019t otherwise want to buy? Is the thought that the CRs would be higher than people would get otherwise? This seems like the only debt people should give to Maker would be debt that we\u2019d get at worse terms than the market, no? To me this seems like one of the big reasons why people don\u2019t like Tether. They invest the float in assets they aren\u2019t more or less guaranteed to be paid back on and run the risk of being under-collateralized. RWA seems like a great idea to me in theory, but I\u2019m trying to wrap my head around how we\u2019d do it in a way that doesn\u2019t cause Maker to take losses (since we\u2019ll be worse at it than a real bank). Please let me know what, if anything, I\u2019m missing here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.345833333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "15/10/2020-18:37:23",
+                    "content": "    joel:  Given that we\u2019d definitely be worse at this than these professionals   Why? Assume we can balance risk and reward, we should be able to out-compete traditional lenders because there is no middleman. Cost of capital is essentially zero. DAI is ultimately backed by faith in the Maker protocol. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.1
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/joel",
+                    "index": "#12",
+                    "likes": "2",
+                    "time": "15/10/2020-18:48:38",
+                    "content": "    psychonaut:  there is no middleman   We\u2019re the middlemen here, right? Somehow we\u2019re paying someone to assess the risk of any assets we onboard, right? (Unless we accept any assets, which would obviously sink us.) Banks pay armies of PhDs to model out the assets they onboard. I assume we won\u2019t be doing that, so we\u2019ll definitely be worse at it (unless we can beat the market with less work for some reason I\u2019m missing). Cost of capital being effectively zero is a great point. My understanding is that banks themselves also have effectively 0 cost of capital at the moment (0.08%? which might be comparable to the gas costs of dealing with Maker depending on the size of the loans involved, but I think Maker should be able to have big/long enough loans where that\u2019s not a factor), but I imagine that will change over time. However, an edge of 0.08% doesn\u2019t seem like it should make up for our disadvantage at pricing RWA, does it? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.0476190476190474
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mrabino1",
+                    "index": "#13",
+                    "likes": "3",
+                    "time": "16/10/2020-10:18:07",
+                    "content": "    joel:  Is that not concerning? There are professionals who compete daily to provide the best interest rates, balancing risk and reward. Given that we\u2019d definitely be worse at this than these professionals, would we have a winner\u2019s curse of getting debt that the market doesn\u2019t otherwise want to buy? Is the thought that the CRs would be higher than people would get otherwise? This seems like the only debt people should give to Maker would be debt that we\u2019d get at worse terms than the market, no? To me this seems like one of the big reasons why people don\u2019t like Tether. They invest the float in assets they aren\u2019t more or less guaranteed to be paid back on and run the risk of being under-collateralized. RWA seems like a great idea to me in theory, but I\u2019m trying to wrap my head around how we\u2019d do it in a way that doesn\u2019t cause Maker to take losses (since we\u2019ll be worse at it than a real bank). Please let me know what, if anything, I\u2019m missing here.   Excellent question and happy to provide some color at least from my lens. MakerDAO is not \u201cbuying\u201d debt from the market. If that were the case, I can definitely see your perspective and concern. In this context, what is contemplated is that Maker is providing credit to an external lending party, nicknamed \u201cLendCo\u201d for short, via a Trust legal structure. The Trust is fundamentally the legal representation of the DAO and the DAO will be the beneficiary (as such, let\u2019s just remove the entire notion of a blockchain) and just focus on three entities (BorrowCo, LendCo, and the Trust). When I reference that the deal needs to be a \u201cmarket\u201d deal (or slightly better), the context behind that is one of pure competition. Unlike crypto loans (or loans against digital collateral), the \u201canalog\u201d credit system is exceptionally advanced and well priced. Forget the Trust for a moment, if LendCo tries to do an \u201cout of the market\u201d deal that is too expensive, BorrowCo will just go somewhere else (as we all would). LendCo is lending USD to BorrowCo, so demand in this context is quite elastic the moment we get near \u201cmarket\u201d pricing. Now, let\u2019s back our way back to the deal between LendCo and the Trust. With the mindset that the Trust is the embodiment of the DAO, the Trust is broadly a corollary to being the Central Bank in this equation. It is not the middleman. It is the anchor senior money, the money that is the most de-risked (and should be priced accordingly). LendCo is company that is the operating business of lending capital to willing borrowers. With all of that said, if LendCo prices the money out of the market (e.g. too expensive) then BorrowCo will walk. A similar theme will also apply to LendCo. The deal between LendCo and the Trust must be market competitive. If the Trust starts to have money that is too expensive comparative to the market, LendCo will start to shop around (as it should). As for how we will correctly price that risk, initial pricing (between LendCo and the Trust) has been provided and it is competitive, though competitively less than a bank would charge. For Real World Assets, it is imperative to allow the control levers of an off-chain lender to be adjusted by the DAO. Along with the debt ceiling and interest rates, it is essential that the DAO retain the ability to approve the scope and underlying credit quality of where the capital ultimately goes. By doing this, the DAO can control and price accordingly that cost of capital. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.341679606625259
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "16/10/2020-11:39:25",
+                    "content": "I would add that even if banks can borrow cheaply, they still have regulatory constraint (Basel 2/3) and obviously have a cost of capital that blend deposits/borrowing and equity. The later is above 10% I guess. On the Maker side, even a net neutral investment (with RWA specific costs) can be a good opportunity. 1. It gives us knowledge of the space. 2. It helps our peg issue that reduce the DAI value. 3. It reduces our risk profile thanks to the diversification. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mrabino1",
+                    "index": "#15",
+                    "likes": "5",
+                    "time": "28/10/2020-10:48:32",
+                    "content": "This MIP21 has now passed governance with an executive vote. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "2653"
+}

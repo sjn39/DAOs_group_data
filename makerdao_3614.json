@@ -1,0 +1,163 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/end-flow-overflow-bug-postmortem/8027",
+            "title": "End.flow() Overflow Bug Postmortem ",
+            "index": 8027,
+            "category": [
+                "Core Units",
+                "Protocol Engineering"
+            ],
+            "tags": [
+                "post-mortem"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#1",
+                    "likes": "23",
+                    "time": "12/05/2021-13:41:02",
+                    "content": "Start: 2019-11-18 16:00:04 UTC (MCD launch) End: 2021-04-26 14:02:08 UTC Authors: Kurt Barry (kmbarry1) Status: Resolved Summary: The End module orchestrates the global settlement of the Maker Protocol after an Emergency Shutdown. Its primary responsibility is allowing the redemption of DAI for approximately 1 USD of backing collateral. As part of running simulation tests against mainnet state in preparation for the upgrade to LIQ-2.0 on Friday, April 16th, a bug was discovered that would have prevented the autonomous completion of the End process. Specifically, a numeric overflow would cause a revert when calculating the amount of a given collateral to disburse per DAI in End.flow(). The exact condition to trigger this is that the amount of a collateral needed to cover the DAI it backs exceeds approximately 115,792. In particular, this was the case for the ETH-A collateral type, which backed the largest amount of DAI of any collateral at the time. The End process would be unable to proceed for any overflowing collateral type and thus that particular collateral could not be permissionlessly distributed. Impact: Liquidations 2.0 launch was delayed for a few days while a fix was developed. Root Causes: When MCD was designed and implemented, the overflow potential of a multiplication of a ray and a rad was overlooked. The pre-launch audits found several such issues, and a few months post-launch, a ray * rad overflow forced an upgrade of the Cat contract. Motivated by these findings, a task was created on 2020-09-09 to audit all multiplications in MCD. This task was marked complete on 2021-01-05. However, that internal code audit failed to catch the specific multiplication that led to this postmortem. Beyond \u201cfallability of human auditing\u201d, the cause of this mistake is conjectured to be because this overflow occurred as a result of a precision boost within a safe math function, introducing a non-locality in deducing correct behavior (i.e. a need to consider multiple code sites at once when deciding on safety). Extensive testing was performed on the Emergency Shutdown process\u2013not only using unit tests, but also using the cage keeper on a private testnet and the public kovan testchain, and manually on mainnet on a secret pre-launch deployment of MCD. However, none of the tests used amounts of DAI and collateral large enough to trigger this bug. Trigger: Emergency Shutdown when more than a certain amount of a collateral is reserved for disbursment based on its price, the amount of DAI it backs, and the collateralization levels of associated Vaults. Resolution: The overflowing calculation was restructured such that much larger collateral amounts could be gracefully handled with minimal accuracy degradation. A new End contract with this change was deployed and included in the executive spell that added Liquidations 2.0. This spell executed on Apr 26 2021 14:02 UTC, fully resolving the issue. Detection: Discovered when RPC tests written for the MIP45 mainnet spell failed unexpectedly. Action Items:     Action Item Type Owner (GH handle) Ticket     Create mainnet integration test suite including ES coverage detect godsflaw and brianmcmichael 524   Automate periodic mainnet integration testing detect godsflaw and brianmcmichael 525   Add the ray * rad pattern to the Maker code review checklist prevent kmbarry1 526   Define expected magnitude ranges for all dss parameters and quantities process kmbarry1 527   Design and implement over/underflow verification for dss based on the expected magnitude ranges defined in the previous AI prevent WilfredTA 528   Add developer documentation about the risk of ray * rad overflows to help integrators avoid this type of mistake prevent hexonaut 529     Lessons Learned What Went Well  The bug was caught by our own testing procedures. We were able to reach high confidence in a fix quickly. Everyone worked hard and collaborated well in a stressful situation\u2013we were able to coordinate implementation, review, and testing over a single weekend. We were able to minimize the delay to the Liq-2.0 initial rollout, pushing back only the initial spell a few days and sticking to the rest of the schedule (combination of quick execution, a simple fix, and needing to replace the End for Liq 2.0 anyway). No emergency shutdown was necessary while the bug was triggerable.  What Went Wrong  The bug made it into the live system, and was only one precondition (initiation of ES) away from triggering. We were forced to further delay Liquidations 2.0 launch (but only by 3 days). An internal audit intended to catch and eliminate all such bugs failed to catch this instance. All previous tests of Emergency Shutdown failed to explore this case, despite it occurring at practical magnitudes. The original MCD audits missed this issue (despite finding other potential ray * rad overflows).   Human Auditing Is Unreliable Even though several examples of this type of bug had already been discovered, a code audit performed by a skilled engineer failed to catch this issue. The original MCD audits also missed the issue. Ideally, programmatic methods should be applied in addition to human auditing.  Define Expected Magnitudes, and Incorporate Such Assumptions Into Development, Verification, and Testing Given the effort that went into formally verifying MCD, it would have been relatively simple to add logic for checking that no overflows occurred so long as all values fell within realistic numerical ranges. Less comprehensive but still likely-effective techniques such as unit tests with very large (and/or very small) values or randomized testing (\u201cfuzzing\u201d) could also have been used to probe magnitude-safety.  Timeline 2019-11-18: MCD system launched with the overflow-prone End implementation. 2019-11-24: Earliest date the bug was likely to trigger during an Emergency Shutdown (script used to determine this). 2021-04-16 (all times UTC):  around 15:30: gbalabasquer tags kmbarry1 in a comment on the executive spell PR noting a failure in a test for the replaced End module and conjecturing what the underlying issue might be. around 15:45: kmbarry1, suspecting a ray * rad overflow issue, joins the ongoing spell review call to discuss it, initially with gbalabasquer and brianmcmichael. The bug is quickly confirmed. 16:00 onwards: the rest of the SC domain team, as well as a few Foundation and community stakeholders, are brought onto the call to discuss the mitigation plan. around 17:00: consensus is reached to delay Liq-2.0 launch as little as possible, and use a limited initial disclosure as the reason. around 22:00: after further async discussion, the SC domain team decides describe the delay as due to a \u201ctechnical issue\u201d, avoiding the word \u201cbug\u201d or any indication of the nature of the issue, to ensure a fix can be developed without undue pressure. 22:18: a forum post is made announcing the delay. later in the evening: kmbarry1 writes a fix and tests, sending a PR to a private repository for others to review.  2021-04-17: SC domain team members begin reviewing and testing the fix; a first draft of the disclosure forum post is made. 2021-04-18: reviewing and testing of the fix continues. 2021-04-19 (all times UTC):  13:00 - 19:00: the finalized fix is merged, new contracts are deployed, the executive spell is modified/reviewed/tested, and the disclosure forum post is reviewed and revised. 19:14: the bug disclosure forum post is published. 19:50: the executive spell is deployed. After a brief testing period, it goes live in the governance portal.  2021-04-22 1:32: the spell overtakes the hat and is scheduled. 2021-04-26 14:02: the spell is cast, fully mitigating the issue.  Supporting Information Script used to estimate earliest date at which this bug would have affected an Emergency Shutdown:  gist.github.com   https://gist.github.com/kmbarry1/41d65733746ed60189b471826b770be5 first_time_flow_overflow_likely.sh #!/usr/bin/env bash  # Your ETH_RPC_URL envvar should point to an archive node.  # Not in principle perfectly accurate, since COL isn't necessarily monotonic. # Also doesn't account for underwater Vaults, but these are rare (not sure # if there has ever been one for ETH-A, in fact).  # But, should be good enough to give an idea when the problem began.      This file has been truncated. show original        Forum post announcing the last-minute delay due to a \u201ctechnical issue\u201d:    MIP45 Executive Spell: Technical Delay - 2021-04-16 -> 2021-04-19 Updates       A last-minute technical issue was found while testing this week\u2019s spell to add MIP45 and activate it for LINK-A. This issue can be resolved, but must be fixed before moving forward. Thus, the spell is now expected to go live no earlier than next Monday, April 19th. A full explanation of the issue that caused this delay will be released at that time.     Forum post disclosing the issue and fix:    ESM+End Module Upgrades and Disclosures Updates       As was previously communicated, the Liquidations 2.0 upgrade of the Maker Protocol requires an update of the Emergency Shutdown Module (ESM) and the End module.  With the extra scrutiny that these modules received for the LIQ2.0 upgrade, the Smart Contracts Domain Team discovered two latent bugs in their code base. An ESM issue was discovered a few weeks ago and planned for disclosure when the spell adding MIP45 and activating it for LINK-A became available for voting. An additional End module b\u2026     ",
+                    "links": [
+                        "https://github.com/makerdao/dss/blob/master/src/test/end.t.sol",
+                        "https://github.com/makerdao/cage-keeper",
+                        "https://github.com/makerdao/dss/commit/8cb3a8addd2b1a0ff0e88cb8e97952c54c199f86",
+                        "https://etherscan.io/address/0xDb0D1af4531F59E4E7EfA4ec0AcADec7518D42B6",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/524",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/525",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/526",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/527",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/528",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/529",
+                        "https://etherscan.io/tx/0xa418049bc3d4f8d34678fdefb5c5cab66ce8f3650cdb0d11f3f56bb145bdbc55",
+                        "https://gist.github.com/kmbarry1/41d65733746ed60189b471826b770be5",
+                        "https://forum.makerdao.com/t/mip45-executive-spell-technical-delay-2021-04-16-2021-04-19/7532",
+                        "https://forum.makerdao.com/t/esm-end-module-upgrades-and-disclosures/7569",
+                        "https://etherscan.io/tx/0xee05d73fd8c11cd3516f89edc21b85276bf3a5b23f4219ba6f2ff7ac01f67259",
+                        "https://etherscan.io/tx/0x81d078af2d40386929ade26e0b7f2bdfe0ef043c40096a9d6806a28943d8123e",
+                        "https://etherscan.io/tx/0x77fe9b282d8e154146c903c0b63818e7910153167ace3f84cc403d78678c22c8",
+                        "https://gist.github.com/kmbarry1/41d65733746ed60189b471826b770be5",
+                        "https://gist.github.com/kmbarry1/41d65733746ed60189b471826b770be5",
+                        "https://gist.github.com/kmbarry1/41d65733746ed60189b471826b770be5",
+                        "https://forum.makerdao.com/t/mip45-executive-spell-technical-delay-2021-04-16-2021-04-19/7532",
+                        "https://forum.makerdao.com/t/esm-end-module-upgrades-and-disclosures/7569",
+                        "https://forum.makerdao.com/t/mip45-liquidations-2-0-liq-2-0-liquidation-system-redesign/6352",
+                        "https://github.com/makerdao/esm",
+                        "https://github.com/makerdao/dss/blob/master/src/end.sol",
+                        "https://forum.makerdao.com/t/maker-relay-ep-45-en-espanol/8141",
+                        "https://forum.makerdao.com/t/protocol-engineering-month-in-review-may-2021/8471",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-141-thursday-may-13-17-00-utc/7930/6",
+                        "https://forum.makerdao.com/t/maker-relay-ep-45/8127",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/31"
+                    ],
+                    "GPT-summary": "The post is a detailed explanation of a bug that was discovered in the End module of the Maker Protocol during simulation tests. The post describes the impact of the bug, the root causes, the trigger, the resolution, and the action items. The post also includes a timeline of events and supporting information. A 3rd party could give constructive criticism of the proposal by suggesting additional measures that could have been taken to prevent the bug from occurring or by pointing out any gaps in the testing process. The author of the proposal is explaining the bug and the steps taken to resolve it. The post can also be considered as an audit and review of the Maker Protocol.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.121668798373343
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mrabino1",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "12/05/2021-13:45:05",
+                    "content": "Great work! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "12/05/2021-13:59:11",
+                    "content": "Who was/were the external auditor? Do you have the original audit? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "12/05/2021-14:39:49",
+                    "content": "The original MCD audits can be found here: Audit Reports - Security This code was out-of-scope for the Liq 2.0 audits. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "12/05/2021-15:08:05",
+                    "content": "Someone of you should twit this out, this industry is mainly based on reputation. Finding overflow seems exactly what they should be expert at. When you pay for an audit you pay for the reputation and the name they put on. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party or author is advertising proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.041666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#6",
+                    "likes": "16",
+                    "time": "12/05/2021-16:10:44",
+                    "content": "I think it would be very bad form to try to shame or embarrass the original auditors for missing this, for a number of reasons:   We live in a glass house. The primary responsibility for code correctness lies with those who create it, not the auditors they hire. We missed this before launch in testing and formal verification, and we missed it even after going back over the code specifically looking for this type of issue. It would show a lack of responsibility, integrity, and maturity to point our fingers at our auditors.   It detracts from the real lesson, which is that \u201cauditing is not sufficient to guarantee safety or security\u201d. An audit, even by a top firm, is never an absolute assurance, and the abundant examples of bugs found in audited code confirm this. Rather, we should encourage the mindset that auditing is a defense-in-depth measure, and not something that replaces good processes, good tooling, and intelligent risk-management.   It would be unnecessarily antagonistic. People are quite capable of tracking who audited what and keeping score if they so desire, without us creating drama. Bash your auditors in public (especially without good cause), and you may find it very difficult to retain top firms in the future. If we have an issue with an auditor\u2019s work, we prefer to address that with them privately or simply not engage with them in the future. And to be clear, I do not believe this is such a case. The original MCD auditors did their best to evaluate a large and complex codebase with the time and resources they had, and made important contributions to the safety and security of the system. It\u2019s about the value added by the auditor, not just \u201cDid they miss something?\u201d.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party or author auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.877524088814412
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#7",
+                    "likes": "3",
+                    "time": "12/05/2021-16:58:08",
+                    "content": "Fair enough, But I would be very interesting to hear what they have to say about it. It seems to me this type of overflow bug is what an automatic analysis should deter. May be I am wrong, but this seems to me in the top 10 of they check. edit : ok fair enough, I checked out the code, not that easy. Good job! I am still confused how that can overflowed. for those interested in it, changed line : from : fix[ilk] = rdiv(mul(sub(wad, gap[ilk]), RAY), debt); to     : fix[ilk] = mul(sub(wad, gap[ilk]), RAY) / (debt / RAY); If I understand correctly, it would not overflow but failed cause of the overflowing, therefore the price won\u2019t be settled. right? Well find, good job! Great quality team. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.6153273809523805
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#8",
+                    "likes": "3",
+                    "time": "12/05/2021-19:50:18",
+                    "content": "Yes, that\u2019s right. It was not an uncaught overflow, but rather a calculation done in such a way that an intermediate result would overflow and cause the call to fail, preventing execution of the function (this sort of thing is sometimes called \u201cphantom overflow\u201d). Specifically it happened inside of  the rdiv call, when multiplying the first argument by RAY to boost precision. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.044642857142857
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "26/05/2021-19:51:14",
+                    "content": "This topic was automatically closed 14 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

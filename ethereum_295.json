@@ -1,0 +1,173 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5843-evm-modular-arithmetic-extensions/12425",
+            "title": "EIP 5843: EVM Modular Arithmetic Extensions ",
+            "index": 12425,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "evm",
+                "cryptography"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "04/01/2023-16:04:46",
+                    "content": "  github.com   jwasinger/EIPs/blob/evmmax/EIPS/eip-5843.md --- eip: 5843 title: EVM Modular Arithmetic Extensions status: Draft type: standards track author: Jared Wasinger <@jwasinger>, Alex Beregszaszi (@axic) discussions-to: https://ethereum-magicians.org/t/eip-5843-evm-modular-arithmetic-extensions/12425 category: Core created: 2022-10-26 requires: 4750, 3670 ---  ## Abstract  This EIP introduces EVMMAX (EVM Modular Arithmetic Extensions) - a set of opcodes for performing efficient modular addition, subtraction and Montgomery modular multiplication at varying bitwidths.  ## Motivation Additional crypto precompiles have long been desired for the EVM. Among these, operations for various elliptic curves have been proposed and not yet adopted ([BLS12-381](./eip-2537.md), [BW6-761](./eip-3026.md), [MNT4](./eip-1895.md), [Baby Jubjub](./eip-2494.md), [secp256k1](https://github.com/ethereum/EIPs/issues/603), [BLS12-377](./eip-2539.md), [BN256 HashToCurve](./eip-3068.md)).  Crypto precompiles can be problematic for several reasons:       This file has been truncated. show original      This is a proposal to add EVM opcodes for efficient modular addition/subtraction/multiplication in cases where the modulus is odd, 1-1024 bits and fixed for many operations.  It is an iteration from previous work on EVM384. It makes use of the following observations to construct a more efficient model for modular arithmetic operations in the EVM:  If the modulus is odd and fixed for multiple operations and we also precompute some values using it, caching these and the modulus in ephemeral call-scoped state: we can use Montgomery multiplication which is much more efficient than normal modular multiplication. If we require inputs to be less than the modulus, they don\u2019t have to potentially be reduced at the start of each arithmetic operation. Passing arguments via the stack incurs extra gas cost. To support a wide range of bitwidths, we can store values in memory and and make arithmetic opcodes take offsets as inputs, placing them in immediate data appended to the opcode.  The result is a 94% reduction in gas cost for modular addition/subtraction and an 88% reduction for modular multiplication at 193-256bit widths for opcodes from EIP-5843 compared to ADDMOD/MULMOD. There are several other resources:   Analysis and Benchmarks of an EVM implementation of BLS12381 G1 point multiplication.  Benchmarks indicate that the Geth implementation of this EIP with arithmetic for 321-384 bitwidths implemented in x86 assembly can perform around ~2x the runtime of the native implementation of G1Mul from the github.com/ethereum/go-ethereum/crypto/bls12381 package when comparing the average-case runtime for the EVM implementation with the worst-case input runtime from the native code.  Benchmarks of all supported modulus size configurations for various implementation variants of the arithmetic from the EIP.  This document presents a breakdown of sources of overhead (arithmetic, EVM interpreter loop).  Huff support for the opcodes in this EIP.  See the EVM BLS12381 G1Mul implementation for an example.  ",
+                    "links": [
+                        "https://github.com/jwasinger/EIPs/blob/evmmax/EIPS/eip-5843.md",
+                        "https://github.com/jwasinger/EIPs/blob/evmmax/EIPS/eip-5843.md",
+                        "https://ethereum-magicians.org/t/evm384-feedback-and-discussion/4533",
+                        "https://en.wikipedia.org/wiki/Montgomery_modular_multiplication",
+                        "https://hackmd.io/pz5if-NJRQm8WWyyZd050A",
+                        "https://hackmd.io/9VejROKrSbOLZ9D_C3t5EA",
+                        "https://github.com/jwasinger/huff-rs/tree/evmmax",
+                        "https://github.com/jwasinger/evmmax-bls12-381/blob/main/templates/g1mul/g1mul_dbl_and_add.huff.template",
+                        "https://ethereum-magicians.org/t/evm384-feedback-and-discussion/4533/20",
+                        "https://ethereum-magicians.org/t/eip-6601-evm-modular-arithmetic-extensions-evmmax/13168",
+                        "https://ethereum-magicians.org/t/cancun-network-upgrade-meta-thread/12060/12"
+                    ],
+                    "GPT-summary": "The post is a proposal for EVM Modular Arithmetic Extensions, which introduces a set of opcodes for performing efficient modular addition, subtraction, and Montgomery modular multiplication at varying bitwidths. The proposal aims to reduce gas costs for modular arithmetic operations in the EVM. The post also includes analysis and benchmarks of the proposal's implementation and presents a breakdown of sources of overhead. The author explains the motivation behind the proposal and how it can be implemented efficiently. A third party provides constructive criticism and reviews the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.291666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "17/01/2023-17:07:47",
+                    "content": "I am concerned about the use of a context variable.  Specifically where a contract could call multiple SETMODX and then jump into different sections of code.  I\u2019m concerned it will open up new classes of security and UX problems and I would want some time pokeing around and comparing to alternatives, such as keeping the context variables in memory rather than as a new EVM level concept. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.227272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "17/01/2023-22:53:09",
+                    "content": "Only one modulus can be set at a given time in the current call context so I am not seeing a potential security problem. I agree that it would be nice to keep context information in memory, as it would be cleaner. However, this opens up a new problem: storing computed context info for MULMONTX/TOMONTX from EVMMAXState in memory, allows it to be modified/corrupted in the EVM which can cause the opcodes to return garbage values. We don\u2019t want to expose implementation-specific behavior (as client implementations may choose to implement Montgomery multiplication using different algorithms). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.613636363636364
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "17/01/2023-23:30:40",
+                    "content": "That\u2019s what I\u2019m worried about.  If we set it to 64 bit, then call a section of code that does math, do a conditional jump that set it to 32 bit, but both branches go back to the same code section, it could be either in 32 or 64 bit mode. It\u2019s this category of mis-matched SETMODXes going into the same section of MODX operations I\u2019m concerned about.  If we did something like also introduced a CLEARMODX operation that clears the context variable, and made SETMODX raise an exception if the context isn\u2019t cleared we could prevent some coding errors. Because SETMODX is ultimately dynamic (driven off of memory values) I don\u2019t think there is any deploy-time validation that can be done to try and optimize the operations prior to execution. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "18/01/2023-00:05:26",
+                    "content": "Good point! I\u2019m curious what use-cases would be impacted by not being able to do arithmetic on different odd moduli in the same call context. If there aren\u2019t any, then we can allow SETMODX to only be called once per call. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.791666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "18/01/2023-01:02:42",
+                    "content": "On second thought, I misread your message. As it is currently specified, the modulus/inputs are always sized in 64bit increments (from the perspective of gas charging logic and the layout for values in memory).  Most use-cases for this EIP are going to be using bitwidths ~256bits and above.  the arithmetic operations can be made constant time, and pricing aims to capture the overhead of arithmetic + worst-case memory latency + interpreter loop overhead. So at the moment, I can\u2019t see a security issue. On the point about deploy-time validation: Yes, this is something that\u2019s missing with the current proposal.  embedding context information in a dedicated EOF section at deployment time to give certain runtime guarantees (e.g. knowing that a given block of arithmetic opcodes will always use the same modulus) is being looked into. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.285714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "18/01/2023-03:46:11",
+                    "content": " As it is currently specified, the modulus/inputs are always sized in 64bit increments (from the perspective of gas charging logic and the layout for values in memory). Most use-cases for this EIP are going to be using bitwidths ~256bits and above. the arithmetic operations can be made constant time, and pricing aims to capture the overhead of arithmetic + worst-case memory latency + interpreter loop overhead.  Maybe not 32/64, but what about 256/384?  The issue still remains, what if the extension is primed for the wrong modulus.  It feels like it should be treated as a regular programming resource: you need to close it and reset it before re-using it ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "26/01/2023-11:21:11",
+                    "content": "We had a lengthy discussion between @jwasinger, @chfast and me for improving EVMMAX based on EOF: EVMMAX + EOF - HackMD @jwasinger is working on drafting a proper EIP of this version. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "27/01/2023-11:04:30",
+                    "content": "A very good improvement. Having the setup section as a single EOF header that applies to the whole contract would address my concerns about SETMODX mismatches. Would be interested what solidity thinks.  It would interact with the memory pointer as they would then need to make sure it\u2019s above the reserved EVMMAX slots. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.4904761904761905
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "27/01/2023-11:08:48",
+                    "content": "    shemnon:  Would be interested what solidity thinks. It would interact with the memory pointer as they would then need to make sure it\u2019s above the reserved EVMMAX slots.   It would be unlikely that evmmax users would write Solidity contracts, but if so, one only needs to change the free memory pointer (e.g. mstore(0x40, ...)) prior to using evmmax instructions to avoid overlaps. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.464285714285715
+                }
+            ]
+        }
+    ],
+    "group_index": "295"
+}

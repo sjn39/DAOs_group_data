@@ -1,0 +1,122 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/flash-loan-debt-manipulation-during-emergency-shutdown-vulnerability-postmortem/14036",
+            "title": "Flash Loan Debt Manipulation During Emergency Shutdown Vulnerability Postmortem ",
+            "index": 14036,
+            "category": [
+                "Core Units",
+                "Protocol Engineering"
+            ],
+            "tags": [
+                "post-mortem",
+                "pe-001"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#1",
+                    "likes": "17",
+                    "time": "18/03/2022-15:02:44",
+                    "content": "Start: 2021-07-03 17:15:44 UTC End: 2022-03-11 17:24:26 UTC Authors: Kurt Barry (kmbarry1) Status: Mitigated Summary: The flash mint module (DssFlash) allows DAI flash loans to be taken in newly-minted DAI, to be repaid at the end of the transaction. During a flash loan execution, the outstanding debt of the system is correspondingly increased. At a particular step of the Emergency Shutdown process (End.thaw()), this debt value is read and cached. During the shutdwon process, a malicious actor could have taken a flash loan (up to the maximum allowed size) via DssFlash and called this function in the same transaction, causing an erroneously high debt value to be recorded. This would have reduced the amount of collateral disbursed per-DAI compared to the \u201ccorrect\u201d value. Since this devalues post-shutdown DAI, the attacker could profit by shorting DAI prior to executing the attack. Impact: Lost time and disruptions for the PECU and GovAlpha core units to address the issue; more overhead for governance participants. Root Causes: The potential interaction of the DssFlash module with Emergency Shutdown, particularly via system-level reentrancy (an external call from protocol code re-entering the code of a different system component), was insufficiently explored. Further, a safety pre-requisite for Emergency Shutdown, namely that the system\u2019s debt is not altered after End.thaw() is called, was not explicitly documented. Trigger: A malicious actor using a flash loan to manipulate Vat.debt before calling End.thaw() after Emergency Shutdown has been triggered. Resolution: The attack has been mitigated in the short-term by deploying a module that allows DssFlash to be permissionlessly disabled after emergency shutdown. Because End.thaw() cannot be called for a period of time (currently 3 days) after shutdown is initiated, there is no real risk that a bad actor can trigger the exploit prior to disabling flash mints. This mitigation was chosen because it allowed the address of the deployed DssFlash contract, as well as the maximum loan size, to be initially unchanged. This minimizes the impact to integrators using the flash mint module. In the near future, a mechanism for disabling flash mints after shutdown that does not require extra Keeper intervention will be implemented. Detection: A similar issue arose during code review of DssGate, which prompted re-examination of existing modules for similar bugs. Action Items:     Action Item Type Owner (GH handle) Ticket     Implement a Keeper-free flash mint disabling mechanism mitigate gbalabasquer 918   Adequately document the safety property that the protocol\u2019s debt should not change after execution of End.thaw()  prevent kmbarry1 912   Add coverage to the high-level protocol model to test for violations of the above-mentioned property prevent kmbarry1 914   Implement automated checking for dangerous patterns in MakerDAO repositories prevent godsflaw 916   Implement Emergency Shutdown simulations as decided in a previous postmortem detect julienmartinlevrai  524, 525      Lessons Learned What Went Well:  The issue was found prior to being exploited (or even exploitable). A risk identified in one context was appropriately searched-for in other contexts. Good coordination with GovAlpha and voters to quickly put mitigation in place.  What Went Wrong:  The issue was not caught before DssFlash was deployed in production. Without continued work on extending the protocol, the issue might not have been caught. No clear process for recording proof that a bug was identified (in case it was reported through the Bug Bounty progam later).   Timeline All times UTC. 2021-07-03 17:15:44: DssFlash is integrated with the mainnet protocol deployment, introducing the latent vulnerability. 2022-03-03 15:00: PECU holds call to discuss dss-gate; this discussion reveals an edge case after emergency shutdown where continuing to allow sucking of DAI can corrupt the accounting 2022-03-03 15:50-16:15: as the meeting ends, godsflaw asks kmbarry1 to stick around and brainstorm whether other modules capable of calling Vat.suck could cause issues in ES; the flash mint vulnerability is identified in this process and initial discussions around severity and mitigation occur. The PECU team is notified that a serious but non-urgent issue has been found. 2022-03-03 18:45: kmbarry1 finishes a proof-of-concept confirming the bug and shares it with other response team members (godsflaw, gbalabasquer, brianmcmichael, WilfredTA, hexonaut) 2022-03-03 19:00: war room held (kmbarry1, godsflaw, gbalabasquer, brianmcmichael, WilfredTA, hexonaut, derek-flossman)\u2013decisions:  to be friendly to integrators, use interim \u201cFlashMom\u201d to mitigate until a migration to a new DssFlash is completed too close to this Friday to ship mitigation this in the spell; next Friday too far away (and will have office hours); aim to ship an out-of-band spell with just the FlashMom mitigation middle of next week  2022-03-03 20:00: Derek informs LongForWisdom about Protocol Engineering\u2019s plan to publish a forum post early next week in the lead up to deploying an urgent executive on Wed. the 9th. 2022-03-08 14:30: The issue and remediation plan are publicly disclosed via a post on the MakerDAO forum. 2022-03-09 16:58 UTC: Executive spell for mitigation made available in the governance portal, community alerted. 2022-03-09 17:23 UTC: Mitigation spell voted in and its execution is scheduled. 2022-03-11 17:24:26: The mitigation spell is executed, enabling the FlashKiller module which allows disabling DssFlash post-shutdown.  Supporting Information PoC Exploit: GitHub - kmbarry1/flash-thaw Disclosure forum post: Post-Shutdown Flash Loan Vulnerability - Announcement and Remediation Plan ",
+                    "links": [
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/918",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/912",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/914",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/916",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/524",
+                        "https://github.com/makerdao/smart-contracts-team-pm/issues/525",
+                        "https://etherscan.io/tx/0x6d6928beab71c8ac2ec9a694caea67abf9fe6655ce09a37c4bc02a3a69894266",
+                        "https://forum.makerdao.com/t/post-shutdown-flash-loan-vulnerability-announcement-and-remediation-plan/13746",
+                        "https://etherscan.io/tx/0x852cc2db9a37d7bcde56bd201324e79a9f00c8f4216bac11f844638db093c241",
+                        "https://github.com/kmbarry1/flash-thaw",
+                        "https://forum.makerdao.com/t/post-shutdown-flash-loan-vulnerability-announcement-and-remediation-plan/13746",
+                        "https://forum.makerdao.com/t/relay-semanal-22-28-de-marzo-de-2022/14333",
+                        "https://forum.makerdao.com/t/weekly-relay-march-22-28-2022/14300",
+                        "https://forum.makerdao.com/t/flip-flop-flap-delegate-llc-platform/9106/109",
+                        "https://forum.makerdao.com/t/proposed-security-fix-to-be-added-in-the-march-25th-2022-executive-spell/14197",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-march-17-23-2022/14191",
+                        "https://forum.makerdao.com/t/feedblack-loops-llc-delegate-platform-fbl/9366/76",
+                        "https://forum.makerdao.com/t/post-shutdown-flash-loan-vulnerability-announcement-and-remediation-plan/13746/5",
+                        "https://forum.makerdao.com/t/pecu-month-in-review-march-2022/14493",
+                        "https://forum.makerdao.com/t/wednesday-18th-may-executive-flash-mint-module-technical-enhancement/15176",
+                        "https://forum.makerdao.com/t/monthly-governance-review-march-2022/14428"
+                    ],
+                    "GPT-summary": "The post discusses a vulnerability in the flash mint module of the MakerDAO protocol, which allows for flash loans to be taken in newly-minted DAI and repaid at the end of the transaction. The vulnerability could have been exploited by a malicious actor during the Emergency Shutdown process, causing an erroneously high debt value to be recorded and reducing the amount of collateral disbursed per-DAI. The post provides details on the impact, root causes, trigger, resolution, detection, and action items related to the vulnerability. The post also discusses what went well and what went wrong during the incident, and provides a timeline of events.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.163111888111888
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/wouter",
+                    "index": "#2",
+                    "likes": "6",
+                    "time": "20/03/2022-10:20:06",
+                    "content": "Thanks, @Kurt_Barry and team for the necessary alertness to detect a bug like this, professionally handling the incident, and clear write-up of the post-mortem. The links to the GitHub commits display a 404. Is there a permission that needs to be changed?     Kurt_Barry:  Implement Emergency Shutdown simulations as decided in a previous postmortem   I was wondering if there are similar action items in the backlog that are currently deprioritized? I know how difficult it can be to free up the time for work that is important but never urgent (until it is.) Clearly there is a ton of work to be done to deal with emergency shutdown in a satisfactory way\u2026 I hope MakerDAO gets to it one day. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.305555555555555
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#3",
+                    "likes": "4",
+                    "time": "21/03/2022-16:45:59",
+                    "content": "Hi Wouter\u2013currently the issues are private to PECU team members. This is because we don\u2019t want to open up our entire tracking board publicly (for various reasons, including security and avoiding unnecessary Twitter drama). We have discussed moving these postmortem issues to a separate board so they can be public, although this creates more overhead in our planning process, and thus we haven\u2019t pulled the trigger on that yet. To your second question\u2013I don\u2019t have the exact tally of fixed/in-progress/on-backlog for past postmortem issues handy, but I\u2019m sure there are at least a couple more still floating around. We really should have postmortem issues consistently tagged so this sort of reporting can be done on-demand\u2013will do that and follow-up here. Emergency Shutdown remains the most challenging part of the system to deal with from a safety perspective. As its complexity grows, I think there will eventually be a discussion of how much value it adds to the protocol. Particularly as more RWAs are integrated, it becomes increasingly doubtful that in a shutdown event DAI could be reliably redeemed for close to par value. As uncertainty around shutdown\u2019s potential to fulfill its primary purpose increases, its corresponding usefulness decreases. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.65625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/wouter",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "21/03/2022-17:17:00",
+                    "content": "Thanks, Kurt.     Kurt_Barry:  We have discussed moving these postmortem issues to a separate board so they can be public, although this creates more overhead in our planning process, and thus we haven\u2019t pulled the trigger on that yet.   Maybe linking to the relevant commits is an easy fix? The point is that people can see the changes we\u2019re talking about. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.533333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "21/03/2022-21:17:28",
+                    "content": "Yeah, releasing some post-facto \u201cproof of completion\u201d (commits, PRs, etc) could be a good compromise. Occasionally, there are AIs that don\u2019t produce tangible artifacts (e.g. one of the AIs we had previously involved \u201cconducting an information session\u201d), so for those I\u2019ll guess it\u2019ll have to be an honor system. Btw, I did a survey of past postmortem action items\u2013there were 11 of those (so I\u2019m ignoring the AIs added in this postmortem). Results: 6 done 1 nearly done and in review ( set RWA DC by julienmartinlevrai \u00b7 Pull Request #93 \u00b7 makerdao/dss-exec-lib \u00b7 GitHub ) 4 backlogged (including the two issues referenced as ticket numbers 524 and 525 above) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.345238095238095
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "19/06/2022-21:17:44",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

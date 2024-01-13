@@ -1,0 +1,558 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4200-static-relative-jumps/7108",
+            "title": "EIP-4200: Static relative jumps ",
+            "index": 7108,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "evm",
+                "opcodes",
+                "evm-object-format",
+                "shanghai-candidate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "22/09/2021-22:14:16",
+                    "content": "This is the discussion topic for  Ethereum Improvement Proposals   EIP-4200: Static relative jumps RJUMP and RJUMPI instructions with a signed immediate encoding the jump destination      This proposal started as a comment back in February and was one of the reasons which kicked off our journey with EVM Object Format (EOF). In the past few months @gumb0 has been working on experimenting and validating this in evmone (PR here), but now is the time to release an actual EIP. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4200",
+                        "https://github.com/ethereum/pm/issues/250#issuecomment-782094832",
+                        "https://ethereum-magicians.org/t/evm-object-format-eof/5727",
+                        "https://github.com/ethereum/evmone/pull/351",
+                        "https://ethereum-magicians.org/t/evm-object-format-eof/5727/18",
+                        "https://ethereum-magicians.org/t/evm-object-format-eof/5727/28"
+                    ],
+                    "GPT-summary": "The post is about the Ethereum Improvement Proposal EIP-4200, which suggests the addition of static relative jumps to the RJUMP and RJUMPI instructions with a signed immediate encoding the jump destination. The author explains that the proposal started as a comment and has been validated in evmone. The post also invites discussion and feedback on the proposal, with some third parties providing constructive criticism and asking questions.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.34375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "24/09/2021-13:48:04",
+                    "content": " Benchmarks We compared performance of \u201cstatic\u201d JUMP instruction with new RJUMP. The benchmark case consist of 4096 instruction groups called \u201cjumppads\u201d. During execution each jumppad is visited exactly once in fixed pseudo-random order.  For JUMP the jumppad is JUMPDEST PUSH2 JUMP (generator, bytecode) For RJUMP the jumpad is just RJUMP (generator, bytecode)  Benchmarks were done on Intel Haswell CPU 4.4 GHz with evmone/Baseline 0.8.2.     Instruction CPU time [\u00b5s] Burn rate [Ggas/s]     JUMP 28.1 1.75   RJUMP 12.0 1.70 (cost 5), 0.99 (cost 3)    Conservative gas cost selection for RJUMP is 5 to match the current performance of JUMP in \u201cstatic\u201d context. However, the JUMP seems to be significantly overpriced as the program heavily using it runs at 1.75 Ggas/s gas burn rate. Selecting RJUMP cost of 3 would still be acceptable because the performance of 1 Ggas/s is still excellent. ",
+                    "links": [
+                        "https://github.com/ethereum/evmone/blob/4faf8014b56b631bc69022d073b89e069e49a673/test/benchmarks/micro/jump_around.evm",
+                        "https://github.com/ethereum/evmone/blob/rjump_bench/test/unittests/evm_benchmark_test.cpp#L89-L115",
+                        "https://github.com/ethereum/evmone/blob/rjump_bench/test/benchmarks/micro/rjump_around.evm",
+                        "https://github.com/ethereum/evmone",
+                        "https://github.com/ethereum/evmone/releases/tag/v0.8.2"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.186688311688312
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "30/09/2021-08:48:27",
+                    "content": "I very much support this proposal, having been wanting static jumps for a long time.  It will also let me pull these jumps out of EIP-2315, including this EIP by reference. My only worry is that it may be too soon to be removing JUMPDEST.  The pros are clear - more speed, less space, saved gas.  The cons are, as you say, that JUMPDEST serves some purposes. EVM code can be parsed into basic blocks in one pass \u2013 because JUMPDESTs (and other control-flow instructions) delimit basic blocks.  Otherwise a preliminary pass is needed to find the destinations (such as jumpdest analysis).  Tools can take advantage of this, including disassemblers, compilers, and interpreters.  And human writers and readers. Whether the pros outweigh the cons in the end isn\u2019t clear to me, but getting more experience with these operations and getting feedback from toolmakers and others seems worth the wait. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.639444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "05/11/2021-13:28:09",
+                    "content": "    gcolvin:  My only worry is that it may be too soon to be removing JUMPDEST. The pros are clear - more speed, less space, saved gas. The cons are, as you say, that JUMPDEST serves some purposes.   The requirement to have JUMPDEST is only lifted for the static jumps. The dynamic jump opcodes are unaffected.     gcolvin:  EVM code can be parsed into basic blocks in one pass \u2013 because JUMPDESTs (and other control-flow instructions) delimit basic blocks. Otherwise a preliminary pass is needed to find the destinations (such as jumpdest analysis). Tools can take advantage of this, including disassemblers, compilers, and interpreters. And human writers and readers.   Analysers can be changed to also parse the destinations of static jumps to build up the blocks.  This can be done in the usual \u201cjumpdest analysis\u201d loop. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.336111111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "07/11/2021-02:03:16",
+                    "content": "Yes, they can, but I think it does take an extra pass and extra memory to store the destinations, even if there are no JUMP*s in the code.    I\u2019m not hard over on this, just uncertain. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.243055555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "08/11/2021-17:01:20",
+                    "content": "Why would it take an extra pass? The only difference to finding JUMPDEST is that with RJUMP you get an offset for a different location, but one can still use a bitmap or build code blocks out of it. Here\u2019s some dumb version: for ([pos, instruction]: bytecode):   if (instruction.is_push()):     # parse pushdata   else if (instruction.is_jumpdest()):     jumpdest.insert(pos)   else if (instruction.is_rjump()):     # parse_rjump_offset reads the following 2 bytes as a big endian two's complement number     relative_jumpdest.insert(parse_rjump_offset(next(), next())  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.732142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "08/11/2021-18:00:57",
+                    "content": "@gumb0 reminds me that it may be a bit more complex to sum gas costs for a block in a single pass with backwards jumps. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.214285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "08/11/2021-19:46:49",
+                    "content": "I\u2019m thinking of one pass tools that don\u2019t otherwise need to do a jumpdest analysis, but instead just scan the code directly, byte by byte. An example would be a simple disassembler that puts labels on jump destinations, decodes immediate data, and perhaps calculates fixed gas costs and stack use for each block.  With JUMPDEST that can be done in one sequential pass of the bytecode.  Without JUMPDEST it takes one pass to find the jump destinations and store the results of that pass. Then it takes a second pass to label and process the blocks, using the stored results instead of the JUMPDEST byte codes. It might possible to combine the two passes, but however it\u2019s done I think any one-pass tool that counts on there being JUMPDESTs would become more complex, use more memory, and be slower.  At this point the EVM is used on enough chains and there are enough tools that I cannot say how much impact this would have.  But I\u2019m bumping into it already writing code to validate the safe use of these instructions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "09/11/2021-01:55:43",
+                    "content": "I think complexity considerations of off-chain tools should not influence on-chain decisions that much. We are optimising for state size and on-chain execution costs, as opposed to off-chain use cases. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "09/11/2021-03:23:38",
+                    "content": "I think we should have some concern for off-chain tools.   Not the strongest concern by far, but I don\u2019t want to leave it unaddressed.  It\u2019s a good thing that EVM code is easy to write tools for.   I think in essence it comes down to how much of that simplicity are we willing to give up for however much state size and performance gains we get. This could also affect our initcode phase in the same ways.  @gumbo mentioned summing gas costs.  And I mentioned that I\u2019m still working out how to change my validation algorithm to not need JUMPDEST.  Without it every instruction is a potential jump destination, so my current algorithm would need to check the jumpdest bitmap for each instruction it traverses to find out.  For presentation purposes that\u2019s OK, but for production maybe not. I\u2019m not yet clear on how to do better. It\u2019s this stuff that has me wondering whether we should first make it possible to remove JUMPDEST, then finally remove it in a later EOF version.  On the other hand, since none of this is going into the EVM until after the Merge we have plenty of time to work this out. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.820216049382716
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "13/11/2021-03:22:42",
+                    "content": "I\u2019m finding that the lack of JUMPDEST really does make validating safety a little harder. To avoid checking whether every instruction is a jump destination as I traverse the byte code I think I\u2019d need to make an extra pass of the byte code to explicitly create the control flow graph and then traverse the graph. That graph might actually be a good representation for some interpreters \u2013 it would make it easier to do gas and stack checking at the start of each block.  But that checking would mean that JUMPDEST actually costs something. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.214285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "17/12/2021-04:49:49",
+                    "content": "In the end this wasn\u2019t too hard because it turned out I could traverse the CFG without actually constructing it.  So I still worry a bit, but not enough to object.  I\u2019ve changed EIP-2315 to not need JUMPDEST either. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.513888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "25/01/2022-09:42:46",
+                    "content": "I have a weak request to rename RJUMP and friends to something more descriptive like RELATIVE_JUMP or RELATIVEJUMP if we want to keep consistency of \u201call caps one word opcodes\u201d.  I don\u2019t think we gain anything significant by having the opcode words be exceedingly short (to the point of non-descriptiveness). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "25/01/2022-09:45:45",
+                    "content": " Note: EIP-3670 should reject PC.  This feels like it should be an EIP (that depends on this one). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "25/01/2022-09:46:39",
+                    "content": "Can we remove the dynamic jumps entirely as part of this EIP (in EOF1 contracts)?  Is there a sufficiently compelling reason to keep them?  Maybe to limit risk, we could create a separate EIP that depends on this one which removes the dynamic JUMP instructions? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "25/01/2022-11:11:14",
+                    "content": "    MicahZoltu:   Note: EIP-3670 should reject PC.  This feels like it should be an EIP (that depends on this one).   Once we get closer to aggreement on getting these EIPs adopted together, we\u2019ll just change 3670 to depend on 4200 and mark PC as invalid. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "25/01/2022-11:13:14",
+                    "content": "    MicahZoltu:  I have a weak request to rename RJUMP and friends to something more descriptive like RELATIVE_JUMP or RELATIVEJUMP if we want to keep consistency of \u201call caps one word opcodes\u201d. I don\u2019t think we gain anything significant by having the opcode words be exceedingly short (to the point of non-descriptiveness).   I have a weak preference for the short name and a strong preference not having underscores. I find RELATIVEJUMP quiet long, but could compromise on RELJUMP? Think also about the EXT* prefixes. The more interesting question is whether we should keep the I suffix for \u201cIF\u201d following JUMPI or go with RJUMPIF.     MicahZoltu:  Can we remove the dynamic jumps entirely as part of this EIP (in EOF1 contracts)? Is there a sufficiently compelling reason to keep them? Maybe to limit risk, we could create a separate EIP that depends on this one which removes the dynamic JUMP instructions?   Unfortunately they cannot be deprecated as of yet. We plan to release a new EIP proposing function sections, which would be a way to get rid of them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4013047138047146
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "25/01/2022-11:51:58",
+                    "content": "    axic:  I have a weak preference for the short name and a strong preference not having underscores. I find RELATIVEJUMP quiet long, but could compromise on RELJUMP? Think also about the EXT* prefixes. The more interesting question is whether we should keep the I suffix for \u201cIF\u201d following JUMPI or go with RJUMPIF.   Compromising on \u201cno underscores\u201d, this is my preference: CONDITIONALRELATIVEJUMP > RELATIVEJUMPIF > RELJUMPIF > RELJUMPI > RJUMPI ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.630208333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "25/01/2022-21:32:49",
+                    "content": " Why there is no RJUMPV The EIP-615 proposes new jump instruction JUMPV which looks up the jump destination in the adjusted array using the index value taken from the stack. For good reason similar control-flow instructions exist in most if not all IRs. However, I have not found any common use-case in contracts development justifying relatively high complexity of the instruction (e.g. encoding of the array in bytecode, handling invalid index values). Furthermore, nothing prevents adding such instruction in future if it turns out to be needed. Such instruction can help with implementing switch statements, but only if case constants are continuous or at least dense. The most used \u201cswitch\u201d in every solidity contract is the external function dispatch. But JUMPV will not help here as the functions ids are \u201chashed\u201d values (sparse). You would first need to the index of a function id but then you don\u2019t need JUMPV any more as a static jump will do. I also wanted search solidity source codes on GitHub to check for interesting usages of switch. Just to realize solidity does not support switch statement at all. The proposed JUMPV indeed matches the semantics of br_table from WebAssembly. However, the LLVM IR has extended variant of such control flow instruction called switch. There instead of a table of indexes we have \u201can array of pairs of comparison value constants and [jump destinations]\u201d. This would handle function dispatch use-case, but it complicates the instruction even more. If I\u2019m mistaken and there are valid use-cases for JUMPV please let me know. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-615.md#specification",
+                        "https://en.wikipedia.org/wiki/Switch_statement",
+                        "https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-control-mathsf-br-table-l-ast-l-n",
+                        "https://llvm.org/docs/LangRef.html#switch-instruction"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.95956937799043
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "25/01/2022-23:47:40",
+                    "content": "I\u2019d be happy enough to deprecate them.  But also happy enough to restrict them at validation time to safe uses.  EIP-3779: Safer Control Flow for the EVM. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.1
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "31/01/2022-21:23:34",
+                    "content": "I\u2019d actually prefer JUMPR and JUMPRI.  I\u2019d especially like for all of the JUMP opcodes to sort together (e.g. they are often referred to as a group with JUMP*) and for the names to be concise.  JUMPREL and JUMPRELIF would be OK, but a lot to type. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.85
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "31/01/2022-21:32:09",
+                    "content": "From the doc:  Because the destinations are validated upfront, the cost of these instructions are less than their dynamic counterparts: RJUMP should cost 5, and RJUMPI should cost 7. This is a reduction of 2 gas, compared to JUMP and JUMPI .  I think 3 and 5 would be more appropriate.  Since we don\u2019t need to check the destination, doing the jump is only a matter of assigning the immediate value to the PC.  And even the immediate value can be decoded during jumpdest analysis.  Barely more work than a no-op. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.111111111111112
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "23",
+                    "likes": "1",
+                    "time": "01/02/2022-00:05:16",
+                    "content": "This is a fair point. We tried to stay conservative before we made actual benchmarks, but given no outliers are found through benchmarking I would agree with lowering the costs further. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "04/02/2022-20:40:53",
+                    "content": " We plan to release a new EIP proposing function sections, which would be a way to get rid of them.  With the EIP-2315 subroutines we can also be rid of JUMP if we want to.  Currently the EIP-3779 safety conditions restrict JUMP to \u2018static\u2019 uses, but could just as well deprecate it. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-3779"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "04/02/2022-22:57:00",
+                    "content": "To be clear, the proposal was released (and it was planned since the inception of EOF):    EIP-4750: EOF Functions Core EIPs       This is the discussion topic for     I think discussing the merits of the different \u201csubroutine\u201d proposals may be better discussed in a dedicated comparison topic, as opposed to this topic here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "07/02/2022-08:36:26",
+                    "content": "I do think this EIP is ready for CFI for Shanghai.  It\u2019s very easy to implement, has been implemented, tested, timed, and discussed here and elsewhere to mutual consensus. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.908333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "07/03/2022-20:12:35",
+                    "content": "There is a reason jump tables are a common facility on CPUs.  Important use cases include the common \u201cbig switch\u201d interpreters that index opcodes into a table of jumps to the implementation of each operation.  However, switches can always be implemented with conditional jumps, so they aren\u2019t strictly necessary.  Another important use case, in the absence of dynamic jumps, is constrained polymorphism \u2013 such as using jump table indexes for pointers to functions and virtual functions. So I would be happy to see them proposed here, but don\u2019t insist.  We should at least leave space in the allocation of bytecode values for later introduction of indexed jumps and calls. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "04/09/2022-02:36:56",
+                    "content": "I\u2019ve withdrawn EIP-3779.  In the end it just wasn\u2019t possible to tame JUMP with a static analysis.  However, EIP-2315 will deprecate JUMP and JUMPI, because traversing the CFG is subject to quadratic path explosion otherwise, turning the validation code into an attack vector. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.145833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "26/10/2022-19:24:46",
+                    "content": " Why there is no RJUMPV \u2026 If I\u2019m mistaken and there are valid use-cases for JUMPV please let me know.  For reference: there is call for using jump-table-like approaches for switches, including the external function dispatch, on the solidity layer: e.g. Constant-complexity dispatcher idea \u00b7 Issue #12650 \u00b7 ethereum/solidity \u00b7 GitHub And we had some experimental work towards it (not with a traditional jump table, but with multiple jump destinations encoded in one stack slot and selection via shifting and masking - of course all of that would be hell for static analysis\u2026 and becomes impossible if we move away from dynamic jumps completely). I\u2019m not necessarily saying that this warrants actually adding RJUMPV (since there\u2019s always ways around needing it) - but if we had it, there would definitely be use cases. Another one is internal function call dispatch (calling internal functions via a function pointer) in Solidity via-IR code generation, which works via a dense switch. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.012820512820513
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "31",
+                    "likes": "1",
+                    "time": "29/10/2022-20:56:06",
+                    "content": "I agree.   RJUMPV is far superior to the alternatives, both for efficiency and for static analysis.  There are reasons that so many machines have an instruction to support jump tables. We could of course wait and do this later.  But \u201clater\u201d tends to mean \u201c2 or 3 years.\u201d  So I\u2019d prefer we do this now. I don\u2019t think it\u2019s really that difficult to specify or implement.  E.g:  RJUMPV n_dest dest_0 \u2026 dest_default  If the 0-based index on the stack is too large we jump to the default destination.  The validator can check statically that there are no invalid destinations.  And since the jump table is inline (not shared) it doesn\u2019t create a DoS vulnerability. (An vectored call would also be useful for virtual functions, but RJUMPV can do that job well enough with a JUMPV to a call.) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.773538961038961
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "11/11/2022-10:17:46",
+                    "content": "Hi all, I have a quick question: why would we not disable JUMP and JUMPI if we activate this EIP? The entire motivation seems to be that we do not want these dynamic jumps. So, why not throw these out? (Or does this impact the flexibility of EVM too much?) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "11/11/2022-13:54:43",
+                    "content": "This EIP alone is not enough to replace dynamic jumps entirely. With    EIP-4750: EOF Functions Core EIPs       This is the discussion topic for      it will be possible to complete replace them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.1
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "06/12/2022-14:29:42",
+                    "content": "Hi, I am implementing EIP 4200 in EthereumJS. I noticed that the EIP test cases and the reference code does not include cases for RJUMPV. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "35",
+                    "likes": "1",
+                    "time": "07/12/2022-10:59:34",
+                    "content": "Hi, reference code has it (see elif opcode == 0x5e: branch), and I\u2019ve just added some test cases for RJUMPV Update EIP-4200: Add Test Cases for RJUMPV by gumb0 \u00b7 Pull Request #6096 \u00b7 ethereum/EIPs \u00b7 GitHub Thanks for spotting this! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "07/12/2022-18:50:51",
+                    "content": "EDIT: never mind, I just realized that I interpreted the whole idea of RJUMPV wrong, I assumed that it would jump to a relative offset if case >= count, but it indeed uses a jump table (I would however suggest to add this line in the EIP, it makes it more clear - that in RJUMPV the relative offsets is a list of count * 2 int16s and whatever stack item is pushed, we jump to that relative offset Old msg; You are right that there is a 0x5e branch but I do not think the validation matches the text of the EIP. 0x5e/RJUMPV is also not in immediate_sizes (immediate size is thus 0?) I do not think the reference implementation of RJUMPV is correct:             jump_table_size = code[pos]             if jump_table_size == 0:                 raise ValidationException(\"empty jump table\")                              pc_post_instruction = pos + 1 + 2 * jump_table_size  jump_table_size (weird variable name, this is count in the text spec\u2026?) is thus whatever count is. pc_post_instruction now is essentially pos + 1 + 2 * count? This should be the two bytes after the current pos, no? (interpreted as an int16) I also find the code very hard to read. I get the impression that this validation code is of an older version of this EIP, where RJUMPV is an opcode which has to do with some kind of jump table? In text I would argue that the validation code (for RJUMPV) should;  Check if the next three bytes after RJUMPV are into len(code)  Note: the check that the code has a terminiating opcode at the end of the container is checked in the next iteration of the while loop   Check if count (so the next byte after RJUMPV) is not 0  Check if pc_post_instruction (which is now pc_post_instruction = pos + immediate_sizes[opcode]), if you add int.from_bytes(code[pos+1:pos+3], byteorder = \"big\", signed = True) is within the container Initialize the immediate_sizes[0x5e] = 3  # RJUMPV   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.196003401360544
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "11/12/2022-12:31:52",
+                    "content": "I do not think that the EIP defines very well what happens if case in RJUMPV is either larger than the table size, or it is larger than 255. Do we exceptionally abort, or do we use the default case (no branching?). The EIP states:  If no match is found (i.e. the default case) in the RJUMPV instruction execution will continue without branching. This allows for gaps in the arguments to be filled with 0 s, and a choice of implementation by the programmer. Alternate options would include exceptional aborts in case of no match.  This is ambiguous to me, because it defines essentially two ways what to do if \u201cno match is found\u201d, either it continuous without branching, or it exceptionally aborts\u2026 (the \u201calternate option\u201d)? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.444444444444444
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "38",
+                    "likes": "1",
+                    "time": "11/12/2022-22:33:43",
+                    "content": "This is in Rationale section where alternative designs are mentioned that were decided against. Specification is:    RJUMPV count relative_offset+ pops a value (case) from the stack, and sets the PC to PC_post_instruction + ((case >= count) ? 0 : relative_offset[case]).   i.e. when case >= count, PC is set to PC_post_instruction ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Philogy",
+                    "index": "39",
+                    "likes": "1",
+                    "time": "19/02/2023-23:23:11",
+                    "content": "Love this proposal but a small suggestion: Wouldn\u2019t it make more sense for the RJUMPV opcode to allow for jump tables of sizes 1-256 rather than 0-255 and reverting if the table size is zero? Two main reasons for this change:  Allowing the table size \u201ccount\u201d byte to be zero doesn\u2019t seem to serve a purpose as the standard explicitly disallows it. Allowing tables of size 256 would lend itself very well to logic that jump based on a 4-bit index as the full range of 256 values (0x00 - 0xff) could translate to a valid jump destination.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0476190476190474
+                }
+            ]
+        }
+    ],
+    "group_index": "1446"
+}

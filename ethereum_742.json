@@ -1,0 +1,472 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/forming-a-ring-eth-v64-wire-protocol-ring/2857",
+            "title": "Forming a Ring: ETH v64 Wire Protocol Ring ",
+            "index": 2857,
+            "category": [
+                "Working Groups"
+            ],
+            "tags": [
+                "eth-v64-wire-protoco"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "05/03/2019-15:05:11",
+                    "content": "Using the provided template:   Why should people use this category? What is it for? The ETH v64 Wire Protocol Ring focuses on the next iteration of the ETH Wire Protocol.   How exactly is this different than the other categories we already have? There is not a working group scoped to networking changes; specifically not ones meant to be immediately actionable.   What should topics in this category generally contain? The scope of this ring should be entirely focused on the ETH v64 wire protocol.   Do we need this category? Can we merge with another category, or subcategory? Yes. No.   ",
+                    "links": [
+                        "https://github.com/ethereum/wiki/wiki/Ethereum-Wire-Protocol",
+                        "https://ethereum-magicians.org/t/red-queens-new-sync-proposal/3175/2"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.145833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "2",
+                    "likes": "3",
+                    "time": "05/03/2019-15:32:05",
+                    "content": "Call for ETH v64 Wire Protocol Enhancements Background The ETH wire protocol provides the application layer for Ethereum clients. A lot has changed and a lot has been learned since the last ETH wire protocol was introduced in 2015. The significant state requirements to operate a node are hindering the health of the network. Synchronization requires a large amount of state to store and download from peers. The implications of this include:  Conventional hardware nodes cannot willingly join and participate in the network Syncing from scratch takes a very long time (e.g. days) Networking bandwidth requirements can be outstanding  Process The recommended process for selecting ETH v64 wire protocol enhancements is as follows (the later stages can happen on a proposal-by-proposal basis):   Solicit proposals for ETH v64 in this ring: Begin with brainstorming and informal discussions for improvements. This can happen initially happen within this thread, but should probably be broken out into a separate thread if more organization and focus is needed.   Establish Contributors and Stakeholders: The ring will identify proposals worth pursuing and establish who will drive them forward.   EIP Drafting and Prototyping: Create initial EIPs outlining the enhancements and solicit broader feedback. It is highly encouraged that running prototypes accompany any EIP.*   ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6040816326530605
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ajsutton",
+                    "index": "3",
+                    "likes": "2",
+                    "time": "06/03/2019-00:21:08",
+                    "content": "One common problem encountered when using Eth62 & 63 is that on MainNet there is a mix of ETC and ETH nodes all sharing the same network ID.  While they have different chain IDs, it\u2019s only the network ID that\u2019s sent as part of the ETH63 STATUS message so connections are established and clients have to do things like explicitly request the DAO block or wait until an invalid header is received post-DAO block which triggers a disconnect.  For fast sync these ETC peers are particularly problematic as they can lead to selecting an ETC block as the pivot and then fast sync fails. Additionally, the difference between chain ID and network ID is a constant source of confusion for users who commonly believe they are the same thing. I\u2019d propose dropping network ID entirely and using only chain ID which would then be included in the STATUS message. That would allow nodes from different chains to immediately identify the mismatch and reject the connection quickly. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.933333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "06/03/2019-04:13:36",
+                    "content": " Encapsulate Metadata as a Header Rather than Inlining Before Payload  Problem Provide better encapsulation so that it is easier to add new message header fields in the future (Spoiler Alert: new header fields will be defined below ).  Proposal Rather than an ETH wire message being MessageCode || Payload replace MessageCode with Header, where Header is a list [ MessageCode || Metadata-0 || ... lt Metadata-N ] Packet is [ Header || Payload ] where Payload conforms to the specification mandated for theMessageCode in the header. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.965909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "5",
+                    "likes": "4",
+                    "time": "06/03/2019-04:16:45",
+                    "content": "Add a request ID field to Messages Problem The association between messages exchanged between peers is implicit which adds some code complexity. Making it explicit that a response message is tied to a particular request message would make this easier. When communicating with a peer, it is not possible to receive messages out of order. Proposal Adopt the reqId field presented in the Parity LES documentation. Response(s) to a request with a specified reqId would use the same reqId. Ideally this would be placed in the Header proposed above. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.066666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "6",
+                    "likes": "3",
+                    "time": "06/03/2019-04:18:03",
+                    "content": "Making Pruned State Explicit Problem ETH peers are not guaranteed to have all blockchain and state information stored. The most notable example is that a fast-sync node does not store all archival state. Further, there are emerging proposals to drop older blockchain data; making this problem worse in the future.      Headers Bodies Receipts State     Light None None None None   Pruned All Recent Recent Recent   Fast All All All Recent   Archive All All All All    The table is meant to compare the different types of peers seen on the network and what blockchain and state data they hold; demonstrating that there is somewhat of a hierarchy and way to generalize what any given peer holds. Going bottom up:  Archive Nodes (geth --syncmode full --gcmode archive): Contains all historical information from genesis until the chain head. Fast Nodes (geth --syncmode fast --gcmode full): Contains all historical chain data, but only the recent 127(ish) state histories. Pruned Nodes: Are nodes that also choose to drop old blockchain state. There are currently unofficial or experimental builds. Light Nodes: Run the light protocol and are really not guaranteed to have anything.  Proposal Make pruned state apparent by providing guarantees for data availability from a given client. Specifically, to expose these guarantees as additional \"window\" fields on the STATUS message first exchanged between ETH peers. This allows for better abstractions to orchestrate data exchanges amongst peers. The \u201cwindow\u201d corresponds to the maximum distance behind the peer\u2019s current chain head where a given data component will be guaranteed by a client. It is the responsibility of the client to track its peers height to know the current range supported by a window.      HeaderWindow BodyWindow ReceiptWindow StateWindow     Light 0 0 0 0   Pruned MaxValue 1,000 1,000 127   Fast MaxValue MaxValue MaxValue 127   Archive MaxValue MaxValue MaxValue MaxValue    Considerations  Older information will become more and more scarce over time (hopefully to some limit with good actors). Care will have to be taken amongst peers to have policies to ensure they are connecting to the right peers there will be orders of magnitude more storing minimal state than the maximal state.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.823696145124718
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "7",
+                    "likes": "3",
+                    "time": "06/03/2019-04:18:26",
+                    "content": "Folding LES into ETH Problem The LES subprotocol competes the ETH in two ways. The first, it fragments developer mindshare between the two protocols. Second, it can fragment the code bases that support both. Consolidating the two would be an all around community win. Proposal 1: Dropping the DHT The DHT approach to LES feels too fragile and complex for adoption. Specifically:  It\u2019s a very complex idea Debugging issues is incredibly challenging How well it supports use cases (i.e. performance and reliability) is unclear  Proposal 2: Adding the Various LES Messages to ETH Incorporate a subset of the LES messages to ETH (especially proof-related ones) and possibly make them more granular/higher-level. Again drawing from the Parity LES documentation: Keep   (Get)Proof. However, the interface could be made more high-level so that the proof for whether the account state trie, account storage trie(s), or both are being requested.   (Get)ContractCodes   (Get)TransactionProofs would now have to be (Get)BlockProofs now that the intermediate state root has been removed from transaction receipts.   Remove  Capabilities as they would now be apparent from the proposal for making pruned state apparent.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.699999999999999
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "8",
+                    "likes": "2",
+                    "time": "06/03/2019-04:19:16",
+                    "content": "Consider Incorporating Client-side Flow Control One idea that is particularly interesting from LES is client-side flow control and may be worth incorporating into ETH. This is particularly useful for managing unbalanced peer relationships. For example a light node constantly requesting state proofs from an archive node could be kept in check and an archive node could now scale the number of light nodes it supports knowing that it will not be overwhelmed. The client-side flow control would also for client implementation to implement the code to handle DoS protection for the messaging layer. Proposal Add a budget field (budget) to the message header (proposed above) that denotes the remaining request budget a peer has. A peer request would decrease the budget field by some pre-agreed upon amount, such as applying a gas cost-like scheme to the different messages (e.g. N units budget per header returned for a GetHeader operation). There can be a policy for replenishing a peer\u2019s budget over time (such as what AWS does with vCPU compute units) and also for serving requests. The values for these parameters can be specified in the STATUS message that is first exchanged before continuing the ETH protocol. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.977272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/FrankSzendzielarz",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "06/03/2019-07:39:06",
+                    "content": "An additional thing to be aware of that should also help resolve this kind of difficulty is ENR in discovery v5, which is being implemented right now. https://github.com/ethereum/devp2p/tree/master/discv5 ENRs are signed, versioned key/value lists to a maximum of 300 bytes, which will replace the usual ID,IP,PORT tuples passed around in discovery v4. There will be mandatory keys (Eg: identity scheme, id) and then additional, arbitrary extensions to that. By adding a key/value providing the necessary information (network id, chain id), correct nodes can be found without even having to establish a handshake. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.654761904761905
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/karalabe",
+                    "index": "10",
+                    "likes": "3",
+                    "time": "06/03/2019-08:34:18",
+                    "content": "I have a few pain points I\u2019d like to get addressed. These are not so much theoretical protocol niceties, rather than actual nasty issues that cause some part of node implementations to behave suboptimally.  eth/63 has a GetNodeData(hash) method (or some variation of this). This is used to retrieve either a trie node identified by is hash, or a bytecode identified by its hash. In theory this is a nice, flexible thing. In practice, this is horribly too flexible. This method makes the assumption that nodes store all code and all trie nodes as hash->value mappings. This assumption actually forces nodes to do this, even though it makes no sense. The false assumption was that nodes will deduplicate data, and this hash->value mapping is the most optimal. Nodes may not want to deduplicate data so aggressively: storage tries across multiple accounts can share the same data with the same hash (in practice they won\u2019t much). However, if nodes implement pruning, they need to duplicate this data back, because a pruning algorithm won\u2019t b able to track references across multiple account (potentially infinite). This is a problem, because the GetNodeData assumes the node can retrieve a trie node by it\u2019s hash, whereas if it\u2019s duplicated, we also need the account to which it belongs to to retrieve.  Parity hacks around this issue by xor-ing the account into the hash\u2019s last 20 bytes, and when retrieving a trie by hash, they iterate the database for the first 12 byte prefix, and if multiple results are found, they hash on the fly to check which is good. Geth\u2019s PoC pruning code currently appends the account to the hash and uses a similar iteration mechanism to pull the data from disk. For us this is problematic because storing them by <account><hash> order instead of <hash><account> would give us proximity, but break iterability. Similarly this fetch-by-hash requirement puts a huge burden on in-memory caches, which need extra indexing structured to allow translatinc account-scoped trie nodes into \u201cglobal deduped trie nodes\u201d.  My request is that the GetNodeData beextended with a context parameter, clearly stating which account a particular trie node should be pulled from. If a node dedupes everything as now, it can simply ignore the context and still work cleanly. If a node stores them contextually, the extra data can help speed access up a lot. During a fast sync you know the context either way when downloading the data, so there\u2019s no overhead there either. I would also make a separate call for retrieving a trie node and retrieving code. IT makes things cleaner and allows still deduping code and storing it potentially differently.  I forgot the other one, damn. Will post here when I remember it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.26463963963964
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ferranbt",
+                    "index": "11",
+                    "likes": "3",
+                    "time": "06/03/2019-10:16:54",
+                    "content": "Hello. I have been working for the past months on an alternative Ethereum client in Go (https://github.com/umbracle/minimal). The main focus of my work has been to build the different stack components of a client as modular as possible. These are the problems I have encountered on the wire protocol and transport in general.   During discovery with discv5 around 60% of the queried nodes are not correct, they either are from a different network or have a different genesis file. It would be nice to have a chainID number on the discovery messages or make the nodes filter from the internal discovery table those nodes not belonging to his network so they are not broadcasted to the network.   As noted above, the lack of a ReqID is really painful. It limits the number of concurrent requests to a single node (i.e. only one header request per node). Minimal has some workarounds but are quite suboptimal.   Parity and Geth have different maximum message sizes. That makes it hard to estimate how much memory to reserve.   The transport layer (RLPX) gives two methods (SendMsg and ReadMsg) to interact with the protocol. I think it would be better to return net.Conn interface from RLPX. That gives you two immediate gains: You can built normal RPC method on top of net.Conn and have reqID functionallity and you can plug and play any other transport. This is already implemented in minimal.   RLPX needs to have the full message on memory to run compression and encryption. We should encrypt and compress in batches (as TLS does).   ",
+                    "links": [
+                        "https://github.com/umbracle/minimal/blob/master/protocol/ethereum/ethereum.go#L522",
+                        "https://github.com/umbracle/minimal/blob/master/network/transport/rlpx/stream.go#L186"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.190993788819876
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "12",
+                    "likes": "2",
+                    "time": "06/03/2019-15:36:03",
+                    "content": "Frank: I\u2019m in favor of ENRs. I think including this information at the discovery layer can be a useful hint to filter out bad/isolate good peers, however clients will still have to ultimately connect to verify this fact. Unless peers are validating the contents of ENR records before passing them around, this can still be gamed. FWIW I hope peers do this validation! Adrian: One thing to note that 1:1 replacement of chain ID in place of network ID without updating anything else about the status message would be a breaking change (as the two cannot be distinguished). I think it\u2019s more than likely there will be additional modifications to status messages (see: the proposal to expose pruned state), so this shouldn\u2019t be an issue. If that turns out not to be the case, we can include both the network and chain ID and clients would know to just pay attention to the chain ID. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "13",
+                    "likes": "2",
+                    "time": "06/03/2019-15:51:23",
+                    "content": " These are not so much theoretical protocol niceties, rather than actual nasty issues that cause some part of node implementations to behave suboptimally.  I would prioritize solving the nasty issues over theory   This method makes the assumption that nodes store all code and all trie nodes as  hash->value mappings. This assumption actually  forces  nodes to do this, even though it makes no sense. The false assumption was that nodes will deduplicate data, and this  hash->value  mapping is the most optimal.  I completely agree! TurboGeth\u2019s data layout is a great example of where duplication improves performance.  Geth\u2019s PoC pruning code currently appends the account to the hash and uses a similar iteration mechanism to pull the data from disk. For us this is problematic because storing them by  <account><hash>  order instead of  <hash><account>  would give us proximity, but break iterability.  I actually feel like geth\u2019s the current state sync logic and current trie sync logic could be enhanced to handle this. For example if the leaf node\u2019s corresponding key was tracked and passed into the trie.LeafCallback then you could know whose account\u2019s subtree (really the keccak256(address)) was being downloaded. Of course some additional enhancements would be needed too.  My request is that the GetNodeData beextended with a context parameter, clearly stating which account a particular trie node should be pulled from.  What do you think about being even more explicit to distinguish between the account state trie, individual account storage tries, and account code? Basically three different message request/response pairs:  (Get)AccountStateNodeData(hash)  (Get)AccountStorageNodeData(accountIdentifier, hash) where accountIdentifier would either be the addressorkeccak256(address)` (Get)AccountCode(accountIdentifier, codeHash)  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.813405797101449
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "14",
+                    "likes": "1",
+                    "time": "06/03/2019-16:05:37",
+                    "content": " make the nodes filter from the internal discovery table those nodes not belonging to his network so they are not broadcasted to the network   But I think this is really up to the client implementor to do. I would take it a step further and say that peers should disconnect from peers who even relay bad information!  Parity and Geth have different maximum message sizes. That makes it hard to estimate how much memory to reserve.  Just to make this concise: Are you proposing a maxMessageSize field on a Status message? I did not know this was an issue, so it\u2019s good to know. Although, are the message size differences so large that you can\u2019t allocation memory for the maximum of the two sizes?  The transport layer (RLPX)  \u2026  I think you bring up great points, but RLPx enhancements are out-of-scope of things ring as ETH sits a layer above. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.436507936507936
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/FrankSzendzielarz",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "06/03/2019-17:48:58",
+                    "content": "Matthalp: Referring to the equirements document on the validation: https://github.com/ethereum/devp2p/blob/master/discv5/discv5-requirements.md Essentially, yes, to a large extent they will be valid. A balance must be struck (between validating and propagating). Direct validation is an attack vector. If on higher level protocols these clients do not conform to their advertised capabilities, a similar reputation modification needs to happen as described in the discovery docs above (I think). Similarly, if the discovery level reputation changes (eg: a peer starts misbehaving on that level), the higher level protocol needs to consider disconnecting the peer. Incidentally, this is why I think it is a design weakness to develop these protocols as totally separate concerns, or to design protocols without a common concept of peer reputation  \" I would take it a step further and say that peers should disconnect from peers who even relay bad information!\"  Yes. Definitely agreed, and it is a core design goal of Disc v5.(again, it\u2019s in the doc above) One more thing: if you or anyone else has any other feedback on Disc v5 and Devp2p please add comments/thoughts via pull request to those documents ad lib. We are moving quickly now with implementation. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.102240896358543
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "06/03/2019-23:11:20",
+                    "content": "I will move my thoughts about discovery to your repo. If you haven\u2019t already you should consider starting a ring was well (and post the link here to direct interested parties). Repos are good for writing finished documents, but may not be the best forum for brainstorming. Just my two wei. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.05
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "07/03/2019-01:01:51",
+                    "content": "Seems promising!     matthalp:       HeaderWindow BodyWindow ReceiptWindow StateWindow     Light 0 0 0 0   Pruned 100,000 1,000 1,000 127   Fast MaxValue MaxValue MaxValue Recent   Archive MaxValue MaxValue MaxValue MaxValue       Some possible typos:      HeaderWindow BodyWindow ReceiptWindow StateWindow     Light 0 0 0 0   Pruned MaxValue 1,000 1,000 127   Fast MaxValue MaxValue MaxValue 127   Archive MaxValue MaxValue MaxValue MaxValue     Pruned nodes have to keep the headers still, AFAIK, to accurately determine longest chain I assume some specific value was intended for Fast StateWindow. I\u2019m not claiming to know what it is or should be  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.025
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "07/03/2019-05:44:46",
+                    "content": "Good catches \u2013 thanks! Both look more reasonable than what was there before. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/carver",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "12/03/2019-22:54:11",
+                    "content": "    karalabe:  GetNodeData assumes the node can retrieve a trie node by it\u2019s hash, whereas if it\u2019s duplicated, we also need the account to which it belongs to to retrieve.   During fast sync, how does the syncing client get access to the account address preimage in order to make this request to the server? AFAIK, the syncing client can\u2019t easily generate the address for arbitrary accounts. Instead, is it okay to include the hash of the address when requesting a storage trie node?     karalabe:  I would also make a separate call for retrieving a trie node and retrieving code. IT makes things cleaner and allows still deduping code and storing it potentially differently.   Would you also like the account address (hash) when getting a request for the byte code? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.033333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/zsfelfoldi",
+                    "index": "20",
+                    "likes": "3",
+                    "time": "13/03/2019-13:36:04",
+                    "content": "Hi everyone! As the designer of the LES protocol I am really glad to see that some of you support adding my message format extensions to ETH64  And even though I might be naturally biased toward these ideas I do think that adding ReqID to request-reply type messages is kind of a no-brainer. I would also strongly suggest using my handshake message format which is a general key-value list allowing peers to communicate extra parameters and capabilities in an easily extendable way. The most complex addition of LES is the flow control mechanism which I believe has already been more or less proven to be useful but I am currently polishing it to truly show its potential. I would totally support making it available in ETH64 but on the other hand I do realize now that the way it is currently used in LES is probably also too strict and brittle. It has to be implemented precisely in order to avoid disconnections which might be a hindrance in the early development stage of new client implementations. Recently I had a very useful discussion with FrankSzendzielarz and he suggested adding a message similar to http 503 (temporarily unavailable) or 429 (too many requests) and sending that in case of a buffer underrun instead of instantly disconnecting. This way the flow control could be declared an optional hint mechanism which helps avoiding these nasty messages and the resulting delays but is not an absolute necessity to be perfectly implemented in every client. I believe this approach would be much better suited for ETH64 chain/state retrieval messages too. I will shortly write up a general protocol proposal which I want to apply to LES but I believe could be applied to other protocols in the Ethereum  protocol stack too. Having a common general protocol format would even allow us easily merging LES and ETH64 which was also suggested in this thread and which I would also support if done properly. I\u2019ll try to finish my detailed proposal later this week. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.764063714063714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "14/03/2019-00:45:11",
+                    "content": " Hi everyone! As the designer of the LES protocol I am really glad to see that some of you support adding my message format extensions to ETH64   @zsfelfoldi Thank you for coming up with these ideas! I enjoyed reading through them and thinking about how they would be used. Nice work!   I would also strongly suggest using my handshake message format which is a general key-value list allowing peers to communicate extra parameters and capabilities in an easily extendable way.  This is a good suggestion! This would be a general purpose way to accommodate the \" Making Pruned State Explicit\" proposal. I do think that there should be some mandatory fields, especially to address the networkId/chainId issue raised by @ajsutton. However, these mandatory fields can be moved to be mandatory keys.  The most complex addition of LES is the flow control mechanism which I believe has already been more or less proven to be useful but I am currently polishing it to truly show its potential. I would totally support making it available in ETH64 but on the other hand I do realize now that the way it is currently used in LES is probably also too strict and brittle.  I agree that \u201cConsider Incorporating Client-side Flow Control\u201d is something to have in the long-term. While it may not be there initially, the goal of the \u201cEncapsulate Metadata as a Header Rather than Inlining Before Payload\u201d is to make it easy to add metadata fields like this in the future.  Recently I had a very useful discussion with FrankSzendzielarz and he suggested adding a message similar to http 503 (temporarily unavailable) or 429 (too many requests) and sending that in case of a buffer underrun instead of instantly disconnecting.  This is an interesting idea! I wonder how this would work end-to-end. Would the message contain some information to help the almost-spammy peer know when it can begin sending messages again? It seems like there needs to be some explicit agreement set for what will help the almost-spammy peer\u2019s behavior improve.  Having a common general protocol format would even allow us easily merging LES and ETH64 which was also suggested in this thread and which I would also support if done properly.   I was somewhat worried that \" Folding LES into ETH\" would be controversial. I\u2019m glad to hear this is open for consideration. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/forming-a-ring-eth-v64-wire-protocol-ring/2857/3",
+                        "https://ethereum-magicians.org/t/forming-a-ring-eth-v64-wire-protocol-ring/2857/8",
+                        "https://ethereum-magicians.org/t/forming-a-ring-eth-v64-wire-protocol-ring/2857/4",
+                        "https://ethereum-magicians.org/u/FrankSzendzielarz",
+                        "https://ethereum-magicians.org/t/forming-a-ring-eth-v64-wire-protocol-ring/2857/7"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.081981981981982
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mbaxter",
+                    "index": "22",
+                    "likes": "2",
+                    "time": "14/03/2019-22:22:44",
+                    "content": "One idea that could simplify peer management is to add messages for requesting chain state information.  Peers initially report their chain\u2019s best hash and total difficulty via the Status message, but keeping up-to-date stats on peers is otherwise somewhat indirect. Some possible request / response messages:  GetChainState() ChainState(blockHash, blockNumber, totalDifficulty)  And it may also be useful to verify total difficulty claims by querying other peers with:  GetTotalDifficulty(blockHash) TotalDifficulty(blockHash, totalDifficulty)  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.839285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/zsfelfoldi",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "16/03/2019-00:06:26",
+                    "content": "@matthalp here is the proposal I promised:   github.com/ethereum/devp2p      Issue: Modular Protocol Framework proposal  \t \topened by zsfelfoldi \ton 2019-03-16 \t \t \t  Modular Protocol Framework proposal Author: Zsolt Felfoldi zsfelfoldi@ethereum.org Abstract This document proposes a standardized handshake and message/metadata format for peer-to-peer protocols. Implementing this standard in Ethereum-related...         ",
+                    "links": [
+                        "https://github.com/zsfelfoldi",
+                        "https://github.com/ethereum/devp2p/issues/70",
+                        "https://github.com/zsfelfoldi",
+                        "https://github.com/ethereum/devp2p/issues/70"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "16/03/2019-00:43:53",
+                    "content": "Great! I will review and comment there. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "16/03/2019-00:49:51",
+                    "content": "@mbaxer I think it makes a lot of sense to have explicit chain state request/responses instead of relying on receiving the NewBlock/NewBlockHashes methods from peers. It\u2019s also worth noting that chain state updates changes from a pub-sub type model to a polling model. There are some slight trade-offs here but a client typically communicates with at most 25 peers at a time, so there probably isn\u2019t the scale to make any of the trade-offs notable. The total difficulty messages are also interesting, but I have to think that through more. This morning I was wondering why headers don\u2019t just include total difficulty instead of just the difficulty at that block, which may also solve some of the issues here (and it\u2019s sealed in the header). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.092592592592593
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "01/04/2019-05:26:25",
+                    "content": "Just adding this here to not forget: It is probably worth removing the bloom for each receipt in the Receipts message since that information can be reconstructed from the block. Downloading receipts in fast sync is already pretty bandwidth-intensive and receipts consist of the outstanding majority of data downloaded as compared to the actual account states. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "01/04/2019-11:57:11",
+                    "content": "    matthalp:  It\u2019s also worth noting that chain state updates changes from a pub-sub type model to a polling model. There are some slight trade-offs here but a client typically communicates with at most 25 peers at a time, so there probably isn\u2019t the scale to make any of the trade-offs notable.   I run a LES lightserv geth node that typically handles ~500 peers. It used to do ~1500 at the height of the KryptoKitty boom. Changing from PUB-SUB to polling will have a negative impact on a minority of nodes in the network; a minority I wouldn\u2019t flinch calling vulnerable. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "28",
+                    "likes": "1",
+                    "time": "01/04/2019-13:51:48",
+                    "content": "@veox Thank you for pointing this out. I was specifically talking about ETH peers but had not discussed LES peers. In LES there is an Annouce message that does broadcast the head hash, number, and TD (and some other metadata), which solves some of the issues @mbaxter is alluding to. Perhaps it is worth adopting this message in ETH if we do consider merging ETH and LES. Pub-Sub would remain under this paradigm, which I think does make sense. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/forming-a-ring-eth-v64-wire-protocol-ring/2857/7?u=matthalp"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.4375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "01/04/2019-17:16:15",
+                    "content": "Sorry to break in off-topic, but is there a document which describes the major advances in the Wire Protocol, or events which led to certain important upgrades? I created a versions doc for the Protocol itself, will soon create one for the EVM. It would be great to be able to do this for the Wire Protocol.   github.com   ethereum-specification/docs/blob/master/releases.md # Ethereum Protocol Releases  | Version and Code Name | Block No. | Released | Incl EIPs | Specs | Impls | |-----------------------|-----------|----------|-----------|-------|-------| | v1 - Frontier | 1 | 07/30/2015 | | | [Geth v1.0.0](https://github.com/ethereum/go-ethereum/releases/tag/v1.0.0) | | v1.1 - Frontier Thawing | 200000 | 09/07/2015 | | | [Geth v1.0.1.1](https://github.com/ethereum/go-ethereum/releases/tag/v1.0.1.1) | | v2 - Homestead | 1150000 | 03/14/2016  | [EIP-2](https://eips.ethereum.org/EIPS/eip-2) <br/> [EIP-7](https://eips.ethereum.org/EIPS/eip-7) <br/> [EIP-8](https://eips.ethereum.org/EIPS/eip-8) | [HFM-606](https://eips.ethereum.org/EIPS/eip-606) | [Geth v1.3.4](https://github.com/ethereum/go-ethereum/releases/tag/v1.3.4) | | v3-rc1 - DAO Wars | aborted | aborted |  |  | [Geth v1.4.8](https://github.com/ethereum/go-ethereum/releases/tag/v1.4.8) | | v3 - DAO Fork | 1920000 | 07/20/2016 |  | [HFM-779](https://eips.ethereum.org/EIPS/eip-779) | [Geth v1.4.10](https://github.com/ethereum/go-ethereum/releases/tag/v1.4.10) | | v4 - Tangerine Whistle | 2463000 | 10/18/2016 | [EIP-150](https://eips.ethereum.org/EIPS/eip-150) | [HFM-608](https://eips.ethereum.org/EIPS/eip-608) | [Geth v1.4.18](https://github.com/ethereum/go-ethereum/releases/tag/v1.4.18) | | v5 - Spurious Dragon\t | 2675000 | 11/22/2016 | [EIP-155](https://eips.ethereum.org/EIPS/eip-155) <br/> [EIP-160](https://eips.ethereum.org/EIPS/eip-160) <br/> [EIP-161](https://eips.ethereum.org/EIPS/eip-161) <br/> [EIP-170](https://eips.ethereum.org/EIPS/eip-170) | [HFM-607](https://eips.ethereum.org/EIPS/eip-607) | [Geth v1.5.1](https://github.com/ethereum/go-ethereum/releases/tag/v1.5.1) | | v6 - Byzantium | 4370000 | 10/16/2017\t | [EIP-100](https://eips.ethereum.org/EIPS/eip-100) <br/> [EIP-140](https://eips.ethereum.org/EIPS/eip-140) <br/>  [EIP-196](https://eips.ethereum.org/EIPS/eip-196) <br/> [EIP-197](https://eips.ethereum.org/EIPS/eip-197) <br/> [EIP-198](https://eips.ethereum.org/EIPS/eip-198) <br/> [EIP-211](https://eips.ethereum.org/EIPS/eip-211) <br/> [EIP-214](https://eips.ethereum.org/EIPS/eip-214) <br/> [EIP-649](https://eips.ethereum.org/EIPS/eip-649) <br/> [EIP-658](https://eips.ethereum.org/EIPS/eip-658) | [HFM-609](https://eips.ethereum.org/EIPS/eip-609) | [Geth v1.7.0](https://github.com/ethereum/go-ethereum/releases/tag/v1.7.0) | | v7-rc1 - Constantinople | aborted | aborted | [EIP-145](https://eips.ethereum.org/EIPS/eip-145) <br/> [EIP-1014](https://eips.ethereum.org/EIPS/eip-1014) <br/> [EIP-1052](https://eips.ethereum.org/EIPS/eip-1052) <br/> [EIP-1234](https://eips.ethereum.org/EIPS/eip-1234) <br/> [EIP-1283](https://eips.ethereum.org/EIPS/eip-1283) | [HFM-1013](https://eips.ethereum.org/EIPS/eip-1013) | [Geth v1.8.20](https://github.com/ethereum/go-ethereum/releases/tag/v1.8.20) | | v7 - St. Petersburg | 7280000 | 02/28/2019 | [EIP-145](https://eips.ethereum.org/EIPS/eip-145) <br/> [EIP-1014](https://eips.ethereum.org/EIPS/eip-1014) <br/> [EIP-1052](https://eips.ethereum.org/EIPS/eip-1052) <br/> [EIP-1234](https://eips.ethereum.org/EIPS/eip-1234) | [HFM-1716](https://github.com/ethereum/EIPs/pull/1716/) | [Geth v1.8.23](https://github.com/ethereum/go-ethereum/releases/tag/v1.8.23) |       ",
+                    "links": [
+                        "https://github.com/ethereum-specification/docs/blob/master/releases.md",
+                        "https://ethereum-magicians.org/t/istanbul-eth1x-roadmap-planning-meeting-april-17th-18th-in-berlin/2899/24"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.230654761904761
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "09/04/2019-04:56:46",
+                    "content": "@ferranbt Can you link to where the message sizes are specified in Parity and Geth? My understanding is that the maximum message size should be 16 MB (uncompressed). I think we should try to get this standardized if there is ambiguity here or at least have a discussion about why they are different. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ferranbt",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "10/04/2019-19:01:26",
+                    "content": "There is a limit in the number of objects (headers, receipts\u2026) or bytes sent per request (soft limit) in Geth and Parity. However, those limits are different in both implementations: max number of objects (Geth, Parity) and soft limit (Geth, Parity) ",
+                    "links": [
+                        "https://github.com/paritytech/parity-ethereum/blob/3adb640d2b121ecb8ee875da729c9473a597e7e1/ethcore/sync/src/chain/supplier.rs#L202",
+                        "https://github.com/ethereum/go-ethereum/blob/master/eth/downloader/downloader.go#L39",
+                        "https://github.com/paritytech/parity-ethereum/blob/fba63de974afc719b8280acb62f4071f4ce9081d/ethcore/sync/src/chain/mod.rs#L151",
+                        "https://github.com/ethereum/go-ethereum/blob/9fe5d200117bab0b2adbcf1d09629879366bcc54/eth/handler.go#L364",
+                        "https://github.com/paritytech/parity-ethereum/blob/7c335e87642b848f61ab3ee7bbff5964b53d6f11/util/network-devp2p/src/connection.rs#L46"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/FrankSzendzielarz",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "12/04/2019-14:01:09",
+                    "content": "Related to this is a new proposal which would facilitate this I think: A cross-protocol, cross-implementation standard for server capacity management and flow control ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.227272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "12/04/2019-19:02:08",
+                    "content": "@ferranbt From an implementation perspective it seems like you could be conservative and allocate the maximum 16 GB that is agreed upon between the clients. Less conservative would be to take the upper bound between the two. I\u2019m not sure I can see doing better than that. The number of domain objects or the soft limit are really implementors\u2019 choice. If you have strong feelings I\u2019d reach out to the client developers either through issues on their repo or through one of the messaging systems they use. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.583333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "12/04/2019-19:10:44",
+                    "content": "I talked offline with @zsfelfoldi and it seems like folding in LES to ETH is going to too ambitious for ETH v64. Generally speaking about generality with peer-to-peer networking: some of the proposals for generalizing concepts smells to me like something that should be modifications to the RLPx wire protocol itself and not sub-protocols. The specific cases here are the (1) request IDs, (2) client-side flow control, and the general key-value list. I think request IDs can be addressed this round, but client-side flow control and generalized key-value list may need to wait. Personally, I am not a fan of ambiguity in specifications as they can be abused. I like adding things with specific use cases as needed. Implementors willing to put in the work to make the changes demonstrates that it is worthwhile. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "12/04/2019-19:31:33",
+                    "content": "Thank you everyone for your contributions! There are a lot of great ideas here. I want to take a moment to establish the scope of ETH v64:  Protocol warts: remove glaring holes, ambiguity, technical in current ETH v64 protocol (possibly at the RLPx wire level) Synchronization: make it easier to write synchronization code State: make client state more apparent amongst peers (e.g. archive vs. full) and even reduce data transferred (receipt bloom filters I\u2019m looking at you)  Over the next few days I\u2019m going to draft \u201cminimum viable EIPs\u201d for the ideas that seem like can be candidates for ETH v64. Each of these EIPs will have proper attribution to those who proposed it. I will ping either author to drive it hence forward unless they are not interested. That is not to say the ideas I do not draft into EIPs are not worthwhile, I just do not see them within the immediate scope of the three goals for ETH v64 mentioned above. Let mebe explicit that amongst my proposals on here I only consider myself an author of Making pruned state explicit as the others are previously established ideas from prior works. The next step is then getting client implementor buy in. This seems to be the right place to get consensus because (1) they are the implementors and (2) this is so low-level that other stakeholders higher in the stack will not even notice. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.342261904761905
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/FrankSzendzielarz",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "12/04/2019-19:34:01",
+                    "content": "Yeah I am not sure what the obstacle would be. IMO flow control and capacity management should not be part of the light protocol at all, but a cross cutting concern affecting all protocols and servers that require quota and rate limiting and eviction policies. I don\u2019t see any particular great need though to merge LES with ETH. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.430555555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "12/04/2019-19:39:12",
+                    "content": " I don\u2019t see any particular great need though to merge LES with ETH.  As mentioned above I think over time we will see the lines blur between an ETH and LES client. At the ETH level we already have full- and fast-synced nodes and hiding their differences does cause strain on being able to sync. My rationale was that if clients are already having to think about the full-/fast- distinction then light clients only extend the spectrum. Wearing my go-ethereum hat, I just feel like there could be some code consolidation to make things more maintainable. But perhaps that is a nit. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.697916666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/FrankSzendzielarz",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "12/04/2019-19:55:04",
+                    "content": "Check out the linked proposal. I agree there are commonalities, but I think the same thing applies to Whisper, Swarm etc., and capacity management is a problem for the whole server. Why have rate and quota limits applied to specific clients alone, when the same logic can be set as a server limit too? So rather than focusing on merging LES into ETH to take advantage of rate limiting, I propose taking rate limiting out of LES and making it a general sub-protocol. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "12/04/2019-20:12:30",
+                    "content": "I\u2019m with you on rate limiting. I was moreso speaking about the actual messages supported by LES and ETH since they are both handling blockchain and account state constructs (plus the additional cryptographic constructs in LES). Whisper and Swarm have fundamentally different messages. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yperbasis",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "23/04/2019-14:08:48",
+                    "content": "I\u2019ve written a paper about a new sync protocol and algorithm, Red Queen\u2019s. See also my presentation at Ethereum Core Devs Eth1x/Istanbul Planning Meeting in Berlin. It\u2019s essentially an attempt to formalise Leaf Sync. We can discuss it here or in a dedicated thread,     Red Queen's: New Sync Proposal Ethereum 1.x Ring       As part of Ethereum 1x efforts, we want to tackle the issue of the growing blockchain state. Large state size leads to long sync times. On top of that, geth\u2019s fast sync is not that fast and takes a few hours. Parity\u2019s warp sync is faster, but is not supported in geth. We propose a new sync protocol and an algorithm, which we believe can perform snapshot sync in less than an hour. The idea is somewhat similar to Warp Sync and especially to Leaf Sync (under development in geth). Moreover, the new \u2026      Happy to join forces with anybody working on new sync protocols. ",
+                    "links": [
+                        "https://youtu.be/Au1Qll-86v0?t=24843",
+                        "https://ethereum-magicians.org/t/red-queens-new-sync-proposal/3175"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.605399230399231
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matthalp",
+                    "index": "41",
+                    "likes": "1",
+                    "time": "23/04/2019-16:00:15",
+                    "content": "@yperbasis Let\u2019s keep it in a separate thread but make sure that the two works complement each other. For example, we may not want to have reqId solely live on the new sync message instead of all ETH messages. We have to figure out what makes sense there. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.809659090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "42",
+                    "likes": "2",
+                    "time": "04/10/2019-14:39:37",
+                    "content": "See https://github.com/ethereum/pm/issues/129#issuecomment-536700238 . We would like to release 64 as a minor change to 63, whereby a forkid is used in the place of genesis hash for handshake. I personally don\u2019t think it matter if all the cool stuff you\u2019ve been discussing above comes in eth65 instead. Anyone disagree? We would like to move forward with @karalabe\u2019s forkid idea ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.375
+                }
+            ]
+        }
+    ],
+    "group_index": "742"
+}

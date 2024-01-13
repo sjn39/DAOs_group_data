@@ -1,0 +1,151 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-token-standards-exploitation-of-token-approval-of-upgradable-proxied-smart-contracts/9641",
+            "title": "[ERC token standards] Exploitation of token approval of upgradable proxied smart contracts ",
+            "index": 9641,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "token"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/songhobby",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "16/06/2022-00:11:46",
+                    "content": "Problem: Token approval can be exploited by a seemingly legit proxy smart contract, whose underlying implementation contract is then upgraded to a malicious contract to take all the approved tokens. Example:  Alice approves an upgradable proxy contract (UNI of her tokens (e.g. ERC20, ERC721, ERC1155) after evaluating the implementation contract. The implementation contract can then be upgraded to a malicious contract and takes all Alice\u2019s tokens  Solution: Token approval carries the address of the underlying implementation contract, which if changed must ask for token approval again. What am I missing? ",
+                    "links": [],
+                    "GPT-summary": "The author of the post is explaining a problem with token approval in upgradable proxied smart contracts, where a seemingly legit contract can be upgraded to a malicious one and take all the approved tokens. The author proposes a solution where the token approval carries the address of the underlying implementation contract, which must ask for token approval again if changed. The post also asks for feedback and suggestions on the proposed solution.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.348214285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MidnightLightning",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "16/06/2022-12:23:16",
+                    "content": "Correct. The act of marking a specific smart contract as \u201capproved\u201d to interact with your tokens means you trust all aspects of what it is; all functions, including any ability it has to upgrade itself. If it can upgrade itself (via standard proxy means, or any other custom logic upgrade option), then the user has to trust the governance process that contract has around choosing when/if to upgrade. It is an attack vector if a malicious contract author can get a user\u2019s trust to \u201capprove\u201d their malicious contract. There\u2019s many ways a contract can be malicious that could be hard to detect automatically. If a contract uses ERC1967 as the means of being upgrade-able, that could be automatically detected by wallet software and add a notice when it popped up a \u201cdo you want to approve this contract?\u201d transaction approval prompt. But an attacker could make their token upgrade-able by any other custom means and thwart that detection.     songhobby:  Token approval carries the address of the underlying implementation contract, which if changed must ask for token approval again.   If that structure is desired, the creator of an upgrade-able contract could design it such that the logic contract is the one that the user grants approval to, and could be a way for an application team to show they have \u201cnothing up their sleeves\u201d to gain trust with the potential end-users of their application. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.095899470899471
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/songhobby",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "16/06/2022-15:09:18",
+                    "content": "Thanks for the validation! ERC1967 can help detect the changes in the underlying implementation contract but it can be too late for the accounts having given it approval to act upon it as the malicious author can enact an attack right after the upgrade. When looking at this exploitation risk at large, I\u2019m very concerned of the indefinite length of this exposed attack vector that every token approval given out can be a timed bomb in the future. e.g. The majority of the current DeFi protocols need token approvals for an account interacting with it (e.g. Uniswap, Compound, Curve, and many many smaller DeFi protocols). If any of there protocols becomes malicious intentionally or due to a hack, all the users who have interacted with the protocol can lose all their tokens. (especially the case for ERC1155, where unscoped approval can lead to total loss of all the tokens held) Using a rudimentary game theory analysis from three perspectives (1) The upgradable proxy contract (e.g. DeFi protocol) would exploit the attack vector as long as the value of all approved tokens (whether locked in the protocol or not) is greater than the cumulative future profit from the protocol (2) The individual who has the access to upgrade the implementation contract (or the minimum number of admins when a multi-sig is used) would exploit the attack vector as long as the value of all the approved tokens (whether locked in the protocol or not) is greater than his/her own stake in the protocol + his reputation value (3) End users would have to \u201cABSOLUTELY\u201d trust a smart contract (DeFi protocol), no matter how much TVL it has, before interacting with it when a token approval is needed as one smart contract can potentially drain all the tokens being approved from an end user. In regards to the implementation As much as I want to keep the ERC token standards as they are since the problem is raised by upgradable proxy, I think we have to change how token approval works in the first place. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.685846560846562
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MidnightLightning",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "17/06/2022-00:19:52",
+                    "content": "    songhobby:  End users would have to \u201cABSOLUTELY\u201d trust a smart contract (DeFi protocol), no matter how much TVL it has, before interacting with it when a token approval is needed as one smart contract can potentially drain all the tokens being approved from an end user.   This is true of granting Approval to any smart contract; you need to absolutely trust all aspects of the smart contract you\u2019re approving. That includes trusting if it\u2019s upgrade-able but not limited to that. You claim that the issue is due to \u201cupgradable proxies\u201d, but if a user is cavalier with their token approvals, there\u2019s many other attack vectors for that. One thing I think you\u2019re discounting is that the ERC20 standard allows for granting approval only for a specific quantity of tokens, and it is a good best-practice for users interacting with automated DeFi systems to only approve the amount of tokens they\u2019re swapping at that time. Users who don\u2019t follow that best-practice (out of convenience; not needing to grant approval again when they interact with the service in the future) then are accepting a risk with that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.720238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/songhobby",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "17/06/2022-04:39:50",
+                    "content": "I believe one of the core principles of blockchain is its trustless characteristic where we don\u2019t need to trust anybody but the code. It is not a big problem that an account trusts a non-upgradable contract after carefully read the smart contracts and make sure the contract can not be exploited. The current upgradable proxy pattern makes it impossible to trust any upgradable code (contracts). I also think upgradability is needed to fix bugs and improve a smart contract as time goes. The solution I was looking for is really a way to trust an upgradable smart contract as it is and when it upgrades itself, one has the option to opt out. Using an analogy IRL, someone signs a legal contract with another party which at a later stage changes, I think it is reasonable for the person to read the modified legal contract and have the option to opt out if the person believes it is to his/her disadvantage. It would not make sense for someone to trust another party unconditionally (except government maybe) as it is equivalent to giving away all his/her rights. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.396258503401361
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/songhobby",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "17/06/2022-17:30:51",
+                    "content": "After thinking about potential solutions for the problem, it seems impossible to give trust to a proxied contract and restrict it in any non-trivial way. (correct me if I\u2019m wrong, current proxy pattern allows implementation contract to modify EVERYTHING except caller and block related info). A possible improvement is to (1) standardize user giving limited token approval and the interacted contract using multicall to process user request or (2) use the token receive hook ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.115646258503402
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/davidc",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "23/06/2022-09:08:29",
+                    "content": "(I just glanced over this) I think if you have an issue with approving then this means you don\u2019t trust the upgrade-nature of the contract. If you don\u2019t trust the contract, then don\u2019t interact with it. Contracts can always compete to structure themselves in safer ways, such as only giving the implementation contract approval rather than the proxy contract. You may now trust the contract if this is the case, since you can read the code of the implementation contract. I feel normal on-chain forces would work out the best here \u2013 I don\u2019t see any viable path to intervention. The contract itself needs to gain your trust, nothing can change that. There are many other ways a contract can lose your trust. Remember that a proxy contract is itself just a normal contract. I believe the entire ecosystem would break down if we treated these contracts differently. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.759722222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/songhobby",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "25/07/2022-14:21:51",
+                    "content": "Thanks for your feedback! I think it is fundamentally different in trusting a proxy contract and the implementation contract. You can trust the implementation contract as it is since you can read the code and it would never change. The \u201cstate\u201d of the proxy contract, however, can be later modified to almost \u201canything\u201d by the very human controlling it. The former is trustless but the latter is trusting a \u201cthird party\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.208333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/davidc",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "25/07/2022-14:38:27",
+                    "content": "Thank you for your reply. The problem I see is that although it may feel fundamentally different, there is really a gradual spectrum of how much the logic of a contract can be altered. A proxy allows full alteration by governance, but even without a proxy, many state variables may be altered by governance which significantly change the logic of the code. Technically, with enough configurable variables, you could make the configuration turing-complete which is essentially equivalent to a proxy. The more flexibility introduced in the contract, the less we can trust it, but I don\u2019t believe we can just depend on a hard distinction between what we see as a proxy contract and a non-proxy contract. A proxy is just one method to mask how logic can change with time, but it is definitely not the only method. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.595238095238095
+                }
+            ]
+        }
+    ],
+    "group_index": "1781"
+}

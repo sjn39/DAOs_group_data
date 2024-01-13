@@ -1,0 +1,200 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/discussion-system-parameters-derivations/793",
+            "title": "[Discussion] System Parameters Derivations ",
+            "index": 793,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "analysis",
+                "mcd-migration"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/cyrus",
+                    "index": "#1",
+                    "likes": "3",
+                    "time": "15/11/2019-23:55:31",
+                    "content": "Hey all, Here are some thoughts on how we came up with the system launch parameters. Keep in mind, a few of these parameters are set a certain way specifically for migration, and others can be optimized based on further research. For now, these are based on what we believe are logical and sensible starting defaults. Global Stability Fee This parameter applies a base stability fee to all collateral types. It\u2019s intended to easily pass on the cost of the DSR to all collateral types without regard to the unique risks of individual collateral types. At launch, however, this parameter needs to be set to 0 in order for the migration contract to avoid accruing stability fees. After migration, where Sai is no longer a special collateral type, governance can begin to use this parameter as needed. Global Debt Ceiling The global debt ceiling is the total amount of Dai that can be generated, regardless of individual debt ceilings. For example, three collateral assets may be assigned a debt ceiling of 50 million each, but a global debt ceiling may only be set to 100 million. This would restrict all three collateral assets from being simultaneously at their maximum debt ceiling. This feature might be useful in certain scenarios going forward. For now, however, we suggest a global debt ceiling equal to the sum of the individual collateral types. Surplus Buffer The surplus buffer is a Dai reserve pool, which is the minimum amount of excess Dai accrued from stability fees above the Dai minted for DSR accruals. Surplus auctions won\u2019t be triggered until the lot size above this threshold has been reached. In general, this buffer might become a critical piece of risk management, as Dai reserves can be very important for covering undercollateralized Vaults. Additionally, future funding for oracles or risk teams may be paid out of this reserve. However, there are certain game theoretic concerns with regard to emergency shutdown that limit the effectiveness of this buffer. For now, we suggest a buffer of 500,000 Dai to protect against some moderate losses. Debt Auction Delay When a Vault is bitten, its debt immediately goes to the bad debt accounting line, and can only be erased with the proceeds of the collateral auction. Therefore, in order to avoid triggering an unnecessary debt auction whereby MKR is printed and sold to recover a net deficit of Dai in the Maker Protocol, there should reasonably be a delay that allows the collateral auction to complete. Large Vaults may take hours to finish, some potentially more than 1 day. Therefore, we have selected a two day delay for the debt auctions to begin after a Vault has been bitten. Governance Security Module Delay The Governance Security Module (GSM) is a delay on any governance changes. This allows the community to intervene in case of a governance attack. While the GSM is good for governance attacks in a mature system, it potentially worsens technical problems, as the community would be less able to quickly deploy bug fixes should there by a required delay in the GSM. As a result, we are recommending the GSM start with a value of 0, to be increased post migration. Emergency Shutdown Module Delay The Emergency Shutdown Module (ESM) Delay is the amount of time after which users may claim collateral with their Dai. It is logical to allow any outstanding auctions to finish first, and so therefore we have selected 73 hours (3 days plus 1 hour) for the ESM delay. Emergency Shutdown Threshold This is the minimum amount of MKR needed to trigger emergency shutdown. 50,000 has been selected as a number that is attainable in a short period of time. However, as the distribution of MKR changes over time, this number may change. In general, we leave the game theoretic discussions surrounding this threshold for another discussion. Oracle Security Module Delay The Oracle Security Module (OSM) Delay represents the time interval between a price being pushed to the OSM and that price being used in the Maker Protocol. It serves as a layer of defense to prevent Oracle attacks from affecting the system. If an erroneous or malicious price is pushed to the OSM, then Emergency Oracles have the delay period to freeze the OSM to protect the system. The OSM Delay is set to one hour. This value was chosen as an equilibrium between giving the Emergency Oracles sufficient time to freeze the OSM and enabling the Maker Protocol to react to changes in collateral prices to minimize potential losses. Oracle Feed Quorum The quorum is the minimum number of Feeds needed to submit a new price to the Medianizer. Due to gas optimizations in the Medianizer, the Oracle Feed Quorum must be an odd integer. The quorum can be derived by evaluating two possible Oracle attack vectors. The first attack is classified as the Oracle Price Manipulation Attack, in which a set of malicious Feeds submit any price for any collateral asset to the Medianizer. This attack requires a floor ((quorum / 2 + 1)) of malicious Feeds to be successful. The second attack is called the Oracle Censorship Attack. In this attack, enough Feeds are either malicious or offline and cease submitting prices such that achieving quorum is impossible. The Oracle Censorship Attack requires (totalFeeds - quorum - 1) to be successful. Out of a total of twenty Feeds, a quorum of thirteen was derived by contrasting the number of Feeds needed to executive each attack. This quorum requires seven malicious Feeds to execute an Oracle Price Manipulation Attack and eight malicious or offline Feeds to execute an Oracle Censorship Attack. A quorum of fifteen was also considered which would make the Oracle Manipulation Attack require eight Feeds and an Oracle Censorship Attack require six Feeds. Ultimately a quorum of thirteen is preferred due to the likelihood of one or more Feeds being offline at any given time drastically reducing the threshold required to successfully mount an Oracle Censorship Attack. Dust The dust limit is the minimum amount of Dai that can be drawn from a Vault. Due to a potential spam attack, this number should be set relatively high at first, although this can be safely lowered soon after launch. Essentially, if a large number of Vaults are all opened with a tiny amount of Dai drawn, then these Vaults become too low-value for them to be bitten by keepers. As a result, the system may start to become effectively undercollateralized. We suggest a starting parameter of 20, to be reduced in the weeks following launch. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-thursday-november-28-9am-pst-5-00-pm-utc/878/2"
+                    ],
+                    "GPT-summary": "The author of the post explains the system launch parameters for a Maker Protocol. The post discusses various parameters such as global stability fee, global debt ceiling, surplus buffer, debt auction delay, governance security module delay, emergency shutdown module delay, emergency shutdown threshold, oracle security module delay, oracle feed quorum, and dust limit. The post also suggests starting parameters for each of these parameters and explains the rationale behind them. The post invites feedback and questions from the community.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.368000106888996
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MicahZoltu",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "17/11/2019-11:03:17",
+                    "content": "    cyrus:  This parameter applies a base stability fee to all collateral types. It\u2019s intended to easily pass on the cost of the DSR to all collateral types without regard to the unique risks of individual collateral types. At launch, however, this parameter needs to be set to 0 in order for the migration contract to avoid accruing stability fees. After migration, where Sai is no longer a special collateral type, governance can begin to use this parameter as needed.   I believe this means that the system starts out unsound?  First CDP deposits 200 USD worth of ETH and withdraws 100 DAI, putting the 100 DAI into the savings contract.  1 second or more later they pay back their 100 DAI and keep the accumulated DSR.  They then withdraw all of their ETH.  The system now has some amount of DAI issued, and 0 collateral backing it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.643398268398268
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MicahZoltu",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "17/11/2019-11:09:02",
+                    "content": "    cyrus:  The Governance Security Module (GSM) is a delay on any governance changes. This allows the community to intervene in case of a governance attack. While the GSM is good for governance attacks in a mature system, it potentially worsens technical problems, as the community would be less able to quickly deploy bug fixes should there by a required delay in the GSM. As a result, we are recommending the GSM start with a value of 0, to be increased post migration.   This means that at launch, the system is at risk of governance attacks.  If someone can acquire quorums worth of MKR, they can immediately steal all collateral in the system via a governance attack.  If we assume that the value of MKR goes to 0 after the attack, then this is a profitable attack if the value of collateral in the system is greater than the value of quorum worth of MKR. At the time of writing this, ScDAI has ~$350M worth of collateral locked in it and MKR market cap is valued around $635M.  This means that if governance quorum is less than ~55%, there is a profitable attack vector against Maker if it achieves the same level of utilization as ScDAI. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.038461538461538
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cyrus",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "17/11/2019-19:04:02",
+                    "content": "There are still collateral-specific stability fees that can be applied, the duty. That\u2019s the 4% for ETH and BAT. If we used the global parameter (base, I believe), then it would screw with the migration contract. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 3.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cyrus",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "17/11/2019-19:05:20",
+                    "content": "Yes, but that\u2019s no different than the current system. In SCD a quorum of MKR can do all sorts of nasty things. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.333333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MicahZoltu",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "17/11/2019-19:19:06",
+                    "content": "Yes, ScDAI was insecure.  However, promises were made that McDAI would be secure against governance attacks by way of emergency shutdown.  These settings make those claims untrue at McDAI launch. For example, Augur\u2019s v2 integration with DAI was predicated on that claim. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "17/11/2019-19:19:58",
+                    "content": "Yeah but if they have MKR they also have to unload it.  Is the only delay for say depositing MKR and participating in governance the GSM.   I thought there were other mechanisms (delays) for being able to deposit MKR and participate in governance votes that make this kind of attack unlikely. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.475
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MicahZoltu",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "17/11/2019-19:23:39",
+                    "content": "    MakerMan:  Yeah but if they have MKR they also have to unload it   The attack is profitable even if their MKR value goes to zero after the attack, meaning they burn themselves and still profit.  Any value extraction they can achieve unloading MKR in the attack aftermath is additional profit. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "17/11/2019-19:26:49",
+                    "content": "Humor me as I\u2019m new here and still digesting this. How exactly are the contracts written that those who control governance can effectively steal the collateral deposits? Change the price oracles so deposits liquidate? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.6439393939393945
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MicahZoltu",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "17/11/2019-19:35:04",
+                    "content": "One way is to attack the price feed oracle.  I believe governance can also authorize new contracts, which would allow an attacker to move/mint/burn some assets at will. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.681818181818182
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cyrus",
+                    "index": "#11",
+                    "likes": "0",
+                    "time": "17/11/2019-19:38:31",
+                    "content": "The GSM could be implemented very soon, pending a smooth launch. This is strictly temporary. I don\u2019t think that means anyone made a false claim. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MicahZoltu",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "17/11/2019-19:51:39",
+                    "content": "Eh\u2026 \u201cMcDAI will be secure against governance attacks\u201d and \u201cMcDAI will eventually be secure against governance attacks if we decide to implement security in the future\u201d are substantially different IMO. I\u2019m not even suggesting this launch procedure is a bad idea.  I just think it needs to be made abundantly clear that McDAI is profitably attackable at launch and shouldn\u2019t be used beyond testing/integration until that is addressed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.2
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "18/11/2019-15:25:31",
+                    "content": "    cyrus:  At launch, however, this parameter needs to be set to 0 in order for the migration contract to avoid accruing stability fees   I feel like an idiot for not realising this sooner ^^     cyrus:  In general, this buffer might become a critical piece of risk management, as Dai reserves can be very important for covering undercollateralized Vaults. Additionally, future funding for oracles or risk teams may be paid out of this reserve. However, there are certain game theoretic concerns with regard to emergency shutdown that limit the effectiveness of this buffer.   Could you elaborate about the game theoretical issues around the buffer and emergency shutdown? It\u2019s not really launch related, but I\u2019d love to hear more about it generally. The future of MakerDAO relies on the DCS being able to pay employees, if there are concerns around the mechanism that I assumed would allow this, it would be good to know!     cyrus:  We suggest a starting parameter of 20, to be reduced in the weeks following launch.   I\u2019m assuming the coinbase promotion isn\u2019t going to carry over to Dai anyway by default, but is it worth mentioning that the 20 Dai dust setting might hinder initiatives of that nature in the future? Presumably if it\u2019s reduced fairly quickly it won\u2019t be a problem though. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.574482401656314
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cyrus",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "18/11/2019-18:17:35",
+                    "content": " Could you elaborate about the game theoretical issues around the buffer and emergency shutdown? It\u2019s not really launch related, but I\u2019d love to hear more about it generally. The future of MakerDAO relies on the DCS being able to pay employees, if there are concerns around the mechanism that I assumed would allow this, it would be good to know!  It has to do with incentive prioritization. In an ES, Dai reserves should (ethically?) go to Dai holders first to make sure they are whole, and then MR holders if it\u2019s left over. For example, if Dai is shutdown due to undercollateralization, you don\u2019t want MKR holders to walk away with Dai. I was told that their was some difficult in implementing this priority, however, so it\u2019s temporarily on hold.  I\u2019m assuming the coinbase promotion isn\u2019t going to carry over to Dai anyway by default, but is it worth mentioning that the 20 Dai dust setting might hinder initiatives of that nature in the future? Presumably if it\u2019s reduced fairly quickly it won\u2019t be a problem though.  I think we can reduce this in the next few weeks according to some engineers I spoke with. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.735507246376812
+                }
+            ]
+        }
+    ]
+}

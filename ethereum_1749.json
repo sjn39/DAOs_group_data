@@ -1,0 +1,57 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/suggesting-erc20-and-erc721-on-time-off-chain-approval-for-safer-nft-trading/9347",
+            "title": "Suggesting ERC20 and ERC721 on-time off-chain approval for safer NFT trading ",
+            "index": 9347,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "token",
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/themez",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "23/05/2022-15:02:48",
+                    "content": "Currently, mainstream NFT trading markets utilize the approve function to take control of users\u2019 assets for order matching. To save gas, trading markets request users to approve the max amount of ERC20 tokens and all ERC721 tokens, so users don\u2019t need to approve each trade repeatedly. But this leaves a tremendous potential security threat: if the market contract is compromised, all users\u2019 assets could be stolen. So I want to discuss a more secure way of trading, learning from main trading markets\u2019 offline listing and bidding mechanisms. We could store users\u2019 one-time approval off-chain and make them expirable.  Extensions of token protocol Add extension function to ERC20: transferFromWithAuthority(address from, address to, uint256 amount, uint256 nonce, uint256 expiration, bytes signature)  Add extension function to ERC721: function transferFromWithAuthority(address from, address to, uint256 tokenId, uint256 nonce, uint256 expiration, bytes signature)   Process of listing ERC721 token  sign for approving ERC721 token  signer._signTypedData(     domain,     {       Approve: [         { name: 'tokenId', type: 'uint256' },         { name: 'operator', type: 'address' },         { name: 'expiration', type: 'uint256' },         { name: 'nonce', type: 'uint256' },       ],     },     {       tokenId: 1,       operator: '0x0000000000000000000000000000000000000000',       expiration: 1653868800,       nonce: 1234567 // a random number, signature can only be used once     }   )    sign for the market order order taker executing market contract  function atomicMatch(Order order, bytes orderSignature, uint256 authorityNonce, uint256 authorityExpiration, bytes nftAuthoritySignature) public payable {     require(validateOrder(order, orderSignature), 'Invalid order');     require(msg.value == order.amount, 'No enough value');     ERC721(order.itemAddress).transferFromWithAuthority(order.from, order.to, order.tokenId, authorityNonce, authorityExpiration, nftAuthoritySignature);     payable(order.maker).transfer(order.amount); }  The marketplace then needs to store two signatures off-chain,  one more comparing the mainstream market like the opensea. It seems there\u2019s no way to sign only once for two contracts to operate.  Process of biding using ERC20 token  sign for approving ERC20 token    signer._signTypedData(     domain,     {       Approve: [         { name: 'spender', type: 'address' },         { name: 'amount', type: 'uint256' },         { name: 'expiration', type: 'uint256' },         { name: 'nonce', type: 'uint256'},       ],     },     {       spender: '0x0000000000000000000000000000000000000000',       amount: 1000000000000000000,       expiration: 1653868800,       nonce: 1234567, // a random number, signature can only be used once     }   )   sign for the market order owner takes the bidding  function atomicMatch(     Order order, bytes orderSignature,      uint256 erc20AuthorityNonce, uint256 erc20AuthorityExpiration,  bytes erc20AuthoritySignature,      uint256 erc721AuthorityNonce, uint256 erc721AuthorityExpiration, bytes erc721AuthoritySignature) {     require(validateOrder(order, orderSignature), 'Invalid order');     ERC20(order.paymentTokenAddress).transferFromWithAuthority(order.from, order.to, order.amount, erc20AuthorityNonce, erc20AuthorityExpiration, erc20AuthoritySignature);     ERC721(order.itemAddress).transferFromWithAuthority(order.from, order.to, order.tokenId, erc721AuthorityNonce, erc721AuthorityExpiration, erc721AuthoritySignature); }  ",
+                    "links": [],
+                    "GPT-summary": "The author proposes a more secure way of trading NFTs by using off-chain approval and expiration mechanisms for ERC20 and ERC721 tokens. The proposal involves adding extension functions to the token protocols and using signatures to validate transactions. The author explains the process of listing ERC721 tokens and bidding using ERC20 tokens. The post also includes code snippets for the proposed functions. A 3rd party could give constructive criticism of the proposal or ask questions about the implementation.",
+                    "GPT-proposal-categories": [
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "Smart contract updates",
+                        "Interoperability and Scaleability",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "17/11/2022-14:49:59",
+                    "content": "Just to clarify, in the subject \u201con-time\u201d do you mean \u201cone-time\u201d? For the context, there are a few approval related EIPs. I am also working on a general approval EIP called EIP-5453 Endorsement, that solves general limited time approval problem. Feel free to join its discussion here ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/erc-5453-endorsement-standard/10355"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.843377976190476
+                }
+            ]
+        }
+    ],
+    "group_index": "1749"
+}

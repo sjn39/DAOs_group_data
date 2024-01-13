@@ -1,0 +1,43 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/sas-developer-diary/19709",
+            "title": "SAS Developer Diary ",
+            "index": 19709,
+            "category": [
+                "Core Units",
+                "Sidestream Auction Services"
+            ],
+            "tags": [
+                "sas-001"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/lukass",
+                    "index": "#1",
+                    "likes": "5",
+                    "time": "07/02/2023-09:38:50",
+                    "content": " SAS Developer Diary This is the starting point of our development diary where we share our insights and learnings from our contributions to Maker. Day in and day out a lot of people within the community do a lot of heavy lifting. However, a huge chunk of this work goes unseen because it\u2019s preliminary research or not yet fully fleshed out concepts. The diary entries should contribute to making work with Maker more accessible and they are tailored to technical ecosystem actors. Especially in the Endgame context, we expect more contributions from external ecosystem actors. The more accessible those contributions are the better the results for SubDAOs and other stakeholders that will rely on them. Perhaps we\u2019ll find a more suitable format or channel to share these diary entries. But for now we think it\u2019s better to share them here than nowhere. Following a non-exhaustive and changing list of topics that will eventually end up in this developer diary:   A deep dive on exchange callee contracts (Updated: 07.02.2023) Reflections on developing our first protocol-relevant smart contract Learnings from building UIs for the Maker Protocol Decentralized frontends through application packaging First steps toward a smart contract style guide  ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.205357142857143
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lukass",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "07/02/2023-09:39:28",
+                    "content": " A deep dive on exchange callee contracts  Callee 101 What\u2019s a callee contract actually about in context of auctions? It allows settling an auction without capital requirements. One can imagine it to be a connector to a specific decentralized exchange that facilitates interaction with the Maker Protocol. On a high level the exchange callee  takes collateral from a Maker auction, swaps it to DAI via the exchange it is specialized in, returns DAI to Maker to cover debt from the auction and pays out the remaining DAI as profit to the external actor  Due to its permissionless nature everybody can develop and use a callee as it needs no authorization from the protocol to operate as long as it provides enough DAI. Giving a comprehensive overview of all existing callee contracts out there is not feasible. However, there is a list of existing publicly available callees to point out:  CurveLpTokenUniv3Callee.sol OasisDexCallee.sol PSMCallee.sol UniswapV2Callee.sol UniswapV2LpTokenCallee.sol UniswapV3Callee.sol WstETHCurveUniv3Callee.sol  Wait! Before you leave this post to check out these contracts yourself, read on to have an easier time understanding them.  The technical building blocks Let\u2019s have a closer look at the basic building blocks of such a contract on a more granular level:  while being deployed, constructor takes and sets some values   router \u2013 address of the router contract \u2013 from which the flash loan will be provided  daiJoin \u2013 address of the MCD_JOIN_DAI contract \u2013 to which the DAI needs to be returned it gets DAI address using the MCD_JOIN_DAI contract view method .dai()  it approves MCD_JOIN_DAI contract to take any amount of DAI from the callee address   exposes a single external function clipperCall which has to accept   sender address \u2013 the address of the contract calling the function, which supposes to pay back the loan  owe \u2013 DAI amount to pay back (otherwise the callee will fail)  slice \u2013 the amount that can be taken by the callee from the \u201cgemJoin\u201d address  data \u2013 arbitrary data that can be passed to the callee. It usually contains at least   to address - the address to send remaining DAI to  gemJoin address \u2013 address that holds slice amount of tokens that callee is allowed to take  minProfit \u2013 minimum profit in DAI to make other params required by the callee     the function then:  a) converts slice to the actual ERC20 amount of tokens (eg sliceERC20) b) moves sliceERC20 amount of token from gemJoin to the callee address c) gives *router the approval to move sliceERC20 amount of tokens away from the callee address d) converts owe to the actual ERC20 amount of DAI (e.g. oweERC20) e) execute external *router function to exchange sliceERC20 into DAI f) manually checks that received amount aka dai.balanceOf(address(this)) is sufficient to cover oweERC20 + minProfit  g) checks that exchange took complete sliceERC20 amount, otherwise transfer back the leftovers h) send back oweERC20 of DAI i) transfer remaining DAI to the to address     SAS 1inch callee implementation Now, with this basic blueprint of a callee contract in mind, there was a downside to the existing reference callees listed above:  A callees\u2019 specialization to a certain exchange (e.g. UniswapV3Callee.sol) exposes it to liquidity constraints. E.g. there was a need to implement an adapted version of the Uniswap v3 callee for WSTETH with an additional swapping step via a Curve pool.  This is why we decided to implement an exchange callee contract to connect the Maker Protocol with 1inch. An aggregation protocol that connects multiple liquidity sources (87 at the moment) via a single entry point\u2026 1inch also provides the API to get the most cost-efficient path to exchange whatever token the callee will provide to DAI. Away with the constraint of requiring one dedicated callee per exchange. This does not mean that all existing callees will become obsolete. On the contrary, redundancy is a good thing. The 1inch protocol has the disadvantage of requiring off-chain call to 1inch\u2019s API which might be subject to failure or downtime. So it\u2019s always good to have fallback solutions in place.  Where to go from here - Callees in action The Unified Auctions UI facilitates auction participation via a UI. There we leverage the existence of different callees. Per default the callee with the most optimal price is selected. But the user is always able to switch between callees in case there is a problem.   1600\u00d71017 223 KB   It definitely makes sense to extend the callee repertoire. There is also quite some room to improve the efficiency of the existing callees. So take this post as a reference, go and just try to develop your first callee contract.  Additional links  Exchange callee repo 1inch exchange callee implementation  ",
+                    "links": [
+                        "https://github.com/makerdao/exchange-callees/pull/34"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.311593915343915
+                }
+            ]
+        }
+    ]
+}

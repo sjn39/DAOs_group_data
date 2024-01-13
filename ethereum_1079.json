@@ -1,0 +1,1046 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-2718-typed-transaction-envelope/4355",
+            "title": "EIP-2718: Typed Transaction Envelope ",
+            "index": 4355,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "transactions"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "13/06/2020-02:37:59",
+                    "content": "Discussion thread for EIP-2718: Typed Transaction Envelope. Description Defines a new transation type that is an envelope for future transaction types. rlp([TransactionType, [...]) will be a valid transaction where TransactionType is a number identifying the format of the transaction and [...] is the transaction, whose definition is defined in future EIPs. The first new transaction will be just a wrapped legacy transaction with the format rlp([0, [nonce, gasPrice, gasLimit, to, value, data, senderV, senderR, senderS]]). ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-2711-separate-gas-payer-from-msg-sender/4353/33"
+                    ],
+                    "GPT-summary": "The post is a discussion thread for EIP-2718, which proposes a new transaction type that serves as an envelope for future transaction types. The post explains the proposal and invites feedback and questions from third parties. One third party provides constructive criticism of the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.5227272727272725
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "13/06/2020-07:14:05",
+                    "content": " 0x32: ORIGIN: tx.origin  Smart contract developers have been told for a long time to avoid using the ORIGIN opcode and static analysis tools tend to warn when it is used.  Most uses of it are people attempting to author contracts that disallow contract callers, which goes against the ethos of Ethereum (IMO) and goes against the idea that contracts can own and manage money.  Contracts that disallow contract callers discourage the usage of smart wallets, which tend to have enhanced security features for end users thus preventing their usage decreases end-user security. With the introduction of multiple types of transactions, it is possible that the definition of ORIGIN may change over time, or differ between transaction types.  EIP-2711 for example will likely assert that ORIGIN is the GAS_PAYER, rather than the SENDER.  One can imagine a multisig transaction type where multiple signatures control the operation of a single account, or rich transactions where an account with a private key can have a contract gating its operations.  In these cases, what ORIGIN means may vary slightly, and currently the EVM doesn\u2019t have insight into the type of transaction. Potential Solution Change opcode 0x32 to be TRANSACTION_DATA, where the first 32 bits are the transaction type, and the remaining 224 bits are defined per TransactionType.  For TransactionType 0 (wrapped legacy transactions), this would be backward compatible since currently TRANSACTION_DATA would be an address, which has 96 leading 0 bits.  For TransactionType 1 (EIP-2177), the value would be something like 0x000000010000000000000000cafebabecafebabecafebabecafebabecafebabecafebabe where the first 32-bits is the TransactionType (1 in this case) and the remaining 224 bytes would be an Ethereum address representing GAS_PAYER.  This would allow the EVM to both identify what type of transaction is running, and also have a small amount of transaction-type specific data available to it.  Some transaction types may have no data, in which case it would just be 32 high bits containing the transaction type and the rest of the bits would be 0. Backward Compatibility This does potentially have a backward compatibility issue with existing contracts that reference tx.origin, but since the high bits are the transaction type we don\u2019t have to worry about collisions with actual addresses for anything other than legacy transactions, which would retain the old semantics of ORIGIN means transaction signer. For new type transactions, they\u2019ll just fail all comparisons of tx.origin and any Ethereum address.  There is potential that there are contracts which store tx.origin of some original caller and then require the same tx.origin later.  If a non-0 type transaction was used for the first and a 0 type transaction was used for follow-ups this won\u2019t match.  Also, if you do something like an EIP 7211 transaction you may end up with different GAS_PAYERs and would not match. Personally, I have lobbied long and hard against contracts that use tx.origin for basically anything, so I don\u2019t have a problem finally breaking people who have failed repeatedly to heed the warnings.  Also, such contracts CAN just tell their users to only use legacy type transactions and they will continue to work, so it isn\u2019t like we would be sticking people\u2019s funds in a way that was unpreventable for existing contracts. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.281837859110587
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "14/06/2020-22:40:06",
+                    "content": "I have a few thoughts on how the existing (legacy) transaction format should be handled in this EIP. 1. Should the protocol continue to support the legacy transaction format? I believe the answer is yes, but with some caveats. There are many existing tools that have been built for this format and it is unreasonable to deprecate it without a warning far in advance. However, I don\u2019t think that the legacy tx format should be supported at the protocol level (devp2p). Hard forks are inherently not backwards compatible, so there isn\u2019t an advantage of continuing to support them at that layer. The only caveat is that the 0 tx type must continue to follow the legacy hashing format (e.g. the tx hashed as it is now, without the tx type) so existing signing tools don\u2019t need to be updated. By completely removing the legacy tx format, txs can be decoded without relying on a \u201chigh bit\u201d since a client will never expect the first element in a tx to be anything other than a tx type identifier. We can lean on the clients\u2019 RPC endpoints for support in this transition. For example, all endpoints can continue operating as they do today and accept legacy txs as input, then transform them into a typed tx or filter out non-legacy txs for outputs, then strip them of their tx type. An optional flag can be added to the endpoints to denote whether the requester would prefer to send / receive transactions encoded in the typed format or legacy format. This will allow backwards compatible to be maintained with existing tools. 2. Should the legacy transaction format ever be deprecated? Since the protocol no longer recognizes the legacy transaction format, I don\u2019t see any reason to not put an end-of-life date on it a few hard forks in advance. This will give teams enough time to update their systems to support the new tx format, at which point the tx hash logic can be updated for 0 typed txs to follow the standard procedure. 3. Should transactions be in a two element \u201cenvelope\u201d structure? I argue no. Because I don\u2019t believe there is a need to continue supporting the legacy format, there is no advantage of the envelope structure versus a flat structure. When decoding, clients will always expect the first element to be the tx type. The flat structure will be simpler to reason about and will save a few superfluous bytes denoting the length of the enveloped list. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.063341750841751
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "15/06/2020-11:00:10",
+                    "content": "    matt:  However, I don\u2019t think that the legacy tx format should be supported at the protocol level (devp2p). Hard forks are inherently not backwards compatible, so there isn\u2019t an advantage of continuing to support them at that layer. The only caveat is that the 0 tx type must continue to follow the legacy hashing format (e.g. the tx hashed as it is now, without the tx type) so existing signing tools don\u2019t need to be updated.   I originally was somewhat against this, but in the process of writing up a response I have talked myself into aligning with you on the matter.  The clients\u2019 JSON-RPC (or other) interface can still accept and return legacy style transactions and update at their leisure or create a new endpoint for returning legacy style transactions.     matt:  Since the protocol no longer recognizes the legacy transaction format, I don\u2019t see any reason to not put an end-of-life date on it a few hard forks in advance. This will give teams enough time to update their systems to support the new tx format, at which point the tx hash logic can be updated for 0 typed txs to follow the standard procedure.   An end-of-life policy would be per client I think.  I don\u2019t believe there is any need for cross-client consensus beyond what you have proposed in (1), which would end-of-life it for dev2p2 at FORK_BLOCK_NUMBER.  I certainly would support and lobby for individual clients setting up an EOL policy for the JSON-RPC though (outside of the EIP/hardfork process).     matt:  I argue no. Because I don\u2019t believe there is a need to continue supporting the legacy format, there is no advantage of the envelope structure versus a flat structure. When decoding, clients will always expect the first element to be the tx type. The flat structure will be simpler to reason about and will save a few superfluous bytes denoting the length of the enveloped list.   Right now we can decode a transaction with no context other than a byte array.  It even has a weak form of consistency from RLP such that you can be reasonably confident whether or not you have a 9 item RLP encoded thing by just seeing if it decodes without a buffer overrun/underun.  You can further validate that you have a transaction by verifying the signature.  In theory, someone may create a transaction type in the future that has an 8 item payload (say, TransactionType=5) and whose signature is the last 3 items of the payload and signs the full transaction (including the TransactionType).  At such a time, if someone were to give you a byte array you would not be able to tell whether it was a legacy transaction with nonce 5 or a type 5 transaction. While this may be a bit of an edge case that is unlikely to ever be hit, I dislike having one more foot-gun that future Ethereum developers have to worry about and keep in the back of their heads.  It is that accumulation of gotchas that, over time, builds up to the point where someone forgets a gotcha and we have problems.  Personally, I would rather spend the extra byte per transaction and avoid the gotcha than have it looming over us forever.  @pipermerriam over in Discord had a good suggestion (IMO) for this EIP which is to make the second item just be a byte array, rather than an RLP list.  This would allow future transactions to be encoded using a different encoding format such as ssz or even something custom.  I prefer that over the current proposal of forcing the second item being an RLP encoded list. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.242784992784992
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "15/06/2020-12:26:14",
+                    "content": "I just merged a set of changes to this EIP.  The highlights are that I have taken @pipermerriam\u2019s suggestion about having the second parameter be an opaque value, with TransactionType=0 being an rlp encoded legacy transaction, and taking @matt\u2019s suggestion that we should not support legacy transactions over devp2p and instead only support new type transactions. Both changes combine to make it so that tooling doesn\u2019t need to change aside from clients because clients can simply wrap legacy transactions in TransactionType=0 transactions with almost no hassle.  In theory, we don\u2019t even need to add an JSON-RPC endpoint or make any JSON-RPC endpoints at or before FORK_BLOCK_NUMBER, that can be done more \u201clazily\u201d by individual clients over time (though, a standard for among clients would be hugely valuable). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.647727272727273
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pipermerriam",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "15/06/2020-17:13:09",
+                    "content": "I am interested in exploring the solution space for how we can deprecate the old format in a more universal way.  I like that we have mechanisms through which we can still support the old format, but I think we\u2019d benefit from a strategy that let us eventually migrate all tooling to the new format. In the legacy format, the transaction hash is defined as keccak(legacy_9_item_rlp_transaction) and the signature is sign(first_6_items_of_legacy_txn).  I would propose that we add a new version of the old transaction which:  includes the TransactionType as part of the signature. computes the hash as  `keccak(rlp([TransactionType, ]))  This give us both a legacy version of the current transaction format and a modernized version, allowing us to differentiate between transactions that are still being created using old tooling and ones using the new modern approach. My thought is that we can leverage this to add a \u201cfee bomb\u201d into the protocol.  The exact mechanism is up for debate, but I would propose:  have the bomb slowly ramp up transaction fees for legacy transactions  start small and ramp up to something like 2-10x multiplier on the fees.   have be bomb kick in in a 12-24 month timeframe.  The rational for ramping up the transaction fees for legacy transactions is that it provides a financial incentive to get off the tooling that is still using the old format.  This incentive should work for both users and developers since users will not want to pay higher fees and developers of transaction signing infrastructure should be sensitive to the needs of their users. The benefits I see from being able to fully leave behind the legacy format are:  reduced complexity for client and tooling developers (no need to special case the old format). reduced complexity for future protocol changes (no extra special rules for if TransactionType == 0)  I\u2019m curious to hear what other people think about this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.463995825602969
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pipermerriam",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "15/06/2020-17:17:22",
+                    "content": "I think the spec is missing a section on how transaction hash should be computed.  It seems like for the legacy TransactionType we are unable to change, but we might benefit from having a defined standard for new types assuming we can come up with a scheme that we expect to be forwards compatible.  I would suggest:  The TransactionType must be included in the fields that are signed. The hash must be computed from the full transaction payload `keccak(rlp([TransactionType, [, \u2026]]))  These rules would only apply to all new transaction types, with the legacy type being stuck with the legacy rules for signing and hashing (see my previous post on adding a second type here that follows the new convention). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.946212121212121
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "16/06/2020-02:07:19",
+                    "content": "@pipermerriam Why a fee bomb instead of just a well defined EOL schedule?  Even with a fee bomb, we would still need an EOL schedule  in order to stop supporting legacy transactions, and it is unclear to me what value the fee bomb adds if an EOL schedule is still necessary. Is the fear that people will procrastinate upgrading their tooling and then be upset in 1-2 years when all of a sudden it stops working? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "16/06/2020-02:10:43",
+                    "content": "    pipermerriam:   The TransactionType must be included in the fields that are signed. The hash must be computed from the full transaction payload `keccak(rlp([TransactionType, [, \u2026]]))    I\u2019m a little hesitant to make any assertions about what MUST be included in a transaction\u2019s signature, mainly because I am hesitant to make assertions in this document about what it even means to \u201csign\u201d something.  I would like to leave the system as flexible as possible for future transaction types so that things we haven\u2019t thought of today are possible, and the best way I think to achieve that is to put as few requirements on the transaction as possible. I generally think it is a good idea for transaction types to sign the TransactionType, as it removes the possibility of various types of replay attacks, but maybe some future transaction types are specifically designed to enable certain classes of replay (e.g., sign a transaction that can be submitted as either type 5 or type 6 or both). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.74766156462585
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pipermerriam",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "16/06/2020-02:25:57",
+                    "content": "I\u2019m good changing the signing language to SHOULD.  The idea that we don\u2019t know what future transaction types will look like, how they will be signed, etc, makes enough sense to me. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "16/06/2020-03:52:28",
+                    "content": "I added a SHOULD for signing TransactionType.    github.com/ethereum/EIPs         Adds specification for ORIGIN and CALLER.   ethereum:master \u2190 MicahZoltu:patch-3            opened 03:49AM - 16 Jun 20 UTC               MicahZoltu             +6 -0           I have added some text about what ORIGIN and CALLER mean going forward.  For TransactionType 0 they are fully backward compatible and the change is invisible to contracts.  However, for all other transaction types, the value of both ORIGIN and CALLER will have a transaction-dependent meaning.  For ORIGIN, I feel like the risks are pretty low.  However, I am concerned that for CALLER the risks in this change are a bit more significant. Do people think that we are OK to redefine CALLER for future transaction types?  We could allow its contents to be determined per transaction type, but require that it always be an address (never some other data) so that existing contracts won\u2019t choke on receiving a non-address CALLER. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/2730",
+                        "https://github.com/MicahZoltu",
+                        "https://github.com/ethereum/EIPs/pull/2730/files",
+                        "https://ethereum-magicians.org/t/eip-2711-separate-gas-payer-from-msg-sender/4353/37"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.590277777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "16/06/2020-13:14:51",
+                    "content": "    pipermerriam:  My thought is that we can leverage this to add a \u201cfee bomb\u201d into the protocol.   I\u2019m not strongly for or against a fee bomb. I do believe a fee bomb will unduly increase the complexity. Depending on EIP-1559, there could be a major change to the transaction format in the near future anyways. Their solution is to slowly scales down the fraction of the block dedicated to legacy transactions.     MicahZoltu:  Do people think that we are OK to redefine CALLER for future transaction types? We could allow its contents to be determined per transaction type, but require that it always be an address (never some other data) so that existing contracts won\u2019t choke on receiving a non-address CALLER .   I don\u2019t think it is okay to redefine ORIGIN or CALLER in this way.  There are no other opcodes which pack multiple return values into a single word We\u2019d need to analyze every contract and determine if modifying the high 32-bits would break anything.  I believe a new opcode for TransactionType would be preferable. However, we should be cautious of allowing contracts to access such information. Are there compelling use cases for this? We can always add it later via a new EIP. If we\u2019re going to colloquially rename opcodes, I believe renaming ORIGIN to GASPAYER would make more sense. As new transaction types are proposed we can decide if there is value in adding a type-dependent data opcode. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.410819075104789
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "16/06/2020-19:39:07",
+                    "content": "    matt:  If we\u2019re going to colloquially rename opcodes, I believe renaming ORIGIN to GASPAYER would make more sense. As new transaction types are proposed we can decide if there is value in adding a type-dependent data opcode.   The problem is that in the context of the generalized concept of typed transactions (not sponsored transactions specifically), we cannot assert what ORIGIN or CALLER means globally.  Each transaction type will need to define what those opcodes return and for some it may not be comparable to what legacy transactions return for those opcodes.  While for EIP 2711 it may not break things too badly if we jam the gas payer into ORIGIN and the SENDER into caller, I am not confident that the same will be true for all future transaction types.  If we want the freedom to create new transaction types going forward, then I think we need to solve the problem of ORIGIN/CALLER. One option that is a bit of a middle ground is that we could assert that ORIGIN and CALLER must always be an address, but we cease asserting what those addresses represent.  If we were to go that route then I think we should add a new opcode for Transaction Type so that contracts can figure out what those two addresses represent. Alternatively, we could assert that all transaction types must have a CALLER that represents \u201cthe address that will be considered to have called the contract\u201d.  This constrains what we can do with transactions (what would a 2 of 2 multisig contract set for CALLER?), but maybe it is a reasonable constraint? The last option is to assert that ORIGIN == <CALLER of first frame>, and CALLER is always an address and each Transaction Type would define what that address is.  I think this is the most backward compatible solution, but it means we\u2019ll have to create a new opcode for TRANSACTION_DATA and TRANSACTION_TYPE (or we could bit pack them if we want to try to save opcodes). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.436079545454545
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "16/06/2020-20:56:18",
+                    "content": "    MicahZoltu:  If we want the freedom to create new transaction types going forward, then I think we need to solve the problem of ORIGIN / CALLER .   I don\u2019t think think we need to boil the ocean in this EIP. I can\u2019t come up with any use cases where CALLER wouldn\u2019t refer to the address of the entity making a call. If there are, we should could address them. However, I don\u2019t see a benefit in altering a widely used opcode to support potential transaction types.     MicahZoltu:  While for EIP 2711 it may not break things too badly if we jam the gas payer into ORIGIN and the SENDER into caller, I am not confident that the same will be true for all future transaction types.   ORIGIN is a bit of a special case since AFAIK it hasn\u2019t been used for anything terribly productive on mainnet. To be safe and less contentious, we might as well just introduce GASPAYER since all transactions will be paid by someone. CALLER is widely used and any transaction type which significantly alters the meaning of it will be certainly be met with resistance. My intuition is that we should minimize the observability of different transaction types from within the EVM. For example, what if a transaction was introduced which paid a portion of the fees to a developer fund and to boycott it, some contracts would not allow transactions of that type? I believe all transactions should be treated equally once they enter the EVM. What use cases can you imagine if contracts can treat transactions unequally?     MicahZoltu:  Alternatively, we could assert that all transaction types must have a CALLER that represents \u201cthe address that will be considered to have called the contract\u201d.   I think this is more than reasonable and, in fact, is already the implicit assertion made by contract developers.     MicahZoltu:  what would a 2 of 2 multisig contract set for CALLER ?   Is there a reason why it wouldn\u2019t set CALLER to the address of the multisig? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0831909318751425
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "17/06/2020-00:56:46",
+                    "content": "Also, I spent some time messing around with different RLP encodings of the typed transaction format. The envelope format was much easier to implement, so I\u2019m happy to say I was wrong about it. For a typical transaction, the flat structure was 4 bytes shorter than the envelope structure. I didn\u2019t get a chance finish the lazy transaction, but lazy decoding isn\u2019t standard RLP anyways and @MicahZoltu pointed out earlier \u2013 it adds complexity without much savings. I\u2019ve posted my code here if anyone is interested. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.060897435897436
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "17/06/2020-03:26:23",
+                    "content": "After sleeping on it and reading the feedback from @matt I have removed the ORIGIN and CALLER stuff.  I added a note in the rationale saying that ORIGIN and CALLER should be the same for the first frame of the transaction for all transaction types, and that if future transaction types want to include additional data they will need a new opcode. I am mildly convinced that allowing differentiation by transaction type may lead to some bad things like contracts not working for people who utilize certain types of transactions, but in that case I\u2019m not sure how to best deal with sponsored transactions.  I\u2019ll continue the discussion on that over in EIP-2711: Separate gas payer from msg.sender ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.546657046657046
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tjayrush",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "17/06/2020-12:58:57",
+                    "content": "Not sure I\u2019m knowledgable enough to comment on this EIP\u2019s worth, but I noticed a few small issue with wording: In the rationale section, under \u201cOpaque second item rather than an array\u201d section you say, By having the second item of the array just be opaque bytes, rather than a list, we can support different encoding formats for the transaction payload in the future, such as SSZ or a fixed-width format. In the backward compatibility section you say: ...noting that the second element is a list rather than a value. Did you mean that the second item is bytes? And in the Security Considerations section you say: ...the second item as a value when it is encoded as an array Probably a result of the change to bytes after the initial writing of the spec. Thought I\u2019d point that out as it\u2019s a bit confusing\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.7625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "18",
+                    "likes": "3",
+                    "time": "18/06/2020-07:18:56",
+                    "content": "@tjayrush Both of those were mistakes due to a change from earlier version.  Both have been fixed! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AFDudley",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "24/06/2020-23:28:43",
+                    "content": "Sorry if I missed this in the docs, does each transaction type get its own mempool? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "25/06/2020-20:45:41",
+                    "content": "    AFDudley:  does each transaction type get its own mempool?   It\u2019s not clear what you mean by \u201cget its own mempool\u201d. If you mean the mempool may need to maintain a list of transactions of a certain type to perform additional checks (e.g. that their total gas is less than the allow 1559 limits or that their valid_until block hasn\u2019t lapsed), then I suppose the answer is yes. Whether or not these checks are performed in parallel seems like an implementation concern. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.318121693121693
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "26/06/2020-01:33:34",
+                    "content": "That is \u201cout of scope\u201d of this EIP, but for the currently on-deck 2718 transaction types, 1559 is the only one that would need its own mempool.  The rest would share one with legacy transactions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AFDudley",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "26/06/2020-10:23:53",
+                    "content": "Out of scope makes sense, but it seems like there would be plenty of situations where we\u2019d want a smooth transition from one tx type to another. As an administrative matter, these \u201cparsimonious changes\u201d are a lot more acceptable to me if these sorts of major updates were to actually happen multiple times a year, which is a bit of a catch-22. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.9624999999999995
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "26/06/2020-11:31:35",
+                    "content": "    AFDudley:  we\u2019d want a smooth transition from one tx type to another.   In the 1559 case, we have two mempools but they aren\u2019t intended to live side-by-side forever.  The intent is that one eventually replaces the other.  This is a bit different from other new transaction types where the intent is that they live side-by-side forever.  If we imagine 1559 landing after 2711 and other new transaction types, I suspect 1559 will need to actually replace all transaction types with new transaction types that include the new 1559 gas semantics.  For example, if we have transaction type 0 (legacy) and transaction type 1 (sponsored/batch/expiring transacitons) when 1559 lands, then 1559 would need to introduce two new types: 2 (legacy with 1559 semantics) and 3 (sponsored/batch/expiring with 1559 semantics). Questions that I think we would need to answer to move forward: Do we think that switching mempools is a common enough operation that it is worth trying to generalize a solution?  Do we think that should be part of 2718, or should it be part of a separate EIP that defines a mechanism for dealing with pool transitions?  Will we always want to go from one mempool to another, or are there situations where we may want multiple side-by-side mempools indefinitely? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.288101604278075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "26/06/2020-15:26:12",
+                    "content": "Maybe I missed this somewhere in all the text above here\u2026 But if the format is rlp([0, rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])]) . The signed data is bundled in the inner rlp. So a wrapped transaction can be re-wrapped with some other format? How would you uniquely identify a transaction? The hash of the inner payload, or the hash of the (unsigned) wrapping? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "26/06/2020-16:10:27",
+                    "content": "    holiman:  How would you uniquely identify a transaction? The hash of the inner payload, or the hash of the (unsigned) wrapping?   Good question, and the EIP does need to be updated to specify what is hashed for the unique transaction identifier.  My initial thinking is that we should identify the transaction by the wrapped hash.  However, that would mean that on the fork block when all transactions in the pending queue are wrapped (a one-time operation), their hashes would all change which will almost certainly break any dapps running during the transition, and probably break a lot of user interfaces around that time.  The situation wouldn\u2019t be unrecoverable, but it definitely could be messy. We could use the inner transaction hash, but long term this feels dirty to me as every other transaction type going forward will (hopefully) be identified by a full hash of the transaction, and we\u2019ll forever be left with this one oddball situation to deal with. Perhaps as a mechanism to protect dapps operating during the transition, clients could have some range of blocks over which transactions have two unique identifiers (hash of inner and hash of outer) such that when someone looks up either with the client, the client will return the details requested for that transaction.  Since this would just be a feature for dealing with a transient problem, the code for this (and any related DB entries) could eventually be deleted, it would only have to exist for some finite period of time around the fork block.  We just want to make sure that most transactions that were in the pending queue on fork block are accessible by either old or new transaction hash, even though they were mined after the fork block. Thoughts?  Core dev thoughts on the subject would be particularly valuable as it would help provide insight into how realistic either solution is. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.514252860235002
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "30/06/2020-19:01:07",
+                    "content": "Well, all that juggling just to handle a temporary UX-cornercase around the actual fork block seems not worth it, IMO. I hadn\u2019t read the EIP properly, and thought that both old-style and \u2018wrapped\u2019 txs were allowed. As I see it, it\u2019s very odd to sign something, and have the \u2018wrapping\u2019 not be part of the signed stuff. So my gut feelings are  The signature should encompass the wrapping, The hash should be a hash of the whole wrapped package  But with that, we have to break up the wrapping, since the inner part now must know about the outer part\u2026? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.861111111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "01/07/2020-02:40:39",
+                    "content": "There are two separate problems that I think you may be conflating @holiman:  Signing the wrapped transaction vs signing only the inner transaction for type 0 transactions. Hashing the wrapped transaction vs hashing the inner transaction for type 0 transactions.  If we change how transactions are signed, then every single wallet will break (be unable to sign transactions) as of the fork block until it is updated.  By signing only the inner transaction, wallets can continue to sign the same thing they always signed and the client they communicate with (e.g., Geth) can just wrap them up. If we change how transactions are hashed, then dapps will break if they submit a transaction before the fork block and it is mined after the fork block.  In almost all cases, this can probably be resolved by the end-user by refreshing the page (and possibly clearing their local browser cache, depending on the specifics of the dapp). I think I can get on board with just eating the transient problem with the hashes changes around the fork block.  I don\u2019t think I can get on board with having all signing tools breaking until updated (this would include all hardware wallets, offline wallets, etc. I believe).  Changing the signature would also break anyone who has a pre-signed transaction sitting around (e.g., a paper asset recovery transaction for a cold wallet). In a perfect world I agree that the signature should sign the envelope (including transaction type) and the hash should be of the whole thing.  I just don\u2019t think we can reasonably achieve the former is all. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.227678571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "01/07/2020-03:01:21",
+                    "content": "I have updated 2718 to include specification on hashing (hash the envelope). I have also added some recommendations for client developers (wrap transactions just before fork block and provide access to transactions by both hashes for a time) but neither are MUST, just SHOULD so there is no requirement if client developers think it isn\u2019t worth the effort. I also added some rational for signing only the Payload for type 0 transactions and hashing the outer transaction. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "18/07/2020-05:13:52",
+                    "content": "Transaction Receipts In 2711, we introduce batch transactions with a single gas payer.  There will be a single transaction hash for the whole thing, so that leads me to believe that means there will be a single receipt for the whole thing.  However, there may be multiple sub-transactions that are part of that receipt, each of which can succeed/fail independently. We could assert that batch transactions must all succeed, or all fail as part of 2711, which lets us get away with a single status code, but what about future transaction types that may not adhere to that rule?  Another option would be to have the status code field be a uint256, where each bit represents the success of an inner transaction in the batch (putting a limit of 256 transactions per batch), but again that feels like it is tied pretty tightly with 2711 specifically and doesn\u2019t generalize well (what if you have a transaction tree?). Transaction receipts also currently have a from , to , contractAddress in them, as well as a logs array. from and to will need to be changed to something else or removed I think. We could put the gas payer in for from in theory, and technically we don\u2019t need to separate out the logs by sub-transaction (can just have one big logs array for all nested transactions). This all is making me wonder if we should version transaction receipts as well?  A more useful transaction receipt would have something like childReceipts which contains an array of sub-receipts where each sub-receipt had a from, to, contractAddress, status field in it.  If we do version transaction receipts, it feels like we should do it in 2711 so that receipt types align with transaction types, so each transaction type would define both the transaction payload and the transaction receipt payloads. I\u2019m looking for feedback/thoughts on how to handle receipts for different transaction types.  My current leaning is to version receipts and couple the version with transaction types (so an EIP that defines a new transaction type would also define a new receipt type). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.230095990965556
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "18/07/2020-07:59:29",
+                    "content": "I have updated 2718 to now include information on how receipts should be enveloped.  I went with the typed receipts solution with the type number matching the transaction type, so it is up to each new transaction type to define its receipts. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.681818181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rook",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "02/08/2020-18:30:56",
+                    "content": "I like this standard a lot and if i am to add my won 2cents - we should avoid numbers as the version. They should be descriptive of what they are. The data segment is opaque, so the identifier is an enum and making it a letter instead of a number maybe more practical. I wrote a EIP-2718 envelope type for ditto transactions, and i used the letter \u2018d\u2019 so that it is evident that it is more evident that it is a ditto transaction vs an arbitrary auto-incrementing number. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "33",
+                    "likes": "1",
+                    "time": "03/08/2020-11:43:03",
+                    "content": "The reason numbers are used instead of a more human readable mechanism has to do with the way transactions are encoded on the wire.  The smaller the number is, the fewer bytes it consumes.  For numbers between 0 and 127 the value only takes up one byte when encoded.  This means we have fairly little space to work with before we start needing more bytes.  If we used a single ASCII encoded letter I don\u2019t think readability would be improved, but it may become hard to keep track of which values have been used and which haven\u2019t. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.280877976190476
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rook",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "03/08/2020-17:10:43",
+                    "content": "That makes sense.  So, I also see that in RLP-encoded a single byte between 0x00, 0x7f is the explicit byte resulting in a single-byte keyspace of 128.( https://medium.com/coinmonks/data-structure-in-ethereum-episode-1-recursive-length-prefix-rlp-encoding-decoding-d1016832f919 ).  On that note, there are only 127 printable ASCII codes.  What do you think of using 7-bit ASCII characters as the version param?  So, for example I want to create a new \u201cditto transaction\u201d type if I wanted to use \u2018d\u2019 for ditto transactions which would be ascii 0x44 that fits within the single byte range of RLP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.991883116883117
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "03/08/2020-23:34:06",
+                    "content": "I don\u2019t believe that a single ASCII encoded character is any more human readable than a single number between 0 and 127, and having each transaction type pick a letter rapidly runs into problems with keeping track of which letters we have used and which we haven\u2019t (much easier when we just start at 1 and count up).  Also, we would need to map all of the transactions to printable ASCII characters, which wouldn\u2019t align exactly with the actual ASCII code values (e.g., 0 is non-printing, so we would need 0 to mean something else).  Once we have a mapping, we might as well map 0 to \u201cLegacy Transaction\u201d which is human readable. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.274801587301587
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rook",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "03/08/2020-23:55:38",
+                    "content": "New transaction types need not replace the old in sequence, but rather we could support up to 127 types which will be defined the same way we allocate opcodes.  For example, I may want to define a quantum resistant transaction \u2018q\u2019 or a byte-boundary packed transaction \u2018p\u2019 which would be smaller than RLP.  I already wrote up a use-case for \u2018d\u2019 ditto transactions,  it doesn\u2019t really make sense to call this transaction #1.  Using #0 as the archetypal transaction doesn\u2019t bother me - but perhaps enforcing a sequence here would breed confusion as types of transaction expands. This follows the \u201cchar enum\u201d pattern that you see in PostgreSQL. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.436363636363637
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "04/08/2020-03:17:14",
+                    "content": "In what situations do you foresee people reading transaction data decoded as ASCII?  The transaction will likely be presented as a byte array of numbers (either hex or decimal encoded), and decoding to ASCII would require an extra step. Since q alone isn\u2019t enough to indicate what the purpose of the transaction is, there MUST be a mapping somewhere for q => Quantum Resistant Transaction.  What is the advantage of having that over 5 => Quantum Resistant Transaction? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rook",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "05/08/2020-05:33:05",
+                    "content": "I really like that RLF is partially human readable, and using it as a \u2018char enum\u2019 datatype feels like a natural paring to me. The two-byte envelope in this standard defines a large keyspace (127) for versions, it seems like a waste to use them sequentially.  In terms of mapping, yeah we create maps all the time this isn\u2019t a concern, every OPCODE or message type needs to be allocated manually through discussion.  If an EIP wants to use a new code defines what OPCODE to use, so why not what version code to use. Another thing to note,  by using a version string you don\u2019t need to use variable-sized datatypes in the transaction its self.  Using fixed-byte boundaries that are versioned would save about 9 bytes per transaction, maybe more\u2026  If you wanted a different key size, then you could define a different version to use - not unlike SSL/TLS cipher suite handshakes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.295749704840614
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "05/08/2020-09:36:33",
+                    "content": "    rook:  Using fixed-byte boundaries that are versioned would save about 9 bytes per transaction, maybe more   Can you explain what you mean by that?  Where would we get the 9 byte benefit?  Does it require using a different encoding system than RLP (increases engineering complexity of implementation). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rook",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "05/08/2020-15:49:13",
+                    "content": "I think most of us will agree that scalability is more important than complexity - but byte boundary encoding is actually quite simple. This is more than just asn.1 or potobuf, look at TCP/IP - the OSI models is full of byte-boundary based protocols. RLP needs to use a signalling byte to define datatypes and sometimes sizes - this is an overhead that users must pay for in the form of gas and nodes must pay for in the form of storage. At million transactions per day, this is megabytes of overhead per day, and gigabytes per year.  The purpose of RLP\u2019s overhead is that the structure doesn\u2019t have to be known ahead of time - but this isn\u2019t the best choice for encoding a structure of fixed-byte entities that really hasn\u2019t changed. A traditional transaction is 9 elements: [nonce, gasPrice, gasLimit, to, value, data, senderV, senderR, senderS] ^ Every element has a fixed size, except for data, so we can move that to the end.  This could define a byte boundary schema which is far more dense than RLP: 1 byte ,  2 bytes , 2 bytes , 32 bytes , 4 bytes , 32 bytes , 16 bytes , 16 bytes , Variable Data Size This would put the theoretical smallest byte-boundary packed transaction at just 137 bytes, if this where a EIP-2718 then it would be 140 bytes - which is much smaller than whatever RLP is generating.   I am considering writhing ^ this up as an EIP and giving this the version string \u2018p\u2019 for a packed message. If for example we wanted to make the nonce larger than a single byte, then a new version string would have to be defined - and we have 127 of them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.911825017088175
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "06/08/2020-09:02:26",
+                    "content": "If I understand what you are suggesting, it is that we should not use RLP for the envelope and instead just have 1 byte for the version, followed by remaining bytes for the payload?  Presumably, we would reserve 255 for future expansion (e.g., extension value)? If so, I\u2019m not against it and I think @AlexeyAkhunov has argued in the past that we shouldn\u2019t be using RLP as much as we do.  I would like to get feedback from client developers before making such a change though, as there is value in everything in a protocol using the same serialization format as it generally makes client development easier than when you have custom protocols for different parts of the system. In this case, it may be worth it to avoid having to have an extra 1-4 bytes on every transaction. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "06/08/2020-16:34:38",
+                    "content": "I think that forcing clients to include multiple serialization schemes to be minimally consensus-compliant is not the direction we should go. Even if the savings is non-negligible. Eventually we should move away from RLP, but in the interim, I believe we should accept what we have. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rook",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "06/08/2020-18:03:52",
+                    "content": "I am recognizing a fork in the road and discussing why a particular path may help with our scalability problems.  What you have done is awesome, and I have already built an EIP from your great idea. With your proposal unchanged a developer is free to define an transaction such as; rlp(\u2018b\u2019,blob ) - now because this blob is more than 55 charicters, RLP will force us to burn to burn three bytes just to describe how long the blob is: (e.g. xb9, x04, x00) - with the addition of the list and version param that is a 5 byte overhead - not ideal and negates much of the savings. I love that rlp(\u2018d\u2019) == \u2018d\u2019, and another reason to like this feature is it creates the possibility of polyglot encoding.  Because all transactions start with an array element, we know that no other transaction is going to start with 0x00-0x7f - this is reserved by RLP, and now in the future could be reserved a byte-boundary encoding.   If a wayward client accidentally decoded it with RLP - it would still produce an object! (The wrong object mind you, but an object none the less). It is almost as if the protocol left the door open for a single-byte version param.  With a single byte as the type envelope, the basic transaction is a cool 138 bytes. To @matt\u2019s point - I agree, we shouldn\u2019t burden developers with features that aren\u2019t important.  In this case byte-boundary encoding of 9 param will take maybe an afternoon to impalement - it is just cutting a string in 8 places - no big deal. We might be able to pack an extra byte or two with bit-packing, which is one step further and you\u2019ll see this asn.1 and protobuf for encoding of enums and booleans - but that is unnecessary effort for this data structure. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.350198412698413
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "28/08/2020-17:51:19",
+                    "content": "You aren\u2019t the only person who is dissatisfied with RLP encoding for everything.  However, until such time as we have a new standard encoding mechanism that we can start applying everywhere I\u2019m very hesitant to switch to something besides RLP here, even if it isn\u2019t as efficient as other options.  You may want to consider championing a push to change the encoding mechanism used throughout Ethereum as I believe there is weak support across the board.  If you do, you may want to start by talking to ETH2 developers to see what they are planning on using, in case they already have a plan to switch away from RLP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.883116883116883
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "28/08/2020-17:55:41",
+                    "content": "A question was proposed by @AFDudley about how 2718 will deal with pending transaction pools, since new transaction types may introduce complexities into the transaction transactions, transaction ordering, etc. My initial thought on the matter is that 2718 itself doesn\u2019t introduce any problems with pending transactions and transaction ordering since by itself it only has a single transaction type that is just like the legacy transaction type.  New transaction types however may have a problem with needing multiple pending transaction pools and figuring out how to do transaction ordering, and so discussion on the matter should probably go into those EIPs (e.g., 2711, 1559, etc.) rather than in 2718 (where we don\u2019t yet know what problems we\u2019ll need to solve). There was a follow-up suggestion that we perhaps add this to the security section just as a hint to future typed transaction EIP authors that they need to think about that.  I\u2019m not the fence about this idea currently, as it still feels out of scope for this EIP, but I can appreciate the line of thinking. What do other people think about the matter?  Should this EIP try to discuss how pending transactions and transaction ordering among multiple transaction types works, or should that problem be left up to future EIPs that introduce new transaction types? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.081793206793207
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "04/09/2020-14:23:07",
+                    "content": "I\u2019m not sure if this was mentioned before, but a few months ago I was working on a similar proposal and hoped we could move on from using RLP to either CBOR or SSZ. If we want to do that, perhaps we should not wrap payload into RLP, instead we could choose to use a single byte as transactionType. Could also consider this field as \u201cversion\u201d. This allows for 256 different types, which seems okay. This would also mean that signing with transactionType = 0 would be easier, than with the proposed extra RLP wrapping. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.791294642857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pipermerriam",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "04/09/2020-14:33:52",
+                    "content": "@axic I like this.  Removal of anything that is strictly based on RLP if it can be done in a sane manner has my support.  I would advocate for LEB128 incoding for the transaction type which allows us 128 transaction types before we end up needing 2 bytes.  All of the remaining bytes can be the opaque encoded transaction. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "48",
+                    "likes": "1",
+                    "time": "04/09/2020-14:36:32",
+                    "content": "Right, LEB128 would be a good way, however if we say the first byte is a transactionType (or version) limited to 0x00 \u2026 0x7f, then we do not need to introduce LEB128 as a complexity. If the need arises in the future, we can still introduce it (because any value below 0x80 has the same encoding in LEB128). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.970238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "04/09/2020-14:39:23",
+                    "content": "My main concern with moving away from RLP is that it introduces another dependency for clients to maintain and moves us in the wrong direction in terms of client simplicity. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.166666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "50",
+                    "likes": "1",
+                    "time": "04/09/2020-14:44:20",
+                    "content": "That is correct, however  there seems to be a lot of motivation/interest to get rid of RLP at various levels, which is likely to happen with binarification, code merkleization, etc. certain kinds of integrations with Eth2 will introduce SSZ  Because of the above I think we could see a rather large change in the coming years, essentially getting rid of RLP. Dapps only interface via RPC (which is not using RLP) and the transaction format (which we are about to change). Dapps do not use RLP for other purposes, IIRC all the ERCs use ABI encoding or an alternate format (with the exception of ERC712). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.168650793650794
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pipermerriam",
+                    "index": "51",
+                    "likes": "1",
+                    "time": "04/09/2020-16:05:29",
+                    "content": "@matt so far all of the places where I\u2019ve pushed us to drop RLP don\u2019t introduce any new dependencies, but rather a simple binary encoding scheme and I believe that this case is no different. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.295454545454545
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "52",
+                    "likes": "1",
+                    "time": "05/09/2020-17:21:54",
+                    "content": "@rook @axic @pipermerriam and several people in Discord have all now expressed a preference for not-RLP.  While several alternatives were proposed, I have decided to initially update the EIP with a simple \u201cfirst byte is transaction type, the rest is payload\u201d encoding scheme so we have something to argue against besides something no one wants (RLP).  I have mentioned in the specification that transactions type 0x00 through 0x80 are the only valid transaction types, so that we keep the door open for extending the type byte in the future if we need to. I have also added a note that the transaction root and receipt root in the block will change, and I specified how to generate them.  Part of this change includes switching the key from rlp(index) to leb128(index) as part of a push to move away from RLP.  I\u2019m not married to this, and if people think that change isn\u2019t appropriate or will cause undue hardship I have no problem switching it back (though, we still need to change the other side of the mapping). We could make it so enveloped legacy transactions are not RLP encoded, but you still would need an RLP encoder to sign them or validate their signature, so the benefits of using some other encoding system for putting them on the wire or including them in a block are pretty weak.  I\u2019m curious if people think there is value in having transactions encoded with something else on the wire and in a block, even though you need RLP for signing/validation? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.029411764705882
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "53",
+                    "likes": "0",
+                    "time": "05/09/2020-17:23:46",
+                    "content": "I also did go with SSZ encoding for the receipts.  I think this may be the first introduction of SSZ into ETH1x, so may be contentious and worth discussing further.  I believe ETH2 is using SSZ everywhere, and that likely means that ETH1x is eventually going to need it.  Also, SSZ is nicely compatible with the TransactionType as first byte encoding system. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rook",
+                    "index": "54",
+                    "likes": "0",
+                    "time": "05/09/2020-19:59:00",
+                    "content": "I am glad the EIP is using a first byte as a version string, this cleanly resolves the ambiguity of messages in O(1) by using more than just block height and will make a better EIP over all.   I guess this leaves the door open for version 0x01 a compact transaction type that is both easier to process and smaller than leb128.  leb128 is an unnecessary burden when ECC public keys and signatures are essentially fixed width, you don\u2019t need to burn bits on variable encoding if you know the size. Allowing for bigger keys can be done with one of the  127 version params we have. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.825757575757575
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "06/09/2020-02:33:43",
+                    "content": "    rook:  this leaves the door open for version 0x01 a compact transaction type that is both easier to process and smaller than leb128. leb128 is an unnecessary burden when ECC public keys and signatures are essentially fixed width, you don\u2019t need to burn bits on variable encoding if you know the size   At the moment, transaction type 0 is rlp so that we don\u2019t have to decode/reencode to validate signatures or sign, since type 0 is intentionally backward compatible (signature wise) with legacy transactions.  Future transaction types would be reasonable to use something like SSZ, which is positional (requires a schema to decode). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rakita",
+                    "index": "56",
+                    "likes": "0",
+                    "time": "02/11/2020-16:48:39",
+                    "content": "Hello, I asked on geth PR here about transaction concatenation and got a response that it is already decided that it will be concatenated. I have more questions if it is okay. By iterating over bytes that represent a list of transactions we need to read tx type then get tx payload (or legacy rlp) and process it. Payload needs to contain its size or have static size so that we can deduce when the next item in the list is. This is how we need to do parsing, is this correct? Question? why didnt we just reuse rlp as wrapper over TypedTransaction? List will be like: rlpList[ rlp(TypeTx | DataTx), rlpList[Legacy] ...]. Partially breaking RLP is by my opinion not best solution, if in the future there is need to replace RLP this will be a different task. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "57",
+                    "likes": "0",
+                    "time": "03/11/2020-02:10:39",
+                    "content": "There is a desire to move away from RLP for transactions over time, and in the future we don\u2019t want to require everyone have to do RLP decoding/encoding for transactions that are otherwise not RLP encoded.  By having the first byte represent the transaction type and the remaining bytes be the payload, we are not tightly coupling with any encoding/decoding scheme as you can simply do something like transaction[0] and transaction.slice(1) in every language trivially without any special libraries or needing to understand a particular encoding scheme. Also, the most likely encoding format for transactions in the future is SSZ, which is compatible with byte || data as that is equivalent to ssz(byte || data). I believe you are correct that when decoding an RLP list of transactions you\u2019ll need to do something like: offset = 0 while (offset <= package.length):     switch(package[offset]):         case WRAPPED_LEGACY_TRANSACTION:             transaction = rlp_decode(package.slice(offset))             offset += transaction.length         case SOME_FUTURE_TRANSACTION:             transaction = ssz_decode(package.slice(offset))             offset += transaction.length         default:             // legacy transaction             assert(package[offset] >= 0xc0 && package[offset] <= 0xfe)             transaction = rlp_decode(package.slice(offset))             offset += transaction.length  I do recognize the issue here in that currently devp2p is RLP encoded so things are a bit simpler for that particular transport if the transaction is also RLP encoded.  However, transactions are made available in many other places (e.g., JSON-RPC, hardware wallet protocols, etc.) and requiring everyone everywhere to have the ability to encode/decode RLP just to extract the type byte isn\u2019t a great story (if you consider that future transactions likely won\u2019t all be RLP encoded). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.913165266106443
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rakita",
+                    "index": "58",
+                    "likes": "0",
+                    "time": "03/11/2020-07:35:57",
+                    "content": "I agree that with generic transaction Type | Data  format we will get flexibility in how we want to represent data. And it seems like a good step forward. But what I am questioning now is why are we breaking RLP with concatenation when there is no need. As you can see concatenation is in question not format, bcs we could have same result with using ordinary RLP list and treating new tx as chunk of bytes. Okay lets dive deeper on However part to find the reason for why that decision is made. You say that transactions are available in other places that JSON-RPC and hardware wallet protocol use. For Hardware wallet, hashing for signature will still be same and done only on Type | Data part (excluding signature). And does Hardware wallet have a need to have raw list of transactions? For JSON-RPC, I am unsure if there is RPC that delivers only raw list of transaction. Ordinary list of transactions are in JSON format. Raw list if found in RCP is mostly contained inside raw block. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.202437268613739
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "59",
+                    "likes": "1",
+                    "time": "03/11/2020-08:01:24",
+                    "content": "I think there may be a miscommunication, so bear with me if everything I say here is obvious/redundant\u2026 I want to make sure we have the same understanding. Over devp2p, the transaction batch will be rlp([transaction0, transaction1, ..., transactionN]).  Each item in this list will be either a byte array or legacy transaction (RLP list).  If it is a byte array, then you\u2019ll get the length prefix for the whole transaction already due to the wrapping RLP, and if it is a legacy transaction you\u2019ll also get a length prefix, though you\u2019ll likely decode the whole thing when decoding the outer list (current behavior). The only time you won\u2019t have a length for the individual transactions in the encoded payload is if you are using a list encoding format that doesn\u2019t provide boundaries or lengths.  I believe most list encodings have some mechanism for splitting list items, which includes RLP and JSON (the two most common in ecosystem today). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.614583333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rakita",
+                    "index": "60",
+                    "likes": "1",
+                    "time": "03/11/2020-08:33:57",
+                    "content": "Yep, it seems like a miscommunication. Transaction list as you explained it is okay. I think that\u2019s it, thanks for bearing with me. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poojaranjan",
+                    "index": "61",
+                    "likes": "0",
+                    "time": "07/01/2021-20:07:12",
+                    "content": "Watch an overview of the proposal in Peep an EIP-2718 with Micah Zoltu. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "62",
+                    "likes": "0",
+                    "time": "22/01/2021-17:18:39",
+                    "content": "I might have missed this point in the EIP, but I am not yet certain if this new (abstract) transactions this EIP introduces are completely new transactions, or are also dependent upon older EIPs. For instance, should the new transactions also implement EIP-155? EIP-2930 seems to imply this is not the case, but I think it would make the EIP a bit clearer if it explicitly states that these are completely new transactions, and thus do not have to abide any \u201cchain rules\u201d or rules (EIPs) implemented by hardforks. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.772005772005771
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "63",
+                    "likes": "0",
+                    "time": "23/01/2021-09:06:59",
+                    "content": "It is up to each new typed transaction what features they want.  So far, the proposed typed transactions (EIP-2930 and EIP-1559) both have a chain ID field to prevent replay attacks across chains, which is what EIP-155 did for legacy transactions. A future new transaction type could choose to not do this and allow replays across chains, or they could choose to implement replay protection in a different way, or perhaps in the same way that legacy transactions did via EIP-155.     jochem-brouwer:  I think it would make the EIP a bit clearer if it explicitly states that these are completely new transactions, and thus do not have to abide any \u201cchain rules\u201d or rules (EIPs) implemented by hardforks.   Can you elaborate a bit more on this?  EIP-155 is a transaction parsing/encoding/decoding rule, and each typed transaction gets to completely define how it is parsed/encoded/decoded aside from the 2718 envelope. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.804545454545455
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "64",
+                    "likes": "0",
+                    "time": "23/01/2021-16:50:52",
+                    "content": "    MicahZoltu:  Can you elaborate a bit more on this? EIP-155 is a transaction parsing/encoding/decoding rule, and each typed transaction gets to completely define how it is parsed/encoded/decoded aside from the 2718 envelope.   I took this EIP as a specific example. It seems that we thus only have to apply this EIP on Legacy transactions and thus that (by your response) by EIP-2718 each transaction can decide themselves how exactly they should be hashed, signed, etc. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "65",
+                    "likes": "0",
+                    "time": "06/02/2021-12:31:41",
+                    "content": " shall we consider the TransactionType field to be bit flags:  so for example: Legacy       == 1 Eip1559     == 2 AccessList == 4 then we can have a legacy with access list (5) and eip-1559 with access list (6) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "66",
+                    "likes": "1",
+                    "time": "06/02/2021-13:37:55",
+                    "content": "Having a separate bit for each transaction type would limit us to 8 bits per byte, and since legacy transactions set the top two bits in the first byte, and we would like to reserve the high bit for future expansion that leaves us with only 6 bits of usable space for the first byte and 7 bits for each subsequent byte (if we did naive length extension). More importantly though, I think most future transaction types will not compose as nicely as access lists (which just adds a new optional field).  Some will, like expiring transactions if that goes in, but other types like things that change signature scheme or things that greatly alter what fields a transaction has don\u2019t compose nearly as well (like cancellation transactions). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.109224598930481
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ricmoo",
+                    "index": "67",
+                    "likes": "3",
+                    "time": "09/03/2021-22:52:27",
+                    "content": "Heya! I am adding this to ethers right now and just wanted to add a quick suggestion. Can we add to the EIP that transaction type 0x19 is reserved, so that this never interferes with EIP-191? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.5476190476190474
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "68",
+                    "likes": "0",
+                    "time": "10/03/2021-04:03:45",
+                    "content": "My hope is that we can create a list of transaction types in the eth1.0-specs repository.  In there we can record the type for 2930, 1559, 3074, legacy transactions (2 bytes), and 0x19 for signed messages. If we can do that, I will probably remove the mention of legacy transaction types from this EIP to keep all \u201cconsumed\u201d types consolidated in the list. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/laudiacay",
+                    "index": "69",
+                    "likes": "0",
+                    "time": "09/04/2021-03:25:25",
+                    "content": "Hi! Which tests in the ethereum/tests repo test the implementation for this EIP? I see that the 2930 ones test some of the functionality, but I am not sure if there are existing tests for the SHOULD re: signing the first transaction byte, or if I should be writing my own? I didn\u2019t see a mention of this EIP in the tests repo, which is why I\u2019m bothering people here  Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "70",
+                    "likes": "0",
+                    "time": "09/04/2021-06:27:18",
+                    "content": "EIP-2718 is a specification for how future new transaction types should be specified so there isn\u2019t really anything to test for this EIP alone.  In fact, you could code up 2718 and include it without a fork block back in a genesis client and you would be able to sync.    The 2930 tests should cover everything about 2930, including how it is laid out and signed (which, according to its specification, should be a valid 2718 enveloping). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.836363636363636
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/prevail",
+                    "index": "71",
+                    "likes": "0",
+                    "time": "23/01/2022-07:17:30",
+                    "content": "hello all. i have 3 somewhat random questions about eip-2718: 1 where can i find a list of all of the transaction types? so far i\u2019ve figured out that 0 is legacy and 2 is eip-1559 but that\u2019s it 2 eip-2718 what do \u201cv\", \u201cr\", and \u201cs\" stand for in this snippet: rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s]) 3 compute-raw-transaction is this code supposed to be used on a tx that has not been sent yet, has been sent but not mined, or has been mined? i realize this isn\u2019t specifically about eip-2718 but i guess it\u2019s somewhat related to it thanks in advance ",
+                    "links": [
+                        "https://docs.ethers.io/v5/single-page/#/v5/cookbook/transactions/-%23-cookbook--compute-raw-transaction"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "72",
+                    "likes": "2",
+                    "time": "23/01/2022-08:01:21",
+                    "content": "    prevail:  1 where can i find a list of all of the transaction types? so far i\u2019ve figured out that 0 is legacy and 2 is eip-1559 but that\u2019s it   At the moment there are: Type 0: Placeholder for legacy transactions, but they are not actually encoded in consensus as \u201ctype 0\u201d anywhere.  Some tools will fill in the type field as 0 for legacy transactions just for consistency. Type 1: EIP-2930 (access lists) Type 2: EIP-1559 There are also a couple of other things that aren\u2019t technically typed transactions, but would be useful to avoid collisions with such as 0x19 which is a prefix used to indicated a signed message.     prevail:  2 eip-2718 what do \u201cv\", \u201cr\", and \u201cs\" stand for in this snippet: rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])   v,r,s are the three parts of a secp256k1 signature.  New transaction types are also signed with secp256k1 and also have an r and s to make up the signature, but instead of v (which is an incredibly complicated parameter in legacy transactions) they now just have a yParity which is a single bit (true or false) that gives enough additional information to allow for recovery of the address of the person that signed a transaction (along with the signature and the transaction being signed).     prevail:  3 compute-raw-transaction is this code supposed to be used on a tx that has not been sent yet, has been sent but not mined, or has been mined? i realize this isn\u2019t specifically about eip-2718 but i guess it\u2019s somewhat related to it   @ricmoo would better be able to answer this as they are the maintainer of ethers.  My guess though is that it is used to create the \u201craw\u201d (RLP encoded) transaction from a more traditional in-memory representation of it (which is usually JSON or a native object of some kind). ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-1559",
+                        "https://eips.ethereum.org/EIPS/eip-2718",
+                        "https://docs.ethers.io/v5/single-page/#/v5/cookbook/transactions/-%23-cookbook--compute-raw-transaction"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.534983766233767
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ricmoo",
+                    "index": "74",
+                    "likes": "1",
+                    "time": "23/01/2022-16:06:48",
+                    "content": "@prevail Here is the maintained list of signature prefixes: execution-specs/lists/signature-types at master \u00b7 ethereum/execution-specs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "75",
+                    "likes": "0",
+                    "time": "24/01/2022-10:33:32",
+                    "content": "I suspect that an irregular state change would not be considered acceptable to the core devs.  We have discussed it before for situations like this where we have some critical upgrade we need to do but there are a small number of contracts out there that will break.  This recurring problem is part of what makes EVM versioning something that many want, because it would allow us to change behavior of future contracts without changing the behavior of legacy contracts.  That being said, since tx.origin reaches out of its call frame for data it isn\u2019t immediately obvious that this would be handled cleanly by EVM versioning. Can Etheria deploy a new contract and migrate users from old to new (either automatically via airdrop or via manual user migration)?  Augur and several other things have done this in the past to deal with upgrades. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.255997474747475
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "77",
+                    "likes": "1",
+                    "time": "25/01/2022-09:34:35",
+                    "content": "@cyrus Did you mean to post this in this thread?  After reading back through the recent history, it seems unrelated to this EIP or the discussion at hand. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.479166666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "79",
+                    "likes": "0",
+                    "time": "03/02/2022-03:32:00",
+                    "content": "I\u2019ve deleted my comments and am withdrawing my concerns. We can work around this EIP if adopted. We are already advising owners to keep the NFTs in separate, cold accounts. \u201cDon\u2019t mine\u201d and \u201cdon\u2019t sponsor transactions\u201d is basically the same advice. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 3.5
+                }
+            ]
+        }
+    ],
+    "group_index": "1079"
+}

@@ -1,0 +1,249 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-3326-wallet-switchethereumchain/5471",
+            "title": "EIP-3326: wallet_switchEthereumChain ",
+            "index": 5471,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "04/03/2021-23:37:28",
+                    "content": "A draft PR has been created for wallet_switchEthereumChain, a sibling method of wallet_addEthereumChain (EIP-3085, discussion) and wallet_updateEthereumChain (EIP-2015, discussion). This is the official discussion thread for EIP-3326. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-3085",
+                        "https://ethereum-magicians.org/t/eip-3085-wallet-addethereumchain/5469",
+                        "https://eips.ethereum.org/EIPS/eip-2015",
+                        "https://ethereum-magicians.org/t/eip-2015-wallet-update-chain-json-rpc-method-wallet-updatechain/3274"
+                    ],
+                    "GPT-summary": "The post introduces a draft PR for wallet_switchEthereumChain, which is a sibling method of wallet_addEthereumChain and wallet_updateEthereumChain. The post serves as the official discussion thread for EIP-3326. The topics that match the post include the author explaining the proposal, third parties giving constructive criticism, and asking questions about the proposal. Additionally, third parties may be auditing and reviewing the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "04/03/2021-23:41:13",
+                    "content": "cc\u2019ing parties I believe to be interested: @MicahZoltu, @wighawag, @pedrouid ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "05/03/2021-01:20:44",
+                    "content": "I think this is a fine proposal, with some definite benefit, but I think it leaves some user experience to be desired. Part of the reason this EIP is needed is because currently the EIP-3085 wallet_addEthereumChain method will throw an error when trying to switch the user to a \u201cdefault\u201d network on MetaMask, and so there is currently no programmatic way to suggest a user switch to a \u201cdefault\u201d network. One proposed approach is this EIP as well as a hasEthereumChain method, which combined would mean potentially multiple acts of consent to perform this one action:  Permission to view available networks (if the network is not available) Permission to add & switch to network (if the network is available) Permission to switch network  Meanwhile, the dapp didn\u2019t need to view all networks to complete its intended goal of suggesting a network if it wasn\u2019t present. It could\u2019ve provided that fallback case in its original request. I think these many actions can be summarized with a single method instead, like a switchWithOptionalFallbackToAdd method. The current proposal could be simply extended with an optional parameter to make this possible. For example, we could provide an optional parameter fallbackRpc, which if the user lacked the requested network would fall back to triggering the EIP-3085: wallet_addEthereumChain logic. {   \"id\": 1,   \"jsonrpc\": \"2.0\",   \"method\": \"wallet_switchEthereumChain\",   \"params\": [     {       \"chainId\": \"0x5\",       \"fallbackRpc\": {         \"chainId\": \"0x5\",         \"chainName\": \"Goerli\",         \"rpcUrl\": \"https://goerli.infura.io/v3/INSERT_API_KEY_HERE\",         \"nativeCurrency\": {           \"name\": \"Goerli ETH\",           \"symbol\": \"gorETH\",           \"decimals\": 18         },         \"blockExplorerUrl\": \"https://goerli.etherscan.io\"       }     }   ] }  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.876758658008658
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "05/03/2021-02:46:30",
+                    "content": "If we want to enable switchEthereumChain to fall back to addEthereumChain, IMO we should just specify the same parameter object for the former as the latter, and let implementers choose whether to fall back to addEthereumChain. I don\u2019t think we need a separate method. Doing it this way should work nicely. Edit: This would mostly obviate the need for hasEthereumChain as well, which is problematic anyway from a user privacy perspective. I\u2019d be curious to hear what @wighawag has to say about that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "5",
+                    "likes": "2",
+                    "time": "05/03/2021-08:12:25",
+                    "content": "Why does the dapp need to tell the provider to switch chains? I feel like we should instead just have the dapp submit the chainId along with any request.  For layer 2 and cross-chain applications, the dapps may be sending requests to multiple chains at the same time and switching chains between each request is likely to introduce bugs in the dapp as it would be quite easy to have two parts of your code both switching chains at the same time and then racing to get requests on the wire.      danfinlay:  currently the EIP-3085 wallet_addEthereumChain method will throw an error when trying to switch the user to a \u201cdefault\u201d network on MetaMask, and so there is currently no programmatic way to suggest a user switch to a \u201cdefault\u201d network   Why does MetaMask fail in this case instead of just returning success?  The dapp wants to ensure that the provider is able to talk to chain ID 1, which is why they call wallet_addEthereumChain.  If the provider can already talk to chain ID 1, then you can just return success to that call. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.513888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "6",
+                    "likes": "2",
+                    "time": "05/03/2021-22:59:53",
+                    "content": "    MicahZoltu:  I feel like we should instead just have the dapp submit the chainId along with any request.   Parameterizing the chain ID is absolutely the destination, but for our own case, we aren\u2019t ready to ship such a provider API just yet. We see it as a potential opportunity to get rid of the injected provider model entirely, so it\u2019s a much bigger and distinct discussion.     MicahZoltu:  Why does MetaMask fail in this case instead of just returning success? The dapp wants to ensure that the provider is able to talk to chain ID 1, which is why they call wallet_addEthereumChain. If the provider can already talk to chain ID 1, then you can just return success to that call.   Technically speaking, we could do it that way and just avoid this method entirely. We were somewhat concerned about habituating developers to rely on addEthereumChain to switch the active chain while chain switching is a concept, but maybe that\u2019s ultimately fine. In a multi-chain provider world, there chain ID will always have to be parameterized, and there will be no network switching anyway.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.700980392156863
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "06/03/2021-06:20:05",
+                    "content": "    rekmarks:  Parameterizing the chain ID is absolutely the destination, but for our own case, we aren\u2019t ready to ship such a provider API just yet. We see it as a potential opportunity to get rid of the injected provider model entirely, so it\u2019s a much bigger and distinct discussion.   What sort of time frame are you imagining for doing it the \u201cright\u201d way?  I\u2019m not a fan of creating standards we know are bad and we don\u2019t plan on keeping around.  A lot of engineering work across the ecosystem will go into supporting this stuff and it sucks to throw that all away shortly after if we can avoid it.  I would rather provider and dapp developers instead focus on building things correctly in the first place. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3076923076923075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maze",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "07/03/2021-20:29:00",
+                    "content": "I think there was EIP-2015 but nothing happened: https://github.com/ethereum/EIPs/pull/2015 There will be more and more multichain dapps so this feature becomes more important very quickly ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "07/03/2021-21:06:28",
+                    "content": "EIP-2015 is not abandoned, it\u2019s just in draft. It\u2019s supposed to be like EIP-3085 (wallet_addEthereumChain) but with update semantics. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-3085"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/maze",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "08/03/2021-11:37:32",
+                    "content": "I see, thanks. Too bad this is still in draft after being created in May 2019. In my opinion this would be pretty big for multichain dapps  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "10/03/2021-19:49:44",
+                    "content": "You\u2019re not wrong! Everyone involved is just working on a million different things. There\u2019s always room for people willing to chop wood and carry water  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "12",
+                    "likes": "6",
+                    "time": "11/03/2021-15:23:30",
+                    "content": "Personally I always viewed wallet_updateEthereumChain to have multiple behaviors which would remove the need for all these methods to exist in parallel. Instead of having verbs for has, add, switch and update it would always be the same one. There is very negligible set of use-cases where a dapps wants to add and/or update a chain without switching. In fact I would replace all these methods with wallet_changeEthereumChain and it would have the following behavior:  if chainId does not exist -> wallet adds new one and switches to it if chainId exists: 2.1. parameters match existing -> switches network 2.2. parameters do not match existing but can be changed -> updates network and switches to it 2.3. parameters do not match existing but cannot be changed -> throws error as a default chain  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.335227272727273
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/KBKUN024",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "18/08/2021-03:44:40",
+                    "content": "Hi! I left a comment in #2944 in github,could you please tell me how to fix that? I\u2019m so confused now,please help  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/KBKUN024",
+                    "index": "14",
+                    "likes": "1",
+                    "time": "18/08/2021-03:46:08",
+                    "content": "link is here:switch_Ethereum chain do ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sbacha",
+                    "index": "15",
+                    "likes": "2",
+                    "time": "07/02/2022-05:37:53",
+                    "content": "EIP4337 is an excellent example of a use case where a dapp would want to add/update a chain without switching ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/php4fan",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "18/06/2022-17:05:44",
+                    "content": "This specification is ambiguous about what happens if you switch to the network that is already the current one. I would expect it to immediately return success, and I hope it\u2019s what it does (anything else would be stupid), but the specification doesn\u2019t explicitly say it. Actually, it implicitly says something that could be interpreted to the contrary:  null is returned if the active chain was switched, and an error otherwise.  This, again, is ambiguous, because if the current network is 123 and you ask to switch to 123, one may say that the chain was not switched, and therefore this would be saying that an error would be thrown in this case; or one may say that the active chain was switched from 123 to 123, and therefore null is returned. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.4523809523809526
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Squeebo",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "21/07/2022-17:27:10",
+                    "content": "EIP-3085 indicates:  The method MUST return null if the request was successful, and an error otherwise. A request to add a chain that was already added SHOULD be considered successful.  I think this applies to EIP-3326 as well;   If the dapp requests to switch chain, and it already matches the selected chain, the expected result is to return null due to success. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.574999999999999
+                }
+            ]
+        }
+    ],
+    "group_index": "1251"
+}

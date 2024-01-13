@@ -1,0 +1,123 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-3436-expanded-clique-block-choice-rule/5809",
+            "title": "EIP-3436: Expanded Clique Block Choice Rule ",
+            "index": 5809,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "26/03/2021-04:25:38",
+                    "content": "In early March we had a couple of deadlocks on the Goerli network. These resulted from clients observing competing out of order blocks and settling on different equally preferred chain head blocks.  This EIP proposes a block choice rule that should be deterministic regardless of when the blocks were observed.  I have weak opinions as to what the particular rules should be, so if you have better ideas feel free to propose.  But I have a strong opinion that first observed should not be one of the rules as that is not deterministic across nodes and is what caused the deadlock.   github.com/ethereum/EIPs         Clique Block Choice Rule   ethereum:master \u2190 shemnon:cliqueBlockChoice            opened 04:21AM - 26 Mar 21 UTC               shemnon             +117 -0           ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/3436",
+                        "https://github.com/shemnon",
+                        "https://github.com/ethereum/EIPs/pull/3436/files"
+                    ],
+                    "GPT-summary": "The author of the post is explaining a proposal for a block choice rule in the Goerli network to prevent deadlocks. The author is open to feedback and suggestions for the rules. A 3rd party could give constructive criticism or ask questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Not a proposal"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.819444444444444
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "29/03/2021-23:52:33",
+                    "content": "@karalabe can I get your take? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/meowsbits",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "23/04/2021-13:18:04",
+                    "content": "Hey @shemnon. I\u2019m working on implementing this at etclabscore/core-geth. I ran into an issue with the second Rationale > Scenario defined in the spec. It seems that the second fork 2,4,6 is invalid, since signer 6's block will be rejected for having signed too recently. Below I\u2019m using zero-indexed block signer order indexes, so 7 is really 8 On that fork, the sequence of signers is described to be ... 7, 0, 1, 2, 3, 4, 5, 6, 1, 3, 5. This supposes that the latest fork block from signer 5 (zero-index name for signer 6) is 4 blocks from their last block on the common segment. With 8 signers and a SIGNER_LIMIT of 8/2+1 from EIP-225 this causes that latest fork block to be invalid (5>4). Maybe I\u2019ve got something wrong? Or misunderstood the scenario?   github.com   etclabscore/core-geth/blob/358a532375b217a9dfddbba5039c9714779c0a3f/consensus/clique/clique_test.go#L273-L292  \t\t\t\tFIXME(meowsbits): This scenario yields a \"recently signed\" error \t\t\t\twhen attempting to import Signer 5 (really #6 b/c zero-indexing) into the \t\t\t\tsecond fork.  \t\t\t\tOn that fork, the sequence of signers is specified to be \t\t\t\t... 7, 0, 1, 2, 3, 4, 5, 6, 1, 3, 5  \t\t\t\t(vs. the other fork) \t\t\t\t... 7, 0, 1, 2, 3, 4, 5, 6, 0, 2, 4  \t\t\t\tThe condition for \"recently signed\" is (from *Clique#verifySeal):  \t\t\t\t// Signer is among recents, only fail if the current block doesn't shift it out \t\t\t\tif limit := uint64(len(snap.Signers)/2 + 1); seen > number-limit { \t\t\t\t\treturn errRecentlySigned \t\t\t\t}  \t\t\t\tEvaluated, this yields  \t\t\t\t=> recently signed: limit=(8/2+1)=5 seen=13 number=17 number-limit=12       ",
+                    "links": [
+                        "https://github.com/etclabscore/core-geth/blob/358a532375b217a9dfddbba5039c9714779c0a3f/consensus/clique/clique_test.go#L273-L292"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.992647058823529
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "23/04/2021-15:32:09",
+                    "content": "Yea, the even length halt scenario isn\u2019t as clean as I hoped. Here\u2019s a revised one.  8 nodes, zero based.  0-6 all produce in-order blocks, then a netsplit. 0, 2, and 3 on the first fork and 1, 4, 6, 7 on the second fork, and 5 goes offline.  7, 0, and 1 all missed an important in-turn block. How does this scenario sound?  0, 1, 2, 3, 4, 5, 6,  fork 1 - 0, 3, 2.  Possible next: 1, 4, 5, 7 On this fork: 0, 2, 3   fork 2 - 1, 7, 4.  Possible next: 0, 2, 3, 5 On this fork: 1, 4, 6, 7   Offline after split: 5   Do we prefer fork 1 or fork 2?  I don\u2019t have a strong opinion but IMHO it should be calculated strictly based on what is in the tested block, not on the eligible next blocks nor on the prior blocks, and not depend on knowledge of the forks other validators are on. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.663461538461538
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "07/05/2021-07:51:53",
+                    "content": "  Then choose the block whose validator had the least recent in-turn block assignment. Then choose the block with the lowest hash.   As for those rules\u2026 Rule number 3 means that determining whether to reorg is not really bounded. If it were 7 signers, only 5 were active, and chugged through 10M blocks. And suddenly number 6,7 pops up, and constructs a block each. Then we\u2019d have to go through 10M blocks while searching for the \u2018least recent\u2019. I guess I don\u2019t see why we don\u2019t just skip 3, and go directly to 4  and compare hashes ? That seems like the ultimate tie-breaker, and it\u2019s highly \u2018localized\u2019 and cheap to perform. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.063333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "07/05/2021-14:30:01",
+                    "content": "Least recent may not be the best wording.  The specification of the EIP describes what that means, and it does not imply a 10M block lookback, just calculating data within the header and knowing what the full set of validators is:  When resolving rule 3 clients should use the following formula, where validator_index is the integer index of the validator that signed the block when sorted as per epoch checkpointing, header_number is the number of the header, and validator_count is the count of the current validators. Clients should choose the block with the largest value. Note that an in-turn block is considered to be the most recent in-turn block. (header_number - validator_index) % validator_count   We could skip 3 and go to 4 but that turns it into a PoW race when trying to censor the chain. With rule 3 in place you are only ever in a PoW race with yourself. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.861111111111112
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tlqcore",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "22/03/2023-09:51:41",
+                    "content": "Hello I would like to reopen EIP-3436: Expanded Clique Block Choice Rule \u00b7 Issue #300 \u00b7 ethereum/pm \u00b7 GitHub or better understand why it was closed without being implemented. We are using a modified clique consensus for our Q blockchain. We would like to implement deterministic fork choice as proposed. We can do it in our client (derived from geth) only, but  we prefer to change it in geth as contribution, but also for peer review purpose also, the rationale for not doing the proposed changed is not available. Maybe we overlook something, but deterministic fork choice appears very desireable  ",
+                    "links": [
+                        "https://q.org/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4
+                }
+            ]
+        }
+    ],
+    "group_index": "1284"
+}

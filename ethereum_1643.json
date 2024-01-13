@@ -1,0 +1,106 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4886-a-proxy-ownership-and-asset-delivery-register/8559",
+            "title": "EIP-4886: A proxy ownership and asset delivery register ",
+            "index": 8559,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omnus",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "09/03/2022-07:58:02",
+                    "content": " Proxy Ownership Register A proxy ownership register allowing trustless proof of ownership between ethereum addresses, with delegated asset delivery status: Draft type: Standards Track category: ERC  PR: Pull request for eip for a proxy ownership register by omnus \u00b7 Pull Request #4886 \u00b7 ethereum/EIPs \u00b7 GitHub Docs: https://docs.epsproxy.com/ ",
+                    "links": [
+                        "https://docs.epsproxy.com/"
+                    ],
+                    "GPT-summary": "The post introduces EIP-4886, a draft proposal for a proxy ownership register that enables trustless proof of ownership between Ethereum addresses with delegated asset delivery status. The author explains the proposal and provides a link to the documentation. The post also invites feedback and questions from third parties and mentions that the proposal is currently under review.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Token economics",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "05/04/2022-15:55:05",
+                    "content": "@omnus do you mind removing the EIP text from you post and just linking to the EIP PR? Thanks ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omnus",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "08/04/2022-08:49:01",
+                    "content": "That\u2019s a good idea @matt. Done! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 9.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "14/04/2022-16:37:21",
+                    "content": "Interesting idea! Seems vaguely similar to Non-Fungible Token with usage rights by @kkimos and EIP-4907 by @LanceSnow (et. al). I\u2019d love to see all of these \u201cseparate transfer permission from usage permission\u201d EIPs collaborate, though not strictly required. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4907"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cxkoda",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "05/09/2022-12:52:07",
+                    "content": "Thanks for spinning up this EIP. A few questions about some design decisions:  Why did you decide to have a 1:1 relationship between nominator and proxy? Excluding multiple proxies? Why does the proxy need to accept the nomination on-chain? Couldn\u2019t this also be done via an ECDSA signature from the proxy that is submitted together with the nomination in a single tx? (enabling the setup of proxies without having to fund them) Why did you decide to strip the nominating address of all benefits? In the EIP you give \u201cotherwise two addresses represent the same holding.\u201d as explanation. Whether this is a problem or a feature depends on the PoV and in some cases it might actually be the desired behaviour. In the former case it can easily be solved on the consumer side by doing all of the bookkeeping in terms of the nominating address. Is there more to it?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.478835978835979
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/omnus",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "06/09/2022-07:24:20",
+                    "content": "Hi @cxkoda, Thank you very much for reading the EIP and taking the time to comment, I really appreciate it. On your questions:  Why did you decide to have a 1:1 relationship between nominator and proxy? Excluding multiple proxies?  Early on I considered creating a 1:n structure, but in the end opted for 1:1 for a few reasons:  To avoid duplicating rights. The rights inferred by owning an NFT are binary; either you own it or you don\u2019t. If you create a 1:n structure then the rights associated with that token could be \u2018double spent\u2019. An extension of the first point, but I think that at any moment in time you should be able to unambiguously identify the address that has the rights associated with holding an NFT. You can only do that with a 1:1 mapping. To avoid the need for any unbounded loops within code, particularly on the smart contract side. Ultimately, because it was simpler while still achieving the key use case, which was allowing users to operate as if they had the holding of another address. The key target use case for the protocol is this scenario, where a user owns and controls both the hot and cold wallets and wants to benefit from their holding without exposing it to interactions.   Why does the proxy need to accept the nomination on-chain? Couldn\u2019t this also be done via an ECDSA signature from the proxy that is submitted together with the nomination in a single tx? (enabling the setup of proxies without having to fund them)  It certainly could, and I think that\u2019s a great idea! My main reason was that I wanted there to be no reliance on any off-chain component at all. Collecting a sig and then combining into another transaction would mean that the register isn\u2019t maintained entirely on-chain. Making it entirely on-chain has enabled me to deploy EPS as a \u2018headless protocol\u2019, in that there is no front-end off chain code required to add or maintain the register, and wallets never need to connect directly to a UI (not even something like etherscan). Instead the protocol exposes an API through ERC20 txns. I mean to write up the headless protocol as an EIP at some point, I think it\u2019s pretty neat :).  Why did you decide to strip the nominating address of all benefits? In the EIP you give \u201cotherwise two addresses represent the same holding.\u201d as explanation. Whether this is a problem or a feature depends on the PoV and in some cases it might actually be the desired behaviour. In the former case it can easily be solved on the consumer side by doing all of the bookkeeping in terms of the nominating address. Is there more to it?  Yes that\u2019s true, I could have left the rights for both the cold and hot wallet and relied on the consumer to decide whether it accepted one or the other. But I felt that was somewhat obviating the responsibility to maintain the atomic nature of the rights associated with the NFT. I strongly feel that\u2019s the protocol\u2019s responsibility. The NFT creator envisaged one set of rights when tokenId 3,321 was minted (for example), and any primitive that builds composability on top of that should respect that constraint (imo). So in this regard when those rights and benefits \u2018bubble up\u2019 from the cold wallet to a hot wallet they can no longer be ascribed to the cold. To follow on from that, it also has the benefit of making integration easier (and I like things that are simple  ). The consumer doesn\u2019t need to worry about \u2018double spend\u2019 of rights, as the protocol won\u2019t allow it. It also allows the very simple \u2018find and replace\u2019 integration where instead of querying a contract for a holder\u2019s balance you can query EPS (which is backwards compatible). Thank you again for the feedback, it means a lot. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.457460317460318
+                }
+            ]
+        }
+    ],
+    "group_index": "1643"
+}

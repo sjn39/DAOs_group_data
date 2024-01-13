@@ -1,0 +1,120 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/discussion-thread-for-single-slot-finality/8917",
+            "title": "Discussion thread for single-slot finality ",
+            "index": 8917,
+            "category": [
+                "Primordial Soup"
+            ],
+            "tags": [
+                "consensus-layer",
+                "finality"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "14/04/2022-06:15:50",
+                    "content": "See: Paths toward single-slot finality - HackMD ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/should-the-stake-value-of-32eth-be-static/9054/2"
+                    ],
+                    "GPT-summary": "The post is a brief announcement of a discussion thread related to a proposal for single-slot finality. The author is not asking for feedback, but rather explaining the proposal. A 3rd party is asking questions about the proposal.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Olshansky",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "21/04/2022-18:07:53",
+                    "content": " The \u201cinterface\u201d between Casper FFG finalization and LMD GHOST fork choice is a source of significant complexity, leading to a number of attacks that have required fairly complicated patches to fix, with more weaknesses being regularly discovered. Single-slot finality offers an opportunity to create a cleaner relationship between a single-slot confirmation mechanism and the fork choice rule (which would only run in the \u2265 1/3 offline case). Other sources of complexity (eg. shuffling into fixed-size committees) could also be cut.  Overall excerpt goal: Reduce complexity. Bringing attention to: fork choice rule (which would only run in the \u2265 1/3 offline case). My thoughts: Simply having the code / implementation in place for the fork choice rule is complex (implementation, documentation, testing, attack vectors, integration, etc\u2026). Short proposal: If byzantine safety cannot be achieved within some timeout due to offline / unresponsive validators, is dynamically reducing the validator set and defaulting to Casper FFG an option? The tradeoff we\u2019re making is architectural and implementation simplicity over security, but software complexity also comes with a big cost. Note that I have not read the \u201cCombining GHOST and Casper\u201d paper, so let me know if the answer lies in there.  The fork choice rule (LMD GHOST) is only used in the exceptional case where a committee doesn\u2019t confirm (this requires >1/4 to be offline or malicious).  What is the source of the \u201c1/4\u201d figure?  Most of the time, validators could withdraw instantly.  Does this imply withdrawing staked funds or withdrawing as a validator actor?  The biggest problem that remains is signature aggregation. There are 131,072 validators making and sending signatures, and these need to be quickly combined into a single large aggregate signature.  What is the source of the load?  Computation related to validation of each individual signature? Networking requirements related to flooding the network with > 100K non trivially sized payloads? Computation related to signature aggregation?  Background: I\u2019m asking this question for a personal reason since the next version of our team\u2019s protocol will use Hotstuff and will require threshold signature that aggregate > 100K signatures. Theoretically, it is looking to me that linear networking requirements with BLS signatures might be a viable solution here, but I\u2019m looking to build more context. ",
+                    "links": [
+                        "https://ethresear.ch/t/balancing-attack-lmd-edition/11853"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.35652709359606
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "01/07/2022-09:04:32",
+                    "content": " What is the source of the \u201c1/4\u201d figure?  Assuming that the validator set rotates 1/4 each time. The protocol I described there relies on \u201cstitched validator sets\u201d, where finality could break if two consecutive validator sets sign conflicting data. Hence you have to set the threshold to 3/4, so you have 1/4 liveness fault tolerance, and 1/4 safety fault tolerance because 1/2 minus 1/4 difference from rotation.  Does this imply withdrawing staked funds or withdrawing as a validator actor?  Withdrawing staked funds.  What is the source of the load?  Signature validation is just ECADDs and turns out to be not that hard. Aggregation is the bigger challenge. We have lots of signatures flying around lots of p2p subnets, and it\u2019s pretty expensive data-wise though there are ways to optimize it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.3583333333333325
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Olshansky",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "04/07/2022-20:38:53",
+                    "content": " Assuming that the validator set rotates 1/4 each time  Q1: Do we rotate the validator set simply because it\u2019s too large to have everyone vote on every block?  where finality could break if two consecutive validator sets sign conflicting data  Q2: If we were to sacrifice some liveness through increased block times in exchange for larger validator sets, would we not be able to have all the validators participate in every round and just ommit this problem altogether?  We have lots of signatures flying around lots of p2p subnets, and it\u2019s pretty expensive data-wise though there are ways to optimize it.  Q3: My thoughts/experience point me to either FROST DKG or BLS signature aggregation. Wanted to know if that\u2019s what you had in mind or something else I should research?  Disclosure: Though these comments are relevant in the context of Ethereum, my motivation is to transfer the learnings over to the research and prototyping of v2 of the protocol my team is working on. Happy to be an open book upon request but don\u2019t want to add noise here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.732142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "06/07/2022-07:52:34",
+                    "content": "Q1: the purpose of having supercommittees at all is to avoid everyone having to vote on every block. But once you have supercommittees, the purpose of rotating them is to make sure that everyone has a fair chance of being on a supercommittee about the same percent of the time as everyone else. Q2: yeah this is certainly a viable path. Q3: we\u2019re already planning to optimize the heck out of BLS signature aggregation for this! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.834821428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kladkogex",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "06/07/2022-16:01:08",
+                    "content": " Today, there are ~285,000 validators, accounts that have deposited 32 ETH and as a result can participate in staking. Validators do not correspond one-to-one to users: wealthy stakers may control many hundreds of validators.  I think the reality of where everything is going is that out of these 285,000 validators, 50%+ percent is controlled by Coinbase, Binance, and LIDO, and, an unfortunate fact is that the centralization only keeps increasing. At some point Coinbase will fork the agent, and run all 50,000 \u201cagents\u201d in one real agent. The fork is pretty simple - just sign 50,000 times using different keys and submit the signatures from a single agent. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.488095238095239
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frisitano",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "10/08/2022-19:11:51",
+                    "content": "I wonder if you are aware of the recent research produced by the web3 foundation on succinct light clients that leverage BLS finality votes.  A high level description of the scheme is that a zk proof is produced that attests to the fact that some subset (e.g. 2/3) of a validator set has signed off on the finality of a block.  The scheme leverages BLS signature aggregation and has support for validator set rotation.  It is claimed that the scheme is efficient - proofs can be produced in ~ms and therefore can keep up with finalised tip.   It is suggested that the scheme can scale to 100,000\u2019s of validators. The produced zk proof can then be used for bridging.  This is of particular importance now that Ethereum have committed to the rollup-centric roadmap as rollups will benefit from a way to trustlessly bridge assets from Ethereum to the rollup.  Under this model the finality proof could be verified on the rollup in the zkvm.  Web3f recently uploaded a paper and supporting code to github, you can find it here apk-proofs/Light Client.pdf at main \u00b7 w3f/apk-proofs \u00b7 GitHub. I wonder if it would be worth considering incorporating something similar into the proposed finality model. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.846666666666667
+                }
+            ]
+        }
+    ],
+    "group_index": "1694"
+}

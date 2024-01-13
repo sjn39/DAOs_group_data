@@ -1,0 +1,82 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/a-simple-proposal-for-standards-on-cross-chain-erc-20-transfers/9786",
+            "title": "A simple proposal for standards on cross-chain ERC-20 transfers ",
+            "index": 9786,
+            "category": [
+                "Tokens"
+            ],
+            "tags": [
+                "multi-chain",
+                "cross-chain"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axelar-person",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "28/06/2022-19:26:39",
+                    "content": "There is broad-based demand for standardization of cross-chain transfers of ERC-20 tokens. (See for example this proposal from Optimism.) We at Axelar are seeking feedback on a proposal targetting the following goals:  Simplicity and flexibility. This standard should be abstract enough to facilitate token transfer to both EVM and non-EVM chains. The caller doesn\u2019t need to know how cross-chain transfers are implemented.  The idea is to add a transferXChain method that behaves like a conventional transfer except it also accepts a destChain argument. Similarly, we add allowanceXChain, approveXChain, transferFromXChain methods and accompanying events TransferXChain, ApprovalXChain. Taking inspiration from ERC-223, we also add a generic auxiliaryData argument to these new methods so as to facilitate additional features at the discretion of the implementer. With these items in mind, the new interface might look something like: interface IERC20XChain is IERC20 {     function transferXChain(         string recipient,         uint256 amount,         string recipientChain, // new         bytes auxiliaryData    // new     ) external returns (bool);      function approveXChain(         string spender,         uint256 amount,         string spenderChain, // new     ) external returns (bool);      function allowanceXChain(         address owner,         string spender,         string spenderChain, // new     ) external view returns (uint256);      function transferFromXChain(         string sender,         string recipient,         uint256 amount,         string recipientChain, // new         string senderChain,    // new         bytes auxiliaryData,   // new     ) external returns (bool);      event TransferXChain(         string indexed from,         string indexed to,         uint256 value,         string toChain,       // new         string fromChain,     // new         bytes auxiliaryData   // new     );      event ApprovalXChain(         address indexed owner,         string indexed spender,         uint256 value,         string spenderChain, // new     ); }   Notes  The implementer has complete flexibility in how to interpret recipientChain and how to execute the cross-chain transfer. For example, the implementer could use a cross-chain platform such as Axelar. The recipientChain is string to afford maximum flexibility and to play nice with block explorers. We recommend a separate standard such as CAIP-2 on a universal convention for which string sequences correspond to which chains. The recipient is now string to afford maximum flexibility for the address format in the destination chain. (For most chains an address fits into a bytes32 but we do not wish to preclude chains with longer addresses.)  recipientChain need not be different from the current chain. Presumably, implementers would optimize their implementation for this special case so as not to spam cross-chain infrastructure.  approveXChain and allowanceXChain have a new spenderChain argument so that the spender\u2019s address can reside on a different chain.  Example: Alice holds token T on chain A, approves Bob on chain B. Bob can post a tx to chain B that sends Alice\u2019s tokens from chain A to Charlie on another chain C. Alice\u2019s approval of Bob on chain B should be restricted only to chain B\u2014Bob should not be able to use this approval to send tokens on Alice\u2019s behalf from any chain other than B. It is the responsibility of the implementer to execute and enforce this behaviour.   Possible uses of auxiliaryData:  Define the unlocking condition for a token returning to its native chain. Execute functions elsewhere outside of this token transfer. Point to a specific on-chain mapping chain string -> chain data.     Community call We want your feedback! You\u2019re invited to a community call on Wednesday, July 13, 2022 at 13:00\u201313:30 UTC to discuss this proposal. [zoom link] Anyone who has read this far is welcome to attend. Explicit invitations for the following forum members who have expressed interest in this topic in the past: @maurelian @TransmissionsDev @Dzack23 @fredlacs @luzius @akolotov @frangio ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/issues/223",
+                        "https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md",
+                        "https://us06web.zoom.us/j/88358657959?pwd=K2dZaEd4YlBSdXFLQXAxOEpBa0c3UT09"
+                    ],
+                    "GPT-summary": "The post presents a proposal for standardization of cross-chain transfers of ERC-20 tokens. The proposal aims to be simple and flexible, allowing token transfer to both EVM and non-EVM chains. The post invites feedback on the proposal and provides details on the proposed interface, including new methods and events. The post also includes information on a community call to discuss the proposal and invites interested parties to attend.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.47264963297572
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "04/07/2022-19:29:07",
+                    "content": "What is the reasoning to add these in the token itself?      axelar-person:  We recommend a separate standard on a universal convention for which string sequences correspond to which chains.   See CAIP-2. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axelar-person",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "05/07/2022-13:29:43",
+                    "content": "FYI the community call has been rescheduled to Wednesday, July 13, 2022 at 13:00\u201313:30 UTC.  The original post has been updated to reflect this change. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/weijia31415",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "05/07/2022-21:49:48",
+                    "content": "We have submitted a crosschain identity of bytes32 format.  This format can provide chain id for hard fork cases.  The human readable version can be done by a registration smart contract. https://eips.ethereum.org/EIPS/eip-3220 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.871031746031746
+                }
+            ]
+        }
+    ],
+    "group_index": "1796"
+}

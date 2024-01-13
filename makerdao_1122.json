@@ -1,0 +1,97 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/seth2-token-smart-contract-technical-assessment/15283",
+            "title": "[sETH2] Token Smart Contract Technical Assessment ",
+            "index": 15283,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "sc-domain-work",
+                "ces-001",
+                "seth2"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/naz_dou",
+                    "index": "#1",
+                    "likes": "10",
+                    "time": "20/05/2022-14:51:47",
+                    "content": " [sETH2] Token assessment  General Information   Symbol : sETH2  Address(es) :  sETH2 Token (AdminUpgradeabilityProxy): 0xFe2e637202056d30016725477c5da089Ab0A043A  sETH2 Token (Implementation): 0x41bcac23e4db058d8d7aabe2fccdae5f01fe647a  StakeWise Pool (AdminUpgradeabilityProxy): 0xC874b064f465bdD6411D45734b56fac750Cda29A  StakeWise Pool (Implementation): 0xc8970E7C07c251625F9F93cE510b1D9c1a08d299  rETH2 Token (AdminUpgradeabilityProxy): 0x20BC832ca081b91433ff6c17f85701B6e92486c5  rETH2 Token (Implementation): 0x7cA75ccf264b2d9F91D4ABA7639fC7FcC73a7e09     Deployment Date :  sETH2 Token (AdminUpgradeabilityProxy): Jan-25-2021 05:42:19 PM +UTC  sETH2 Token (Implementation): Jun-17-2021 11:07:16 AM +UTC  StakeWise Pool (AdminUpgradeabilityProxy): Jan-25-2021 05:41:16 PM +UTC  StakeWise Pool (Implementation): Mar-23-2021 09:57:03 AM +UTC  rETH2 Token (AdminUpgradeabilityProxy): Jan-25-2021 05:51:21 PM +UTC  rETH2 Token (Implementation): Dec-10-2021 09:24:12 AM +UTC     Total supply : 59903902916826921918075 (59903 units, as of May 12th, 2022, 09:25 UTC)  Developers allotment : None  Collateral Onboarding Application: [sETH2] MIP6 Application   Project website: https://stakewise.io/   Github repository: stakewise/contracts   Can use the existing MCD collateral type adapter?: No, it can use a custom CropJoin adapter to handle reward token distribution.   Risk Summary   Does the contract implement the ERC20 token standards?: Yes  Risk analysis: HIGH.   Technical Information   Compiler version : v0.7.5+commit.eb77ed08   Decimals: 18   Overflow checks: Yes, the contract uses a @openzeppelin SafeMathUpgradeable library.   Mitigation against allowance race-condition: No.   Upgradeable contract patterns: Yes. An @openzeppelin proxy contract is used (OwnablePausableUpgradeable - EIP-1967 Transparent Proxy).   Access control or restriction lists: Yes. Those functions have restricted access:   toggleRewards - can be called only by admin (onlyAdmin modifier is used, which is a Government )  mint - can be called only by the Pool contract    Non-standard features or behaviors :  The contract is pausable by a privileged actor.  toggleRewards function is added to the Token which allows to disable/enable reward accrual The _transfer function can fail if it\u2019s called in the same block as the distribution of rewards (rETH2 Token)  require(block.number > rewardEthToken.lastUpdateBlockNumber(), \"StakedEthToken: cannot transfer during rewards update\");     Formal Verification Considerations:   Does transfer have simple semantics? No.  Does transferFrom have simple semantics? No.  Can balances be arbitrarily modified by some actor? No, a Pool contract can only mint new tokens.  Are there any external calls? Yes. Both mint and _transfer call the latest deployed version of rETH2 (RewardEthToken.sol)    Testnet Information  sETH2 Token (AdminUpgradeabilityProxy): 0x221d9812823dbab0f1fb40b0d294d9875980ac19  sETH2 Token (Implementation): 0x0786526ac78bbf46804acfa2d4dcf371404b0f77  StakeWise Pool (AdminUpgradeabilityProxy): 0x8c1EfEcFb5c4F1099AB0460b5659342943764Df7  StakeWise Pool (Implementation): 0x6931a7A2B196386005a3E1F9752542227d4f4d64  rETH2 Token (AdminUpgradeabilityProxy): 0x826f88d423440c305D9096cC1581Ae751eFCAfB0  rETH2 Token (Implementation): 0x45E444930236De8548CAe187C2CD0BbDE73f5e13    Contract Logic Summary  sETH2 Token At its core, the implementation is a standard ERC20 contract that uses the SafeMath library for arithmetic. This contract represents staked ether in StakeWise Pool and tokens are minted upon deposit. It does external calls on mint and _transfer function to rETH2 Token (which represents rewards for staked tokens) to keep track of accruing rewards. sETH2 contract has no redeem/burn function because ETH2 stakers can\u2019t remove their staked tokens until phase 1.5 of the merge, but users are free to un-stake at any time by trading their sETH2 back into ETH utilizing the protocol\u2019s liquidity pools(currently UniV3). Also, sETH2 contract has a fail condition for transferring tokens in case this transaction is done in the same block as reward distribution  StakeWise Pool The Pool contract is an entry point for deposits into the StakeWise Pool. This contract stores ETH collected from the users before it is sent to the ETH2 Validator Registration Contract and mint in a 1:1 ratio sETH2 Token, representing user stake. StakeWise Pool is a non-custodial network of validators created and operated by leading node operators on behalf of stakers using ETH deposited into the Pool. For each new block of 32 ETH collectively deposited by the users, a new validator is created and added to the StakeWise Pool to earn rewards. All rewards and penalties generated by the Pool are distributed among stakers pro-rata according to their share of the Pool. The balance of ETH deposits and rewards is reflected in sETH2 (staking ETH) and rETH2 (reward ETH) minted to stakers in a 1:1 ratio.  rETH2 Token The RewardEthToken is an ERC-20 contract. It reflects the rewards accumulated by the stakers in the form of rETH2 tokens. The tokens are mapped 1 to 1 to ETH. The total supply of rETH2 is the amount that is above the effective balance of all the validators registered for the StakeWise Pool.   Oracle nodes The Beacon Chain exists separately from Eth1, so information about the rewards is not accessible on-chain. Hence, communication about the amount of rewards between the Beacon Chain and the rETH2 contract is done using Oracles. totalSupply in the contract is updated every 24 hours. The Oracle nodes are distributed geographically and they read balances of all the Pool validators from the Beacon Chain and submit them on-chain simultaneously but independently. As soon as 3 out of 4 Oracle nodes submit the same data about the rewards, the total supply of rETH2 contract is updated. The update happens every 24 hours. Oracles are run by multiple independent entities. There are currently 5 of them.  Upgradeability In general, contracts themselves can be upgraded to later versions. They are using safesnap module for DAO: https://github.com/gnosis/zodiac-module-reality, it has 2 days of escalation game timeout (will be changed to 1 day soon) + 1 day of cooldown.  Administrative Addresses  StakeWisePool : 0x4D05E3d48a938db4b7a9A59A802D5b45011BDe58 This contract is currently the only allowed minter of sETH2.  Audits  05.06.2022 - Quantstamp report  25.11.2021 - Omniscia report    Contract Risk Summary  The sETH2 contract has a fail case for transfer transactions if it\u2019s done in the same block as reward distribution which is triggered by Oracles. This means if they have an oracle attack they can literally DoS reward distribution call and make these tokens untransferable. Another thing is emissions to every staker\u2019s current reward (rETH2) stops accruing to the sETH2 holder in case of penalties to Validator node. When the majority of validators are slashed, the penalty will be applied when users withdraw their ETH (Phase 2) from the validators and will burn their rETH2/sETH2. It\u2019s not a technical risk, but they have only one available liquidity pool which is UniswapV3   S\u016brya\u2019s Description Report  File Description     File Name SHA-1 Hash       tokens/StakedEthToken.sol fdb46e9f0ec11a2e62610c58e2bf849cd7919d3b     presets/OwnablePausableUpgradeable.sol 4844910b4aceb76e99fb8baa3e2c0c00738ad2d4     interfaces/IOwnablePausable.sol 76fb84d727fa33c249e5c2a964bd564609310b41     interfaces/IStakedEthToken.sol 8574198eb2658254ba7ceddad08b7c51080f63f4     interfaces/IRewardEthToken.sol 592d2b788237c85fe83c25551912a16e93e74c76     tokens/ERC20PermitUpgradeable.sol c397b5ac5fcc1374f62c26b16ffc1ace92e605de     tokens/ERC20Upgradeable.sol c7e2c7e88525ac8d844386f465636b54ce3d9c40       Contract Description     Contract Type Bases Property 1 Title     \u2514 Function Name Visibility Mutability Modifiers    StakedEthToken Implementation IStakedEthToken, OwnablePausableUpgradeable, ERC20PermitUpgradeable      \u2514 totalSupply Public    NO\u2757\ufe0f    \u2514 balanceOf External    NO\u2757\ufe0f    \u2514 toggleRewards External    onlyAdmin    \u2514 _transfer Internal    whenNotPaused    \u2514 mint External    NO\u2757\ufe0f    OwnablePausableUpgradeable Implementation IOwnablePausable, PausableUpgradeable, AccessControlUpgradeable      \u2514 __OwnablePausableUpgradeable_init Internal    initializer    \u2514 __OwnablePausableUpgradeable_init_unchained Internal    initializer    \u2514 isAdmin External    NO\u2757\ufe0f    \u2514 addAdmin External    NO\u2757\ufe0f    \u2514 removeAdmin External    NO\u2757\ufe0f    \u2514 isPauser External    NO\u2757\ufe0f    \u2514 addPauser External    NO\u2757\ufe0f    \u2514 removePauser External    NO\u2757\ufe0f    \u2514 pause External    onlyPauser    \u2514 unpause External    onlyPauser    IOwnablePausable Interface       \u2514 isAdmin External    NO\u2757\ufe0f    \u2514 addAdmin External    NO\u2757\ufe0f    \u2514 removeAdmin External    NO\u2757\ufe0f    \u2514 isPauser External    NO\u2757\ufe0f    \u2514 addPauser External    NO\u2757\ufe0f    \u2514 removePauser External    NO\u2757\ufe0f    \u2514 pause External    NO\u2757\ufe0f    \u2514 unpause External    NO\u2757\ufe0f    IStakedEthToken Interface IERC20Upgradeable      \u2514 totalDeposits External    NO\u2757\ufe0f    \u2514 distributorPrincipal External    NO\u2757\ufe0f    \u2514 toggleRewards External    NO\u2757\ufe0f    \u2514 mint External    NO\u2757\ufe0f    IRewardEthToken Interface IERC20Upgradeable      \u2514 upgrade External    NO\u2757\ufe0f    \u2514 merkleDistributor External    NO\u2757\ufe0f    \u2514 protocolFeeRecipient External    NO\u2757\ufe0f    \u2514 setProtocolFeeRecipient External    NO\u2757\ufe0f    \u2514 protocolFee External    NO\u2757\ufe0f    \u2514 setProtocolFee External    NO\u2757\ufe0f    \u2514 totalRewards External    NO\u2757\ufe0f    \u2514 lastUpdateBlockNumber External    NO\u2757\ufe0f    \u2514 rewardPerToken External    NO\u2757\ufe0f    \u2514 setRewardsDisabled External    NO\u2757\ufe0f    \u2514 checkpoints External    NO\u2757\ufe0f    \u2514 rewardsDisabled External    NO\u2757\ufe0f    \u2514 updateRewardCheckpoint External    NO\u2757\ufe0f    \u2514 updateRewardCheckpoints External    NO\u2757\ufe0f    \u2514 updateTotalRewards External    NO\u2757\ufe0f    \u2514 claim External    NO\u2757\ufe0f    ERC20PermitUpgradeable Implementation Initializable, ERC20Upgradeable, IERC20PermitUpgradeable, EIP712Upgradeable      \u2514 __ERC20Permit_init Internal    initializer    \u2514 __ERC20Permit_init_unchained Internal    initializer    \u2514 permit Public    NO\u2757\ufe0f    \u2514 nonces Public    NO\u2757\ufe0f    \u2514 DOMAIN_SEPARATOR External    NO\u2757\ufe0f    ERC20Upgradeable Implementation Initializable, IERC20Upgradeable      \u2514 __ERC20_init Internal    initializer    \u2514 __ERC20_init_unchained Internal    initializer    \u2514 name Public    NO\u2757\ufe0f    \u2514 symbol Public    NO\u2757\ufe0f    \u2514 decimals Public    NO\u2757\ufe0f    \u2514 transfer Public    NO\u2757\ufe0f    \u2514 allowance Public    NO\u2757\ufe0f    \u2514 approve Public    NO\u2757\ufe0f    \u2514 transferFrom Public    NO\u2757\ufe0f    \u2514 increaseAllowance Public    NO\u2757\ufe0f    \u2514 decreaseAllowance Public    NO\u2757\ufe0f    \u2514 _transfer Internal        \u2514 _approve Internal          Legend     Symbol Meaning      Function can modify state    Function is payable     Untitled1850\u00d74433 281 KB   Untitled22871\u00d7483 105 KB  ",
+                    "links": [
+                        "https://etherscan.io/address/0x41bcac23e4db058d8d7aabe2fccdae5f01fe647a",
+                        "https://etherscan.io/address/0xC874b064f465bdD6411D45734b56fac750Cda29A",
+                        "https://etherscan.io/address/0xc8970E7C07c251625F9F93cE510b1D9c1a08d299",
+                        "https://etherscan.io/address/0x20BC832ca081b91433ff6c17f85701B6e92486c5",
+                        "https://etherscan.io/address/0x7cA75ccf264b2d9F91D4ABA7639fC7FcC73a7e09",
+                        "https://etherscan.io/tx/0x36713d91ebe27af027d9e6c39b487cbd06b8f676348f44730363e459eac62a15",
+                        "https://etherscan.io/tx/0x77236f203b41af9bf08d63580200e4f56b4b498bda316ce0efa8c1631534479a",
+                        "https://etherscan.io/tx/0xefa2f24402c9380a7721c725734809820ad8ac4f042f4e7f9aee77a1a54e662e",
+                        "https://etherscan.io/tx/0x32c727ebb5dbbc1bd89a3a21cf15d9e74dbc688b404b60a286a9ae858c4967e2",
+                        "https://etherscan.io/tx/0x7862156d832b88c96ebaad89570422b4dfb6ef10dd4f6f45798c583eec9f7db9",
+                        "https://etherscan.io/tx/0xecadc60b31ea4f09978df5bc5f34cc5138e1346f2ad7993c60a81a476a0d6e55",
+                        "https://etherscan.io/unitconverter?wei=59903902916826921918075",
+                        "https://forum.makerdao.com/t/seth2-collateral-onboarding-application-mip6/14371",
+                        "https://stakewise.io/",
+                        "https://github.com/stakewise/contracts",
+                        "https://eips.ethereum.org/EIPS/eip-1967",
+                        "https://goerli.etherscan.io/address/0x221d9812823dbab0f1fb40b0d294d9875980ac19",
+                        "https://goerli.etherscan.io/address/0x0786526ac78bbf46804acfa2d4dcf371404b0f77",
+                        "https://goerli.etherscan.io/address/0x8c1EfEcFb5c4F1099AB0460b5659342943764Df7",
+                        "https://goerli.etherscan.io/address/0x6931a7A2B196386005a3E1F9752542227d4f4d64",
+                        "https://goerli.etherscan.io/address/0x826f88d423440c305D9096cC1581Ae751eFCAfB0",
+                        "https://goerli.etherscan.io/address/0x45E444930236De8548CAe187C2CD0BbDE73f5e13",
+                        "https://github.com/stakewise/contracts/blob/master/contracts/collectors/Pool.sol",
+                        "https://github.com/ethereum/eth2.0-specs/tree/dev/solidity_deposit_contract",
+                        "https://github.com/stakewise/contracts/blob/whitelist/contracts/tokens/RewardEthToken.sol",
+                        "https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/beacon-chain.md#validator",
+                        "https://docs.stakewise.io/smart-contracts/rewardethtoken",
+                        "https://github.com/gnosis/zodiac-module-reality",
+                        "https://etherscan.io/address/0x4d05e3d48a938db4b7a9a59a802d5b45011bde58",
+                        "https://github.com/stakewise/contracts/blob/master/audits/2022-05-06-Quantstamp.pdf",
+                        "https://github.com/stakewise/contracts/blob/master/audits/2021-11-25-Omniscia.pdf",
+                        "https://forum.makerdao.com/t/ces-may-2022-update/15825",
+                        "https://forum.makerdao.com/t/seth2-collateral-onboarding-application-mip6/14371/11"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.982622212692967
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ippy",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "23/05/2022-17:19:44",
+                    "content": "    naz_dou:  The contract is pausable by a privileged actor   Do you know who this is? A msig or EOA or another contract or what? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jstar",
+                    "index": "#3",
+                    "likes": "2",
+                    "time": "23/05/2022-19:33:22",
+                    "content": "Only the DAO can make changes to the protocol/smart contracts/access the treasury. This refers to a multisig that is controlled by the DAO safe-snap module. It is in place as the final backstop for any malicious transactions that might be submitted. It\u2019s described here, along with the members: DAO Treasury - StakeWise ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "21/08/2022-19:33:33",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

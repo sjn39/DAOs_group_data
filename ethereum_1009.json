@@ -1,0 +1,493 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/rich-transactions-via-evm-bytecode-execution-from-externally-owned-accounts/4025",
+            "title": "\"Rich transactions\" via EVM bytecode execution from externally owned accounts ",
+            "index": 4025,
+            "category": [],
+            "tags": [
+                "evm",
+                "rich-transactions"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "1",
+                    "likes": "9",
+                    "time": "24/02/2020-01:28:53",
+                    "content": "I\u2019ve written up an EIP draft proposing a way for externally owned accounts to execute per-transaction bytecode, here. Feedback appreciated! ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/composable-transactions/11263/2",
+                        "https://ethereum-magicians.org/t/eip-native-batched-transactions/4337"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "24/02/2020-01:32:21",
+                    "content": "So, SELFDESTRUCT could be run multiple times for a given EOA? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "24/02/2020-01:45:27",
+                    "content": "While not critical, it may be valuable to mention how DELEGATECALL works.  It should be obvious to everyone, but I generally like how you explicitly called out most opcodes even when they should have been obvious. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.550000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Recmo",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "24/02/2020-01:49:33",
+                    "content": "Can you add a line or two on the gas cost of the SELFDESTRUCT opcode? The gas refund would be inappropriate (frankly dangerous), since there is no matching CREATE. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "24/02/2020-01:52:03",
+                    "content": "What is the motivation for this?  A call to the precompile address from a contract has no special effect and is equivalent to a call to a nonexistent precompile or an empty address.  From the cheap seats, it seems like it would be easier (implementation wise) to have a contract calling the precompile behave the same as an EOA calling the precompile, where it essentially is a delegate call to the code supplied in the CALLDATA.  This way clients don\u2019t have to switch on caller. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.684523809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "24/02/2020-01:54:16",
+                    "content": " Any value sent in the transaction is transferred to the precompile address before execution, and is thus inaccessible.  This seems like it would be prone to error (foot gun).  Why not just have any value sent be a no-op?  How does DELEGATECALL work with value currently? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Recmo",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "24/02/2020-01:58:37",
+                    "content": " A new reserved address is specified at x , in the range used for precompiles. When a transaction is sent to this address from an externally owned account, the payload of the transaction is treated as EVM bytecode, and executed with the signer of the transaction as the current account.  Wouldn\u2019t it be cleaner to have this as new kind of signed transaction message instead of as a somewhat odd precompile? It would add functionality at a place where we don\u2019t usually do it, but it feels more natural. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5867003367003365
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Recmo",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "24/02/2020-02:06:01",
+                    "content": "This breaks security assumptions in things like transferAndCall ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "24/02/2020-02:17:31",
+                    "content": "    Recmo:  Wouldn\u2019t it be cleaner to have this as new kind of signed transaction message   Almost certainly, but no one so far has been willing to put the time into drafting a transaction versioning EIP, which requires a pretty strong understanding of the P2P protocol and has an impact on many layers of the system (all of which currently make assumptions about there being exactly one transaction format). If you have the time, you should definitely talk to @AlexeyAkhunov about his ideas for transaction versioning system, and additional transaction types.  Solving this problem would open the doors to all sorts of goodness including this, the ability to have transactions which bundle multiple other transactions, the ability to have the gas payer be different from the signer, etc. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.869660894660895
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "24/02/2020-02:18:27",
+                    "content": "    Recmo:  This breaks security assumptions in things like transferAndCall   Can you provide a bit of detail on the pattern and why it is broken by this?  isHuman checks definitely break, but I think the consensus of the dev community is that isHuman checks are already broken and they shouldn\u2019t be used in the first place. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.3125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "11",
+                    "likes": "2",
+                    "time": "24/02/2020-03:16:51",
+                    "content": "    fubuloubu:  So, SELFDESTRUCT could be run multiple times for a given EOA?   Yes. It can already be run multiple times on a contract account, thanks to CREATE2.     MicahZoltu:  While not critical, it may be valuable to mention how DELEGATECALL works. It should be obvious to everyone, but I generally like how you explicitly called out most opcodes even when they should have been obvious.   Done!     Recmo:  Can you add a line or two on the gas cost of the SELFDESTRUCT opcode? The gas refund would be inappropriate (frankly dangerous), since there is no matching CREATE .   Done! Would it be simpler for implementers if I specified that SELFDESTRUCT reverts, instead?     MicahZoltu:  From the cheap seats, it seems like it would be easier (implementation wise) to have a contract calling the precompile behave the same as an EOA calling the precompile, where it essentially is a delegate call to the code supplied in the CALLDATA. This way clients don\u2019t have to switch on caller.   Recmo points out why this would be dangerous. It allows you to force any contract that is willing to make arbitrary calls for you (presently relatively harmless in many situations) to execute arbitrary bytecode in its context. Even if the contract only calls a specified function at an address you provide, we\u2019d have to vet the meaning of every 4-byte function signature as EVM bytecode to be sure they\u2019re safe!     MicahZoltu:  This seems like it would be prone to error (foot gun). Why not just have any value sent be a no-op? How does DELEGATECALL work with value currently?   DELEGATECALL doesn\u2019t have a value parameter. I specified it this way because that\u2019s how CALLs with value to all other accounts behave, and I wanted to avoid adding more special cases.     Recmo:  Wouldn\u2019t it be cleaner to have this as new kind of signed transaction message instead of as a somewhat odd precompile? It would add functionality at a place where we don\u2019t usually do it, but it feels more natural.   I was wondering about that too. One option, for instance, would be to allow transactions with 21-byte to fields, where the first byte is interpreted as a call type. We\u2019d define one new call type, which effectively DELEGATECALLs the target address instead of CALLing it. There are pros and cons. It would reduce some of the special-casing required in this proposal, but you\u2019d still have to special case some things, such as SELFDESTRUCT. It would reduce transaction size for commonly executed operations, but make doing ad-hoc operations harder. It would also likely confuse a lot of tools that rely on being able to parse transaction objects, which is more concerning to me. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.686945990517419
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PhABC",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "24/02/2020-04:26:10",
+                    "content": " SLOAD  and  SSTORE  operate on the storage of the EOA. As a result, an EOA can have data in storage, that persists between transactions.  What\u2019s the rationale for this? I can think of some fun use cases, but wondering what you were thinking of. Also, what kind of can of worms can this open? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "24/02/2020-04:57:43",
+                    "content": "    PhABC:  What\u2019s the rationale for this? I can think of some fun use cases, but wondering what you were thinking of. Also, what kind of can of worms can this open?   It seemed like prohibiting would be adding unnecessary special-cases. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sergio_lerner",
+                    "index": "14",
+                    "likes": "2",
+                    "time": "24/02/2020-05:03:31",
+                    "content": "What happens if a contract called by the EOA then calls back the EOA. Will the code sent in the transaction data field still be there or will the code be empty  (as in a contract initialization) ? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mudgen",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "24/02/2020-06:01:34",
+                    "content": "This seems like it would be very useful. @Arachnid are you providing the implementation of this? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.950000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "24/02/2020-09:00:23",
+                    "content": "    sergio_lerner:  What happens if a contract called by the EOA then calls back the EOA. Will the code sent in the transaction data field still be there or will the code be empty (as in a contract initialization) ?   The EOA doesn\u2019t have code; I tried to make that clear by specifying what EXTCODE* etc return - I\u2019m open to suggestions on how to clarify further.     mudgen:  This seems like it would be very useful. @Arachnid are you providing the implementation of this?   I\u2019m not certain I\u2019ll have time to. If there\u2019s interest in including this in a fork, I can probably put together a geth implementation, though. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.202040816326531
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sinamahmoodi",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "24/02/2020-13:57:40",
+                    "content": "I wonder if this opens a new attack vector against users, or negatively affect UX because the code is sent every time and there\u2019s no immutable code deployed which can be checked/audited by everyone. Do I have to read the code every time I use a wallet website? Why not go the extra mile of assuming EoAs can have code (still different from contracts in that they can sign txes)? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.795454545454546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Recmo",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "24/02/2020-18:54:05",
+                    "content": "  [\u2026] SLOAD SSTORE It seemed like prohibiting would be adding unnecessary special-cases.   Leaving it in requires the special treatment of SELFDESTRUCT and maintaining state for EOA accounts. Additionally, state on EOA may complicate future state rent proposals. I\u2019d consider these also special-cases. So something inelegant will happen either way. It\u2019s worth considering a proposal where SLOAD, SSTORE and SELFDESTRUCT become INVALID/DONTUSE. I don\u2019t think this necessarily more complicated than the current proposal. (In fact, I\u2019d argue that it\u2019s simpler) So let\u2019s think about what the potential usescase of EOA state could be, to see if there is a good reason to keep it. First, State would only be used to communicate between two EOA transactions. Inside a single tx it can just use memory.  This can be useful if there are multiple signers with no other means to communicate, but if you share a private key and nonce counter, we can assume you already have an offchain communication channel. It can also be useful when some data is not available at the time of signing, but will be when a previous transaction finishes. I.e. a transaction does something, and a second transaction that depends on the outcome. But the whole point of this proposal is that we can merge those kinds of transactions into one.  I\u2019m struggling to come up with a usecase for state in EOA accounts, and think it would be cleaner to not have it. Also note that if we mark those opcodes INVALID/DONTUSE, then we can always add EOA state in a separate future proposal in a backwards compatible manner. Finally, someone who needs EOA in a one-of case can deploy a contract that only listens to the EOA address and stores state on its behalf. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.326309523809524
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Recmo",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "24/02/2020-19:11:57",
+                    "content": "    Arachnid:   Wouldn\u2019t it be cleaner to have this as new kind of signed transaction message instead of as a somewhat odd precompile? It would add functionality at a place where we don\u2019t usually do it, but it feels more natural.  I was wondering about that too. One option, for instance, would be to allow transactions with 21-byte to fields, where the first byte is interpreted as a call type. We\u2019d define one new call type, which effectively DELEGATECALL s the target address instead of CALL ing it.   Actually, I think the current precompile address is a very good solution. Currently we have (AFAIK) two transaction types:  Contract calls, where to contains the contract to call and ether, gas and calldata is provided. (Plain EOA ETH transfers are a special case of this). Contract deployments, where to is the special flag value 0x00 and calldata contains a constructor, to be executed in the context of the newly created account, and returns the code that should be stored there.  What we want is similar to the second, except calldata is now executed in the context of the EOA account, and we don\u2019t store any code at the end. So there\u2019s already a precedent for using flag-values in to. It seems natural to add one more. My questions stems from the observation that this new transaction type is so powerful that it can replace the other two (first one would become a CALL, the second a CREATE). And when you implement them this way, you no longer need a to field in the transaction, so you couldpropse a new transaction message that does not include a to field and implements this proposal, which can then replace all existing transaction types. This is a drastic change in the tx format though, and before this proposal it didn\u2019t occur to me that it could also be done using a precompile-address + flag value. This is a great insight that allows \u2018rich transactions\u2019 to be implemented separately from a transaction format refactor! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.037741640543365
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "24/02/2020-21:36:17",
+                    "content": "How does this differ from a contract creation transaction that doesn\u2019t return a contract?  Init code still gets called and the empty account does not get generated. This is a pattern I already used in the Ethereum Reference Tests - https://github.com/ethereum/tests/blob/develop/src/GeneralStateTestsFiller/stSStoreTest/sstore_gasLeftFiller.json#L75 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "24/02/2020-21:40:06",
+                    "content": "    sinamahmoodi:  I wonder if this opens a new attack vector against users, or negatively affect UX because the code is sent every time and there\u2019s no immutable code deployed which can be checked/audited by everyone. Do I have to read the code every time I use a wallet website? Why not go the extra mile of assuming EoAs can have code (still different from contracts in that they can sign txes)?   RE immutability: The code is preserved in the transaction payload, which can be read and analyzed like any other. I\u2019d recommend that if this were adopted, wallets flag transactions to the target address with a warning message; it\u2019d also be worth writing up a spec for a new RPC endpoint that wallets can support which accepts, say, a list of operations, and leaves it to the wallet to compose the bytecode. That way, the wallet can provide the user with a useful list of operations instead of an opaque blob to sign.     Recmo:  Leaving it in requires the special treatment of SELFDESTRUCT and maintaining state for EOA accounts.   No, SELFDESTRUCT requires special-casing either way; without storage you still need to make sure it doesn\u2019t zero out the nonce.     Recmo:  Additionally, state on EOA may complicate future state rent proposals. I\u2019d consider these also special-cases. So something inelegant will happen either way.   True, but I don\u2019t believe any of those are mature enough to say whether they\u2019re an issue or not.     Recmo:  It\u2019s worth considering a proposal where SLOAD , SSTORE and SELFDESTRUCT become INVALID/DONTUSE . I don\u2019t think this necessarily more complicated than the current proposal. (In fact, I\u2019d argue that it\u2019s simpler)   I\u2019m onboard with the idea of prohibiting SELFDESTRUCT, though I\u2019d like to hear from implementers which option is simplest. I still don\u2019t think there\u2019s a compelling reason to prohibit storage access.     Recmo:  I\u2019m struggling to come up with a usecase for state in EOA accounts, and think it would be cleaner to not have it.   I really don\u2019t think \u201cwe can\u2019t think of a use-case right now\u201d is a good reason to create a new special-case to prohibit something; we should prohibit something only if it\u2019s reasonably likely to introduce complication to clients, or have security implications.     Recmo:  So there\u2019s already a precedent for using flag-values in to . It seems natural to add one more.   In that event, should we specify instead that the to field should be a single byte, similar to contract creation, rather than a 20-byte address?     shemnon:  How does this differ from a contract creation transaction that doesn\u2019t return a contract? Init code still gets called and the empty account does not get generated.   Unlike that, this executes in the context of the EOA, which allows it to make use of resources owned by the EOA. A contract-creation TX is unable to operate on resources owned by its creator. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.581535400083787
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nevillegrech",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "25/02/2020-11:55:07",
+                    "content": "Can\u2019t people just write a Solidity contract with some inline assembly that implements an interpreter for the bytecodes sent as msg.data? It\u2019s also safer, as stored data on EOA probably not be shared between services. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "25/02/2020-21:19:48",
+                    "content": "    nevillegrech:  Can\u2019t people just write a Solidity contract with some inline assembly that implements an interpreter for the bytecodes sent as msg.data?   Someone could do that, but it would have a minimum of several hundred percent overhead, and wouldn\u2019t solve the main problem this EIP solves - namely, being able to execute multiple operations as an EOA in a single transaction. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.595238095238095
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mudgen",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "25/02/2020-23:40:46",
+                    "content": " Can\u2019t people just write a Solidity contract with some inline assembly that implements an interpreter for the bytecodes sent as msg.data? It\u2019s also safer, as stored data on EOA probably not be shared between services.  Yea, the big thing (and change) about the proposal is being able to execute code as the EOA. That is huge. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "29/02/2020-17:59:23",
+                    "content": "I\u2019m generally very supportive of this concept, though I won\u2019t have time to study it much until May.  I would like to see the Rational cover the relevant reasoning I see here. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mudgen",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "06/03/2020-20:10:31",
+                    "content": "@Arachnid Could the payload of the transaction create a new contract at the EOA address?  If that was possible a person could manage his account with a contract, which I think combined with the diamond standard, would be amazing. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.920454545454545
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "07/03/2020-01:32:14",
+                    "content": "    mudgen:  Could the payload of the transaction create a new contract at the EOA address?   There is not currently any way to deploy code to a chosen specific address, so this would not be possible without the introduction of some new opcode or other technique.  Such functionality isn\u2019t included in this EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.10551948051948
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "20/04/2020-00:07:35",
+                    "content": "What is the status of this?  Will you be creating an EIP @Arachnid?  Any chance of this landing in Berlin? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "24/04/2020-13:21:09",
+                    "content": "In general, I do like the idea to pack more transactions together. However, how this is proposed seems like a pretty big step for me, especially due to UX and security implications. An user would currently, before signing a transaction, know the exact amount of Ether they will maximally spend. This is thus callValue + gasPrice*gas. However, an user can now want to pack multiple transactions together via a non-malicious looking \u201crich transaction\u201d. The easiest is of course a SELFDESTRUCT opcode. But what about a \u201cmultisend\u201d transaction where an user sends Ether to multiple addresses? They could read some storage field from somewhere via CALL returning the addresses and amount to send to. One could frontrun this transaction to update the storage. Especially in terms of Ether, to prevent that users lose all their funds, I suggest to disable the possibility to SELFDESTRUCT an account (think of a possibility where the rich transaction DELEGATECALLs to another address and this address now runs into a SELFDESTRUCT opcode (even this cannot be verified beforehand (that one cannot run into SELFDESTRUCT) - if it\u2019s created via CREATE2 then the code can be changed via a frontrun). I also suggest that the VALUE field of the transaction is, instead of being transfered to the precompile address (the EIP says that it behaves like DELEGATECALL - but you cannot send value there) this VALUE is the maximum amount what is spent. This needs some more thoughts though, but at this point I would suggest this is placed in a temporary account which is the intermediate account: any calls with transfer would then be deposited in this intermediate address (and also subtracted from there). At the end of the transaction the remaining balance of this address would be transferred to the EOA. What remains is the question what a BALANCE opcode checking the EOA balance would then return, and how to figure out what this intermediate accounts\u2019 balance is. I think the main point that users don\u2019t know what they are maximally going to spend is extremely dangerous and should be prevented. If it gets implemented in this way, I think that any providers like MetaMask are going to put up big warnings that signing this transaction could possibly clear out the entire account. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.425438596491228
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "24/04/2020-15:11:31",
+                    "content": "    jochem-brouwer:  They could read some storage field from somewhere via CALL returning the addresses and amount to send to. One could frontrun this transaction to update the storage.   Users should never be calling random untrusted code.  If they are, there are a million ways to rob a person and we cannot protect people from all of them, so I don\u2019t think we should be crippling useful features in an attempt to protect a user from themselves. That being said, I\u2019m not opposed to re-interpreting the value field for these transactions as require(balanceAfter >= balanceBefore - msg.value - gas * gasPrice).  However, I wouldn\u2019t want this EIP to get held up on that.  It is a neat feature if it is nearly free to implement, but if it adds sufficient complexity I don\u2019t think it is worth it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "24/04/2020-15:48:55",
+                    "content": "I agree that users should not randomly sign any untrusted transactions. However, by now we have protection against some attacks a priori: think for example for Ether in general, it is not possible that another contract \u201csteals\u201d Ether: taking MetaMask as example it is clear how much Ether the user will spend on the transaction (which is the maximum amount it will consume). This EIP does have no security mechanism to ensure that the user does not empty their account. I foresee that if this EIP gets implemented, providers like MetaMask are going to put up warnings and what will probably happen is that users will first create a new account, send the Ether + gas they want to spend there and THEN send a transaction, as these all-transaction-at-once schemes do have no protection whatsoever to prevent unintended side-effects. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.647727272727273
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "24/04/2020-16:09:17",
+                    "content": "Wallets like MetaMask should be updated to show the user the series of transactions that are being made.  This series of transactions can show how much value is being attached to each. This is similar to how MutaMask renders token transfers, which is there to protect the user from basically the same thing (contract call that sends value away from the user). I don\u2019t think users should ever sign a transaction like this without it being rendered.  ETH is just one of many assets that can be sent away, and it is up to the signing software to help the user make an informed decision. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "24/04/2020-17:46:08",
+                    "content": "You have to be completely sure here that the attached value is static: if this is being read from an external location you cannot trust it. It thus has to be PUSHed on the stack and not being \u201ccalculated\u201d in the transaction, i.e. dependent on external factors. A possibility is of course that you can formalize these kind of transactions with a new type of EIP where the format is decided upon such that MetaMask can render these transactions. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.240259740259741
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "24/04/2020-23:35:42",
+                    "content": "    MicahZoltu:  What is the status of this? Will you be creating an EIP @Arachnid? Any chance of this landing in Berlin?   I\u2019m happy to submit my PR to make it an official draft; due to becoming a new father I don\u2019t have a lot of spare time to push it forward myself, though. If anyone wants to become a co-author, I\u2019d be grateful.     jochem-brouwer:  A possibility is of course that you can formalize these kind of transactions with a new type of EIP where the format is decided upon such that MetaMask can render these transactions.   This is more or less what I\u2019d recommend; metamask et al should refuse to allow dapps to send transactions to the precompile address directly, and instead expose an API that allows batching of multiple ordinary transactions, composing the bytecode themselves. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.91579254079254
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "25/04/2020-09:59:59",
+                    "content": "I see. It is very likely that that happens and more EIPs get built on top of this one. If we are all aware of the security implications I am fine with it. A more detailed question then: how will CREATE work? Will it increase the EOA\u2019s nonce? Also pretty nitpicky: I don\u2019t think rich transaction is a good term for this, it sounds like - well - a rich transaction i.e. someone sending a lot of value. Maybe something like series or multiple transactions? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.777777777777779
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "25/04/2020-11:53:00",
+                    "content": "    jochem-brouwer:  Also pretty nitpicky: I don\u2019t think rich transaction is a good term for this, it sounds like - well - a rich transaction i.e. someone sending a lot of value. Maybe something like series or multiple transactions?   It is using a different version of the word rich:  rich: interesting because full of diversity or complexity.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.65
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "25/04/2020-11:53:52",
+                    "content": "    Arachnid:  I\u2019m happy to submit my PR to make it an official draft; due to becoming a new father I don\u2019t have a lot of spare time to push it forward myself, though. If anyone wants to become a co-author, I\u2019d be grateful.   As much as I\u2019m certain I\u2019ll regret this, I can help out.  If you get the initial EIP created as a draft, I can try to handle updates, questions, comments, feedback, etc.  I\u2019m not in a position to get a client implementation done though, sadly. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.7347808441558445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "21/05/2020-14:18:59",
+                    "content": "As a note we took this idea into https://ethresear.ch/t/eth1x64-variant-1-apostille/7365, but extended it to have its own transaction type and not messing with precompiles. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "40",
+                    "likes": "1",
+                    "time": "19/07/2020-11:51:21",
+                    "content": "I have created a DRAFT EIP for this at EIP-2803 I made two changes from the original proposed by @Arachnid:  I added an assertion that a transaction that transfers value is invalid.  Nick\u2019s version implied that any attached value would be burned, which feels unnecessarily punishing when we can just flag such transactions as invalid.  I could be convinced by client devs that this will add enough complexity to make it not worth flagging the transaction as invalid, but I would like to hear such arguments before making that assumption. I added clarification that the CALLER will be set to the EOA when the CALL opcode is used.  I think this was implied in the specification but not clear enough IMO.  @Arachnid I put myself as author because I didn\u2019t feel it was appropriate to force you as author.  However, if you want to be the sole author or a co-author let me know and I will happily add your name to the authors list. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.488636363636363
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "19/07/2020-12:05:02",
+                    "content": "    jochem-brouwer:  A more detailed question then: how will CREATE work? Will it increase the EOA\u2019s nonce?   Can someone more knowledgeable than I with how CREATE works recommend an answer to this?  I can update the draft with whatever is reasonable. I suspect we will need to bump the nonce because two CREATE operations in the same transaction need to result in different addresses, which I believe will require bumping the nonce.  The alternative would be to constrain to a single CREATE call per transaction, but that seems like a worse solution to the problem all around.  The one caveat here is that existing signing tools will miscalculate nonces when signing multiple rich transactions in a row, and figuring out how much the nonce increases will kind of suck for those tools. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.959821428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "20/08/2020-05:20:09",
+                    "content": "Was just thinking about this today. One thing that could really help as an intermediate step is simply letting a transaction execute multiple calls. Could this be as simple as letting to and data in a  transaction be lists, or finding some other way of organizing it so 1 transaction can execute 2+ calls? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.074999999999999
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "43",
+                    "likes": "2",
+                    "time": "20/08/2020-06:43:35",
+                    "content": "EIP-2711 would enable batch transactions, which would guarantee order (though not atomicity).  So you could submit a single transaction, with a single signature, that did an erc20.approve followed by a erc20.transfer. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.642857142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "14/09/2020-21:40:50",
+                    "content": "That\u2019s doable, but personally I think this approach is simpler, since it reuses existing mechanisms in the EVM rather than introducing new ones. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "01/12/2020-10:37:01",
+                    "content": "Hi, we can generalize this EIP to extend CREATE functionality. Because it already executes calldata as EVM bytecode but then charge 32k gas for contract creation + 200 gas for every byte. Let\u2019s disable charging 32k of gas for the cases when returned smart contract size is 0. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.071428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "01/12/2020-11:32:12",
+                    "content": "The big difference with this proposal vs just doing a CREATE is that this proposal effectively makes it so you can delegatecall the first call frame.  If you do a CREATE and then in the \u201cconstructor\u201d you call some external function, the CALLER of that function will be the contract address, not the person who signed the transaction.  This EIP would make it so the CALLER would be the transaction signer instead. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "01/12/2020-13:07:14",
+                    "content": "@MicahZoltu thx for the clarification. I was thinking about InfiniteApprove smart contract working with user signatures to forget about approve transactions and use signatures even for tokens do not support permit(). One of the most dangerous things in this EIP, that some malicious Dapp could make tx spending all your assets. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.190476190476191
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "01/12/2020-13:27:49",
+                    "content": "    k06a:  One of the most dangerous things in this EIP, that some malicious Dapp could make tx spending all your assets.   At the moment, end-users are always at risk when interfacing with dapps.  This makes the situation a little bit worse because it encourages the norm of all transactions having a to of the precompile.  Ideally, signing tools would present data to users in a useful way, but it is unclear how they would do that exactly. One option could be to instead have a precompile that functions like this, but rather than executing arbitrary bytecode it takes in an array of call_opcode,address,value,bytes tuples.  The precompile would then call each address in order, passing the associated bytes as calldata and using the call_opcode for the specific call (e.g., DELEGATECALL, STATIC_CALL, CALL) and passing value ETH along with the call.  This would allow signing tools to very easily/reliably parse what was happening and present the user with useful information such as \"you will call these 3 contracts in this order, with this much ETH attached to each. Further, such a thing would allow for something like https://github.com/ethereum/EIPs/issues/719 to present the user with much more useful informed signing details. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.540625
+                }
+            ]
+        }
+    ],
+    "group_index": "1009"
+}

@@ -1,0 +1,129 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/rfc-improving-weth9-moving-to-a-better-wrapped-ether-implementation/12487",
+            "title": "RFC: Improving WETH9 - Moving to a better Wrapped Ether Implementation ",
+            "index": 12487,
+            "category": [
+                "Tokens"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Philogy",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "08/01/2023-14:23:36",
+                    "content": " Motivation There are several issues and inefficiencies that face smart contract developers when using the widely used WETH9 implementation. This post aims to discuss tradeoffs of different design details of a new and improved WETH contract. I\u2019ve already begun working on it under the name \u201cYAM-WETH\u201d, standing for \u201cYet Another Maximized Wrapped Ether implementation\u201d. You can view the repo here.  Core WETH9 Issues  Silent Fallback Method WETH9 has a notorious silent fallback method that will silently accept any call even if the selector does not match any implemented method. This is a common foot gun for smart contract developers who expect most token contracts to revert if they\u2019re called with a method they do not implement. This was also the cause of Multicoin\u2019s $ 1M bridge hack.  Inefficient Common Patterns There are some very common patterns that smart contracts go through when contract\u2019s such as DEX routers interact with WETH, however due to WETH9 only implementing a basic deposit and withdraw method these patterns usually require multiple calls and otherwise unused receive() methods.   \u201cDeposit & Transfer\u201dWETH9.deposit{ value: amount}(); WETH9.transfer(recipient, amount);    \u201cWithdraw & Transfer\u201dreceive() external payable {     require(msg.sender == address(WETH9)); } // ... WETH9.withdraw(amount); SafeTransferLib.safeTransferETH(recipient, amount);    \u201cWithdraw From\u201dreceive() external payable {     require(msg.sender == address(WETH)); } // ... WETH9.transferFrom(account, address(this), amount); WETH9.withdraw(amount);    \u201cWithdraw From & Transfer\u201dreceive() external payable {     require(msg.sender == address(WETH)); } // ... WETH9.transferFrom(from, address(this), amount); WETH9.withdraw(amount); SafeTransferLib.safeTransferETH(to, amount);    Outside of simplicity there\u2019s no reason why patterns couldn\u2019t be made accessible via individual, direct calls. Making such patterns accessible within a single call allows for direct crediting of balances without the unnecessary costs of accessing added intermediary storage slots.  Design Tradeoffs  General Efficiency While my current implementation is technically in solidity most of the actual business logic is written in inline-assembly. The tradeoff here is implementation simplicity & ease of auditability vs. efficiency. However I believe for a contract as widely used as WETH the implementation should aim to be as efficent as possible because of how commonly WETH is used in the wider ecosystem.  Leveraging Leftover Space In The Balance Slot Since WETH\u2019s total supply is fundamentally limited by the total amount of circulating ETH it\u2019s total supply, at least on mainnet is likely to always fit within 96-bits giving it a maximum of 79.2B ETH. This leaves 160-bits leftover in the storage slot that stores user balances. Storing a \u201cPrimary Operator\u201d in the leftover space In the current YAM-WETH implementation, this is used to store the address of a special \u201cprimary operator\u201d of the individual account that can spend WETH on behalf of an account as if they had an infinite allowance. Since it\u2019s stored in the balance slot this allows for more efficient setting and transfer froms for that operator because the allowance slot does not have to be touched. The question also arises whether the allowance method should also return type(uint).max for the primary operator to make it play better with frontends and other contracts. One could also imagine emitting Approval events when the primary operator is set although this would complicate the approve method a little.  ERC-2612 Permits Since the ERC-2612 standard fundamentally relies on EC-Recover there\u2019s a question as to how long-lasting an implementation that implements the standard will be due to quantum resistance. The ecosystem will surely have to find a solution since other tokens also depend on EC-Recover but it\u2019s not entirely known how Ethereum will implement quantum resistance. If it\u2019s mainly done via account abstraction an ERC-2612 compliant implementation may become vulnerable in the future.  Flash Minting The main tradeoff of allowing \u201cflash minting\u201d would be that WETH may become partially unbacked for the duration of a transaction. This may prevent certain contracts, in certain contexts from always redeeming WETH for ETH 1:1. This downside can be limited but not eliminated by putting a cap on the percentage of the supply that can be flash minted. This will ensure that unless the borrower is able to trigger a large redemption outside of their loan contracts are unlikely to ever be in a situation where they cannot redeem their WETH for ETH 1:1 unless ownership is extremely concentrated.  Closing Words WETH is an incredibly important piece of the smart contract ecosystem therefore I think it\u2019s extremely important I consider and take feedback if I aim to create a newer version that\u2019s not only improved but also widely used. ",
+                    "links": [
+                        "https://github.com/philogy/yam-weth",
+                        "https://medium.com/zengo/without-permit-multichains-exploit-explained-8417e8c1639b"
+                    ],
+                    "GPT-summary": "The author proposes a new and improved version of the widely used WETH9 implementation, called \"YAM-WETH\". The post discusses the issues and inefficiencies of the current implementation and the design tradeoffs of the proposed version. The author seeks feedback and collaboration to create a more efficient and widely used version of WETH.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.325003220985364
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Pandapip1",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "09/01/2023-01:41:01",
+                    "content": "    Philogy:  ERC-2612 Permits   How about using EIP-2771? I\u2019m working on an extension to it that requires a lower amount of trust. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "09/01/2023-05:50:54",
+                    "content": "Thanks for the proposal. @Philogy Also consider ERC-5453 Endorsement to replace ERC-2612 in which case you can supply the permit ECDSA or other type of signature with within the same TX call? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Philogy",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "09/01/2023-21:21:06",
+                    "content": "    Pandapip1:  How about using EIP-2771? I\u2019m working on an extension to it that requires a lower amount of trust.   Don\u2019t see how a trusted forwarder would require less trust? Wouldn\u2019t a ERC2771 forwarder implementing some type of ec-recover based authentication scheme also be vulnerable to quantum algorithms in the future? Not sure I fully understand the benefit.      xinbenlv:  Also consider ERC-5453 Endorsement to replace ERC-2612 in which case you can supply the permit ECDSA or other type of signature with within the same TX call?   Alternative authentication methods are interesting but if I allow for ECDSA signature-based permits, even if it is under another standard it doesn\u2019t answer the fundamental question of whether or not it should be included or how it could be safely deprecated. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.976851851851852
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Pandapip1",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "10/01/2023-00:38:03",
+                    "content": "    Philogy:  Don\u2019t see how a trusted forwarder would require less trust? Wouldn\u2019t a ERC2771 forwarder implementing some type of ec-recover based authentication scheme also be vulnerable to quantum algorithms in the future? Not sure I fully understand the benefit.       Trustless EIP-2771 Primordial Soup       This is a pretty simple idea: instead of trusting EIP-2771 forwarders to return authorized addresses, instead, if an address would be taken, two addresses can be taken: the address of the forwarder, and the address assigned by the forwarder. For example, EIP-20 would be extended with the following functions:  function balanceOf(address _ownerForwarder, address _owner) public view returns (uint256 balance) function transfer(address _toForwarder, address _to, uint256 _value) public returns (bool s\u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.62962962962963
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "10/01/2023-17:54:02",
+                    "content": "    Philogy:  Alternative authentication methods are interesting but if I allow for ECDSA signature-based permits, even if it is under another standard it doesn\u2019t answer the fundamental question of whether or not it should be included or how it could be safely deprecated.   Are you designing specification of a standard or a specification for the implementation? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Philogy",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "10/01/2023-17:59:11",
+                    "content": "    xinbenlv:  Are you designing specification of a standard or a specification for the implementation?   Neither. I\u2019m requesting feedback to what extent it\u2019d be problematic to allow for ECDSA based authentication. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "10/01/2023-18:12:44",
+                    "content": "Oh, sure. happy to chime in. Since ETH client nodes use ECDSA to validate TX\u2026 That is to say, if ECDSA becomes insecure (e.g. by bug or by quantum computation advancement), we have much bigger problem than WETH with ECDSA on-chain validation becomes a problem. Most contracts compliant with ERC-712 and ERC-1271 must change. I am sure at the time the whole Ethereum ecosystem will have a discussion then. Therefore, in the context of WETH and its design decision, I suggest you disregard the possibility of ECSDA being insecure, just like we will worry less about ETH\u2019s PoS stops working for any smart contract design as well. It will be solved a a different level in the future if becomes a problem. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.64484126984127
+                }
+            ]
+        }
+    ],
+    "group_index": "302"
+}

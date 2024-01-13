@@ -1,0 +1,66 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/discussion-add-on-chain-governance-metadata/2625",
+            "title": "[Discussion] Add on-chain governance metadata ",
+            "index": 2625,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "meta-governance"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#1",
+                    "likes": "8",
+                    "time": "25/05/2020-19:29:25",
+                    "content": "Warning - This is a technical conversation. Up until recently we have been voting on actual smart contract parameters such as the Stability Fee, but starting with the switch to the DSR Spread vote as well as the more recent Base Rate + Risk Premium split we have started building a layer of abstraction that is beneficial to scaling governance. I expect this trend to continue. For example, I\u2019ve already heard discussion on enforcing a global debt ceiling for all centralized stablecoins. As we start to abstract away from the actual system parameters, I think it will be helpful to record human-level parameters as on-chain metadata either during the executive or whenever these parameters change (such as in Instant Access Modules). This will give us an on-chain source of truth for the governance parameters MKR holders are thinking of. I see two ways to do this: Method 1: Add an additional metadata smart contract I will leave it to the dev team to suss out the details, but I am imagining an additional metadata module being added as a smart contract where you can assign float values to arbitrary strings. For example) Let\u2019s say the metadata smart contract has these values: BASERATE = 0.02 (Base Rate is 2%) ETH-A-RP = 0.03 (ETH-A Risk Premium is 3%) BAT-A-RP = 0.05 (BAT-A Risk Premium is 5%) and a governance vote passes for raising the Base Rate to 3%. We could then add the following lines to the executive vote to update this in the metadata smart contract: /**  * CHANGING THE BASE RATE TO 3%  */  // Set the actual values JugAbstract(MCD_JUG).file(\"ETH-A\", \"duty\", whateverActualSystemDuty1); JugAbstract(MCD_JUG).file(\"USDC-A\", \"duty\", whateverActualSystemDuty2); // ...  // Set the meta data metadataContract.SetValue(\"BASERATE\", 0.03);  Pros  Flexibility for future structural governance changes as it doesn\u2019t require smart contract adjustments for structural changes.  Cons  No enforcement mechanism. The numbers are arbitrary and the executive smart contract author could make a mistake. Increased gas cost. Strings are expensive storage.  Method 2: Hook up an intermediate \u201cparameter-translation\u201d module This would be similar to Method 1, but instead of being arbitrary strings it would be specifically for the fees defined in governance (Risk Premium, Base Rate, etc), and it would actually set the underlying parameters instead of just being a non-enforcing side-module. This would be doing the calculations that are currently being done by a code-generating script inside a smart contract. Example of how to set the Base Rate to 3%: /**  * CHANGING THE BASE RATE TO 3%  */  intermediateContract.setBaseRate(0.03);  Pros  Code enforcement. The value will always be correct as it is enforced by code. Simplify executives. It is very easy for even a non-coder to read and verify the above line is correct.  Cons  Smart contract dev is slow. It may take several months to build and formally verify a new contract. Governance is moving faster and faster and we may need to adapt quicker than that. Increases gas cost. Merging high-level governance constructs into the actual code is maybe not a good idea for separation of concerns.  Instant Access Modules The other piece here is that we could just wait for Instant Access Modules which gives governance a way to vote for short-term parameters changes outside of the weekly executive cycle. These modules would be similar to Method 2, but they occur outside of the arbitrary executive. We also get the added benefit of removing the contention in bundled weekly executives. I\u2019m not sure of the timeline for IAMs, but it seems like it may be good to put these in place sooner rather than later. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/governance-meta-parameters/2729",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-thursday-may-27-9am-pst-4-00-pm-utc/2655/2"
+                    ],
+                    "GPT-summary": "The author proposes adding on-chain governance metadata to record human-level parameters as on-chain metadata either during the executive or whenever these parameters change. The author suggests two methods to do this and discusses the pros and cons of each. The post also mentions Instant Access Modules as an alternative solution. The post is technical in nature and the author is explaining the proposal while also inviting constructive criticism and answering questions.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 4.566076175286701
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/andytudhope",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "28/05/2020-17:24:22",
+                    "content": "I think this is likely a good idea, but am fairly strongly in favour of option 1. I don\u2019t think we should be trying to tightly couple code/implementation details with governance layer abstractions. I think the flexibility Option 1 provides trumps simpler executives. Moreover, this is mostly a matter of convenience, rather than a fix/system improvement, so the fact there is no enforcement is not a blocker imo. The values can be derived (if laboriously) from other on-chain information, my understanding here is that it\u2019s just about producing clear on-chain values to match the terms used by the hoomans\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.021258503401361
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#3",
+                    "likes": "4",
+                    "time": "03/06/2020-19:51:03",
+                    "content": "From the foundation side we were planning to create a parameter storage MIP that would have a similar function to the forum post you\u2019re currently maintaining. Formalizing the weekly cycle will also go a long way to clear most of the current confusion, since it is mainly caused by ossification of the weekly cycle. The IAMs will come eventually, but it will take a lot of time so it is definitely a good idea to try to clean things up before them. Ultimately I also expect that they will actually create even more \u201cmeta-complexity\u201d than not having them, so I think it is very good to have an effort in the community to get a holistic view of all the on- and offchain parameters and when and how they\u2019re changed ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.228205128205129
+                }
+            ]
+        }
+    ]
+}

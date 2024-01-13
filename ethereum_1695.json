@@ -1,0 +1,95 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5007-eip-721-time-extension/8924",
+            "title": "EIP-5007: EIP-721 Time Extension ",
+            "index": 8924,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "15/04/2022-02:23:08",
+                    "content": "  eip: title: ERC-721 Time Extension description: Add start time and end time to ERC-721 tokens. author: Anders (@0xanders), Lance (@LanceSnow), Shrug shrug@emojidao.org discussions-to: status: Draft type: Standards Track category: ERC created: 2022-04-13 requires: 165, 721  Abstract This standard is an extension of ERC-721. It proposes some additional property( startTime, endTime,originalTokenId) to help with the on-chain time management.  Motivation Some NFTs have a defined usage period and cannot be used when they are not at a specific time. If you want to make NFT invalid when it is not in use period, or make NFT enabled at a specific time, while the NFT does not contain time information, you often need to actively submit the chain transaction, this process is both cumbersome and a waste of gas. There are also some NFTs contain time functions, but the naming is different, third-party platforms are difficult to develop based on it. By introducing (startTime, endTime) and unifying the naming, it is possible to enable and disable NFT automatically on chain.  Specification The keywords \u201cMUST\u201d, \u201cMUST NOT\u201d, \u201cREQUIRED\u201d, \u201cSHALL\u201d, \u201cSHALL NOT\u201d, \u201cSHOULD\u201d, \u201cSHOULD NOT\u201d, \u201cRECOMMENDED\u201d, \u201cMAY\u201d and \u201cOPTIONAL\u201d in this document are to be interpreted as described in RFC 2119. interface ITimeNFT  {      /// @notice Emitted when the `startTime` or `endTime` of a NFT is changed      /// @param tokenId  The tokenId of the NFT     /// @param startTime  The new start time of the NFT     /// @param endTime  The new end time of the NFT     event TimeUpdate(uint256 tokenId,uint64 startTime,uint64 endTime);      /// @notice Get the start time of the NFT      /// @dev Throws if `tokenId` is not valid NFT      /// @param tokenId  The tokenId of the NFT     /// @return The start time of the NFT     function startTime(uint256 tokenId) external view returns (uint64);          /// @notice Get the end time of the NFT       /// @dev Throws if `tokenId` is not valid NFT      /// @param tokenId  The tokenId of the NFT     /// @return The end time of the NFT     function endTime(uint256 tokenId) external view returns (uint64);      /// @notice Get the token id which this NFT mint from     /// @dev Throws if `tokenId` is not valid NFT      /// @param tokenId  The tokenId of the NFT     /// @return The token id which this NFT mint from     function originalTokenId(uint256 tokenId) external view returns (uint256);      /// @notice Check the NFT is valid now      /// @dev Throws if `tokenId` is not valid NFT      /// @param tokenId  The tokenId of the NFT     /// @return The the NFT is valid now     /// if(startTime <= now <= endTime) {return true;} else {return false;}      function isValidNow(uint256 tokenId) external view returns (bool);      /// @notice Mint a new token from an old token       /// @dev Throws if `tokenId` is not valid token      /// @param originalTokenId_  The token id which the new token mint from     /// @param newTokenStartTime  The start time of the new token     /// @param newTokenOwner  The owner of the new token     /// @return newTokenId The the token id of the new token     function split(uint256 originalTokenId_, uint64 newTokenStartTime, address newTokenOwner) external returns(uint256);      /// @notice Merge two time NFTs into one time NFT       /// @dev Throws if `firstTokenId` or `secondTokenId` is not valid token      /// @param firstTokenId   The id of the first token     /// @param secondTokenId  The id of the second token     /// @param newTokenOwner  The owner of the new token     /// @return newTokenId The id of the new token     function merge(uint256 firstTokenId,uint256 secondTokenId, address newTokenOwner) external returns(uint256); }   Rationale  Time Data Type The max value of uint64 is 18446744073709551615,  timestamp 18446744073709551615 is about year 584942419325. uint64 is sufficient and saves gas compared to uin256.  Backwards Compatibility As mentioned in the specifications section, this standard can be fully ERC721 compatible by adding an extension function set.  Test Cases  Test Contract pragma solidity 0.8.10; import \"./TimeNFT.sol\";  contract TimeNFTDemo is TimeNFT{      constructor(string memory name_, string memory symbol_) TimeNFT(name_, symbol_){     }      /// @notice mint a new original time NFT       /// @param to_  The owner of the new token     /// @param startTime_  The start time of the new token     /// @param endTime_  The end time of the new token     /// @return newTokenId The id of the new token     function mint(address to_, uint64 startTime_, uint64 endTime_) public returns(uint256 newTokenId) {        newTokenId = _mintOriginalToken(to_, startTime_, endTime_);     }     }   Test Code const { assert } = require(\"chai\");  const TimeNFTDemo = artifacts.require(\"TimeNFTDemo\");  contract(\"test\", async accounts => {      it(\"test TimeNFT\", async () => {         // Get initial balances of first and second account.         const Alice = accounts[0];         const Bob = accounts[1];          const instance = await TimeNFTDemo.deployed(\"TimeNFTDemo\", \"TimeNFTDemo\");         const demo = instance;          let now = Math.floor(new Date().getTime()/1000);         let startTime = now ;         let endTime = now + 10000;         let newStartTime = startTime + 2000;          let id1 =  await demo.mint(Alice,start, endTime);         let isValidNow =   await demo.isValidNow(id1);          assert.equal(             isValidNow,             true,             \"token id1 should be valid now\"         );          let id2 =  await demo.split(id1,newStartTime, Bob);          let owner2 = await demo.ownerOf(id2);         assert.equal(             owner2,             Bob ,             \"Owner of NFT 2 should be Bob\"         );          let id3 =  await demo.mint(Alice,1, 2);         let isValidNow3 = await demo.isValidNow(id3);          assert.equal(             isValidNow3,             false,             \"token id3 should be not valid now\"         );     }); });   Reference Implementation pragma solidity 0.8.10; import \"@openzeppelin/contracts/token/ERC721/ERC721.sol\"; import \"./ITimeNFT.sol\";  contract TimeNFT is ERC721, ITimeNFT  {      struct TimeNftInfo {         uint256 originalTokenId;         uint64 startTime;          uint64 endTime;      }      uint256 private _nextTokenId = 1;      mapping(uint256 /* tokenId */ => TimeNftInfo) internal _timeNftMapping;      constructor(string memory name_, string memory symbol_)ERC721(name_, symbol_){             }      /// @notice Get the start time of the token      /// @dev Throws if `tokenId` is not valid token      /// @param tokenId  The tokenId of the token     /// @return The start time of the token     function startTime(uint256 tokenId) public view virtual override returns (uint64) {         require(_exists(tokenId),\"invalid tokenId\");         return _timeNftMapping[tokenId].startTime;     }          /// @notice Get the end time of the token       /// @dev Throws if `tokenId` is not valid token      /// @param tokenId  The tokenId of the token     /// @return The end time of the token     function endTime(uint256 tokenId) public view virtual override returns (uint64) {         require(_exists(tokenId),\"invalid tokenId\");         return _timeNftMapping[tokenId].endTime;     }      /// @notice Get the token id which this token mint from     /// @dev Throws if `tokenId` is not valid token      /// @param tokenId  The tokenId of the token     /// @return The token id which this token mint from     function originalTokenId(uint256 tokenId) public view virtual override  returns (uint256) {         require(_exists(tokenId),\"invalid tokenId\");         return _timeNftMapping[tokenId].originalTokenId;     }      /// @notice Check the NFT is valid now      /// @dev Throws if `tokenId` is not valid token      /// @param tokenId  The tokenId of the token     /// @return The the NFT is valid now     /// if(startTime <= now <= endTime) {return true;} else {return false;}      function isValidNow(uint256 tokenId) public view virtual override returns (bool) {         require(_exists(tokenId),\"invalid tokenId\");         return uint256(_timeNftMapping[tokenId].startTime) <= block.timestamp                  && block.timestamp <= uint256(_timeNftMapping[tokenId].endTime);     }      /// @notice Mint a new token from an old token       /// @dev Throws if `tokenId` is not valid token      /// @param originalTokenId_  The token id which the new token mint from     /// @param newTokenStartTime  The start time of the new token     /// @param newTokenOwner  The owner of the new token     /// @return newTokenId The the token id of the new token     function split(uint256 originalTokenId_, uint64 newTokenStartTime, address newTokenOwner) public virtual override returns(uint256 newTokenId){         require(_isApprovedOrOwner(_msgSender(), originalTokenId_), \"error: caller is not owner nor approved\");          uint64 oldTokenStartTime =  _timeNftMapping[originalTokenId_].startTime;         uint64 oldTokenEndTime = _timeNftMapping[originalTokenId_].endTime;         require( oldTokenStartTime < newTokenStartTime  && newTokenStartTime < oldTokenEndTime, \"invalid newTokenStartTime\");                  _timeNftMapping[originalTokenId_].endTime = newTokenStartTime - 1;                   uint64 newTokenEndTime = oldTokenEndTime;         emit TimeUpdate(originalTokenId_, oldTokenStartTime ,_timeNftMapping[originalTokenId_].endTime);          newTokenId = _mintTimeNft(newTokenOwner, originalTokenId_, newTokenStartTime, newTokenEndTime);     }      /// @notice Merge two time NFTs into one time NFT       /// @dev Throws if `firstTokenId` or `secondTokenId` is not valid token      /// @param firstTokenId   The id of the first token     /// @param secondTokenId  The id of the second token     /// @param newTokenOwner  The owner of the new token     /// @return newTokenId The id of the new token     function merge(uint256 firstTokenId,uint256 secondTokenId, address newTokenOwner) public virtual override returns(uint256 newTokenId) {         require(_isApprovedOrOwner(_msgSender(), firstTokenId) &&  _isApprovedOrOwner(_msgSender(), secondTokenId),           \"error: caller is not owner nor approved\");          TimeNftInfo memory firstToken = _timeNftMapping[firstTokenId];         TimeNftInfo memory secondToken = _timeNftMapping[secondTokenId];          require(firstToken.originalTokenId == secondToken.originalTokenId                  && firstToken.startTime <= firstToken.endTime                  && (firstToken.endTime + 1) == secondToken.startTime                  && secondToken.startTime <= secondToken.endTime, \"invalid tokenId\");          _burn(firstTokenId);         _burn(secondTokenId);          newTokenId = _mintTimeNft(newTokenOwner, firstToken.originalTokenId, firstToken.startTime, secondToken.endTime);     }      /// @notice mint a new time NFT       /// @param to_  The owner of the new token     /// @param originalTokenId_    The token id which the new token mint from     /// @param startTime_  The start time of the new token     /// @param endTime_  The end time of the new token     /// @return newTokenId The id of the new token     function _mintTimeNft(address to_, uint256 originalTokenId_, uint64 startTime_, uint64 endTime_) internal virtual returns(uint256 newTokenId)  {         newTokenId = _nextTokenId;         _nextTokenId++;          TimeNftInfo storage info = _timeNftMapping[newTokenId];         info.originalTokenId = originalTokenId_;         info.startTime = startTime_;         info.endTime = endTime_;          _mint(to_, newTokenId);     }      /// @notice mint a new original time NFT       /// @param to_  The owner of the new token     /// @param startTime_  The start time of the new token     /// @param endTime_  The end time of the new token     /// @return newTokenId The id of the new token     function _mintOriginalToken(address to_, uint64 startTime_, uint64 endTime_) internal virtual returns(uint256 newTokenId) {         newTokenId = _nextTokenId;         _nextTokenId++;              TimeNftInfo storage info = _timeNftMapping[newTokenId];         info.originalTokenId = newTokenId;         info.startTime = startTime_;         info.endTime = endTime_;          _mint(to_, newTokenId );     }      /// @notice burn a time NFT       /// @param tokenId  The id of the token     function _burn(uint256 tokenId) internal  virtual override{         super._burn(tokenId);         delete _timeNftMapping[tokenId];     } }    Security Considerations Implementors of the TimeNFT standard must consider the condition of merge function.  The originalTokenId of two NFTs should be same and the time of two NFTs should be adjacent.  Copyright Copyright and related rights waived via CC0. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-5643-subscription-nfts/10802/6"
+                    ],
+                    "GPT-summary": "The post introduces a new standard, EIP-5007, which proposes adding start time and end time to ERC-721 tokens to help with on-chain time management. The post explains the motivation behind the proposal and provides a detailed specification of the proposed standard. The post also includes test cases and a reference implementation. The post does not advertise the proposal, but rather explains it and invites feedback and collaboration.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Interoperability and Scalability",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.321538166474875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "22/04/2022-19:43:36",
+                    "content": "Some non-formatting related points:  I\u2019d recommend moving the split, merge, and originalTokenId members into one or two optional interfaces (maybe IERC5007Divisible and IERC5007Joinable?) Should merge return a value? For symmetry with split, I would assume the intent is to burn the second token, and adjust the first token\u2019s start/end times?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "26/04/2022-02:44:57",
+                    "content": "Good suggestion, I will change  split , merge , and originalTokenId members into one optional interfaces. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TsBauer",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "28/07/2022-09:01:45",
+                    "content": "I\u2019ve been thinking about this EIP. In my opinion, it makes sense to standardize the time properties of NFTs. But some questions arose for me.  What use cases did you have in mind with split, merge and originalTokenId? Is this compatible with ERC-1155? If not, would it be compatible without this optional interface which includes split, merge and originalTokenId?  I\u2019d vote even in favor of dropping the optional interface if it\u2019s in the way of ERC-1155 compatibility. I think it\u2019s hard to justify that we would need a similar but different EIP for ERC-1155. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.513888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xanders",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "28/07/2022-13:51:12",
+                    "content": " What use cases did you have in mind with split, merge and originalTokenId?  A use case:  doNFT Splitting and Merging: doNFT Splitting and Merging - Double doNFT is DOUBLE NFT, The user with a doNFT has the right to use the original NFT for a specified period of time.  Is this compatible with ERC-1155? If not, would it be compatible without this optional interface which includes split, merge and originalTokenId?  ERC5007 is not compatible with ERC-1155 now. There is a count param for a specific token id in ERC-1155. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.660714285714286
+                }
+            ]
+        }
+    ],
+    "group_index": "1695"
+}

@@ -1,0 +1,496 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/increasing-address-size-from-20-to-32-bytes/5485",
+            "title": "Increasing address size from 20 to 32 bytes ",
+            "index": 5485,
+            "category": [
+                "Working Groups",
+                "Ethereum 1.x Ring"
+            ],
+            "tags": [
+                "opcodes",
+                "address-space"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "1",
+                    "likes": "10",
+                    "time": "06/03/2021-16:06:13",
+                    "content": " Why increase the address size? At some point, perhaps soon, we are going to have to increase the address size from 20 bytes to 32 bytes. Some reasons for this include:  Adding an address space ID if we use a state expiry scheme that requires it  Adding a shard ID if we have multiple EVM-capable execution shards Security: 20 bytes is not secure enough  To elaborate on (3), current 20 byte (160 bit) addresses only provide 80 bits of collision resistance, meaning that someone can spend 2**80 computing work to generate two pieces of contract init code (or (sender, ID) pairs, or one piece of contract code and one EOA private key) that have the same address. 2**80 will soon be within reach of sophisticated attackers; the bitcoin blockchain has already made more than 2**90 hashes. This possibility of attack means that if someone gives you an address that is not yet on-chain, and claims that the address has some property, they cannot prove that the address actually has that property, because they could have some second way of accessing that account. The properties of addresses become more complicated: you can trust an address if either (i) it is on chain, or (ii) you personally created it; for example, an organization cannot safely receive funds at a multisig unless that multisig has already been published on-chain, because whoever was the last to provide their public key could have chosen their private key in such a way as to make the address also a valid EOA controlled by themselves. These problems can be eliminated if we go up to 32 byte addresses, increasing the hash length and simultaneously adding shard and epoch data and a version number to add forward compatibility for the future. The challenge, however, is that existing contracts are designed to accept 20 byte addresses. Solidity type-checks addresses to verify that they are in range, and byte-packs addresses to save storage space. This document attempts to give some proposals for how this can be done reasonably backwards-compatibly.  Proposal We make a new address schema as follows: Byte 0    : Version byte (must be 1 for now) Byte 1-2  : Must be zero (could be shard number in the future) Byte 3-5  : Epoch number (0 <= e <= 16777215) Byte 6-31 : 26 byte hash  For example, the private key 0x0000...01 should correspond to the new-style address: 0x01000000000157aE408398dF7E5f4552091A69125d5dFcb7B8C2659029395bdF Note that given a 32-byte value, it\u2019s always possible to tell if it\u2019s new-style or old-style: new-style addresses have the version byte set to 1 or higher, so they are >= 2**160, whereas old-style addresses are < 2**160. We add:  A new opcode, CREATE3, that is capable of generating 32 byte addresses. If we add address space separation, it would take the desired epoch number as an input, allowing contracts to create new contracts in their preferred address space A new transaction type that makes the msg.sender a new-style address, and if it\u2019s a contract creation, creates the contract at a new-style address A new opcode, BIGCALLER, that returns the address of the caller regardless of whether it\u2019s new-style or old-style (Solidity and other langs would be expected to treat the output as a BigAddress type which would be an alias for bytes32 instead of bytes20)  The CALLER opcode, if the caller is new-style, instead converts the address into a \u201ccompressed address\u201d: DOMAIN_SEPARATION_KEY = b'\u00feBLAHBLAHBLAH'  def get_compressed_address(address: 'bytes32'):     if address[:12] == bytes([0] * 12):         return address[12:]     return sha3(DOMAIN_SEPARATION_KEY + address)[12:]  It also immediately saves the mapping from the compressed address to the original address in a translation table. That is, it sets storage slot compressed_address of contract TRANSLATION_TABLE_ADDR to address. The *CALL and *EXT opcodes, if they encounter an old-style destination address, attempt to decompress it: DOMAIN_SEPARATION_KEY = b'\u00feBLAHBLAHBLAH' TRANSLATION_TABLE_ADDR = bytes([1] + [0, 0, 0, 0, 0] + [0] * 25 + [255]) ZERO_CHUNK = bytes32([0] * 32)  def get_decompressed_address(state: 'EthereumState', address: 'bytes32'):     # If the address is already new-style, just call that address directly     if address[:12] != bytes([0] * 12):         return address     elif state[TRANSLATION_TABLE_ADDR][address] != ZERO_CHUNK:         return state[TRANSLATION_TABLE_ADDR][address]     else:         return address  This ensures that new-style addresses would be able to interact with pre-existing contracts, maintain persistent identities, hold tokens, etc.  Example Suppose that Alice has a new-style address ALICE_LONG and the compressed form is ALICE_SHORT. Alice tries to interact with a simple auction contract, AUCTIONEER (which is pre-existing, so it uses the CALLER opcode).  Alice calls AUCTIONEER from ALICE_LONG to make a bid, passing along 5 ETH. AUCTIONEER uses the CALLER opcode to get the caller, and the opcode returns ALICE_SHORT (and simultaneously adds ALICE_SHORT -> ALICE_LONG to the translation table). AUCTIONEER confirms that Alice\u2019s bid is higher than any existing one, and saves Alice\u2019s bid, using ALICE_SHORT as her identity. Bob calls AUCTIONEER with a 6 ETH bid. AUCTIONEER confirms that Bob\u2019s bid is higher, and needs to refund Alice her bid as her bid is now losing. AUCTIONEER uses CALL passing along ALICE_SHORT as an argument. The CALL opcode looks up ALICE_SHORT in the translation table, gets ALICE_LONG as a result, and so correctly sends Alice\u2019s 5 ETH back to ALICE_LONG.   Alternatives It\u2019s worth noting that we don\u2019t have to do this if we are okay with unpublished addresses requiring the creator to be trusted. If we are okay with this weaker security property, then we could instead just move to a scheme where the hash decreases to 15 bytes (still 120 bits of preimage security) and the remaining 5 bytes get used for version/shard/epoch, though this would instead require somehow invalidating existing addresses that collide with the new schema. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/thoughts-on-address-space-extension-ase/6779",
+                        "https://ethereum-magicians.org/t/types-of-resurrection-metadata-in-state-expiry/6607"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.651387674825175
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/esaulpaugh",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "06/03/2021-18:09:33",
+                    "content": "    vbuterin:  Solidity and other langs would be expected to treat the output as a BigAddress type which would be an alias for bytes32 instead of bytes20   The current ABI spec treats address as uint160, not bytes20 though   docs.soliditylang.org    Contract ABI Specification \u2014 Solidity 0.8.3 documentation      ",
+                    "links": [
+                        "https://docs.soliditylang.org/en/latest/abi-spec.html"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/anono1618",
+                    "index": "3",
+                    "likes": "3",
+                    "time": "06/03/2021-19:40:38",
+                    "content": "Can we reserve a nibble for a checksum, even if it is optional and only used by front ends? Perhaps have addresses start with checksum c and an \u201cE\u201d to mean Ethereum, so addresses would look like cE01000001060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F c being a checksum \u201cE\u201d denoting ethereum 01 Version Number 000001 Epoch 060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F being the hash (but counting byte number). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.21875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "06/03/2021-22:58:15",
+                    "content": "vbuterin on reddit> The amount of computing power needed to break a key or hash goes up exponentially with the length, so we really can be sure that 32 bytes is sufficient for the foreseeable future. Isn\u2019t the hash length really 26 bytes not 32 in the proposal? Shouldn\u2019t we increase the hash part to 32 bytes in case of quantum surprises? Maybe we could go to 40 byte addresses, and in the spirit of anono1618\u2019s suggestion starting with oxE (for Ethereum) followed by a 12 bit checksum to catch typos. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "06/03/2021-23:38:11",
+                    "content": "26 bytes is enough in a post-quantum context too. If we really want, we could later on switch around the addressing scheme again to increase the hash portion to 28 bytes.  Can we reserve a nibble for a checksum, even if it is optional and only used by front ends?  What properties are you trying to get that Ethereum\u2019s existing mixed-case checksum scheme doesn\u2019t already provide? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "07/03/2021-00:06:00",
+                    "content": "I didn\u2019t know about Ethereum\u2019s existing mixed-case checksum scheme . So now the addresses will be case-sensitive?  26 bytes is enough in a post-quantum context too  Do we know that for a fact? Unless this is proven somehow, I think going a bit longer on the addresses may make people feel better and alleviate (possibly irrational) fears. Considering what is at stake, it is better to err on the side of too much rather than not enough when it comes to wallet security. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "07/03/2021-00:49:06",
+                    "content": "Also a byte seems wasteful for a version number. A nibble would be plenty, and if we ever reach version 15 we can increase the version size to one byte in that version. And why start at version 1? 0 is just as good, isn\u2019t it? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "07/03/2021-00:57:28",
+                    "content": "It is not very clear to me why 3 bytes are reserved for the epoch (what will this epoch embedded within addresses be used for?). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.8076923076923075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "07/03/2021-01:12:52",
+                    "content": "We could do 2 bytes for the epoch as well; I suppose having 108 bits of collision resistance instead of 104 (from adding an extra byte to the hash, making it 27) is more urgent for future-proofness than having epoch space to last 16777216 years instead of a mere 65536.  Also a byte seems wasteful for a version number  Partial bytes just make code ugly imo  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.333333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "10",
+                    "likes": "2",
+                    "time": "07/03/2021-01:14:20",
+                    "content": " So now the addresses will be case-sensitive?  Theoretically, we could make addresses case-sensitive today. There just hasn\u2019t been enough of a community effort to force adoption of the checksum scheme. But we could actually try putting our minds to making it mandatory! (even before any address size change) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "07/03/2021-01:58:29",
+                    "content": "If changing the address size, it seems much cleaner to set aside a byte for the checksum, rather than encode it using a upper/lowercase scheme. It seems to me that the checksum is really needed when entering addresses by hand, so making such entry more difficult and error prone to enter by making the addresses cases sensitive is a step backward imo. I still don\u2019t understand the planned use of the epoch. I naively thought it was in eth2 epoch units of ~6.4 minutes. If it is a number of years then yes three bytes is wildly excessive. IMO 1 byte allowing for 256 years would be plenty. It might well be that there is some benefit of have \u201cmust be zero\u201d bytes reserved for future uses, in the hope that the address length will not have to change again, so maybe that could be an argument for longer addresses (40 bytes?) with a longer ultra secure (even to wildly paranoid types)  hash (32 bytes?) and mbz fields.  Partial bytes just make code ugly imo   Then at least make the first version be 224 instead of one, so that all ethereum addresses will start with 0xE. Actually, on second thought, maybe it would be nice to start at version 226, so that eth addresses would start with 0xE2 which could be read as Ethereum 2.0. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0588235294117645
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "07/03/2021-02:10:30",
+                    "content": "Also, the Mixed-case checksum scheme is useful only to catch input errors. Is it possible that an address could get corrupted while sending a transaction or executing contract code? If that is the case, having a checksum allowing to validate that a 32 or 40 byte string is indeed a valid address might be good to have. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "07/03/2021-02:18:13",
+                    "content": "    greg7mdp:  it seems much cleaner to set aside a byte for the checksum, rather than encode it using a upper/lowercase scheme.   How so? Remember that there\u2019s no need for a checksum within the EVM; the checksum is a user-interface-level convenience. So it should be part of the representation format (as the mixed-case-hex thing is), and not part of the raw address format.  making such entry more difficult and error prone to enter by making the addresses cases sensitive  The mixed-case checksums don\u2019t have this risk. If you get the uppercase/lowercase wrong, that can ONLY lead to a \u201cbad checksum\u201d error, NEVER to you accidentally typing in a different but valid address.  Is it possible that an address could get corrupted while sending a transaction or executing contract code?  I can\u2019t possibly imagine what could cause such a thing to happen.  so maybe that could be an argument for longer addresses (40 bytes?)  Addresses longer than 32 bytes are extra-problematic because there are 32 byte limits everywhere in ethereum: storage slot keys, storage slot values, ABI bytes32 values, SSZ chunk sizes\u2026 so IMO better to just stick to 32.  Actually, on second thought, maybe it would be nice to start at version 226, so that eth addresses would start with 0xE2 which could be read as Ethereum 2.0.  I\u2019m ok with this if people want it! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.174773755656109
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "07/03/2021-02:36:53",
+                    "content": " If you get the uppercase/lowercase wrong, that can ONLY lead to a \u201cbad checksum\u201d error, NEVER to you accidentally typing in a different but valid address  I get that, but it may still get frustrating and not user friendly. Suppose someone trying to send a large amount to a paper wallet. He enters the address, but we just made this entry more difficult because the letters are now case-sensitive. He clicks \u201csend\u201d and gets an error that the address is incorrect. He now totally freaks out. I think most users would rather type case-insensitive addresses with an additional checksum byte, than having to worry about upper and lower case letters in addresses. I would describe your argument as saying: \u201cIt is OK if I make your task more difficult, because I can guarantee that I will let you know if you fail it, and therefore it won\u2019t have terrible consequences\u201d. There could also be a benefit to be able to check whether addresses are valid in program databases (beacon nodes, etc.). Maybe? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.719246031746032
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/zamicol",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "07/03/2021-05:27:22",
+                    "content": "Yes please!  At least a nibble, if not four bytes like Bitcoin.  Two bytes would allow 1/65536 mistakes to get through.  A nibble 1/16 mistakes would get through. Another point: It\u2019s not just users that bit flip.  It\u2019s not just for user interfaces.  This is a real issue, for computers as well. See my post on Reddit. ",
+                    "links": [
+                        "https://old.reddit.com/r/ethfinance/comments/lzkhqn/daily_general_discussion_march_7_2021/gq2nupd/"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/zamicol",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "07/03/2021-09:07:33",
+                    "content": "EIP-55 addresses are just regular addresses on chain.  There\u2019s no checksum on chain. EIP-55 addresses are also optional.  What I\u2019m asking for is mandatory checksums. Thank goodness applications like Metamask use checksums by default.  But then again, it\u2019s only ~15 bits on average. But that\u2019s another problem in of itself.  The checksum strength is not guaranteed, it\u2019s only \u201can average\u201d value.  It could be very few bits actually in the checksum.  It totally depends on how many alpha characters the original address has. Ethereum addresses are 42 characters long with (when checksummed) a base 22 character set. If they were efficient (which they are not) they could hold 179 bits of data. For a 42 string length in \u201cbase 66\u201d, you can store 242 bits.  Which is enough room to do everything Vitalik is suggesting to do and have enough bits left over to add checksums. If using Bitcoin\u2019s base 58, you\u2019d need 44 characters. ",
+                    "links": [
+                        "https://convert.zamicol.com/?in=..........................................&inAlpha=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_%7E.&outAlpha=01&pad=false"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.372058823529412
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "07/03/2021-13:27:11",
+                    "content": "    zamicol:  Another point: It\u2019s not just users that bit flip . It\u2019s not just for user interfaces. This is a real issue, for computers as well.   It\u2019s worth noting that in bitcoin, the checksum is also purely a user convenience, not an in-protocol thing; the bitcoin protocol treats addresses purely as a 20-byte hash with no redundancy or error detection of any kind. So as far as I can tell, that is the industry standard way of doing it. And if there are bit flips, they\u2019re far more likely to happen in the much larger parts of the protocol that are not addresses. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.012987012987013
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "18",
+                    "likes": "2",
+                    "time": "07/03/2021-15:16:21",
+                    "content": "Even if it had no technical value (a fact that I am not quite convinced is true), having a checksum is a very potent bragging claim (even better if bitcoin doesn\u2019t have it). It allows us to say:  Ethereum has an built in way to validate that addresses are indeed valid addresses, and not just any random string of bits. Before any token transfer, addresses are validated against the embedded checksum and any inconsistency will cause the transaction to be aborted.  Sadly, marketing is important, even for things which make little technical sense. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.395833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/John-Status",
+                    "index": "19",
+                    "likes": "6",
+                    "time": "07/03/2021-16:00:29",
+                    "content": "Proposal: any new address schema should support encoding multiple shard and L2 rollup chain IDs in a single address The shard and L2 rollup chain IDs that are encoded in the address would represent the destination chains into which the address owner is happy to receive tokens e.g. If an address includes the IDs for say the Ethereum L1, Optimism L2 and ZKSync L2 chains, this would signal that the owner of the address is happy for tokens sent to this address to be sent on the Ethereum L1, Optimism L2 and ZKSync L2 chains. In a world with multiple rollups, encoding multiple chain IDs in the address would enable wallets to automatically know which L2 rollup chains are valid destinations (for that address) without requiring any additional user input. Without this change, when (in a world with multiple rollups) a user wishes to make a token transfer, the user would need to know the name of the destination chain in addition to the destination address.  This is much worse than the token transfer user experience on Ethereum today! Requiring users to enter a destination chain name (in addition to a destination address) introduces the following UX regressions:   significantly increases scope for user error (e.g. user sends tokens to the correct address but on the wrong chain)   Adds another concept (the fact there are multiple chains with different names) for users to learn, hindering adoption.  For mainstream adoption we need to make Ethereum easier to use, not harder.   Because in reality most users would only enter/select a single destination chain, in many cases the routing of these cross chain transactions would be suboptimal, increasing the transaction cost the user has to pay, decreasing the transaction speed, and increasing the number of transactions that need to be performed which needlessly places additional load on the network. Many to many chain routing is better than many to one chain routing.   If multiple chain IDs are encoded in Ethereum addresses, all these problems go away and the token transfer user experience in a world with multiple rollups is just as good as the token transfer user experience today. How it would work: Let\u2019s say Alice has funds associated with her address on rollups A, B and C.  She wants to send funds to Bob who uses his address on rollups B, C and D.  Bob sends his address to Alice, and in the address it is encoded that Bob is happy to receive funds to that address on rollups B, C and D. Alice has 30 ETH associated with her address in total, and this is split equally across rollups A, B and C (10 ETH on each).  Alice wants to send Bob 20 ETH.  Because Bob\u2019s address has told Alice\u2019s wallet that he is happy to accept funds to rollups B, C and D, Allice\u2019s wallet automatically works out that the quickest and cheapest way to send 20 ETH to Bob is to send 10 ETH from her address to his address on rollup B and another 10 ETH from her address to his address on rollup C.  This means that this transfer doesn\u2019t have to cross any rollup boundaries therefore avoiding the latency and cost of moving funds between rollups. In terms of the routing of payments, the above is one of the simplest possible examples.  In reality different L2s will have different bridge costs and delays, and the sender\u2019s funds will frequently be spread across multiple rollups in a way that won\u2019t match up so neatly with the rollups on which a recipient is happy to receive funds.  And when L2 to L2 transfers become feasible there will also be different costs when moving funds between different L2\u2019s adding another layer of routing complexity.  It\u2019s unreasonable to expect users to understand and manually work out the best answer to these complex routing problems each time they want to make a token transfer. Encoding multiple chain IDs in ethereum addresses provides wallets with the information they require to compute the quickest and cheapest way of transferring funds (that are assigned to the same address across multiple rollups) to a recipient whose address is also used across multiple rollups. Assumptions around token UX in a in a world with multiple rollups   In the future, wallets will include simultaneous support for multiple rollup chains (in addition to Ethereum L1)   When this happens, wallets will display the token balance for a given address across both Ethereum L1 and all the rollup chains that the wallet supports.   Token bridges will be built into wallets, so when a user wishes to transfer tokens across chains, they will be able to do this directly in their wallet without needing to navigate to a token bridge DApp.   See this rough visual mockup which illustrates these UX assumptions and shows how a token transfer flow could work in a world of multiple rollups if multiple chain IDs can be encoded in an address. Mockup_of_sending_tokens_to_multiple_L2s_with_destination_chain_IDs_encoded_in_address33193\u00d72061 552 KB Benefits of being able to encode multiple chain IDs in an address in a world with multiple rollups:   The user sending tokens only needs to know the destination address (just like when using Ethereum today).  Without this change, in a world with multiple rollups, a simple user to user token transfer requires the user to know both the destination address and the destination chain name.   Less scope for user error e.g. the user doesn\u2019t have the opportunity to mistakenly enter the name of the wrong destination chain.  Follows the UX principle that \u201cwhen possible, the best way of handling errors is to remove the possibility of the user making the error in the first place!\u201d   Lower transaction fees, faster transactions and reduced number of transactions\u2026 Wallets would be able to automatically calculate the most efficient routing to transfer X tokens from account A to account B when (for example) account A holds X tokens across rollup A, rollup B and rollup C, and where account B is happy to receive tokens on rollup B, rollup C and rollup D.   Requiring the user to manually enter the destination chain for a transaction makes the UX of transferring tokens more complex.  By having the ability to encode multiple chain IDs in an address, Ethereum doesn\u2019t get harder to use than it is today in a multi-rollup world.   Open questions:   What is the max number of chain IDs we would allow to be encoded in a single address?  The cost of allowing a greater number of chain IDs to be encoded in a single address is increased address length.  Could allowing a max of say 8 or 16 chain IDs to be encoded in a single address be a sensible number?   What is the global max number of chain IDs that would be available for use in the future?  The cost of having a greater global max number of chain IDs is increased address length.  On the flip side, the greater the number of chain IDs supported the more future proof this format would be.  Perhaps aim to support a total of 32k or 64k chain IDs in total??   A table of which chain IDs map to which chains would have to live somewhere   Other thoughts   Encoding Chain IDs in addresses should be optional e.g. an address should be valid even if no Chain IDs are encoded in it.   I\u2019m +1 on adding native support for checksums to any future address format.   We\u2019ve been looking into how we can encode multiple chain IDs into Ethereum\u2019s current address format using mixed case encoding (EIP-55\u2019s checksum encoding mechanism), but it\u2019s not possible to use mixed case encoding for both multiple chain IDs and a checksum at the same time.  Natively supporting multiple chain IDs in a new address format would resolve this issue.   IMHO the ability to encode multiple chain IDs in ethereum addresses is highly desirable from a user experience perspective! ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/chain-specific-addresses/6449/6"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.661111279686047
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/zamicol",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "07/03/2021-16:09:11",
+                    "content": "That sounds like a fair compromise.  I would ask to enforce checksums for user interfaces. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "07/03/2021-17:20:35",
+                    "content": "I\u2019m wondering if, instead of deciding on one address format which has hardcoded support for shards/L2 chains addressing, it might not be getter to have optional address extensions. So in the base 32 byte address, there could be a byte stating whether the address is followed by a second 32 byte extended address. If the byte is 0, there is no extended address information. If the byte is not 0, its value would specify the type of the address extension that follows in the next 32 bytes. Any address extension would be optional, but as you described providing it might be a way to optimize transfers. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.666666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/John-Status",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "07/03/2021-17:51:14",
+                    "content": "Great idea!  Doesn\u2019t increase the base address size, and provides 32 bytes in which to encode multiple chain IDs when this functionality is needed  IMHO this extension (that enables multiple chain IDs to be encoded) will be needed in most cases when an address that tokens might be sent to is shared/published.  E.g. when users share addresses with one another, most of the time they should be using this address extension. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/anono1618",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "07/03/2021-18:46:08",
+                    "content": "Just enforcement, and obviousness that the checksum exists. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/zamicol",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "07/03/2021-19:05:41",
+                    "content": "Why not allow for the full 256 bit keccak256 checksum?  GUIs can include however many bytes they want at the end of the address when copying and pasting.   Ethereum can specify that anything under 4 bytes is invalid for GUIs. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fare",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "07/03/2021-19:24:57",
+                    "content": "I\u2019m all for longer addresses\u2026 but if you\u2019re going to make big incompatible changes, why not bundle that with switching from EVM to EWASM or RISCV or something, instead of making an ugly and futile attempt at backwards compatibility? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rubi",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "08/03/2021-07:22:46",
+                    "content": "    vbuterin:  To elaborate on (3), current 20 byte (160 bit) addresses only provide 80 bits of collision resistance, meaning that someone can spend 2**80 computing work to generate two pieces of contract init code (or (sender, ID) pairs, or one piece of contract code and one EOA private key) that have the same address. 2**80 will soon be within reach of sophisticated attackers; the bitcoin blockchain has already made more than 2**90 hashes.   This may be misleading. It also requires 2**80 bytes (around 1 bn petabytes) of (fast) memory. You can trade off to something like 1,000 petabytes memory and 2**100 hashes, but it\u2019s still hard. I\u2019m not saying this is not a problem, just making current situation somewhat clearer. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.640151515151515
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "08/03/2021-15:20:26",
+                    "content": " This may be misleading. It also requires 2**80 bytes (around 1 bn petabytes) of (fast) memory.  I\u2019m pretty sure you can use cycle finding algos to find a collision in sqrt time and O(1) memory. Eg. https://diglib.tugraz.at/download.php?id=576a7826f0534&location=browse around page 55 talks about some approaches to do this. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.583333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "28",
+                    "likes": "1",
+                    "time": "08/03/2021-15:57:01",
+                    "content": "What was the motivation to use 20 byte addresses instead of the 32-byte addresses which are generated by default? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "29",
+                    "likes": "1",
+                    "time": "08/03/2021-17:13:20",
+                    "content": "It was a holdover from bitcoin (much like the v value in signatures being increased by 27). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poemm",
+                    "index": "30",
+                    "likes": "2",
+                    "time": "08/03/2021-19:06:14",
+                    "content": "This is a brief survey of all (?) EVM opcodes which interact with addresses.  ADDRESS, ORIGIN, CALLER, COINBASE  Input: nothing. Output: stack item with an address from the execution environment. Currently 160 bits.  BALANCE, EXTCODESIZE, EXTCODECOPY, EXTCODEHASH  Input: an address from stack, which we currently truncate to 160 bits. Output: info about that address is possibly pushed to stack.  CALL, CALLCODE, DELEGATECALL, STATICCALL  Input: an address from stack, which we currently truncate to 160 bits. Output: error code from the message call.  CREATE, CREATE2  Input: The init code, endowment, and possibly a salt. Output: new account\u2019s address (currently 160 bits) to stack, where the new address is roughly: Hash(creating contract's address, creating contract's nonce or a salt, init code)[12:32]. This interacts with addresses in two ways: as the input and output of a hash. SELFDESTRUCT Input: an address from stack, which we currently truncate to 160 bits. Output: send the remaining balance to that address.  SLOAD, SSTORE  These only implicitly touch the current contract\u2019s address to read/write its storage. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.066433566433567
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/UliGall",
+                    "index": "31",
+                    "likes": "2",
+                    "time": "08/03/2021-21:29:45",
+                    "content": "Did someone consider the effects of this change to vanity addresses? It seems to me that 0x01000000000157aE408398dF7E5f4552091A69125d5dFcb7B8C2659029395bdF might be considered as a vanity adress and that it will be harder in the future to differentiate between \u201chigh-effort\u201d and \u201clow-effort\u201d ones. Might not be the most important detail, but as users often check some parts of the address to verify the correctness, we should keep this in mind. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cdili",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "09/03/2021-03:07:08",
+                    "content": "Is it worth considering some of the following?  use SHA3 instead of KECCAK? address extension, post 21 Increasing address size from 20 to 32 bytes   (extensions may want to consider multihash \u201csupport\u201d https://w3c-ccg.github.io/multihash/index.xml) ",
+                    "links": [
+                        "https://w3c-ccg.github.io/multihash/index.xml"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rubi",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "09/03/2021-11:42:28",
+                    "content": "    vbuterin:  I\u2019m pretty sure you can use cycle finding algos to find a collision in sqrt time and O(1) memory. Eg. https://diglib.tugraz.at/download.php?id=576a7826f0534&location=browse  around page 55 talks about some approaches to do this.   A random collision indeed. But here you need chosen prefixs - two different ones. Notice the fact that the prefixes are different is meaningful since the iterators travel different paths in the space. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5357142857142865
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "10/03/2021-17:13:06",
+                    "content": " Notice the fact that the prefixes are different is meaningful since the iterators travel different paths in the space.  At worst, you can just have an iterator that randomly hops between both parts of the space (EOA pubkeys and contract codes fitting a template), and if you find a collision there\u2019s a 50% chance that one preimage is a pubkey and the other preimage is a contract code. So I don\u2019t think this is a barrier. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.553571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rubi",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "10/03/2021-23:06:54",
+                    "content": "    vbuterin:  an iterator that randomly hops between both parts of the space   Err\u2026 You need everything to be deterministic so you keep cycling. Edit: Ah of course if you use (state % 2) as your random number then everything works out deterministically and perfectly. True. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.9166666666666665
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "36",
+                    "likes": "2",
+                    "time": "11/03/2021-01:18:08",
+                    "content": "If we\u2019re defining a new address format, can we please define a canonical text representation that is not just the hexadecimal encoding of the address? Ethereum\u2019s lack of a checksum in its text representation is one of its greatest weaknesses, and if everyone has to support a new address format anyway, that\u2019s an excellent time to fix it. This should be a core part of any new address proposal, and not an afterthought - if 32 byte hexadecimal addresses get a foothold, it will be impossible to fix this (again). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.452020202020202
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/qizhou",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "12/03/2021-10:37:00",
+                    "content": "Why not still keep 20 bytes in EVM, while adding extra fields in tx/msg to including chain_id/epoch_id?  From a normal user perspective, the address is 32 bytes instead of 20 bytes, but wallets will automatically translate 32 bytes to 20 bytes byte hash + chain_id + others and put them in proper data fields. For example, a tx sending to a 32-byte address will put \u201cto\u201d field as 20 bytes, and \u201cto_chain_id\u201d field from a 32-byte address. And EVM can stay as it is except adding a few OPCODE to read like \u201cto_chain_id\u201d of current tx context. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.95
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "38",
+                    "likes": "1",
+                    "time": "13/03/2021-20:48:37",
+                    "content": "    qizhou:  Why not still keep 20 bytes in EVM, while adding extra fields in tx/msg to including chain_id/epoch_id? From a normal user perspective, the address is 32 bytes instead of 20 bytes, but wallets will automatically translate 32 bytes to 20 bytes byte hash + chain_id + others and put them in proper data fields.   I don\u2019t think that would actually solve either the address space expansion problem or the security problem\u2026 the issues all happen in the EVM, not in clients. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.1875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "39",
+                    "likes": "1",
+                    "time": "17/03/2021-08:06:11",
+                    "content": "    vbuterin:  What properties are you trying to get that Ethereum\u2019s existing mixed-case checksum scheme  doesn\u2019t already provide?   Contract level checksum validation or (maybe in the future) EVM level checksum validation. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg7mdp",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "13/05/2021-20:28:44",
+                    "content": "Is there a benefit to having the shard id in the address, instead of adding it in the transaction along with the chain id? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dankrad",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "04/06/2021-16:08:31",
+                    "content": "    vbuterin:  It\u2019s worth noting that we don\u2019t have to do this if we are okay with unpublished addresses requiring the creator to be trusted. If we are okay with this weaker security property, then we could instead just move to a scheme where the hash decreases to 15 bytes (still 120 bits of preimage security) and the remaining 5 bytes get used for version/shard/epoch, though this would instead require somehow invalidating existing addresses that collide with the new schema.   The situation is actually much worse than this: You can write a harmless looking contract \u2013 let\u2019s say a token wrapper or a uniswap clone \u2013 and use a collision to deploy it to an address that\u2019s also an EOA. You deploy the contract, and after user funds have poured in (trusting the functionality according to the immutable contract code) you can steal everything using the EOA key. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.863636363636364
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "42",
+                    "likes": "1",
+                    "time": "16/06/2021-17:23:13",
+                    "content": "We (me, @chfast, @gumb0, @hugo-dc) have been working on the address space extension topic the past two weeks. It seems to open up a lot of questions. First we have created a hopefully more comprehensive specification based on this forum and explored questions (they are listed in the latter part of the document): ASE (Address Space Extension) with Translation Map - HackMD Posting it now in case someone else is working on this too \u2013 it would be nice to collaborate to find answers more quickly. We expect to update this document as we go next week. Any feedback is welcome, but be prepared the content is in flux. There are some differences to the description in this forum, which are listed as bullet points. One difference is we removed references to epochs in the document, and just state bytes 1-5 are reserved and must be zero (i.e it would be epoch 0). This is meant to help decoupling this proposal from state expiry in the sense it could be introduced earlier and independently. We are now working on some new ideas and analysis of some concerns we have identified. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.1037296037296045
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "43",
+                    "likes": "1",
+                    "time": "25/06/2021-12:16:48",
+                    "content": "    axic:  We are now working on some new ideas and analysis of some concerns we have identified.   We have published this collection of concerns here: Issues with ASE (with a translation map) - HackMD It is a very long list and some points are more developed than others. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.839204545454545
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shugangyao1",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "03/09/2022-04:46:57",
+                    "content": "32 bytes new addr: 0-11 Byte :  EVM/contract internal ID 12-31 Byte :  old 20 Byte Addr ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.3939393939393945
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/YamenMerhi",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "12/01/2023-14:56:37",
+                    "content": "Is there still an intention to continue with this proposal? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "46",
+                    "likes": "1",
+                    "time": "13/01/2023-06:04:30",
+                    "content": "I still think it is necessary for some improvements that many would like to see on Ethereum.  However, we were never able to come to agreement on the least worst way to do the migration.  All options come with consequences/costs. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.95
+                }
+            ]
+        }
+    ],
+    "group_index": "1254"
+}

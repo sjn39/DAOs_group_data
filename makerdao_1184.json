@@ -1,0 +1,105 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip10c3-sp22-proposal-reth-oracle-collateral-onboarding-oracle-assessment/15564",
+            "title": "MIP10c3-SP22 Proposal: rETH Oracle (Collateral Onboarding Oracle Assessment) ",
+            "index": 15564,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "oracles",
+                "oracle-domain-work",
+                "reth"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/jamesr",
+                    "index": "#1",
+                    "likes": "9",
+                    "time": "02/06/2022-15:09:25",
+                    "content": " Preamble MIP10c3-SP#: 22 Author(s): James Robson (@jamesr)  Contributors: Niklas Kunkel (@NiklasKunkel) Type: Process Component Oracle Team Name: Green Status: RFC Date Proposed: 2022-06-02 Date Ratified: <yyyy-mm-dd>   Specification  Introduction This Oracle would provide the rETH/ETH price as part of the collateral onboarding process of RocketPool ETH.  Oracle Data Model     Source Asset Pair Quorum Feed Model Oracle Model     RocketPool 0xae78736Cd615f374D3085123A210448E74Fc6393 rETH/ETH 13 Median Median   Balancer rETH/ETH      Curve rETH/wstETH        Oracle Supporting Data Model(s)  ETH/USD (canonical)     Source Asset Pair Feed Model     Binance ETH/USD Median   Bitfinex ETH/USDT    Bitstamp ETH/USD    Coinbase ETH/USD    Gemini ETH/USD    Kraken ETH/USD      wstETH/ETH (canonical)     Source Asset Pair Feed Model     Curve wstETH/ETH Median   Balancer wstETH/ETH      Oracle Address  Medianizer - Mainnet TBD Oracle Security Module (OSM) - Mainnet TBD   Supported Tools  Setzer - Add support for rETH/USD Omnia - Add support for rETH/USD Gofer - Add support for rETH/USD Goerli - rETH/USD Medianizer - TBD Goerli - rETH/USD Oracle Security Module - TBD   Summary The chosen Data Model utilizes the RocketPool exchange rate as well as AMM pools to provide a median. In addition, it uses a threshold value to ensure that if the exchange rate deviates from the median beyond the threshold, the Oracle will be frozen. The only market-based sources of price are Balancer and Curve pools with low volume. The RocketPool contract provides a price directly, but this price is not determined by market dynamics, and is instead a ratio of rETH to ETH supply (\u201dexchange rate\u201d). In addition, it is unclear who can directly modify the supply values inside RocketPool, and thus the resulting exchange rate. This would leave the Oracle open to a potential insider attack, which is why we are proposing a threshold check in addition to the median price. If Maker Governance insists on adding rETH as a collateral-type, the Oracle Core Unit recommends an initial debt ceiling of not more than 5,000,000 in order to cap losses from a potential Oracle attack. We propose the Oracle uses a 10% deviation from the median price as a safety check value. This means that if the RocketPool exchange rate deviates from the median by 10% no price update will be made.  Scenario Modeling The Oracle queries the exchange rate of the RocketPool contract and AMM prices. It derives the median value, and checks that value against the RocketPool exchange rate. If deviation of the median is less than a threshold set by Maker Governance, the median price is used. The value then undergoes a one hour delay before being used by the Maker Protocol. Scenario 1: RocketPool protocol is exploited to modify exchange rate (no RocketPool ETH is stolen). Ratio is manipulated such that rETH >> ETH OR rETH << ETH Oracle Effect  Exchange rate diverges from median price - Oracle is frozen at previous rETH price  Effects on Maker:  No unwarranted liquidations are triggered No borrowing of unbacked DAI against rETH Long-tail Risk that if ETH price drops rapidly (resulting in rETH price dropping) that unbacked DAI can be minted.  Impact  Low - unbacked DAI may be minted in the (non-correlated) event of ETH price dropping.  Scenario 2: RocketPool protocol is exploited and ETH backing rETH is stolen. Exchange rate may or may not be changed as part of the exploit. 2a) Threshold not exceeded: Oracle Effect  Median price is used  Effects on Maker  None  Impact  None  2b) Threshold exceeded: Oracle Effect  Exchange rate diverges from median price - Oracle is frozen at previous rETH price  Effects on Maker  Pools are drained as rETH is now insolvent. Potential AMM price backstop of 1-X% if only X% of ETH is stolen rather than all of it. Positions on Maker that should be liquidated are not liquidated Any user can use rETH to borrow unbacked DAI from Maker until the rETH debt ceiling is reached.  Impact  High - losses of entire rETH debt ceiling  Mitigations Swapping rETH for ETH is constrained by the available ETH in RocketPool, e.g. ETH that is not committed or being actively used by validators for staking. This greatly reduces the chance of  the described attack. Scenario 3: Median price of rETH is discounted relative to fundamental value (i.e. liquidity discount due to irredeemability). 3a) Threshold not exceeded: Oracle Effect  Median price is used  Effects on Maker  None  Impact  None  3b) Threshold exceeded: Oracle Effect  Oracle freezes due to AMM deviation vs. exchange rate exceeding threshold. The Oracle is now neither tracking the fundamental price (internal RocketPool exchange rate) nor the FMV (median) price \u2014 a price no-mans land. As the exchange rate shouldn\u2019t change drastically over smaller time periods, we\u2019re still \u201cclose\u201d to the fundamental value.  Effects on Maker  rETH borrowers have the ability to borrow more DAI than they should be allowed to. This DAI is \u201cbacked\u201d but is effectively letting borrowers take on more risk than Maker would like to underwrite. extra Dai < (X% / CR) (this formula is not actually correct but is a good approximation that keeps things simple to understand) rETH liquidations that should be triggered due to FMV of rETH are kept open. Both of the above items undermine the risk model for the rETH collateral type.  Impact  Medium - no immediate protocol losses, but if left untreated the abuse of the risk model outside of its defined parameters can lead to protocol losses in the event of a black swan event.  ",
+                    "links": [
+                        "https://docs.rocketpool.net/guides/staking/overview.html#the-reth-token",
+                        "https://forum.makerdao.com/t/weekly-relay-june-7-13-2022/15818",
+                        "https://forum.makerdao.com/t/relay-semanal-7-13-de-junio-2022/15897",
+                        "https://forum.makerdao.com/t/reth-collateral-onboarding-risk-evaluation-update/18071",
+                        "https://forum.makerdao.com/t/reth-actualizacion-de-la-evaluacion-del-riesgo-de-incorporacion-de-garantias-traduccion/18083",
+                        "https://forum.makerdao.com/t/whitelist-light-feed-for-reth-oracle/18908"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.303048780487805
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/darrenlangley",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "06/06/2022-07:10:09",
+                    "content": "Thank you for the fantastic report. The Rocket Pool community working with the core team, have prepared a response to the blog post (Can you get rugged by RocketPool?) questioning Rocket Pool\u2019s deployment mechanism and suggesting that it is unclear who can directly modify the supply values inside Rocket Pool. TLDR: we prove that no extra network contracts were added that can modify the rETH exchange rate. Here is the Rocket Pool community response:   Rocket Pool Forum \u2013 3 Jun 22    Rocket Storage contract deployment audit MakerDAO has a proposal to add an rETH oracle. In the proposal, the author links to his personal blog where he has a post entitled Can you get rugged by RocketPool?    In the blog post, he says that it was theoretically possible for Rocket Pool to...  Reading time: 2 mins \ud83d\udd51 Likes: 10 \u2764       Here is some code to verify for yourself:   GitHub    GitHub - jshufro/rocketpool_deploy_auditor Contribute to jshufro/rocketpool_deploy_auditor development by creating an account on GitHub.      We would be interested to know whether this influences the Oracle Core Unit\u2019s opinion about the initial debt ceiling, as it seemed to be a concern. ",
+                    "links": [
+                        "https://dao.rocketpool.net/t/rocket-storage-contract-deployment-audit/702",
+                        "https://dao.rocketpool.net/t/rocket-storage-contract-deployment-audit/702",
+                        "https://github.com/jshufro/rocketpool_deploy_auditor/",
+                        "https://github.com/jshufro/rocketpool_deploy_auditor/"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5357142857142865
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/jamesr",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "07/06/2022-20:14:43",
+                    "content": "Hi, thanks for reaching out. I\u2019ve run the audit script and verified that indeed only the on-chain contracts have access. This definitely helps improve our level of confidence in the integration. As for the initial debt ceiling, we still have concerns over the low volume in the pools, and so our guidance will stay the same for now. As we start to see volume increase and/or additional pools come online, then we would be happy to reassess the debt ceiling for a raise. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.7142857142857135
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "07/06/2022-23:35:26",
+                    "content": "    jamesr:  RocketPool protocol is exploited to modify exchange rate (no RocketPool ETH is stolen). Ratio is manipulated such that rETH >> ETH OR rETH << ETH Oracle Effect  Exchange rate diverges from median price - Oracle is frozen at previous rETH price  Effects on Maker:  No unwarranted liquidations are triggered No borrowing of unbacked DAI against rETH Long-tail Risk that if ETH price drops rapidly (resulting in rETH price dropping) that unbacked DAI can be minted.    Also in this scenario freshly minted rETH has a 24 hour time lock in which it cannot be traded. Per a blog I saved for informational purposes,  \u201cyou cannot move any rETH if you have minted rETH in the last 5760 blocks\u201d.  Otherwise, thanks for this most excellent oracle review! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.309523809523809
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ippy",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "08/06/2022-11:39:26",
+                    "content": "    flipflopflapdelegate:  Per a blog I saved for informational purposes, \u201cyou cannot move any rETH if you have minted rETH in the last 5760 blocks\u201d. Otherwise, thanks for this most excellent oracle review!   Can you share the link to this? Was looking at rETH on my own. Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#6",
+                    "likes": "2",
+                    "time": "08/06/2022-11:54:50",
+                    "content": "    flipflopflapdelegate:  you cannot move any rETH if you have minted rETH in the last 5760 blocks   Here you go: One Pool to Rule Them All\u2026 \u2014 jasperthefriendlyghost.eth ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "06/09/2022-11:55:23",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,299 @@
+{
+    "poll_list": [
+        {
+            "title": "Inclusion Poll for Flash Mint Module (MIP25)- November 9, 2020",
+            "index": "4400",
+            "option": "Yes",
+            "supporting_mkr": "30,787",
+            "highest_fraction": 0.98
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip25-flash-mint-module/4400",
+            "title": "MIP25: Flash Mint Module ",
+            "index": 4400,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "mips",
+                "mip-accepted"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#1",
+                    "likes": "21",
+                    "time": "25/09/2020-12:58:49",
+                    "content": "MIP25: Flash Mint Module Preamble MIP#: 25 Title: Flash Mint Module Author(s): Sam MacPherson (@hexonaut) Contributors: Chris Mooney (@godsflaw), Brian McMichael (@brianmcmichael), Gonzalo Balabasquer (@gbalabasquer) Type: Technical Status: Formal Submission Date Proposed: 2020-09-25 Date Ratified: <yyyy-mm-dd> Dependencies: n/a Replaces: n/a License: AGPL3+  References  The proposed dss-flash implementation Declaration of Intent  Sentence Summary This proposal provides a smart contract implementation of Flash, a module which enables any user to execute a flash mint of Dai. Paragraph Summary Flash mints allow anyone to mint as much Dai as they need with the one condition that they pay it all back in the same transaction with a fee. This allows anyone to exploit arbitrage opportunities in the DeFi space without having to commit upfront capital. This implementation conforms to the description laid out in the MIP13c3-SP2. Component Summary MIP25c1: Definitions: defines Debt Ceiling (line) and Minting Fees (toll). MIP25c2: Proposed code: contains snippet of proposed implementation. MIP25c3: Test cases: lists existing test cases, including integration test MIP25c4: Security considerations: comments on the limited nature of the security implications of adding the Flash. MIP25c5: Formal verification/audit information: comments on the amenability of the proposed code to formal verification, even though formal specification, audit, or code review have yet to be conducted. MIP25c6: Licensing: states the license under which the proposal and code are distributed. Motivation Flash can provide many benefits to the Dai ecosystem including, but not limited to:  Improved market efficiencies for Dai. Democratization of arbitrage - anyone can participate. Exploits requiring a large amount of capital will be found quicker which makes the DeFi space safer overall. Fees provide an income source for the protocol.  Specification MIP25c1: Definitions   Debt Ceiling: The maximum amount of Dai any single transaction can borrow. Encoded as line in rad units.  Minting Fees: How much additional Dai must be returned to the Flash module at the end of the transaction. This fee is transferred into the vow at the end of a successful mint. Encoded as toll in wad units.  MIP25c2: Proposed code see flash.sol. The core minting functionality is simple: function mint(     address _receiver,      // address of conformant IFlashMintReceiver     uint256 _amount,        // amount to flash mint [wad]     bytes calldata _data    // arbitrary data to pass to the _receiver ) external lock {     uint256 arad = rad(_amount);      require(arad > 0, \"DssFlash/amount-zero\");     require(arad <= line, \"DssFlash/ceiling-exceeded\");      vat.suck(address(this), _receiver, arad);      uint256 fee = mul(_amount, toll) / WAD;     uint256 bal = vat.dai(address(this));      IFlashMintReceiver(_receiver).execute(_amount, fee, _data);      uint256 frad = rad(fee);     require(vat.dai(address(this)) == add(bal, add(arad, frad)), \"DssFlash/invalid-payback\");      vat.heal(arad);     vat.move(address(this), vow, frad);     emit Mint(_receiver, _amount, fee); }  The IFlashMintReceiver interface: interface IFlashMintReceiver {      /**     * Must transfer _amount + _fee back to the flash mint contract when complete.     */     function execute(uint256 _amount, uint256 _fee, bytes calldata _params) external;  }  MIP25c3: Test cases see flash.t.sol  test_dex_trade test_mint_with_fee testFail_mint_zero_amount testFail_mint_amount_over_line testFail_mint_insufficient_dai testFail_mint_too_much_dai testFail_mint_line_zero testFail_mint_unauthorized_suck testFail_mint_reentrancy test_mint_data test_mint_no_fee_payback test_preexisting_dai_in_flash  MIP25c4: Security considerations The proposed solution is simple and non-invasive, interacting with only one other component of the system (the Vat) through an existing method for suck. A lock modifier has been added to  mint to prevent any possible re-entrancy bugs. MIP25c5: Formal verification/audit information The proposed contract is written in a way which is amenable to formal specification and verification, in accordance with the style and practices of the core multi-collateral DAI contracts, though it has not been formally specified. No audit or code review has taken place yet. MIP25c6: Licensing  AGPL3+  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip13c3-sp2-declaration-of-intent-dai-flash-mint-module/3635",
+                        "https://forum.makerdao.com/t/mip13c3-sp2-declaration-of-intent-dai-flash-mint-module/3635",
+                        "https://github.com/hexonaut/dss-flash/blob/master/src/flash.sol",
+                        "https://github.com/hexonaut/dss-flash/blob/master/src/flash.t.sol",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/updates-flash-loans-and-securing-the-maker-protocol/4923/4",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15-en-espanol/4576",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21/5181",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-117-thursday-november-5-16-00-utc/4929/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-20/5078",
+                        "https://forum.makerdao.com/t/mip25-modulo-de-acunacion-flash/5014",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/4",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-117-thursday-november-5-16-00-utc/4929/4",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-117-thursday-november-5-16-00-utc/4929/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-115-thursday-october-22-16-00-utc/4757/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-114-thursday-october-15-16-00-utc/4657/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-pt-br-portugues/4810",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-en-espanol/4804",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17/4798",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-113-thursday-october-8-16-00-utc/4505/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-pt-br-portugues/4722",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-en-espanol/4719",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16/4710",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15-pt-br-portugues/4597",
+                        "https://forum.makerdao.com/t/maker-relay-ep-32-en-espanol/6600",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15/4574",
+                        "https://forum.makerdao.com/t/week-17-dai-distributions-sourcecred-trial/4472",
+                        "https://forum.makerdao.com/t/relay-ep-14-en-espanol/4457",
+                        "https://forum.makerdao.com/t/maker-relay-ep-14/4450",
+                        "https://forum.makerdao.com/t/mip36-peg-stability-compound-governance-dai-leverage/6029",
+                        "https://forum.makerdao.com/t/governance-at-a-glance-feb-5-11-2021/6507",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-128-thursday-february-11-17-00-utc/6367/5",
+                        "https://forum.makerdao.com/t/flash-mint-module-initial-parameters/8835",
+                        "https://forum.makerdao.com/t/maker-relay-ep-55/9531",
+                        "https://forum.makerdao.com/t/maker-relay-ep-55-en-espanol/9715",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/17",
+                        "https://forum.makerdao.com/t/maker-relay-ep-32/6596",
+                        "https://forum.makerdao.com/t/a-maker-community-2020-summary/5848",
+                        "https://forum.makerdao.com/t/maker-governance-review-november-2020/5453",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-119-thursday-november-19-16-00-utc/5112/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21-en-espanol/5199"
+                    ],
+                    "GPT-summary": "The post is a formal submission of a proposal for a smart contract implementation of Flash, a module that allows anyone to execute a flash mint of Dai. The proposal provides definitions, proposed code, test cases, security considerations, formal verification/audit information, and licensing. The proposal aims to improve market efficiencies for Dai, democratize arbitrage, and provide an income source for the protocol. The post is written by the author of the proposal, but it also invites feedback, questions, and auditing from third parties.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Grants, Funding and resource allocation",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.426339285714286
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/charlesstlouis",
+                    "index": "#2",
+                    "likes": "6",
+                    "time": "25/09/2020-21:06:04",
+                    "content": "Hey @hexonaut, this looks great! A couple comments:  When you get the chance, please put up a PR on the MIPs repository\u2019s conception branch here: https://github.com/makerdao/mips/tree/conception  Please update the MIP number to #25, as we already have an existing MIP24 for Emergency Responses.  Once these are completed, I can happily move this proposal to the Request for Comments (RFC) status. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip24-emergency-response/4009"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 9.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#3",
+                    "likes": "4",
+                    "time": "27/09/2020-11:52:35",
+                    "content": "Updated the MIP number and PR submitted: https://github.com/makerdao/mips/pull/107 ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-16/4536"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kahneman",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "09/10/2020-16:20:52",
+                    "content": "Do we have an idea on what the fee for Dai flash mints should be/is? ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-17/4746",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-pt-br-portugues/4891",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-en-espanol/4882",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18/4881",
+                        "https://forum.makerdao.com/t/weekly-mips-update-18/4847"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/BlueCat",
+                    "index": "#5",
+                    "likes": "3",
+                    "time": "09/10/2020-17:28:44",
+                    "content": "Awesome in long term, scary in short term. I expect many exploits to happen now and many projects rekt. Flash loans are the nuclear fusion of DeFi. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.208333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/consciousentity",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "13/10/2020-16:26:20",
+                    "content": "I\u2019m curious to understand how payback of the newly minted DAI is enforced. If full payback is not achieved then does the entire transaction just fail atomically? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.886363636363637
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#7",
+                    "likes": "3",
+                    "time": "13/10/2020-16:45:54",
+                    "content": "This is achieved by this line: require(vat.dai(address(this)) == add(bal, add(arad, frad)), \"DssFlash/invalid-payback\"); ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-20/5009"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/albertocuestacanada",
+                    "index": "#8",
+                    "likes": "6",
+                    "time": "25/11/2020-17:22:40",
+                    "content": "Hi, could I suggest a different name for the callback function? IFlashMintReceiver(_receiver).onFlashMint(_amount, fee, _data); execute is very generic, and could clash with other functionality in the receiver or in some other interface the receiver also implements. I would suggest using onFlashMint, which is both descriptive, and follows the naming set up by other callbacks such as onTokenTransfer from EIP667. Even more, I\u2019m developing flash minting for WETH10, and would be happy to use the same interface and work towards a flash minting ERC standard, if we agree on something that can be used by everyone. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.4625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#9",
+                    "likes": "3",
+                    "time": "25/11/2020-17:27:29",
+                    "content": "This is a great point. Could you open an issue in the repository? Edit: Nevermind, I opened a PR here. Thanks for the recommendation @albertocuestacanada. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/brianmcmichael",
+                    "index": "#10",
+                    "likes": "8",
+                    "time": "09/12/2020-21:04:57",
+                    "content": "It looks like EIP-3156 just got merged yesterday. Congrats @albertocuestacanada and @hexonaut! We\u2019ll definitely want to make a pass back through this and ensure it\u2019s standards-conformant. This has MIP been pushed back until sometime after the new year, so we\u2019ve got a little breathing room to review and update. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party auditing and reviewing proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.948863636363637
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#11",
+                    "likes": "0",
+                    "time": "21/01/2021-10:49:50",
+                    "content": "This MIP was approved in the November MIPs bundle on 2020-11-24     brianmcmichael:  We\u2019ll definitely want to make a pass back through this and ensure it\u2019s standards-conformant. This has MIP been pushed back until sometime after the new year, so we\u2019ve got a little breathing room to review and update.   @charlesstlouis if there needs to be an update, then the MIP would have to go through the amendment process right? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.195481601731602
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#12",
+                    "likes": "1",
+                    "time": "21/01/2021-11:39:13",
+                    "content": "There has been some code changes already for this one, so some of the MIP is out of date. The core functionality is still the same, so I don\u2019t think we need to redo the whole process. I think this is a good lesson of why not to include code inside the MIP and instead just stick to the descriptive implementation and api definition. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#13",
+                    "likes": "3",
+                    "time": "21/01/2021-12:03:51",
+                    "content": "I\u2019m working on an Amendment to MIP4 which would allow MIPs to be amended using the weekly cycle if the MIP is less than 3 months old since the date of acceptance. I think I will be putting up that Amendment to FS in February if LFW and Charles let me swing a short RFC phase for this one. Sounds like there is still work being done, so hopefully we can get that passed in time and the MIP can be amended using the weekly cycle. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 4.888888888888888
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/TheoRochaix",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "22/02/2021-14:56:20",
+                    "content": "Hey How is it going with the flashmint? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#15",
+                    "likes": "2",
+                    "time": "22/02/2021-14:58:28",
+                    "content": "It\u2019s in the queue to put on chain soon. I will update when we have an actual date. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ejbarraza",
+                    "index": "#16",
+                    "likes": "1",
+                    "time": "22/02/2021-15:25:54",
+                    "content": "Great to hear. Hope it goes live soon. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.340909090909092
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/TheoRochaix",
+                    "index": "#17",
+                    "likes": "0",
+                    "time": "22/02/2021-15:46:30",
+                    "content": "Ok amazing, I thought there were a kind of \u201cno-go\u201d from commu. Glad to here it is on his way, keep it up  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#18",
+                    "likes": "9",
+                    "time": "26/07/2021-13:59:34",
+                    "content": "Figured it be good to update this thread  Contract is live here: https://etherscan.io/address/0x1eb4cf3a948e7d72a198fe073ccb8c7a948cd853#writeContract Still looking for some utilization, also might be a fun project for someone to throw a UI together! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.0189393939393945
+                }
+            ]
+        }
+    ],
+    "group_index": "2762"
+}

@@ -1,0 +1,40 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/idea-minting-one-billion-nfts-or-2-256/11613",
+            "title": "Idea : minting one billion NFTs or 2^256 ",
+            "index": 11613,
+            "category": [
+                "Tokens"
+            ],
+            "tags": [
+                "nft",
+                "eip-2309"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sciNFTist.eth",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "04/11/2022-20:00:06",
+                    "content": " Abstract minting arbitrary number of NFT can be done in one transaction using efficient data structures. quoted from EIP-2309:  This allows for the original Transfer event to be emitted for one token at a time, which in turn gives us O(n) time complexity. Minting one billion NFTs can be done in one transaction using efficient data structures, but in order to emit the Transfer event - according to the original spec - one would need a loop with one billion iterations which is bound to run out of gas, or exceed transaction timeout limits. This cannot be accomplished with the current spec. This extension solves that problem.   Motivation Since EIP-2309 provide more scalability of the ERC-721 specification, It is possible to create, transfer, and burn 2^256 non-fungible tokens in one transaction. this changes provide a pragmatic way to mint arbitrary number of token in constructor with O(1) time complexity.  Specification for in depth implementation see the eip-draft_ERC721FancyMint   preOwner is the creator/receiver  address   maxSupply is desired(<= 2^256) number of token to create .   solution  assign maxSupply to preOwner _balances in constuctor().  _balances[preOwner] = maxSupply ;   emit ConsecutiveTransfer for maxSupply token creation in constructor()   emit ConsecutiveTransfer(0, maxSupply -1, address(0), toAddress);   consider ownerOf() implementation as described bellow   /**      * @dev See {IERC721-ownerOf}.      *openZeppelin V 4.7.0      */     function ownerOf(uint256 tokenId) public view virtual override returns (address) {         address owner = _ownerOf(tokenId);         require(owner != address(0), \"ERC721: invalid token ID\");         return owner;     }  define _ownerOf() as function _ownerOf(uint256 tokenId) internal view virtual returns (address) {         address owner = _owners[tokenId];         if (owner == address(0) && (tokenId < _maxSupply)) {             return _preOwner;         }         return owner;     }    Rationale   this standard considers tokenIds from 0 to (maxSupply - 1) and _ownerOf() handles owners for every tokenId in this range.   if a tokenId in this range has default value in _owners mapping that is 0x0 (i.e. address(0)) it returns preOwner address.   since we have populated _balances[preOwner] with maxSupply at first blanceOf(preOwner) returns maxSupply and as the tokens keep transferring it reduces _balances accordingly. so the behavior of balanceOf() doesn\u2019t change.   as tokens keep transferring from preOwner the _owners default value changes to new address instead of 0x0 so _ownerOf() returns the new address.     EIP-2309 introduces the ConsecutiveTransfer event that make this possible.    Batch token creation emit ConsecutiveTransfer(1, 100000, address(0), toAddress);   EIP draft eip draft is proposed at ethereum-magicians here. and you can see reference implementation for more details. I wish to hear your thoughts. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-draft-mint-arbitrary-number-of-tokens-erc-721-via-eip-2309/11589",
+                        "https://eips.ethereum.org/EIPS/eip-2309#examples",
+                        "https://ethereum-magicians.org/t/eip-draft-mint-arbitrary-number-of-tokens-erc-721-via-eip-2309/11589/1",
+                        "https://ethereum-magicians.org/t/batch-minting-in-constructor-with-ierc721enumarable-interface/12403"
+                    ],
+                    "GPT-summary": "The author proposes a solution to the problem of minting a large number of NFTs in one transaction using efficient data structures. The proposal is based on the ERC-721 specification and introduces the ConsecutiveTransfer event. The author explains the motivation, specification, and rationale behind the proposal and invites feedback and thoughts from the readers. A 3rd party could give constructive criticism, ask questions, or review the proposal.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.710227272727273
+                }
+            ]
+        }
+    ],
+    "group_index": "204"
+}

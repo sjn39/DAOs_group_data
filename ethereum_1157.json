@@ -1,0 +1,632 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/a-rollup-centric-ethereum-roadmap/4698",
+            "title": "A rollup-centric ethereum roadmap ",
+            "index": 4698,
+            "category": [],
+            "tags": [
+                "ethereum-roadmap",
+                "layer-2"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "1",
+                    "likes": "69",
+                    "time": "02/10/2020-06:46:39",
+                    "content": "What would a rollup-centric ethereum roadmap look like? Last week the Optimism team announced the launch of the first stage of their testnet, and the roadmap to mainnet. They are not the only ones; Fuel is moving toward a testnet and Arbitrum has one. In the land of ZK rollups, Loopring, Zksync and the Starkware-tech-based Deversifi are already live and have users on mainnet. With OMG network\u2019s mainnet beta, plasma is moving forward too. Meanwhile, gas prices on eth1 are climbing to new highs, to the point where some non-financial dapps are being forced to shut down and others are running on testnets. The eth2 roadmap offers scalability, and the earlier phases of eth2 are approaching quickly, but base-layer scalability for applications is only coming as the last major phase of eth2, which is still years away. In a further twist of irony, eth2\u2019s usability as a data availability layer for rollups comes in phase 1, long before eth2 becomes usable for \u201ctraditional\u201d layer-1 applications. These facts taken together lead to a particular conclusion: the Ethereum ecosystem is likely to be all-in on rollups (plus some plasma and channels) as a scaling strategy for the near and mid-term future. If we start from this premise, we can see that it leads to some particular conclusions about what the priorities of Ethereum core development and ecosystem development should be, conclusions that are in some cases different from the current path. But what are some of these conclusions? The Short Term: Advancing Eth1 for Rollups In the short term, one major outcome of this is that Ethereum base-layer scaling would primarily be focused on scaling how much data blocks can hold, and not efficiency of on-chain computation or IO operations. The only determinant of the scalability of a rollup is how much data the chain can hold, and any increase beyond the current ~60 kB/sec will help increase rollups\u2019 scalability further. There are some things that would continue to matter at the base layer:   EIP 2929, to ensure that the chain is safe against DoS attacks at current gas levels  EIP 1559, both for the ETH burn and for the benefit of making it easy to send transactions that almost certainly get into the next block (which rollups still depend on for confirmations) New elliptic curve precompiles, to fully support what people want to do with ZK rollups The hex -> binary tree change and other changes to advance support for stateless clients (as stateless clients are valuable regardless of how the chain is being used)  Account abstraction is somewhat less important, because it can be implemented on L2 regardless of whether or not L1 supports it. Other \u201cclever base layer features\u201d also become relatively less important. Eth1 clients could be repurposed as optimistic rollup clients. Optimistic rollups still need to have full nodes, and if the rollup\u2019s internal state transition rules are essentially ethereum-like with a few modifications (as is the goal of eg. Optimism), then existing code could be repurposed to run these full nodes. The work of separating out the consensus engine from the state transition engine is already being done in the context of the eth1+eth2 merge, which can also help with this goal. Note in particular that this implies that projects like TurboGeth are still very important, except it would be high-throughput rollup clients, rather than base-layer eth1 clients, that would benefit the most from them. The Short Term: Adapting Infrastructure for Rollups Currently, users have accounts on L1, ENS names on L1, applications live entirely on L1, etc. All of this is going to have to change. We would need to adapt to a world where users have their primary accounts, balances, assets, etc entirely inside an L2. There are a few things that follow from this:   ENS needs to support names being registered and transferred on L2; see here for one possible proposal of how to do this.  Layer 2 protocols should be built into the wallet, not webpage-like dapps. Currently, L2 integration into dapps/quasidapps (eg. Gitcoin\u2019s zksync integration) requires the user to fully trust the dapp, which is a great decrease in security from the status quo. We ideally want to make L2s part of the wallet itself (metamask, status, etc) so that we can keep the current trust model. This support should be standardized, so that an application that supports zksync payments would immediately support zksync-inside-Metamask, zksync-inside-Status, etc.  We need more work on cross-L2 transfers, making the experience of moving assets between different L2s as close to instant and seamless as possible.  More explicitly standardize on Yul or something similar as an intermediate compiling language. Ethereum\u2019s base-layer EVM and the OVM used in the Optimism rollup are slightly different compiling targets, but both can be compiled to from Solidity. To allow an ecosystem with different compiling targets, but at the same time avoid a Solidity monoculture and admit multiple languages, it may make sense to more explicitly standardize on something like Yul as an intermediate language that all HLLs would compile to, and which can be compiled into EVM or OVM. We could also consider a more explicitly formal-verification-friendly intermediate language that deals with concepts like variables and ensures basic invariants, making formal verification easier for any HLLs that compile to it.  Economic Sustainability Benefits of Rollup-Centrism It\u2019s an inescapable fact that a crypto project must be financially sustainable, and in 2020 this means millions or even tens of millions of dollars of funding. Some of this can be covered by common public-good-funding entities such as Gitcoin Grants or the Ethereum Foundation, but the scale of these mechanisms is just not sufficient to cover this level of funding. However, layer 2 projects launching their own token is sufficient - provided, of course, that the token is backed by genuine economic value (ie. prediction of future fees captured by the L2). An important secondary benefit of a rollup-centric roadmap is that it leaves open space for L2 protocols, and these L2 protocols have the ability to collect fees/MEV that can fund development, either directly or indirectly (by backing a token that funds development). The Ethereum base layer has an important need to be credibly neutral, making in-protocol public goods funding difficult (imagine ACD calls trying to agree on who deserves how much money), but L2s having their own public goods funding mechanisms (and/or contributing to Gitcoin Grants) is much less contentious. Leaving open this space can thus be a good strategic move for the long-term economic sustainability of Ethereum as a whole. In addition to the funding issues, the most creative researchers and developers often want to be in a position of great influence on their own little island, and not in a position of little influence arguing with everyone else on the future of the Ethereum protocol as a whole. Furthermore, there are many already existing projects trying to create platforms of various kinds. A rollup-centric roadmap offers a clear opportunity for all of these projects to become part of the Ethereum ecosystem while still maintaining a high degree of local economic and technical autonomy. The Long Term In addition to these short-term concerns, a rollup-centric roadmap could also imply a re-envisioning of eth2\u2019s long-term future: as a single high-security execution shard that everyone processes, plus a scalable data availability layer. To see why this is the case, consider the following:  Today, Ethereum has ~15 TPS. If everyone moves to rollups, we will soon have ~3000 TPS. Once phase 1 comes along and rollups move to eth2 sharded chains for their data storage, we go up to a theoretical max of ~100000 TPS. Eventually, phase 2 will come along, bringing eth2 sharded chains with native computations, which give us\u2026 ~1000-5000 TPS.  It seems very plausible to me that when phase 2 finally comes, essentially no one will care about it. Everyone will have already adapted to a rollup-centric world whether we like it or not, and by that point it will be easier to continue down that path than to try to bring everyone back to the base chain for no clear benefit and a 20-100x reduction in scalability. This implies a \u201cphase 1.5 and done\u201d approach to eth2, where the base layer retrenches and focuses on doing a few things well - namely, consensus and data availability. This may actually be a better position for eth2 to be in, because sharding data availability is much safer than sharding EVM computation. While dishonest-majority-proof verification of sharded EVM computation requires fraud proofs, which require a strict and potentially risky two-epoch synchrony assumption, data availability sampling (if done with ZKPs or polynomial commitments) is safe under asynchrony. This will help Ethereum distinguish itself as having a stronger security model than other sharded L2 chains, which are all going in the direction of having sharded execution of some form; eth2 would be the base layer that\u2019s just powerful enough to have functionality escape velocity, and no more powerful. What could eth2 focus on in the long run?  Staggering block times on different shards, so that at any time there will always be some shard scheduled to propose a block within a few hundred milliseconds. This allows rollups that operate across multiple shards to have ultra-low latency, without the risks of the chain itself having ultra-low latency Improving and solidifying its consensus algorithm Adjusting the EVM to be more friendly to fraud proof verifications (eg. this could imply some kind of \u201cframe\u201d feature that prevents code from breaking out of a sandbox or allows SLOAD/SSTORE to be remapped to using something other than account storage as their data source) ZK-SNARKing everything  Compromise Proposals If you are not convinced to go \u201call the way\u201d on the \u201cphase 1.5 and done\u201d direction, there is a natural compromise path to take: having a small number of execution shards (eg. 4-8) and many more data shards. The goal would be that the number of execution shards would still be low enough that in exceptional situations, regular computers would be able to fully validate all of them, but there would still be considerably more base-layer space than there is today. Base-layer space cannot be minimized too much, as users and applications still need it to eg. move between rollups, submit fraud proofs, submit ZK proofs in ZK rollups, publish root ERC20 token contracts (sure, most users will live in rollups, but the base contract has to live somewhere\u2026), etc. And it would still be a large UX loss if those things cost $140 per transaction. Hence, if necessary, having 4-8 execution shards instead of 1 could provide significant relief. And it would still be possible for one computer to verify all shards; today, verifying eth1 blocks on average takes ~200-500 ms every 13 seconds, so verifying eight threads of such execution for short periods of time is completely feasible. One can imagine clients have policies like \u201cif network latency appears low or committees are >80% full, rely on fraud proofs and committees, under exceptional conditions verify all shards directly\u201d. ",
+                    "links": [
+                        "https://medium.com/@fuellabs/announcing-the-fuel-v0-open-beta-565a2d340fc3",
+                        "https://medium.com/offchainlabs/arbitrum-rollup-is-live-on-testnet-c5fed0d0a266",
+                        "https://loopring.org/",
+                        "http://wallet.zksync.io/",
+                        "https://www.deversifi.com/",
+                        "https://webwallet.mainnet.v1.omg.network/",
+                        "https://medium.com/universal-ethereum/out-of-gas-were-shutting-down-unilogin-3b544838df1a",
+                        "https://zkga.me/",
+                        "https://ethereum-magicians.org/t/eip-2929-gas-cost-increases-for-state-access-opcodes/4558",
+                        "https://notes.ethereum.org/@vbuterin/BkSQmQTS8",
+                        "https://github.com/txrx-research/eth1-shard-demo",
+                        "https://medium.com/the-ethereum-name-service/general-purpose-layer-2-static-calls-proposal-presentation-by-vitalik-buterin-at-ens-online-2d752906719e",
+                        "https://ethresear.ch/t/mev-auction-auctioning-transaction-ordering-rights-as-a-solution-to-miner-extractable-value/6788",
+                        "https://ethresear.ch/t/phase-one-and-done-eth2-as-a-data-availability-engine/5269",
+                        "https://vitalik.ca/general/2019/12/26/mvb.html",
+                        "https://ethereum-magicians.org/t/l2-future-session-1-starting-with-l2s-intro-review-of-solutions-mapping-out-needs/4928",
+                        "https://ethereum-magicians.org/t/rollup-centric-ethereum-with-sharding-or-rollup-centric-sharding/7159",
+                        "https://ethereum-magicians.org/t/l2-future-session-2-dapp-development-intro-review-of-solutions-mapping-out-needs/4951",
+                        "https://ethereum-magicians.org/t/l2-future-session-3-users-expanding-on-what-is-needed-to-make-l2s-usable/4971",
+                        "https://ethereum-magicians.org/t/some-medium-term-dust-cleanup-ideas/6287",
+                        "https://ethereum-magicians.org/t/eip-4844-shard-blob-transactions-cancun-upgrade/10884"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.508493995379241
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/souptacular",
+                    "index": "2",
+                    "likes": "23",
+                    "time": "02/10/2020-08:41:12",
+                    "content": "I\u2019m optimistic about most of this plan, but have some worries. Most of it comes down to how to implement much of this Layer 2 future while still keeping it simple enough for users and beginner devs of the system to not:  get tricked into losing ether/tokens/NFTs/etc. have to decide on difficult trade-offs when they need to chose between multiple L2s. have to keep up with various protocols/technologies to know if their tokens/things of value are secure.  It\u2019s already pretty complicated for an average person to use Ethereum in the first place, let alone use it consistently without falling for scams. Incorporating different layers with different security guarantees and different requirements will put a lot of pressure on multiple areas of the ecosystem, especially user adoption and usability. I\u2019m not saying we shouldn\u2019t innovate and move forward and change when needed, but we do need to keep some of the things I listed in mind and spend more resources ideating on solutions. Otherwise we are just building Ethereum for the niche tech. people and not for the world. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.3510101010101
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "3",
+                    "likes": "26",
+                    "time": "02/10/2020-09:00:51",
+                    "content": "I absolutely agree with this. I do think it\u2019s important to note that at least in the short term, as far as I can tell we have no choice. The L1 is nearly unusable for many classes of applications, and there\u2019s no non-L2 path that can get us to scalability in the short-to-medium term. The $17.76 in fees it took me to make a bet on Augur last week itself makes present-day Augur very much \u201cfor the niche people and not for the world\u201d. That said, I think there are ways to minimize the tradeoffs! One major thing that I think we are already doing is to avoid (at least at first) trying to use layer 2s as an opportunity to try to \u201cmake a better VM\u201d; instead, we should try to just keep things as close to the current EVM as possible. Also, we should maintain a hard commitment of what security properties a \u201clegitimate layer 2\u201d should have: if you have an asset inside the layer 2, you should be able to follow some procedure to unilaterally withdraw it, even if everyone else in the layer 2 system is trying to cheat you. We should put a lot of resources into security-auditing the major layer 2\u2019s, and making sure they actually satisfy this requirement, and steer people toward the more solid and established solutions. Additionally (perhaps most importantly?), we should work with major wallets (metamask, status, imtoken?) to integrate support for the major L2s. L2s being inside the wallet and wallets being relatively trusted reduces the risk of people putting their coins into \u201cfake L2s\u201d. I expect that a lot of the work will be done by the major defi projects, who have a large incentive to economize on fees and to make sure that their systems continue to be easy to use; we can do a lot by leaning on them as highly motivated early adopters. Even Gitcoin has already helped the ecosystem ease quite a bit into seeing what an L2-centric world will look like. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6576360544217685
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/neverlander",
+                    "index": "4",
+                    "likes": "6",
+                    "time": "02/10/2020-10:11:40",
+                    "content": "You mentioned a few rollup projects. Most of them are using fraud proofs as their security model (apart from Zksync and Deversifi). There seems to be a lot of excitement around these optimistic constructions, but don\u2019t they suffer from the same drawbacks as Plasma? Shouldn\u2019t ZK rollups be the preferred rollup system? The only drawback I see with ZKRs today is the proof generating complexity for arbitrary computation (or feasibility in the first place) but Matter labs\u2019 Zinc and Starkware\u2019s Cairo look promising. Would love to hear your thoughts on this. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.71875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "5",
+                    "likes": "15",
+                    "time": "02/10/2020-10:36:15",
+                    "content": "I definitely think that ZK rollups are better if possible for the reasons you mention! The challenge with ZK rollups is that at present they\u2019re not capable of supporting general-purpose EVM computation (though that may soon change, see Starkware\u2019s efforts!), so at present we have to work with the optimistic variety. And the optimistic constructions are not that bad IMO; they suffer from some of the drawbacks of plasma, but not all; in particular, unlike plasma, optimistic rollups are easily extensible to generic EVM applications, which makes them much more suited to \u201cscaling ethereum\u201d generally, whereas plasma is only effective for payments, DEX and a few other use cases. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.422794117647058
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/neverlander",
+                    "index": "6",
+                    "likes": "5",
+                    "time": "02/10/2020-11:12:28",
+                    "content": "I wonder if in the future when ZKRs support general purpose computation, ORs (although less \u2018elegant\u2019) will still be the more popular variety. For these reasons:  There develops an attractive fraud proof market that pushes the OR narrative to a wider audience Trusted service providers in the vein of Infura/Metamask emerge that provide a watcher service to automatically submit fraud proofs and an automated resolution service DAOs that submit and resolve fraud proofs Service providers that facilitate instant settlement to L1 for a fee (for taking on fraud risk) Narrative that ZK proof construction requires special knowledge and/or relies on not so decentralized proof construction infrastructure  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.466931216931217
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shogochiai",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "02/10/2020-11:40:52",
+                    "content": "I guess RU centric contract design might be needed especially for minting including contract -  all contracts have to have their \u201cprimary\u201d contract in the L1 and secondary (=scalable) contract on the RU. Eg, ERC-20 on the L1 and RU will have each own token issuance limit and those would run parallelly. How can those contract keep consistency when a mint function fired on RU? My hottake is RU-specific ERC-20 (eg, ruDAI) tokens and enabling 1:1 conversion with general ERC-20. Anyway, some investigation of secure RU contract design would be needed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.71875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gluk64",
+                    "index": "8",
+                    "likes": "4",
+                    "time": "02/10/2020-11:58:59",
+                    "content": "Once ZKRs support full migration from Solidity, it\u2019s game over. No single advantage left to ORs:  ZKRs have short finality/exit times (minutes vs. days in ORs). ZKRs are cheaper (addresses, signatures and intermediate state hashes can be omitted). ZKRs are A LOT more secure with large value locked in them. ZKRs support low-cost privacy (at least 100x more expensive in ORs).  ZKP generation can be much better decentralized due to its self-verifying nature than OR aggregation. Fraud proof markets are a solution to the problem, they cannot drive adoption once the problem is not relevant anymore. It\u2019s like saying that people won\u2019t stream movies over the Internet because the video rental shops will push against it  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.348214285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/neverlander",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "02/10/2020-12:14:06",
+                    "content": "I am bullish on ZKRs too but want to see if I can make a case for OR\u2019s relevance once ZKRs for general computation is a reality ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "10",
+                    "likes": "5",
+                    "time": "02/10/2020-14:20:07",
+                    "content": "    vbuterin:  More explicitly standardize on Yul or something similar as an intermediate compiling language . Ethereum\u2019s base-layer EVM and the OVM used in the Optimism rollup are slightly different compiling targets, but both can be compiled to from Solidity. To allow an ecosystem with different compiling targets, but at the same time avoid a Solidity monoculture and admit multiple languages, it may make sense to more explicitly standardize on something like Yul as an intermediate language that all HLLs would compile to, and which can be compiled into EVM or OVM. We could also consider a more explicitly formal-verification-friendly intermediate language that deals with concepts like variables and ensures basic invariants, making formal verification easier for any HLLs that compile to it.   We (the Solidity team) had a discussion with the Optimisim team a few months ago, when they still had their Javascript/Typescript based transcompiler (which tried to identify functions based on the Solidity EVM output). We agreed that using Yul is a better direction,  and our estimate for \u201cfeature completeness\u201d of the Solidity to Yul step (\u201cYul IR\u201d) was the end of this year. The compiler progressed pretty well and a lot of well known contracts can be compiled to Yul now (such as Uniswap, Gnosis Safe, etc.) I did not know there was a deadline for launch though, and obviously the Yul IR work is planned to take longer.  Besides that, we were lately talking about this exact topic you raise, to consider the requirements of layer 2 systems when designing the Solidity language. We are in the process of discussing a standard library and some ideas regarding dialects, which would definitely be helpful. When the gas prices were close to 1000 gwei and given how Eth1x/Eth2 is progressing, I was rather worried that contracts become more like \u201csystem contracts\u201d and every \u201cuser contract\u201d moves to layer 2 \u2013 which means a shrinking user base for Solidity if we don\u2019t support layer 2 systems. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.523809523809524
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/masher",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "02/10/2020-15:23:46",
+                    "content": "Very interesting trade-offs! I have made a claim about this proposal on The Ether, which allows for signalling of if you are for the more roll-up centric road-map or against the more roll-up centric roadmap. Additionally, it will allow you to see the top arguments on the for and against side. I did my best to summarize the core points of @vbuterin and @souptacular discussion so far, but feel free to write your own arguments that are better than mine in order to flesh out the trade-offs    theether.io    Ethereum should move to being roll-up centric Claim by MC Masher in Core Developer community; For 0, Against 1      ",
+                    "links": [
+                        "https://theether.io/claim/ethereum-should-move-to-being-roll-up-centric"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.046875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/snjax",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "02/10/2020-17:54:47",
+                    "content": "How could you reach 100x advantage vs optimistic rollup? For optimistic zk rollup we need to publish 2 nullifiers and 2 new utxos per transaction and one proof (2 compressed g1 and one g2 point). This is 20*2+20*2+4*32=208 bytes per tx, published onchain. Also, to keep the rollup working we should publish anywhere encrypted messages from users. A simple note is (amount, owner, salt), we should publish at least one note and ephemeral public key per tx. So, it is about 100 bytes and this cost should be the same for both zk and optimistic constructions. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.863636363636364
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "13",
+                    "likes": "4",
+                    "time": "02/10/2020-20:26:35",
+                    "content": "I would like to throw EIP-726 in the mix of protocol changes that would really help facilitate ORUs  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CryptoBlockchainTech",
+                    "index": "14",
+                    "likes": "2",
+                    "time": "03/10/2020-07:11:49",
+                    "content": "You are a product of your own inability to take action against ASICs for almost 3 years now. They have increased network security costs so high that none of the GPU community was healthy enough to voluntarily take a cut in fees due to them finally getting to break even. Very simple, remove ASICs from the network and you will have a very robust GPU mining community that has the ability to trim it\u2019s belts in times of need to bolster the community. Remove ASICs and bring back solid GPU mining to Ethereum and you would be suprised what we will do in return as some of the largest HODLrs. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.652272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "15",
+                    "likes": "2",
+                    "time": "03/10/2020-07:16:49",
+                    "content": "A zk zk rollup can go down to just publishing the nullifiers and utxos, and you can get the nullifiers down to 10 bytes as you don\u2019t need collision resistance, so that\u2019s 60 bytes (assuming an 80 bit security margin as you appear to be). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.222222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gluk64",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "03/10/2020-07:57:55",
+                    "content": "Besides:  There are schemes where the recipient does not need to transact immediately (cutting the data cost again by half).  @snjax, you are talking about Groth16 with an app-specific trusted setup, which is hard to consider a viable, practical and trustworthy solution in 2020. You need a universal PLONK at the very least, but eventually you want to move to fully transparent proof systems (STARKs, RedShift, Halo). In either scenario the compressed proof size is on the order of kilobytes\u2014and must be posted on-chain by optimistic rollups.  Of course, you could aggregate the proofs for many transactions in the block without checking them on-chain, but this construction would not be an optimistic rollup\u2014it would be a ZK rollup with optimistic verification: combining the worst of both worlds. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.6083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/snjax",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "03/10/2020-10:55:51",
+                    "content": "You compare optimistic rollup with proving system, developed for zk rollup (in proving single transactions case) with zk zk rollups. As you mentioned, the proof size will be some kilobytes. When for groth16 in optimistic rollup it\u2019s 128 bytes per tx. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.071428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gluk64",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "03/10/2020-11:31:42",
+                    "content": "Ok. Optimistic rollup is ~5x worse with Groth16, ~100x worse with anything without an app-specific trusted setup. We\u2019ll let the reader make conclusions. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/snjax",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "03/10/2020-22:23:45",
+                    "content": "Btw, is there any community approved methods to store off-chain data for private transactions (like encrypted utxo)? If both user and data storage forget the data, assets will be stuck. Also, if data storage forgets the data and the user could not send it directly to the receiver, assets will be stuck too. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "20",
+                    "likes": "2",
+                    "time": "04/10/2020-12:04:41",
+                    "content": "    gluk64:  Ok. Optimistic rollup is ~5x worse with Groth16, ~100x worse with anything without an app-specific trusted setup. We\u2019ll let the reader make conclusions.   Wait, why 100x worse? PLONK proofs are only around 500 bytes, no? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gluk64",
+                    "index": "21",
+                    "likes": "1",
+                    "time": "04/10/2020-13:30:15",
+                    "content": "PLONK proofs are over 1kB compressed. But bulletproofs, STARKs, RedShift are a lot more. Thus order of hundreds. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/daira",
+                    "index": "22",
+                    "likes": "3",
+                    "time": "04/10/2020-18:48:01",
+                    "content": "Halo 2 applied to multiple proofs that are made together, even without use of recursion, will have a marginal proof size on the order of 100-300 bytes (preliminary estimate): https://www.youtube.com/watch?v=pCSjN9__mtc&t=2100 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gluk64",
+                    "index": "23",
+                    "likes": "1",
+                    "time": "05/10/2020-10:24:53",
+                    "content": "This is really cool! But my understanding is that verifying it in a single fraud proof is infeasible on Ethereum, even if arithmetic pre-compiles for EC cycles were available (which they aren\u2019t). Am I wrong? Even if we assume it would somehow magically be feasible, Halo transactions in ORs would still be at least (200*2+60)/40 ~ 10x more expensive than in ZKRs. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.291294642857142
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "24",
+                    "likes": "7",
+                    "time": "05/10/2020-10:57:24",
+                    "content": "If verification of a proof takes >10m gas, you can always use truebit-style multi-round techniques to verify it, I suppose. Though intuitively I dislike multi-round techniques because they mean that an attacker willing to get slashed can stall for time (during which only full nodes can ignore the attack, light nodes can\u2019t), whereas in a single-round fraud proof system attacks can be caught and reverted immediately. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/timbeiko",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "05/10/2020-15:58:42",
+                    "content": "    vbuterin:  EIP 1559 , both for the ETH burn and for the benefit of making it easy to send transactions that almost certainly get into the next block (which rollups still depend on for confirmations)   @vbuterin can you expand on the benefits of the ETH burn and next-block inclusion for rollups? Is the latter a UX-nice-to-have or is there something more there? Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.1646825396825395
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "26",
+                    "likes": "4",
+                    "time": "05/10/2020-17:08:13",
+                    "content": "One thing I am curious about is the inevitable state growth of the L2s and its impact on users, whether dapp developers, sysadmins, auditors, and other users interested in the txn history. We often think of a user as an operator, but we need to put more focus on the \u201cback office\u201d. Does anyone have any comments for this issue specifically? Perhaps it requires an entirely new thread? @tjayrush These various kinds of L2s \u2013 ORUs, ZK Rollups, Plasmas, even state channels \u2013 can coordinate on standards for archive nodes, querying, exporting, etc. This problem domain is already very challenging for mainnet. IMO when users can\u2019t easily run a full archive node themselves it invites centralization and surveillance of the users of data, and even this unideal situation is stabilized by the constraints of Eth1. Imagine what happens when L2s with composability leads to 10X or 100X more data per day. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.081123737373737
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nickw",
+                    "index": "27",
+                    "likes": "3",
+                    "time": "05/10/2020-18:49:38",
+                    "content": "@timbeiko next-block inclusion is important for rollups because they rely on data being posted to the main-chain for finality and to progress the rollup side chain. Therefore it\u2019s important that rollup aggregators can reliably post their transactions in the next block and not be stuck with a pending transaction as that would essentially delay the entire rollup chain from updating its state. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.8
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/snario",
+                    "index": "28",
+                    "likes": "1",
+                    "time": "07/10/2020-17:54:00",
+                    "content": "Talk on this by Vitalik is now available: https://youtu.be/r0jtV9mxdI0?t=52 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/EdPantal",
+                    "index": "29",
+                    "likes": "1",
+                    "time": "09/10/2020-06:01:47",
+                    "content": "Maybe phase 1.5 could consider more trustless mempool service with quadratic demand modeling. This would better align the interest of client networks vs whales by orchestrating throughput less influenced by MEV, now more desireable for L1. Miner fee-based compensation is similar to the square area of a funding pool, and the quadratic funding mechanism might be useful to better coordinate mempool service. The first step however is challenging since the concept of \u201cone vote\u201d, which in this case is a request for network service, requires some attention. To address that, the value of transaction fees can be denominated in terms of a fair average (updated periodically) to form a basis for proportional mempool service according to the square root of that value. For example, if an average transaction fee is deemed $2 for some window of time, a $2 fee is represented with a weight of 1 ($2 divided by $2). If there is a $100 fee opportunity pending, it would scale to 50 ($100 divided by $2). Then the square root of the weights would reveal how resources can serve the pool proportionally. The square root of 50 (the $100 opportunity) is about 7 with respect to fees in the $2 range with weights and roots near 1, so proportionally seven $2 transactions would be processed for each $100 transaction. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.301282051282051
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aliatiia",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "14/10/2020-02:15:58",
+                    "content": "I have been called a rollup shiller before, but I am bearish on this roll-up-centric roadmap and in favor of keeping the original plan of general-compute shards (ETH2 Phase 2), for a couple of reasons: (1) validity proof of general computation are already here, see Cairo, Zinc and Noir by StarkWare, Matter Labs and Azteck respectively. So, it is not inconceivable that the runtime of shards in Phase 2 are provable in zk. Yes rollbacks of ORUs are localized to the offending contracts and not the network as a whole, but ORUs are a short-term solution anyway and may not even be universally viable because of capital efficiency vs security problem. So there seems to be a pre-mature optimization here. (2) by reducing itself to merely data-availability and proof-enforcing layer, Ethereum risks losing its hard-earned network effects. These effects \u201cgrow\u201d out of webs of interdependencies between L1 contracts \u2026 and by removing general compute, those webs start growing as inter-L2 dependencies. But then, rollup #1 having can keep its dependency on rollup #2 without necessarily being dependent on L1 for security. It just runs a light-client for ETH2.0 and outsource its own security to some other chain. This is different from when L2 rely heavily on logic on L1 to function. We should push to thicken the amount of logic on L1, not reduce it. (3) if Ethereum takes over the world, there are many use cases that require nation-state-grade and enterprise-grade security and availability and may not tolerate the possibility of some withdraw delay due to an uncooperative ZKRU chain or a detected fraud in an ORU. Example: end-of-day inter-bank settlement logic \u2026 these people are gonna want to do this directly on L1. (4) Having a proof-powered state- and data-shared ETH2.0 should improve scalability massively because the beacon chain is verifying proofs of proofs (whether fraud of validity) \u2026 so I don\u2019t see why the scalability goes down (?). Unless Im missing something here.  TLDR: Rollback risks are not existential. Validity proofs of general compute are here and prover markets and ASICs will pop-up if necessary. Ethereum network effects are at risk if shards are not general-compute. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.968915343915344
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "14/10/2020-04:25:29",
+                    "content": "If we can make EVM execution zk-provable, and the ethereum ecosystem ends up preferring one particular zk-provable system, I\u2019d be totally fine with considering enshrining it as the core execution model at some point [EDIT: see caveats below]. Though I would still favor delaying any such \u201cphase 2\u201d until such zk-proofing is actually possible. The good news is that the rollup-centric roadmap doesn\u2019t remove our ability to take this path; it\u2019s much easier to add new functionalities to the ethereum base environment in the future than to take them away. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.409848484848485
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aliatiia",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "14/10/2020-06:05:34",
+                    "content": "    vbuterin:  it\u2019s much easier to add new functionalities to the ethereum base environment in the future than to take them away.   I would argue the opposite is easier: generalize by cleanly decoupling state transition from consensus, both at the shard and beacon chain, and then swap the state transition function with a zk-provable one when ready. So plan for generality, settle for specificity if need be. IIUC in the rollup-centric world the beacon chain will be hardcoded to enforce proofs of a data-avaiability-purpose-built VM. While in the generalized case the state function is itself an argument to the beacon chain so it can be swapped out anytime \u2026 hence the need for the plumbing of generality to be built out from the get go. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.073593073593074
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "14/10/2020-06:38:17",
+                    "content": " IIUC in the rollup-centric world the beacon chain will be hardcoded to enforce proofs of a data-avaiability-purpose-built VM  How so? The beacon chain would just be exactly the same EVM as it is today. So it could execute fraud proofs (or validity proofs) of any type of rollup that can be implemented in a contract. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dankrad",
+                    "index": "34",
+                    "likes": "3",
+                    "time": "14/10/2020-09:58:17",
+                    "content": "I have another objection to the rollup world which comes from our stateless roadmap. This is because rollups typically come without witnesses; while a rollup with witnesses is possible, it will probably not be implemented because from the point of view of the rollup and implementers, witnesses will feel like pure overhead with no benefit, so why add them? As long as rollup sequencers and validators stay separate, that is probably fine. However, in the long run, this system will feel very inefficient: We want to use the massive capital invested in layer 1 to also secure layer 2. In fact, as I have argued before, I think pure rollups offer terrible UX, and this can only be fixed by adding stake capital to secure rollup states (insuring users against fraud proofs). If we want validators to do this, it will mean that validators will have to accept maintainting the rollup state in addition to their duties. Of course, this will be \u201coptional\u201d \u2013 but since it brings in additional returns, it will mean all validators not doing it will essentially be priced out (because they won\u2019t have their costs covered from the now lower returns on \u201cpure\u201d staking). TL;DR: Rollups will force stateful shards on uss through the backdoor. I think this is bad. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.886278195488722
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "35",
+                    "likes": "1",
+                    "time": "14/10/2020-10:14:26",
+                    "content": "Which of the following worlds do you think is long-term best?  Proposers select which shard they are on and specialize in that shard (in this case it\u2019s okay if the proposers need to be stateful as long as there are zkps for the rest of the network, which it seems like we are assuming we will have) Proposers are forced to rotate between shards, but they get block contents from a third class of actor (relayers?) that is stateful Proposers are forced to rotate between shards, proposers are stateless, and it\u2019s users who need to be stateful  I feel like a zkrollup is totally forward-compatible with any of these three strategies, no? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.53125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dankrad",
+                    "index": "36",
+                    "likes": "3",
+                    "time": "14/10/2020-10:51:21",
+                    "content": "A zkrollup does indeed solve my concerns. But I am far from convinced that general computation zk rollups are coming as fast as people wish. I believe currently GP computation CIP (Computational Integrity Proofs) are about 10^9-10^12 times slower than actually doing the computation. So I believe that for the foreseeable future it will be much more efficient to send a committee of 1000 to check the correctness of a computation, vs. building a super powerful sequencer that proves correctness to everyone. This will change if that factor comes down a lot (I would doubt it will ever be less than 10^6, much less 10^3), or the cost itself being negligible (such that other costs like latency (for the user) and bandwidth dominate). I think GP zkrollups for a realistic EVM alternative are further out than some people think. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.39297385620915
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/qizhou",
+                    "index": "37",
+                    "likes": "1",
+                    "time": "14/10/2020-18:25:35",
+                    "content": "How about the implication of rollup to composability?  Looks like there is a few discussion, and to me, it seems that the composability between rollups is even more difficult than that between sharding. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.666666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CryptoBlockchainTech",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "14/10/2020-20:38:26",
+                    "content": "Gas fees can be reduced easily by January. Change Ethash algo, take ASICs off the network and GPU miners will agree to ETH issuance reduction equal to increase  in rewards after 30 days stability in hash. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "39",
+                    "likes": "1",
+                    "time": "16/10/2020-05:35:48",
+                    "content": " But I am far from convinced that general computation zk rollups are coming as fast as people wish.  If general-purpose ZK rollups are still far away, then that nullifies reason 1 that originally contributed to kicking off this part of the discussion:  (1) validity proof of general computation are already here, see Cairo, Zinc and Noir by StarkWare, Matter Labs and Azteck respectively. So, it is not inconceivable that the runtime of shards in Phase 2 are provable in zk.  If we can\u2019t have ZK rollups for general computation, then that does mean that the optimistic and ZK families will both have durable value for quite some time, implying that there is not a single architecture that\u2019s optimal for all cases, so giving users choice between the rich-but-optimistic environment and the limited-but-instantly-zk-proven environment (by having both kinds of rollups) is the best thing we can do\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.3742559523809526
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gluk64",
+                    "index": "40",
+                    "likes": "2",
+                    "time": "17/10/2020-13:17:54",
+                    "content": "    vbuterin:  If we can make EVM execution zk-provable, and the ethereum ecosystem ends up preferring one particular zk-provable system, I\u2019d be totally fine with considering enshrining it as the core execution model at some point.   You mentioned in the ETH Online talk that such enshrining would only be necessary if the winning rollup abuses its position and behaves in unfair way towards the community. I totally understand this motivation (and agree with it), but it\u2019s very important to draw the red line very clearly when such things are mentioned. Because, obviously, a \u201cnationalization\u201d like this would be quite a harsh move. Alone a threat of it could undermine the idea that Ethereum is a nation where property rights are respected. Imagine, for example, that Uniswap decides to introduces fees, and since it\u2019s a protocol with \u201csystemic importance\u201d, community deems UNI as \u201ctoo extractive\u201d and nationalizes it\u2026 What would be a fair behavior of a protocol that wins a lot of popularity on Ethereum? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.635416666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "41",
+                    "likes": "6",
+                    "time": "17/10/2020-13:49:14",
+                    "content": " You mentioned in the ETH Online talk that such enshrining would only be necessary if the winning rollup abuses its position and behaves in unfair way towards the community. I totally understand this motivation (and agree with it), but it\u2019s very important to draw the red line very clearly when such things are mentioned. Because, obviously, a \u201cnationalization\u201d like this would be quite a harsh move. Alone a threat of it could undermine the idea that Ethereum is a nation where property rights are respected. Imagine, for example, that Uniswap decides to introduces fees, and since it\u2019s a protocol with \u201csystemic importance\u201d, community deems UNI as \u201ctoo extractive\u201d and nationalizes it\u2026  Agree there\u2019s a lot of things to be careful about here, and thank you for bringing this up explicitly. It\u2019s better to discuss such things earlier rather than later, when tens of millions of dollars will have been invested. I\u2019ll walk back on being \u201ctotally fine with enshrining it\u201d; I was too quick to make that statement without thinking through the whole picture and not just the narrow technical considerations. First of all, to be super clear I would definitely oppose \u201cstate-intervention forks\u201d (ie. DAO-style forks) that just grab the state root of a rollup and import it into another system, stripping the token out in the process. A state-intervention fork is the only way to truly cleanly move everyone over from an L2 to an L1 \u201cby default\u201d, so it seems to be off the table by existing norms. That said, there are other things that in theory could be done. One possibility is the ethereum protocol forking existing code to create a native execution capability, and inviting users to voluntarily move into that system. This would not be a violation of immutability or property rights, but it would be a gross violation of open-source politeness norms. And if the ethereum community commits not to do such a direct fork except in case of some kind of malicious exploitation of monopoly power, that could significantly boost L2 projects\u2019 confidence in building on the ecosystem. I am inclined to also support such a commitment. The truly tough thing though is dealing with all of the less clear possibilities. At the very least, if ethereum makes a native sharded execution capability, that would compete with all the L2s that have been made until that point, and it would have an unfair advantage. And the concept of doing that versus forking an existing protocol is not a binary, it is a spectrum. For example, if ethereum makes a native L2 execution capability using SNARKs or STARKs, that will doubtlessly use at least some open-source research and software packages that were originally built at least in part with L2s in mind. There\u2019s a limit to how strong a commitment we can make, because there\u2019s also the possibility that we learn something new in 2-4 years that makes an ethereum-native sharded execution layer a really good idea and crucial to the ongoing success of the project. If we extend from 1 execution shard to 8 execution shards, where the new three execution shards have some different non-EVM language that\u2019s designed to be ZK-provable, but where the goal is not to compete with ZK rollups, is that a problem? I think the best we can promise is to be fair to existing L2 projects and not do things that intuitively feel like pulling the rug out from under them. A final possibility is some kind of \u201ccoin merger\u201d with L2 projects (with their teams and token holders\u2019 consent), but this risks being too controversial because it interferes with the goal of ETH monetary neutrality. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.587991522366522
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aliatiia",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "17/10/2020-23:07:27",
+                    "content": "    vbuterin:   Once phase 1 comes along and rollups move to eth2 sharded chains for their data storage, we go up to a theoretical max of ~100000 TPS. Eventually, phase 2 will come along, bringing eth2 sharded chains with native computations, which give us\u2026 ~1000-5000 TPS.        aliatiia:  (4) Having a proof-powered state- and data-shared ETH2.0 should improve scalability massively because the beacon chain is verifying proofs of proofs (whether fraud of validity) \u2026 so I don\u2019t see why the scalability goes down (?). Unless Im missing something here.   @vbuterin could you elaborate further why there is this reduction in TPS?      vbuterin:  the optimistic and ZK families will both have durable value for quite some time   I think there is broad consensus on this. What is being questioned is why having 64 shards is better or worse long-term. What I argue is that rollups committing to 64 shards >= rollups committing to 1-4 data-availability-first shards for reasons mentioned above. I use \u201c>=\u201d to signify that in the worst case where general-compute shards were built but not used, the goals of the rollup-centric path are still fully realized, while the inverse is not true \u2026 if it turned out that we need build general-compute shards (say, centralization concerns or rogue rollups), then the costs will be much higher. We see this with technical debt in Eth1.x. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.543981481481482
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nrryuya",
+                    "index": "43",
+                    "likes": "1",
+                    "time": "19/10/2020-01:57:10",
+                    "content": " Once phase 1 comes along and rollups move to eth2 sharded chains for their data storage, we go up to a theoretical max of ~100000 TPS.  Is there any detailed document on how to use Phase 1 for Rollup? Since Eth2 Phase 1 does not have \u201ctransactions\u201d as in Eth2, I\u2019m assuming that:  a Rollup operator must run Eth2 validator(s), and either one of the Rollup operator\u2019s validators must be elected as a shard block proposer and create a shard block by themselves to put the Rollup transactions on Eth2 shards.  I have some questions about this. First, the Rollup operator needs to run many validators (i.e., stake a lot) to reduce the latency offinality in the Rollup? In the worst case, if the Rollup operator runs only one validator, and the shard committee size is 2048 (maximum in the spec), the operator has an opportunity to commit Rollup transactions once in 2048 slots (~ 6.8 hours) in expectation. Second, if most of the Eth2 validators are not Rollup operators, we cannot make full use of the data capacity of Eth2? Since running Eth2 validator and Rollup operator are different things in terms of responsibilities and economics, I assume most of (or at least some portion of) Eth2 validators are not interested in Rollups. Or, is there any plan to introduce (in-protocol or off-chain) \u201ctransactions\u201d for users other than validators to put data on Eth2 shards? ",
+                    "links": [
+                        "https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/beacon-chain.md#misc"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.339285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nrryuya",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "20/10/2020-02:07:03",
+                    "content": " Or, is there any plan to introduce (in-protocol or off-chain) \u201ctransactions\u201d for users other than validators to put data on Eth2 shards?  There is a plan to support the fee market for users to request Eth2 validators to put their data in Phase 1. Therefore, the above concern might not be a problem. (Thanks @djrtwo!)* ",
+                    "links": [
+                        "https://ethresear.ch/t/a-fee-market-contract-for-eth2-shards-in-eth1/8124"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.208333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "45",
+                    "likes": "1",
+                    "time": "23/10/2020-08:23:29",
+                    "content": " @vbuterin could you elaborate further why there is this reduction in TPS?  A shard as defined today needs to have its TPS capped at ~10-50 just to ensure that state sizes remain reasonable, a node can verify incoming blocks and maintain an up-to-date state, etc. If we have a ZK-proven VM at the base layer, then potentially we could have much higher TPS. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/bogdan",
+                    "index": "46",
+                    "likes": "1",
+                    "time": "29/10/2020-17:00:40",
+                    "content": "@vbuterin is there any effort to ensure the integration of L2 in a form of rollups requires minimum changes in client applications that are currently only using ETH JSON RPC standard to send transactions or read blockchain state  and web3 to generate signatures? That can be a huge problem to tell every client that they would need to adapt a new data format when they read from L2. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.670454545454545
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Hikari",
+                    "index": "47",
+                    "likes": "1",
+                    "time": "04/11/2020-16:35:48",
+                    "content": "    souptacular:  It\u2019s already pretty complicated for an average person to use Ethereum in the first place, let alone use it consistently without falling for scams. Incorporating different layers with different security guarantees and different requirements will put a lot of pressure on multiple areas of the ecosystem, especially user adoption and usability.   This is very important. Most ppl are used to having a bank to guide them and take responsibility for security issues, including social engineering ones. And, when they are scammed, banks go and revert the transaction or at least refund them. It\u2019s very hard for many ppl to be responsible for everything they do. They have trouble to understand in example the difference of a simple transfer to a token swap. Many wallets and online reports are hard to view tokens balances. Ppl mix up the wallet not discovering a token and just not showing its balance with actual 0 balance. I can imagine how hard it will be to figure the difference between the balance on L1 and on each L2 instance. But my biggest concern with L2 is if we\u2019re able to choose to make a tx on L1 or L2 or if we\u2019re forced to use L2. If we need to pay fee to deposit and then another to withdraw, L2 is a no-go for long term investors who just wanna buy/deposit/loan a token and hold it for some years. To do that on L1, it\u2019s required only 1 tx. If L2 requires 2 L1 tx (deposit then withdraw), then we\u2019re paying double gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.185863095238096
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/anett",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "12/11/2020-10:18:37",
+                    "content": "Hey all, We are going to host Ethereum L2 Future virtual event sessions starting tomorrow Friday 13th at 3pm UTC  RSVP to the first one starting tomorrow. More info regarding the event sessions: L2 Future Session 1: \"Starting with L2s\" - Intro, review of solutions, mapping out needs ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/l2-future-virtual-work-session-this-fri-starting-with-l2s-intro-review-of-solutions-mapping-out-needs/4928"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.46875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/HAOYUatHZ",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "21/11/2020-09:33:08",
+                    "content": "    vbuterin:  Staggering block times on different shards   I think this will be a little bit hard in an async network. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.201388888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/HAOYUatHZ",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "21/11/2020-12:09:30",
+                    "content": "I actually have some concerns. Data across rollups are somehow isolated and won\u2019t be accessible on chain until users exit (and users exits are intuitively infrequent). This usually won\u2019t be a big issue in terms of normal transfers or smart contracts making use of L2 (for example, https://zksync.curve.fi/). However, this may lead to  inconvenience to make use of prtocols compositability and build DeFi lego. less instant verifiability of oracles if some data source from rollups. semi-centralized rollup-based DEXs \u2013 liquidity tends to gather together.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.201636904761905
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CHACKOCHAN007",
+                    "index": "53",
+                    "likes": "3",
+                    "time": "12/04/2021-10:48:21",
+                    "content": "hey Vbuterin this post and the whole other section is a gold mine, event though im a beginner\u2026 I can sense the wisdom in those words\u2026 Thank You \u2026 I\u2019ll come back later after i\u2019ve upgraded my knowledge on Ethereum Blockchain. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.09375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/samueldashadrach",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "29/09/2021-09:35:41",
+                    "content": "    Rollup-centric ethereum with sharding or rollup-centric sharding?       Vitalik\u2019s rollup-centric roadmap for ethereum provides a vision for ethereum that separates rollups and shards as playing two distinct but critical roles in scaling ethereum. While I am generally in favour of all the concepts involved, I would like to argue as to why I feel there needs to be tighter coupling between rollups and shards, than is likely to be seen in the current roadmap.  Before that I\u2019d like to briefly summarise the insights underlying rollups and shards.   Insights It\u2019s all socia\u2026     Please offer feedback!! ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/a-rollup-centric-ethereum-roadmap/4698/1"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.291666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AndersonTray",
+                    "index": "56",
+                    "likes": "0",
+                    "time": "09/12/2021-08:28:29",
+                    "content": "How would the implication of roll up to composability, between roll up sharding would be a difficult ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cotrader",
+                    "index": "57",
+                    "likes": "2",
+                    "time": "14/12/2021-09:55:37",
+                    "content": "Are \u201cL1 rollups\u201d possible without L2s by sort of virtually doing TXs on L1, and proving them with ZKR on L1, and storing all that on L1 shards, or something to reduce gas on L1? There are benefits to staying in L1 by increasing TPS & reducing L1 fees like  TVL all in 1 place, less spread out.  The spread out problem is perhaps mitigated by seamless direct cross L2 as OP mentions for future  Get funds out of complex, very-high-gas contracts ($1000+ gas)  If such \u201cL1 rollups\u201d were possible, would they compete with L2\u2019s for shard capacity? L1 would seem to win What TPS can L1 have before a phase 2, with its up to 64, but likely closer to 8, execution shards? With phase 2, will the TPS be multiplied by the number of execution shards? Or how does it reach 1-5k? Thanks! Great post! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.685897435897436
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PradhumnaPancholi",
+                    "index": "58",
+                    "likes": "1",
+                    "time": "03/03/2022-00:43:37",
+                    "content": "Reading this ins 2022 on the following days of Matterlabs announcing the zkEVM testnet is ready. Looking forward to building and living in this rollup-centric world. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Alexalucky",
+                    "index": "59",
+                    "likes": "1",
+                    "time": "28/06/2022-14:04:41",
+                    "content": "Yes  is coming up to you guys at work tomorrow ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/philip",
+                    "index": "60",
+                    "likes": "0",
+                    "time": "18/09/2022-10:25:53",
+                    "content": "What\u2019s HLL exactly? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/timbeiko",
+                    "index": "61",
+                    "likes": "1",
+                    "time": "20/09/2022-22:21:06",
+                    "content": "    philip:  What\u2019s HLL exactly?   High Level Language, e.g. Solidity, Vyper  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.8
+                }
+            ]
+        }
+    ],
+    "group_index": "1157"
+}

@@ -1,0 +1,263 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/modeling-dai-maturity/15961",
+            "title": "Modeling DAI maturity ",
+            "index": 15961,
+            "category": [
+                "Core Units",
+                "Strategic Finance"
+            ],
+            "tags": [
+                "research",
+                "alm",
+                "sf-001",
+                "longform"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#1",
+                    "likes": "23",
+                    "time": "22/06/2022-08:05:53",
+                    "content": " Summary  This paper models the DAI maturity to complement the ALM Framework; We start by looking at TradFi methodologies; We settle on a simple model using historical worst case for two categories of DAI holdings: speculative (DAI in smart-contracts) and organic (DAI in EOA addresses) This model shows that:  50% of DAI is stable (maturity > 1-year) Short-term maturity is higher than initially expected, at least 20% (intraday) and 40% (within 1-week)   The fact that 20-40% of the circulating DAI is a risk of being short maturity is significantly reducing our ability to invest. We need to explore:  Programmatically disinvest from money-market D3Ms when liquidity is low Earning from the PSM assets Holding some shiftable assets, the ability to generate liquidity from assets (i.e. borrowing USDC from Aave using ETH as collateral)     Introduction As discussed in ALM Framework, liquidity, the ability to keep the peg of DAI, is one key constraint we have on balance sheet allocation. We can\u2019t lock assets for an extended period of time and be stuck by having no liquidity to sustain DAI outflows. Currently, we have a very liquid position with an overflowing PSM. Yet, as we start to allocate more of our balance sheet, this will evolve. We need to understand the outflow profile of DAI (DAI liquidity maturity profile). While we provided an ALM liquidity maturity profile for DAI (illustrated below), it was only a placeholder. As our PSM reserves have decreased lately and as we are soon ready to deploy our balance sheet to non-intrablock maturity instruments (like short-term bonds, RWA), It is now time to be more precise.  1288\u00d7668 11.6 KB  In this document we will start by explaining how DAI liquidity profile would be defined in TradFi, then propose an on-chain methodology for DAI  How would TradFi model DAI liability maturity? In TradFi, the closest instrument to a stablecoin is a bank deposit. In Bank Asset and Liability Management Strategy, Trading, Analysis (published in 2007), Moraad Choudry suggests four methods to model bank deposits (copy pasted):  to group all outstanding balances into one maturity bucket at a future date that is the preferred time horizon of the bank, or a date beyond this. This would then exclude them from the gap profile. Although this is considered unrealistic because it excludes the current account balances from the gap profile, it is nevertheless a fairly common approach; to rely on an assumed rate of amortization for the balances, say 5% or 10% each year; to divide deposits into stable and unstable balances, of which the core deposits are set as a permanent balance. The amount of the core balance is set by the bank based on a study of the total balance volatility pattern over time. The excess over the core balance is then viewed as very short-term debt. This method is reasonably close to reality as it is based on historical observations; to make projections based on observable variables that are correlated with the outstanding balances of deposits. For instance, such variables could be based on the level of economic growth plus an error factor based on the short-term fluctuations in the growth pattern.  On those, number #1 doesn\u2019t make much sense. #2 is quite arbitrary and too simplistic. #3 is close to what we will use later on (but we will be more granular in maturities). #4 is not applicable on crypto yield as the space is too young. Basel III also provides a liquidity approach close to #3 with the LCR (which is a 30-day liquidity indicator). It is based on the identity of the depositor which we usually don\u2019t have in DeFi (one counter-example, would be DAO treasuries, like OlympusDAO but it doesn\u2019t represent a big amount yet). You can see below some deposits classification and the corresponding LCR weight (ratio of the deposits that might be redeemed within a month).   Proposed DAI maturity modeling  What would be best? As seen in the ALM literature and speaking with ALM professionals, the best practice would be to model customer behavior using on-chain behavioral data informed by macroeconomic factors (bull/bear markets, interest rates, \u2026). While this is certainly the end goal, going to such a model would be very expensive and unreliable at this stage. First we don\u2019t have an abstraction for DAI customers. Each customer could have many addresses and while we could probably develop some heuristics to cluster them, it will not be totally accurate. Moreover, DAI being composable, customers can send DAI to other products, still being the ultimate owner of the DAI. One example is Aave, when a customer deposits DAI on Aave, DAI moves from the customer wallet address to Aave\u2019s address and becomes commingled with all other Aave DAI depositors. While it is possible to decipher that, the amount of work needed will be extreme as we would have to manage all (or most) existing DeFi protocols. If that wasn\u2019t enough, the situation gets only more complex in a L2/multichain world. Secondly, DeFi is quite young and the customer behavior of 2021 might not provide much learning to the behavior of customers in 2023. Constructing an elaborate model on non-predictive past behavior would just make us wrongly confident. For those reasons, it makes sense to start with a simpler model, easier to understand and more replicable by the community.  Intuition from a market crash During the May 2022 crypto crash, most of the DAI holding reduction was due to smart contract holdings, while EOA (Externally Owned Addresses) metric remained constant (in purple in the chart below. More details can be found in the May 2022 ALM liquidity report.  809\u00d7486 9.36 KB  While it is difficult to know the ultimate ownership of DAI, it is quite easy to label the addresses where some DAI sits. Some are lending platforms, some are Decentralized Exchanges, \u2026 The Pareto Law applies meaning that labeling a few addresses allows to cover most of the DAI value circulating. The idea is therefore to create buckets of on-chain addresses, then generate a worst outflow scenario based on historical data.  The Model We split all DAI holding addresses in two buckets:  Organic: contains all Externally Owned Addresses, we will consider that, for them, holding DAI is a deliberate decision that should remain constant. Speculative: all smart contracts and the DSR  Then for each of those buckets aggregates we will compute the maximal drawdown over the 1-day, 1-week, 1-month, 3-month periods. The maximal drawdown of 1-day period will be allocated 50% in 1-block maturity and 1-day maturity. Then for each subsequent maturity bucket, we use the max drawdown, deducted from shorter maturity numbers. Let\u2019s explain with actual data. We find the following numbers for max drawdown. For speculative DAI, the max 1-day drawdown is 24% while the max 1-week drawdown is 48%. It doesn\u2019t mean that the drawdown started the same day for both, nor that the 1-day drawdown is included within the 1-week drawdown.  This led to the following liquidity maturity profile for DAI. For speculative DAI, the 1-day max drawdown is split equally between the 1-block and 1-day maturity profile. Then the 1-week maturity profile is 48% (max 1-week drawdown), on which we remove shorter maturities drawdowns (the 24% 1-day drawdown) which gives us 23% (difference due to rounding).  As you can see, speculative DAI tends to have a shorter maturity with 48% exiting the system within a week. On the other hand, organic DAI tends to be more stable. Having a DAI mix biased towards organic DAI will allow us to take more maturity risk on the asset side.  Simulation on past data When using those numbers to extrapolate from past positions (February 15th, 2022 and May, 12th, 2022), we find the following results. For February 15th, the expected outflows are quite significant with 38% over 1-week and 48% over 3-months. Most of it is due to speculative DAI.  1072\u00d7613 26.1 KB  For May 12th, i.e. after a significant outflow of DAI and the Terra meltdown, the amount of DAI outstanding was decreased from 10B to 6B (-40%). Moreover, the liquidity profile was quite different with only 30% (vs 38%) expected outflow in the next week and 37% (vs 48%) over the next 3-months. As a good chunk of the speculative DAI was removed, the remaining was more biased towards organic DAI.  1063\u00d7590 25.5 KB  Running the model on all history (since July 2020 and DeFi summer), we can see that DAI maturity (according to the proposed model) gets shorter when the market is exuberant (DeFi summer). Yet, there was always >50% of DAI with a maturity of more than 3-months. You can find the Dune query here.  911\u00d7457 21.4 KB   Learnings Using this model, we can see that 50% of outstanding DAI is on \u201clong\u201d maturity (above 3-months. This is in line with the previous assumption that we should always keep 50% easily unwindable (which include partly or totally crypto-backed loans depending on our view on borrower relationship). One finding is that the short-term front of DAI maturity is quite volatile with more than 20% DAI with a maturity below one day and up to 40% over 1-week. So far, our only ways to manage those possible fluctuations is to keep a strong buffer in the PSMs. This is not very efficient currently. There is plenty of possible evolution to fix this problem. First, we can automate money markets D3M withdrawal when liquidity gets low. This will increase DAI lending rate and create an arbitrage from USDC to DAI (filling the PSM). Secondly, if we plan to hold ETH (or other major crypto-assets) in the future, those assets could be used to source liquidity on money markets. Third, we can find ways to generate yield from the PSM assets. Fourth, partnerships with other stablecoin issuers could help on the liquidity front by providing bilateral credit lines (see ClearingDAO). Finally, we expect tokenized treasury Bonds to become a reality soon, they will provide an on-chain liquidity source (borrowing against or outright sale).  Known limitations All models are wrong, but some are useful. In this section we will describe the known limitations of the model that the community needs to keep in mind.  The model doesn\u2019t take into account circular DAI. For instance, the DAI-USDC LP vault is a highly leveraged position where DAI is minted but half is just put as collateral in the vault. Close to half of those LP-backed loans are not at risk of outflow as the unwinding would cancel the impact. This is/was already the case in the past where most loans were used to yield farms. The borrower has both a DAI loan but keeps the DAI asset. Redeeming those DAI will be done by repaying the loan. A future model should use net DAI outstanding (DAI minus DAI borrowed by the same account). Not modeling it is adding extra precaution. Not all DAI locked in smart contracts are equal. The risk of outflow is more pronounced in liquidity farming schemes where the end of the liquidity farming unwinds the allocation. If the DAI is in an ETH-DAI LP, then the outflow will be contingent on a sharp decrease of ETH price. Smart wallets (including multi-sigs) are considered as smart contracts but might be behaving like EOA. Gnosis Safes hold 240M DAI currently so the impact is quite limited. An outflow in speculative DAI could be an inflow in organic DAI. This is apparently not a big concern here, but this would generate more errors by adding subdivision of categories. The model assumes a business as usual context, including some serious market crashes. There is no history of strong defiance of DAI to be modeled.   Conclusion In this paper, we have suggested a DAI maturity profile methodology that is transparent and simple to reproduce. We need to keep at least 50% of outstanding DAI in medium term maturity assets (unwindable within 1-year), 40% unwindable within a week and 20% unwindable within a day. PS: The model is based on \u201ckind\u201d historical data, so we should see it as business as usual scenario (including the usual boom/bust of crypto). We also need to think about an emergency scenario, where we need to liquidate our asset but taking a loss. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/alm-framework-for-makerdao/12994",
+                        "https://etherscan.io/address/0x31f8cc382c9898b273eff4e0b7626a6987c846e8",
+                        "https://forum.makerdao.com/t/alm-liquidity-2022-05/15050",
+                        "https://dune.com/queries/907852",
+                        "https://forum.makerdao.com/t/updating-the-short-term-bond-strategy/18302",
+                        "https://forum.makerdao.com/t/modeling-dai-maturity-modelado-de-madurez-de-dai-traduccion/16227",
+                        "https://forum.makerdao.com/t/un-vistazo-al-foro-16-22-de-junio-del-2022/16204",
+                        "https://forum.makerdao.com/t/rethinking-psm-fees/16168/2",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-june-16-22-2022/15999",
+                        "https://forum.makerdao.com/t/mip103-the-stability-and-liquidity-scope-framework/19675/17",
+                        "https://forum.makerdao.com/t/mip118-introduce-a-7-day-notice-option-to-the-dai-savings-rate-dsr-to-support-alm/19873",
+                        "https://forum.makerdao.com/t/automating-asset-and-liability-matching/20063",
+                        "https://forum.makerdao.com/t/makerdao-2022-financial-results-and-retrospective/19636",
+                        "https://forum.makerdao.com/t/mip100-stable-asset-allocation-framework/19556/9",
+                        "https://forum.makerdao.com/t/build-your-makerdao-alm-model/18730/11",
+                        "https://forum.makerdao.com/t/build-your-makerdao-alm-model/18730",
+                        "https://forum.makerdao.com/t/signal-request-change-psm-gusd-a-parameters/18142",
+                        "https://forum.makerdao.com/t/mip86-coinshares-usdc-institutional-rewards/17900/9",
+                        "https://forum.makerdao.com/t/reporting-for-strategic-finance-core-unit-may-june-and-july-2022/17037",
+                        "https://forum.makerdao.com/t/makerdao-alm-forecast/16881",
+                        "https://forum.makerdao.com/t/charting-a-path-for-rwas-part-2-the-maker-standard/16725",
+                        "https://forum.makerdao.com/t/governance-and-risk-196-thursday-june-23-at-17-00-utc/15998/3",
+                        "https://forum.makerdao.com/t/blocktower-credit-introduction-arranger-proposal/16535"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.381635672020288
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Hasu",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "22/06/2022-08:11:17",
+                    "content": "Where does the behavior of borrowers/vault owners play into this analysis? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#3",
+                    "likes": "2",
+                    "time": "22/06/2022-08:29:21",
+                    "content": "The behavior of borrowers is addressed in the first limitation of the model. There is indeed a link between borrowed DAI and DAI demand, but the link is getting smaller and smaller and the correlation can change, especially as it is whales dependent. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/One_Pastrami",
+                    "index": "#4",
+                    "likes": "7",
+                    "time": "22/06/2022-14:52:19",
+                    "content": "Super interesting, this is a MakerDAO tailored approach similar to TradFi\u2019s determining maturity for non maturity deposits (\u201cNMD\u201d). Of all the account-holders types - EOA accounts appear to be sticky and be very stable even under volatile stressed markets which is an impressive data-driven argument for the generation of yield-earning assets. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.033333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Eumenes",
+                    "index": "#5",
+                    "likes": "2",
+                    "time": "22/06/2022-16:21:06",
+                    "content": "    SebVentures:  We need to keep at least 50% of outstanding DAI in medium term maturity assets (unwindable within 1-year), 40% unwindable within a week and 20% unwindable within a day.   this is excellent work - its what I have been looking for. Given this DAI liability structure what can Maker do with the following buckets (if anything) to earn some yield but be available liquidity when needed?  I also think we should keep more liquidity than the worst crisis to date.  Most liquid 20% (1 day duration) Next liquid 20% (1 week duration) Next liquid 10%  (1 months duration?) Bucketing of last 50% (3M - how long?)  And given the assets you put into each of the buckets, what would the cost(trading costs & market losses) be in getting liquidity within the given framework, say during the 2 different stress periods in 2022?  Any assets held off chain will have some transactions costs and also could have a market loss if rates are rising.  I think the cumulative losses of liquidating assets needs to stay well below the surplus buffer\u2026 Final question:  what is the longest duration asset that Maker should consider holding, given this DAI liability structure? Thanks! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6000000000000005
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "22/06/2022-16:47:18",
+                    "content": "I wouldn\u2019t expect two high stress (higher than the model say) per year. That would mean we are doing a bad job. I would suggest that we take those maturities as safe borders (i.e. we will not have to sell). But we should have a windup plan and ideally all assets should be able to be sell within a short period (short being probably 1 months). We can go long maturity up to the equity (let\u2019s say 85M currently). Duration doesn\u2019t matter that much if, and only if, you can sell, you would just take a loss which should be framed in the Capital at Risk metric anyway. But I see no reason to go beyond 5-year (the max we have already). On the last 50% bucket, I would see a 1-2 year duration/maturity max, but this is early to tell clearly. I\u2019m really more stressed about the first buckets where we need to be smarter. I will also add that taking duration risk on the asset allows us to give a DSR which will strengthen our liabilities maturity (assuming DSR is classified as organic DAI, for which today we have no data to make an informed decision). If the space gets tokenized t-bills and we only invest in t-bills, it is not good neither. Tokenized t-bills will be money-like (even more than money market funds) and it would be a strong competitor to DAI. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.685912698412698
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Eumenes",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "22/06/2022-17:27:06",
+                    "content": "so what are you proposing for the first two, most liquid buckets? where would other liquid asset managers fit? thanks agreed on duration ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.225
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "22/06/2022-20:34:11",
+                    "content": "D3M (money markets not the RWA versions) with a permissionless ALM smart contract to unwind when the PSM if under a threshold. Short-term bonds could works well on the weekly maturity but still need to be solved. It was exposed almost one year ago.  image951\u00d7284 6.42 KB  Investing in ETH will provide collateral for repo to generate some USDC to fill the PSM. ClearingDAO was also a short-term DeFi money market But I\u2019m very bullish on tokenized ETFs. This will put DeFi on the next level and change everything I just said. Maturity risk could also be hedged with bond or term DAO issuance. But again, we have no clue what the credit spread of MakerDAO is, and probably not good. My point is that nothing we are doing today will make any sense in two years. But we shouldn\u2019t dump what we are doing for the hypothetic shiny object in the future. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/intra-defi-stablecoin-issuers-money-market/13432"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.064285714285715
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ClausClowes",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "22/06/2022-23:49:58",
+                    "content": "    SebVentures:  The fact that 20-40% of the circulating DAI is a risk of being short maturity is significantly reducing our ability to invest.   Could you elaborate on this a little more? Is the issue that 20-40% is a wide range and thus hard to predict future behavior, or is that number simply too high? Thank you! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.497916666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#10",
+                    "likes": "1",
+                    "time": "23/06/2022-07:49:42",
+                    "content": "    ClausClowes:  Could you elaborate on this a little more? Is the issue that 20-40% is a wide range and thus hard to predict future behavior, or is that number simply too high? Thank you!   It is 20% within a day and an additional 20% (therefore 40%) within a week. The numbers are high. On way would be to decrease those limits by being more granular (point 1 of the limitations of the model), but that might be at a risk. The other ways is to find solutions (previous post). I tend towards the latter as it is not that hard and will MakerDAO more resilient no matter what. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.399166666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "23/06/2022-08:16:27",
+                    "content": "This is great, but one thing that strikes me is that it seems you are extrapolating mainly from the post-terra demand unwind, and I would think that the new dai demand we are getting post-crash isn\u2019t going to behave the same as the demand we had at the peak of the mania and farms. Another thing to keep in mind is that at the time of the terra collapse, the average user didn\u2019t know whether dai was susceptible to a similar collapse. But once you have proven it once the same bank run fears shouldn\u2019t materialize again to the same extent. Anyway, I would like to figure out how we can take action on this as soon as possible, mainly through monetalis and 6s capital. If I understand it correctly this means we could put half of all dai into 1-2 year treasury bonds which yield quite well now ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.438762626262626
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#12",
+                    "likes": "3",
+                    "time": "23/06/2022-09:11:43",
+                    "content": "    rune:  I would think that the new dai demand we are getting post-crash isn\u2019t going to behave the same as the demand we had at the peak of the mania and farms.   Technically DAI demand is flat since the crash. The increases comes from Uniswap V3 which is mainly from high leverage LP positions. With a D3M USDC/DAI LP we could hit 12B DAI but it would not mean anything for DAI demand.  image807\u00d7390 5.59 KB  But it is accurate to say we don\u2019t know how new people will behave. Nevertheless, it wasn\u2019t DAI risk that was the main driver in DAI demand reduction but less yield farming opportunities in DAI.     rune:  Anyway, I would like to figure out how we can take action on this as soon as possible, mainly through monetalis and 6s capital. If I understand it correctly this means we could put half of all dai into 1-2 year treasury bonds which yield quite well now   Yes, which is exactly why I\u2019m pushing for it for months (almost a year now). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.462701231060606
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/TRUEMAKER",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "23/06/2022-14:25:46",
+                    "content": "Fully support this! Will interest earned from these iniatives help increase DAI interest rates too? I just got a notification from my bank that my savings account rate has increased to 1.15% as of today. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Traster_Tray",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "23/06/2022-15:46:32",
+                    "content": "    SebVentures:  If the space gets tokenized t-bills and we only invest in t-bills, it is not good neither. Tokenized t-bills will be money-like (even more than money market funds) and it would be a strong competitor to DAI.   How do tokenized treasuries work?  Wouldn\u2019t the fed have to do it themselves?  If you work out how to invest the PSMs into some mix of treasuries and you pass that on through the DSR, DAI kind of becomes a tokenized version of a blended treasury ETF in a roundabout way.  Maybe one day DAI holders could lock their DAI up for some duration and we could pass along a portion of treasury returns based on that duration.  Then you\u2019ve really kind of tokenized treasuries.  But if there is competition in this area, RWA would be the big differentiator for MKR.  If you do it right, there are many environments where RWA loans will return more than treasuries.  But in a high rate environment, what you are doing now is the best you can do and I think it\u2019s a great competitor to tokenized treasuries because you get yield and you get liquidity that treasuries take away. Great research and post btw.  I think the key to all this is really understanding organic and speculative DAI.  Much more research and experimentation could be done in this area.  It helps us know how much to invest but it also helps us start thinking how we can be more specific in targeting organic DAI growth. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.807261904761905
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/teej",
+                    "index": "#15",
+                    "likes": "1",
+                    "time": "23/06/2022-16:08:07",
+                    "content": "What role do you envision 6S playing in this? 6S has history as a commercial real estate developer. What unique skills is it bringing to the table? Is it meant to serve as another arranger like Monetalis? The way I view Monetalis is as treasury management training wheels. It is (rapidly and helpfully) putting together an out-of-the-box treasury management solution. This is great and needed. But ultimately an external manager (Sygnum, BG, etc.) will be chosen to manage the exposures. Once this is done, other managers/treasury management solutions will present themselves. They already have. Who better to liaise with and instruct these experts than Strategic Finance, the group closest to our ALM needs? It feels like, through more arrangers for what is in essence a simple function, we are introducing abstraction for abstraction\u2019s sake. Dilutive abstraction, not accretive abstraction. Managing short-term bonds is not rocket science\u2014the managers just need a mandate and to get paid. Arrangers should help reduce complexity, not increase it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#16",
+                    "likes": "2",
+                    "time": "23/06/2022-16:40:43",
+                    "content": "    TRUEMAKER:  Fully support this! Will interest earned from these iniatives help increase DAI interest rates too? I just got a notification from my bank that my savings account rate has increased to 1.15% as of today.   That\u2019s the plan. Which is why we can\u2019t just invest in t-bills as, after our cost, we wouldn\u2019t be able to give a 1.15% DSR. If DeFi is worse than TradFi wangmi     Traster_Tray:  How do tokenized treasuries work? Wouldn\u2019t the fed have to do it themselves?   The latter would be awesome but unlikely. If we want deep markets we need pooling at the beginning. I bet on tokenized ETF. You can also have fund of which a first version is Arca Coin. The OFH token of SocGen is a kind of a close proxy as well (except it\u2019s \u20ac).     teej:  But ultimately an external manager (Sygnum, BG, etc.) will be chosen to manage the exposures.   Which is exactly what is done currently (well it\u2019s BG and BlackRock). But we need to move forward and on-chain. That\u2019s the next step. Step 1: Off-chain ETF managed by a Foundation/Trust under the control of MakerDAO Step 2: On-chain tokenized ETF Step 3: On-chain tokenized ETF that we can use as collateral on repo-markets (Aave) to get liquidity if needed Step 4: On-chain tokenized ETF that we use for market-marking (UNniswap LP, additional revenues)  and that can use as collateral on repo-markets to get liquidity if needed. Step 5: The US Gov issue bond in a permissionless tokenized form because the market is so efficient that it\u2019s cheaper than tradfi. We are the primary dealer. We are at step 0, step 1 soon, step 2 end of year? ",
+                    "links": [
+                        "https://forum.makerdao.com/t/thoughts-of-next-steps-for-alm-and-rwa/19899",
+                        "https://forum.makerdao.com/t/mip-6-declaration-of-intent-invest-in-short-term-bonds-proposal-for-implementation/16185/2"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.807692307692308
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Khan",
+                    "index": "#17",
+                    "likes": "1",
+                    "time": "23/06/2022-18:50:30",
+                    "content": "@SebVentures what can an RWA partner like Centrifuge take away from this? We talk to a variety of issuers that offer various collateral opportunities to bring on-chain, as they seek funding from a partner like Maker, they often ask what type of investments would Maker be seeking? While government bonds get an explicit nod in this thread, is there any recommendation you can make regarding the type of collateral that would preferably be seen by issuers seeking funding from Maker? Details like acceptable duration, ideal allocation of the Maker balance sheet etc. would be incredibly useful. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#18",
+                    "likes": "2",
+                    "time": "24/06/2022-07:17:09",
+                    "content": "I haven\u2019t spend much time thinking about RWA (which I would relabel as private credit) lately so I might be off. Private credit should be priced with an illiquidity premium or bring organic DAI (which means, instead of providing a better yield, decrease the cost of funding by expanding DAI demand). But Centrifuge is also in the middle of private credit and public markets. Therefore, by working on the liquidity of the DROP, it should be able to decrease the illiquidity premium and making of efficiency in the market. That probably work with adding more transparency, more market participants, a secondary marketplace (which I agree doesn\u2019t make any sense now as the primary market feels, but only feels, liquid), \u2026 So as duration I would say 2-yr is a good spot (but I don\u2019t know the markets), below 5-yr, and whatever has an illiquidity premium that Centrifuge can reduce by bringing liquidity. Random idea, as we are fine with the HVBank assets, it would be great to securitize a block of 100M for which MakerDAO would provide the warehousing and make markets on secondary markets. Probably need more thoughts but hopefully you get the idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.904166666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/TRUEMAKER",
+                    "index": "#19",
+                    "likes": "2",
+                    "time": "29/06/2022-18:38:58",
+                    "content": "    SebVentures:  Step 2: On-chain tokenized ETF   Maybe tokenized MCD vaults will be available in the future too . Allowing people or businesses to post tokenized real world assets (e.g. cash, stocks) as collateral.  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/TRUEMAKER",
+                    "index": "#20",
+                    "likes": "0",
+                    "time": "03/07/2022-19:57:54",
+                    "content": "Was reading about the mirror protocol and seems like it could be a good match. Its essentially tokenized equities in the ETH network, right now they dont have any Bond ETFs but we could probably engage with them for it.  Screenshot_20220703-155558_Coinbase1080\u00d71378 169 KB  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.642857142857142
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#21",
+                    "likes": "0",
+                    "time": "01/10/2022-19:58:41",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

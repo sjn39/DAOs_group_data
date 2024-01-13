@@ -1,0 +1,120 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/a-note-on-stability-fee-parameters/3194",
+            "title": "A note on stability fee parameters ",
+            "index": 3194,
+            "category": [
+                "Governance"
+            ],
+            "tags": [
+                "rates",
+                "technical-summary"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#1",
+                    "likes": "6",
+                    "time": "13/07/2020-19:32:42",
+                    "content": "Background Stability fees in MCD are parametrized by two values: a base value which applies to all collateral types, and a duty value which is assigned on a per-collateral basis. The sum of base and a collateral\u2019s duty represents the per-second compounding factor for that collateral type. More detailed documentation on rate accumulators as implemented in MCD can be found here. Separately, the governance and risk segments of the Maker community have recently begun conceptualizing rates in MCD in terms of a \u201cbase rate\u201d that applies to all collateral types, and a \u201crisk premium\u201d per-collateral type. These values are denoted in yearly percentages. The forum post proposing this conceptual frame work can be found here. Superficially, the parameters in the code seem to correspond to the language now used in the governance polls, which creates a temptation to mentally draw an equivalence between them. However, this analogy is mathematically flawed, and can lead to confusion. This note explains why this is. Conversion from polling values to system parameters Suppose a base rate b and per-collateral risk premiums p_i are chosen by governance. These are yearly percentages, e.g. b = 3 and p_ETH = 1. This means that base and duty_i (this notation is a shorthand for \"duty value of collateral type i\") must be set such that: base + duty_i = ( ( 1 + ( b + p_i ) / 100 ) )^( 1 / N ) * 10^27 where N = 365*24*60*60 (the approximate number of seconds in a year) and rounding is done to the nearest integer after the final multiplication. Implications of the conversion formula Aside from there obviously being many ways to choose base and duty_i given b and p_i (one can always subtract a constant from base so long as that constant is added to all duty_i values), the manifest nonlinearity of the conversion formula has important consequences:  If either base or duty_i is set so as to have a clear interpretation, the other parameter will not have an intuitive value (e.g. if base is set to (1+b/100)^(1/N)*10^27, so that it corresponds to a yearly rate of b on its own, duty_i will not correspond to p_i in a similar way if p_i is non-zero). (See the Appendix for a numerical example.) A change to base in most cases requires an update to all duty_i values for collateral types with a non-zero risk premium.  Structural challenges to correspondence Both base and duty_i are strictly positive parameters. Thus if governance specifies either a negative base rate or negative risk premiums for certain collateral types, once again any attempt at a clear correspondence will fail. Systemic challenges to the use of base  Sometimes, the system is used in ways that involve introducing special collateral types that, for one reason or another, must have a stability fee of zero. Examples include the SAI-to-DAI migration, as well as the recently proposed Peg Stability Module. This foils correspondence attempts that try to relate base to b in some straightforward manner, since a non-zero base will apply to all collateral types. Conclusions and future outlook No intuitive correspondence can be enforced between the mental model governance uses to describe rates and all values the system uses to encode those rates. Given the challenges around using base in particular, which greatly limit its usefulness, it is likely that future versions of the protocol will simply omit this parameter. Appendix: numerical example Let\u2019s say b is 6% and p_ETH is also 6% (so the total stability fee for ETH should be 12% annually). We can set base so that it corresponds to a 6% yearly rate when duty is zero, which is a \u201cnice\u201d value from the perspective of human cognition: base = 1.06^(1 / ( 365 * 24 * 60 * 60 )) * 10^27 = 1000000001847694957439350563 We know what the sum of base and duty_ETH must be: base + duty_ETH = 1.12^(1 / ( 365 * 24 * 60 * 60 )) * 10^27 = 1000000003593629043335673582 By subtracting, we derive duty_ETH: 1000000003593629043335673582 - 1000000001847694957439350563 = 1745934085896323019 OTOH, if we had naively set duty_ETH under an assumption of linearity, we would have done so as: (1.06^(1 / ( 365 * 24 * 60 * 60 )) - 1) * 10^27 = 1847694957439350563 Done this way, the resulting base + duty_ETH corresponds to a 12.36% annual rate\u2014not a huge error, but enough to be noticeable. The larger the rates involved, the larger the resulting error. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/signal-request-change-the-stability-fee-structure/2380",
+                        "https://forum.makerdao.com/t/peg-stabilization-modules-a-pre-mip-discussion/3045"
+                    ],
+                    "GPT-summary": "The post explains the stability fee parameters in MCD and how they are being conceptualized by the Maker community. It discusses the challenges in relating the mental model governance uses to describe rates to the values the system uses to encode those rates. The post provides a numerical example to illustrate the nonlinearity of the conversion formula and the challenges in using the base parameter. The post also highlights the challenges in correspondence when introducing special collateral types that must have a stability fee of zero.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 3.8406991018931307
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "13/07/2020-20:24:41",
+                    "content": "Any time you multiply something together rather than add it together first and then multiply the result will be different 1.06 x 1.06 in the example which yields 1.1236 the .36% discrepancy rather than 1.06 + .06 = 1.12 flat. This is something that people know, but they often forget to take into account when trying to simplify things. The reason that a base is helpful in a mental model (even though it adds complexity) is that MakerDao governance is supposed to keep focus on the fact that MakerDao is taking risk on loans.  The Base rate is supposed to act like a flat tax which balances and offsets that risk with the duty being the additional fees for each collateral type that are considered profit over and above the risk taken.  Or it could be viewed the other way where the base rate is the profit and the duty is the risk for each asset based on the liquidity of that asset etc\u2026  Either way the focus is meant to be on the fact that MakerDao is taking a risk and should be compensated for that. I do agree though that even though there are two values, the values should be added together in all cases prior to being multiplied into the actual equation.  6% base + 6% duty = 12% so 1.12 is the number used.  The base rate does not need to be multiplied in again.  That risk was already offset and MakerDao is double dipping by applying the base rate to the duty (which is unnecessary because no additional risk was added that needs to be offset by MakerDao) otherwise. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.6250000000000004
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/KentonPrescott",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "13/07/2020-20:54:48",
+                    "content": "This is a great thing to bring up. In this response, I\u2019ve tried to present the error in another way as well as share a potential solution for when improvements to the Jug contract are being considered. It seems like there is an error value that\u2019s added onto the cumulative effective annual rate. Here\u2019s another way to conceptualize it for other readers. Assuming N = 365 * 24 * 60 * 60: ( ( 1 + b ) ^ ( 1 / N ) + ( 1 + p_i ) ^ ( 1 / N ) - 1 ) ^ ( N ) = 1 + b + p_i + e. This e holds a positive correlation to b + p_i, and if it can be approximated, then one may be able to add a correction variable to account for the discrepancy. Another approach (credit given to @vamsi) could be to have a separate rate accumulator for base (i.e. base_rate), which would be added to the duty_rate derived by duty. In equation form: base = ( ( 1 + ( b ) / 100 ) ) ^ ( 1 / N ) * 10^27 duty_i = ( ( 1 + ( p_i ) / 100 ) ) ^ ( 1 / N ) * 10^27 Looking at your example with b is 6% and p_ETH is 6%. base = 1.06 ^ ( 1 / N ) = 1.000000001847694957439350563 duty_ETH = 1.06 ^ ( 1 / N ) = 1.000000001847694957439350563 After 1 year, base_rate = base ^ (N) duty_rate = duty_ETH ^ (N) rate = base_rate + duty_rate - 1 Annual rate = rate^(N) = 1.119999995 -> 11.999\u2026 % ~12% ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.768668831168831
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "14/07/2020-00:19:43",
+                    "content": "I really think this whole issue is going to get more complex before it gets better. Stability Fee, Risk Premium, Base Rate, DSR-spread, Really this whole system management methodology I don\u2019t think scales well to 100\u2019s if not 1000\u2019s of assets.   One thing I think had been discussed is that no matter how we define the macro variables I think we want to have some kind of software interface where these are put in and the new executive contract punched out.   So in the end we really won\u2019t care about the details on how the macro variables governance votes on end up being managed at the low level as long as they make sense (a programmers job) and results are valid for all inputs. I think the discussion we need to have regarding monetary policy is a real one on how to simplify this for governance as the idea that we will be polling on every tom dick and harry collateral DC, SF, RP, etc. is really going to get old fast once we hit something beyond what a human can deal with in a governance cycle. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.63510101010101
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#5",
+                    "likes": "2",
+                    "time": "14/07/2020-02:14:30",
+                    "content": "I agree, but that\u2019s a separate issue from this note, the point of which is to encourage people to focus on their mental model and let a natural abstraction layer form between that and the smart contract implementation details. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.357142857142857
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#6",
+                    "likes": "2",
+                    "time": "14/07/2020-02:25:49",
+                    "content": "One can always seek better approximations or even exact implementations of mental models, but there\u2019s no need to couple things so tightly, IMO. E.g. imagine governance moves to a mental model in which there are multiple base rates (say one for ETH+ETH-native \"utility\u2019 ERC20s, one for centralized stablecoins, and one for various bridged BTC variants). Would there be any net positive value to re-implementing and replacing the Jug for that? Given the churn caused by updating the address, as well as the expense and opportunity cost of development, testing, FV, and deployment, I\u2019d argue the net value is negative. I.e. leave well-enough alone. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.791125541125541
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/KentonPrescott",
+                    "index": "#7",
+                    "likes": "4",
+                    "time": "27/07/2020-19:51:32",
+                    "content": "IIRC a single, system-wide base rate was an intended feature of Jug at the time of deployment. Although I\u2019m unaware of the exact reason(s) for its lack of use, I can imagine that one is because of the aforementioned discrepancy in rates. I agree that we mustn\u2019t over-engineer, but IMO, if the base rate parameter is to be kept, the following benefits from a new base rate implementation justifies its consideration:   Reduced opportunity for human error. Currently, any updates to the base rate requires changes to every collateral\u2019s duty in the Jug, which require a unique calculation for each collateral. Reducing this to a single calculation dramatically reduces the opportunity for human error, especially as the system scales to potentially hundreds of collateral types. e.g. spell to increase Base Rate in June 2020.  Source of truth. Adding the base rate on-chain increases the granularity of Vault fee composition. As was alluded to by @hexonaut, one of our integration partners just recently had to shift their product roadmap to accommodate for an \u201cinexistent\u201d base rate that they could query on-chain.  Accuracy in stability fees (If base rate is reimplemented and used). In our example of the current implementation, the percent error loomed at 3%, whereas if base rate was implemented differently, it could be as low as 0.0083%. Since this discrepancy benefits the protocol, it could potentially be framed as a \u201chidden\u201d tax by some disgruntled users and thus hurt the reputation of MakerDAO.  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/discussion-add-on-chain-governance-metadata/2625",
+                        "https://www.statisticshowto.com/percent-error-difference/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.7812049062049065
+                }
+            ]
+        }
+    ]
+}

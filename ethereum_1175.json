@@ -1,0 +1,1787 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-3074-auth-and-authcall-opcodes/4880",
+            "title": "EIP-3074: AUTH and AUTHCALL opcodes ",
+            "index": 4880,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "meta-transactions",
+                "meta-tx",
+                "opcodes",
+                "eip-3074",
+                "shanghai-candidate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "28/10/2020-15:46:37",
+                    "content": "  Ethereum Improvement Proposals   EIP-3074: AUTH and AUTHCALL opcodes Allow externally owned accounts to delegate control to a contract.       Creates a new precompile, analogous to CALL, that sets CALLER based on an ECDSA signature. This EIP creates two precompiles:   CALL_PRECOMPILE - forwards a CALL, setting msg.sender according to an ECDSA signature, using a relayer-sponsee nonce for replay protection.  NONCE_PRECOMPILE - provides access to relayer-sponsee nonces expected by CALL_PRECOMPILE.   ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-3074",
+                        "https://ethereum-magicians.org/t/eip-721-vs-eip-3074-smart-contract-wallets-what-will-happen/8075",
+                        "https://ethereum-magicians.org/t/getting-rid-of-weth-using-eip-3074/8041",
+                        "https://ethereum-magicians.org/t/add-freeze-opcode/7231",
+                        "https://ethereum-magicians.org/t/shanghai-candidate-eip-3074/10781"
+                    ],
+                    "GPT-summary": "The post is an Ethereum Improvement Proposal (EIP) numbered 3074, which introduces two new precompiles, AUTH and AUTHCALL, that allow externally owned accounts to delegate control to a contract. The proposal is explained in detail, and a 3rd party is giving constructive criticism and asking questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0606060606060606
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sergio_lerner",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "02/11/2020-13:46:22",
+                    "content": "The proposal has several problems, the two most important are:   It\u2019s incompatible with EIP-712 and the mapping selected could be used to confuse existing wallets into signing an unintended message.   It doesn\u2019t include the chainID in the signed fields , as advertised. Therefore it\u2019s open to network reply attacks.   This is the list of fields signed, and how they map to a normal Ethereum transaction: Normal -> EIP-3074 Nonce    -> Nonce GasPrice -> GasLimit GasLimit -> ReceiveAddress ReceiveAddress -> Value Value -> Data Data -> relayer chainId (not present) empty (not present) empty (not present) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.454545454545454
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "13/11/2020-14:28:28",
+                    "content": "Thanks for the feedback! I updated the signed fields to include chainid. Is EIP-712 final yet? I wanted to avoid it until it\u2019s finalized. If a malicious website wanted to confuse a user, they\u2019d have to present something like this: Nonce: 3 GasLimit: 66000000000 (66 Gwei, current gas price) ReceiveAddress: 0x0000000000000000000000000000000000Be8c72 (current block gas limit) Value: 611382286831621467233887798921.843936019654057231 ETH (some address) ...  I\u2019ve probably missed some of the specifics of the RLP offsets, but it seems like it would be a very suspicious transaction. I\u2019m not opposed to modifying the format to make it impossible though, if you have any suggestions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.177083333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "23/02/2021-04:33:09",
+                    "content": "Recommend having the transaction be a 2718 typed transaction, which means grabbing a number and signing over secp256k1(keccak256(TransactionType || rlp([nonce, gaslimit, to, value, data, invoker, chainid]))).  This would make it so we don\u2019t have to worry about having the signature collide with some other future transaction type. This wouldn\u2019t technically be a 2718 transaction because it has no receipt and doesn\u2019t end up in a block header, but we should reserve the transaction type number and follow the signing rules. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "23/02/2021-07:09:41",
+                    "content": "Other changes I would like to see:  Signature should be yParity, r, s.  v shouldn\u2019t really be used anymore. Signature first.  This enables some minor optimizations and comes at no cost. data last.  This is pretty minor, but having the variable length thing at the end makes some stuff a tad easier and this change comes with no cost. Remove chainId.  This can be addressed by the invoker with CREATE2 using CHAIN_ID as a salt.  In the case of a fork (chain ID change), the invoker can be redeployed. This can be automated with a factory.  By not having a chain ID, transactions and invokers can be constructed that intentionally support replays across chains. Remove nonce and nonce checking and only include 32 bytes of extra data in the signature.  The invoker can then do nonce management (or not!). Use ABI Encoding or SSZ instead of RLP encoding.  We don\u2019t need the space savings provided by RLP, and ABI encoding and SSZ are a bit easier to work with when you have fixed width data elements followed by a single dynamic length data element. Rename gaslimit to mingas.  This value doesn\u2019t represent a gas limit, but instead represents the minimum amount of gas that needs to be supplied.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.209821428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "03/03/2021-16:18:05",
+                    "content": "    MicahZoltu:   Remove chainId. This can be addressed by the invoker with CREATE2 using CHAIN_ID as a salt. In the case of a fork (chain ID change), the invoker can be redeployed. This can be automated with a factory. By not having a chain ID, transactions and invokers can be constructed that intentionally support replays across chains.    Being able to replay a transaction-like package across multiple chains is a bit of a niche feature. How often do you think a user would want to do that? I think the common case (one chain per transaction) is good enough, and matches what users will want to do. Safely implementing the one-chain-per-transaction rule in the invoker would require either stuffing the chainID into nextra, or checking that the chainID hasn\u2019t changed before every sponsored call. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "03/03/2021-22:41:21",
+                    "content": "I expanded the section on why I don\u2019t believe using the revert reason to indicate precondition failures is a good idea. I\u2019ve also reordered the signature input, so hopefully that takes care of everything! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 9.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "04/03/2021-14:30:20",
+                    "content": "Still outstanding (ignoring the things we disagree on):   yParity instead of v (which aligns with 2930 and 1559 transactions) data as the last field in the signed data.  It is the only variable length item, and having it last has potential to simplify things at essentially no extra cost other than moving it in the spec.  New comments:  You pass value twice, once as an actual attached ETH amount and again in the data blob.  This is unnecessary given they must be equal. I feel like we should be putting everything on the stack, rather than a mix of stack and encoded data:IMPERSONATECALL gas, value, y_parity, r, s, sponsee, type, nextra, to, mingas, data_start, data_length   Add rationale as to why STATICCALL context is allowed at all.  I can\u2019t think of a situation where this would be useful in a static context.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.350524475524475
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "04/03/2021-18:11:20",
+                    "content": "    MicahZoltu:    yParity instead of v (which aligns with 2930 and 1559 transactions)    Is this just renaming v to yParity, or is it also removing chain id?     MicahZoltu:  Add rationale as to why STATICCALL context is allowed at all. I can\u2019t think of a situation where this would be useful in a static context.   I\u2019m inclined to leave it in, even if I can\u2019t think of a good reason for it. After all, you can CALL inside of a static context. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "04/03/2021-18:40:24",
+                    "content": "    SamWilsn:  Is this just renaming v to yParity, or is it also removing chain id?   It removes the chainId and the +27.  From 2930:  YParity The parity (0 for even, 1 for odd) of the y-value of a secp256k1 signature.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "04/03/2021-18:41:16",
+                    "content": "Also, so we have it documented, I recommend renaming TXCALL to IMPERSONATECALL to make it more clear what this version of call actually does. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "04/03/2021-19:46:07",
+                    "content": "While I am opposed to removing chainid, I am not opposed to encoding it separately. Thought? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "04/03/2021-19:51:55",
+                    "content": "    MicahZoltu:  Also, so we have it documented, I recommend renaming TXCALL to IMPERSONATECALL to make it more clear what this version of call actually does.   IMPERSONATECALL is used by the draft EIP-2997. I\u2019m down with renaming the opcode, but I\u2019m not sure which name I prefer:   IMPERSONATECALL - decent name, and I guess you can impersonate yourself if you want?  CALLAS - breaks the pattern of *CALL, but it\u2019s short and descriptive.  SIGNEDCALL - Less descriptive.  SIGNCALL - seems backwards, since you aren\u2019t signing a call, you\u2019re making a call with a signed package, plus it\u2019s also not descriptive.  TXCALL - call with transaction-like package  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.121527777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "04/03/2021-20:11:39",
+                    "content": "    SamWilsn:  While I am opposed to removing chainid, I am not opposed to encoding it separately. Thought?   What do you mean by \u201cencoding it separately\u201d? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.4375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "04/03/2021-20:21:37",
+                    "content": "Instead of packing yParity and chainid into v, having separate fields for yParity and chainid ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adietrichs",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "05/03/2021-00:57:02",
+                    "content": "I created a (relatively) simple example for what an invoker contract for EIP-3074 could look like:   gist.github.com   https://gist.github.com/adietrichs/ab69fa2e505341e3744114eda98a05ab EIP3074Relayer.sol // SPDX-License-Identifier: MIT  pragma solidity ^0.8.0;  import \"https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol\";  interface WETH9 {     function balanceOf(address) external returns (uint256);     function deposit() external payable;     function withdraw(uint256) external; This file has been truncated. show original        ",
+                    "links": [
+                        "https://gist.github.com/adietrichs/ab69fa2e505341e3744114eda98a05ab",
+                        "https://gist.github.com/adietrichs/ab69fa2e505341e3744114eda98a05ab"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "05/03/2021-06:02:50",
+                    "content": "    SamWilsn:  Instead of packing yParity and chainid into v, having separate fields for yParity and chainid   We may be saying the same thing, but I want to verify: chain_id would be part of the signed data, but would not be part of the data passed to the opcode.  When validating the signature, it would use whatever chain_id the EVM has internally for the chain it is executing on.  The signature would just be y_parity, r, s. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "05/03/2021-08:51:24",
+                    "content": "I have several requests / questions concerning this EIP:  Can you please extend the description of the semantics of the opcode (it mostly focuses on the arguments and the return values)? Why is so much data put into the arguments instead of using stack slots? I would assume almost everything to be taken from the stack apart from the actual payload. EDIT: It does exactly that, sorry for the confusion! PREVIOUS TEXT: Maybe I didn\u2019t get it but what is the idea behind setting tx.origin / caller instead of msg.sender / sender? Until now, the distinguishing feature of tx.origin is that this is the account that pays for the gas. This property would be destroyed. Also if this is kept as it is, please mention that you ALSO set msg.sender because that is probably also the idea, isn\u2019t it? It would be nice to improve the presentation a bit. It is a bit hard to keep track of 5 different addresses plus other data - is that really needed? There are many more points where this specification is not really clear. For example, the behaviour of the function abi.encode strongly depends on the types of its arguments, but those are not specified.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.448529411764706
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "05/03/2021-09:17:01",
+                    "content": "Since this is not really about a transaction (for me, transactions are objects that are stored in blocks), I would prefer a name similar to impersonatecall or substitutecall. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "05/03/2021-13:59:05",
+                    "content": "    chriseth:  There are many more points where this specification is not really clear. For example, the behaviour of the function abi.encode strongly depends on the types of its arguments, but those are not specified.   Any thoughts on CALLFROM / CALLAS? They would break the *CALL scheme, but are short and intuitive. Alternatively, SIGNEDCALL / SIGCALL? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.383333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "05/03/2021-14:39:14",
+                    "content": "    chriseth:   Can you please extend the description of the semantics of the opcode (it mostly focuses on the arguments and the return values)?    Sure thing! Is there something specific you\u2019d like to see beyond just \u201cit\u2019s exactly like call, except\u2026\u201d?     chriseth:   Why is so much data put into the arguments instead of using stack slots? I would assume almost everything to be taken from the stack apart from the actual payload.    I had separated it out so that signed parts of the message go in memory and the unsigned parts go on the stack. It also has the nice property that introducing a new type down the road is pretty flexible. I think but am not 100% sure that copying the TLP out of calldata into memory should be reasonably efficient. Happy to change it though!     chriseth:   It would be nice to improve the presentation a bit. It is a bit hard to keep track of 5 different addresses plus other data - is that really needed?    I wholeheartedly agree. Not sure how to avoid talking about them though. You\u2019ve got the sponsor/sponsee and I don\u2019t think you can avoid mentioning either of them. The invoker contract has to exist, and so does the call destination\u2026 Is there some other data I can trim out?     chriseth:   There are many more points where this specification is not really clear. For example, the behaviour of the function abi.encode strongly depends on the types of its arguments, but those are not specified.    There should be types for all of the ABI encoded fields (eg. type: uint8), and if I missed any that\u2019s a problem! Were there any other unclear points I can tackle? Thanks for the feedback, I appreciate it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.092463092463093
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "05/03/2021-15:08:58",
+                    "content": "Just want to note one other suggestion that I\u2019ve received:  Instead of signing over the calldata, mingas, value, etc. only sign over keccak256(type || abi.encode(invoker, chainid, nextra))  This has a certain elegance to it, and since you already have to trust the invoker for replay protection, why not trust it for everything? This would allow multiple calls with different calldata (ex. approving the Uniswap Router, then performing a swap, and finally doing the sponsee\u2019s transaction) with a single signature. The downside is that a broken/vulnerable/malicious invoker can have nearly total control over an EOA, and writing a safe invoker will take a significant amount of care. (Thanks to @adietrichs and Chris Buckland for independently suggesting this change.) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.455357142857142
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "23",
+                    "likes": "1",
+                    "time": "05/03/2021-19:28:14",
+                    "content": "You could use abi.encode(uint8(...), uint8(...) and so on explicitly. Also - note that abi.encode always pads value types to 32 bytes, so v is padded - is that intentional? With respect to presentation: Maybe it would help to say something like \u201cfunctions like call to address x with value y and arguments arg, where x = \u2026 , y is subtracted from the balance of \u2026 and arg is \u2026\u201d It would also be nice to clarify the call depth (it is not a call to the new sender and then a call to the actual destination, but just a single one) and that no nonce is incremented. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.8311688311688314
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "06/03/2021-19:32:46",
+                    "content": " The current execution context is static (i.e. STATICCALL) and value is non-zero  I disagree here. Let\u2019s say were at depth 5, which is a static context. If I try to do a CALL(x, x, 1, ...), then I will drop back to depth 4, not get a \u201cfailed call\u201d on the stack. The same should apply here, doing a SPONSOREDCALL(x, 1, ..) should drop me back a level. TLDR; the error should be in the earlier context, not the current context. The semantics of STATICCALL are clear, and this particular op should not have any particular relation with that operation. I also maybe think the stack format should be g,a,v, ... where a is the sponsee. The gav-order is used by every other calltype. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.545138888888888
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stonecoldpat",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "06/03/2021-19:58:31",
+                    "content": "I put together an example of an invoker that we may use for ITX (Infura Transaction Service):   gist.github.com   https://gist.github.com/stonecoldpat/e8ca408c7be8f6333f69df7fe833c03d EIP3074 invoker // SPDX-License-Identifier: MIT  pragma solidity ^0.8.0;  /**  * @dev Example implementation of an EIP-3074 relayer invoker contract.  *  * Allows a sponsor to send a transaction on behalf of a sponsoree. Assumes   * the sponsorsee has already paid for the transaction (pre-deposit, fiat, etc).   */ This file has been truncated. show original        Generally speaking, when going through the example, I feel the opcode needs an additional return value of returnedData to keep it consistent with the other calltypes. We should rename calleeSuccess to opcodeCheck (or something better) and then change the meaning of success to mean the CALL was successful (e.g. the internal transaction) as that keeps it consistent with the other CALL opcodes. In the EIP, it mentions that it is worth checking if sponsor != sponsee to protect currently deployed reentrancy guards msg.sender == tx.origin. I have implemented that as tx.origin != signer. ",
+                    "links": [
+                        "https://gist.github.com/stonecoldpat/e8ca408c7be8f6333f69df7fe833c03d",
+                        "https://gist.github.com/stonecoldpat/e8ca408c7be8f6333f69df7fe833c03d"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.8798076923076925
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "06/03/2021-20:05:33",
+                    "content": "    stonecoldpat:  In the EIP, it means that it is worth checking if sponsor != sponsee to protect currently deployed reentrancy guards msg.sender != tx.origin.   The current EIP does not say anything about that, but I understand it originally did. Could someone elaborate on what the problem is? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "06/03/2021-20:13:35",
+                    "content": "I would like to see some more fleshed-out usecases and examples. Like these:  A user A who holds XToken (but no eth) wants to send 10 of them to an exchange (and is willing to pay 1 XToken to the sponsor).  How is that accomplished ? And how can A prevent that someone else, B replays his blob and sends 10 more to the exchange (if only for shits and giggles, while not making a profit).    Aside from that ^ usecase, what is a practical usecase where a sponsoredcall would be used? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stonecoldpat",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "06/03/2021-20:16:06",
+                    "content": "Some contracts (I don\u2019t have an example offhand) have deployed a reentrancy guard: tx.origin == msg.sender to force contract calls to only originate from an EOA. In EIP-3074, the tx.origin and the signer can be the same address. This allows an attacker to bypass the re-entrancy check as the immediate caller is a contract and not an EOA. (Sorry, previous post had != instead of ==). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "06/03/2021-20:18:25",
+                    "content": "    stonecoldpat:  In EIP-3074, the tx.origin and the signer can be the same address. This allows an attacker to bypass the re-entrancy check as the immediate caller is a contract and not an EOA.   Ah. Not as currently written. The ORIGIN remains the EOA that paid the eth, and the SENDER becomes the one who signed the message. So the check remains functional (fwiw) EDIT: Yes, I see. The current EIP does say, in the security section:  Checking msg.sender == tx.origin no longer prevents reentrancy. Adding the pre-condition that sponsor != sponsee would restore this property.  I somehow missed that part  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stonecoldpat",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "06/03/2021-20:27:41",
+                    "content": "It is useful whenever Alice (sponsor) wants to pay the network fee for Bob (sponsee). There are several reasons why Alice may want to send it for Bob:   ERC20 fees. Alice pays the network fee in ETH and Bob refunds it with ERC20 tokens.  Stuck transactions. Alice wants to improve the user experience for Bob, so she takes of sending the transaction for him. He just hits \u201csend\u201d and the rest is taken care off.  Bidding in fee market. Alice can take care of sending the transaction and competing in the fee market for Bob. She optimises for paying the best price at any given time (whereas Bob may just hit \u201cbump fee\u201d and overpay).  Both wallet providers and dapps are the big benefactors for the EIP.   Wallet provders.  Better user-experience as the wallet takes care of sending transactions for their users. It also allows users to pay for the fee in an ERC20 token. Examples include Argent, Dharma, Gnosis, Staker.app, etc. All services require a wallet contract as that is the only way to make it work today. (Some providers need to pre-farm wallet contracts to make it affordable for their users)   Dapp websites. One of the most common complaints that dapps get is \u201cstuck transactions\u201d / \u201cno eth to send\u201d, etc. This type of EIP would let websites take care of sending transactions on behalf of their users.   There are some companies that offer transaction relay as a service. Notably Infura Transaction Service (that I work on) that would benefit for the introduction of the EIP. The biggest pain point is that we need to recommend users 1) use wallet contracts or 2) enjoy a janky experience due to ERC20 tokens not supporting meta-transactions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.089285714285715
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "06/03/2021-20:31:14",
+                    "content": "    stonecoldpat:  ERC20 fees. Alice pays the network fee in ETH and Bob refunds it with ERC20 tokens.   That one sounds a lot like that usecase I wrote above. And I can\u2019t see how Bob is protected from replays? For all of these cases, I\u2019d like to understand the whole process, basically flow-graphs of what parties/contracts would have to exist, and what the whole UX would be. EDIT:Ah, the invoker is what prevents the blob from being arbitrarily replayed in my example. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "06/03/2021-20:43:14",
+                    "content": "You can see another example of replay protection in @adietrichs\u2019 example: https://gist.github.com/adietrichs/ab69fa2e505341e3744114eda98a05ab#file-eip3074relayer-sol-L77 ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "06/03/2021-20:49:07",
+                    "content": "I\u2019d like to interject to get a temperature check on only signing over invoker and nextra instead of what\u2019s currently in the EIP. I\u2019m leaning towards that direction, and I don\u2019t want to waste everyone\u2019s time reviewing something that might change. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.666666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/stonecoldpat",
+                    "index": "34",
+                    "likes": "1",
+                    "time": "06/03/2021-20:55:53",
+                    "content": "The problem for the sponsor (A in your example) is the bounty-reward problem:  If Alice is due to collect an on-chain bounty upon the successful execution of a transaction, then generally speaking there is always a risk that her transactions fails because the bounty was already claimed.  The classic example is that Bob simply spends the ERC20 tokens while Alice\u2019s sponsored transaction is in-flight. Unless you have a special contract set up, then generally speaking, Alice will just waste some gas. Several wallets already offer DAI payment as a feature (Argent) and so far they just absorb the risk/cost of it. For the use cases. It really depends on:   Payment mechanism. How is the sponsor being paid for sending the sponsees transaction?  On-chain authentication. How is the sponsee authenticating with the target contract?  I should stress that both payment and on-chain authentication are separate problems. The EIP is only focusing on on-chain authentication. For a full picture, the payment mechanism can be pre-payment (ITX) or the bounty approach (on-chain refund). How prepayment and receiving job may work. Blank diagram (5)2560\u00d7993 97.5 KB Figure 1: Overview of Gas Tanks for ITX In Figure 1, we only consider the pre-payment approach and we assume the clients have a pre-paid gas tank with ITX. They may have paid in ETH or FIAT, but in the end they will have an ETH-denominated gas tank with the service. The client can simply send a signed transaction to the API: { \"id\": 0, \"jsonrpc\": \"2.0\", \"method\": \"relay_sendTransaction\", \"params\": [    {       \"to\": \"0x0000000000000000000000000000000000000000\",       \"data\": \"0x123456\",       \"gas\": \"100000\"    }, <signature here> ] }  ITX takes the \u201cto\u201d, \u201cdata\u201d, packs it into an Ethereum Transaction and then sends it to the network for them. The next problem, which is really the focus of EIP-3074, is how the user authenticates with the target contract that will be executed:   Modified target contract. It authenticates the user with a signed message instead of msg.sender.  Wallet contract. An intermediary contract holds the user\u2019s funds and verifies their signed message. It then .calls() in the target contract and acts as their identity on the network.  The former approach is pretty janky as it doesn\u2019t work with most ERC20 tokens or most contracts for that matter. There is some work towards standards such as EIP-2771, EIP-2612 and EIP-3009   standards, but they all fall short due to lack of adoption. As a result, most services need to deploy wallet contracts. An example of how to execute (and the refund via bounty) can be seen with Gnosis Safe, but asking users to both deploy expensive wallet contracts and move all their assets to it\u2026 is typically a blocker to adoption. I hope the above example helped. Sorry, it was the quickest thing I could think to put together and I hope it isn\u2019t too long! ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-2771",
+                        "https://eips.ethereum.org/EIPS/eip-2612",
+                        "https://eips.ethereum.org/EIPS/eip-3009",
+                        "https://github.com/gnosis/safe-contracts/blob/development/contracts/GnosisSafe.sol#L151"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.113520408163266
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adietrichs",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "07/03/2021-12:09:05",
+                    "content": "From the rationale section:  Including sponsee in the arguments to TXCALL is a gas optimization. Without it, invokers would have to do their own ecrecover before calling into TXCALL to verify/adjust any state for replay protection.  While I think this is generally sensible, it does make invokers that don\u2019t care about the sponsee address somewhat less efficient. I think the pattern of trusted invokers (think e.g. an exchange collecting user deposits, or a user with multiple EOAs - any time the sponsee fully trusts the sponsor) could reasonably become a significant one, so there might be a case for optimizing for it. The simplest way to do so that I can see would be to also allow the 0 address as a valid sponsee opcode argument, to signal no requested address validation. Given that Solidity would likely abstract that logic away anyway, I don\u2019t think there is a high risk of this leading to any confusion. The tradeoff seems to be that now Solidity would likely have to add a \"not 0\" check for cases where an address is being provided, but the cost of that would be small compared to the passing in of a sponsee address via calldata. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.484166666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adietrichs",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "07/03/2021-12:35:11",
+                    "content": "    SamWilsn:  I\u2019d like to interject to get a temperature check on only signing over invoker and nextra instead of what\u2019s currently in the EIP. I\u2019m leaning towards that direction, and I don\u2019t want to waste everyone\u2019s time reviewing something that might change.   My thoughts on this:   I very much think this is the right thing to do. The whole point of signing over the invoker address is that the sponsee has to trust the logic of the particular invoker contract. Given that this is already a requirement, we might as well make the most out of it and get as much flexibility out of it as possible.   One good example for this increased flexibility is the currently hard-coded mingas argument. I think it is not obvious whether it would be preferable to enforce a minimum (as mingas does) or an exact gas amount. For relayer use cases, the user might want a trusted upper limit of what he could have to pay for. If they would have to rely on the relayer logic for that upper limit anyway, why not also rely on it for the lower limit?   To me it becomes more and more clear that the nextra argument is much more than a simple replay protection facilitator. I think nextra stands for \u201cnonce extra\u201d, so I would propose a name change either simply to extra or to something more expressive like commit_hash. In addition to the existing chainid, value, mingas, to, data it could also be used for enforcing interesting other restrictions, e.g. for expiring sponsored calls or for a maximum gas price. To me this is one of the main things that make this EIP so exciting\u2026   I assume this change would come together with moving most of the arguments from memory to the stack? I initially thought about this opcode from a \u201csub-transaction\u201d perspective, where I preferred the memory / stack separation. Given that it seems clear that people prefer the \u201csponsored call\u201d framing, I think this no longer applies and arguments should move to the stack. data obviously has to remain in memory.   The one memory / stack decision I am on the fence about is the signature - I think there is a case to be made for v, r, s to remain in memory (somewhat analogous to signatures before they are sent (via calldata) to the ecrecover precompile), instead of them becoming 3 stack elements. They could either be located together with the data, or could have their own memory pointer (no length argument required).   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.129401154401154
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adietrichs",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "07/03/2021-12:38:17",
+                    "content": "    stonecoldpat:  We should rename calleeSuccess to opcodeCheck (or something better) and then change the meaning of success to mean the CALL was successful (e.g. the internal transaction) as that keeps it consistent with the other CALL opcodes.   I agree that the ideal framing would be something like valid for the opcode pre-check and success for the success of the actual sponsored call. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.301136363636363
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "38",
+                    "likes": "1",
+                    "time": "08/03/2021-20:47:57",
+                    "content": "New version published: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3074.md Highlights:  Expanded the specification section (@chriseth) Clarified the call depth (@chriseth) Put everything on the stack (@chriseth / @MicahZoltu) Corrected the behavior in static contexts (@holiman) Rename success and calleeSuccess (@adietrichs) Rename to CALLFROM (@matt / @MicahZoltu / @chriseth)  And most importantly:   Only sign over type, invoker, chainid, and extra (@adietrichs)  Thanks to everyone who has reviewed so far, and please don\u2019t hesitate to let me know if I\u2019ve missed some of your concerns (or made something else worse!) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.686868686868687
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adietrichs",
+                    "index": "39",
+                    "likes": "1",
+                    "time": "09/03/2021-00:00:10",
+                    "content": "I have spent today writing a rough first implementation in geth. It is not yet fully compliant with the EIP, I will list the differences & some small questions that came up during implementation tomorrow. Link to the implementation (of course very much WIP, but I am currently able to successfully execute contracts that use CALLFROM on my little local testnet):   github.com/quilt/go-ethereum         EIP-3074 Implementation   quilt:master \u2190 quilt:eip-3074            opened 06:18PM - 08 Mar 21 UTC               adietrichs             +148 -30           ",
+                    "links": [
+                        "https://github.com/quilt/go-ethereum/pull/38",
+                        "https://github.com/adietrichs",
+                        "https://github.com/quilt/go-ethereum/pull/38/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.623611111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "09/03/2021-00:04:35",
+                    "content": "New version published (again, sorry) This time:  Removed type from the stack arguments since it\u2019s a constant anyway (@adietrichs) Added a depthLeft argument since exhausting the call stack is a griefing vector (me) Re-added the balance check to the pre-conditions (me) Expanded the invoker security considerations (me)  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.045454545454545
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adietrichs",
+                    "index": "41",
+                    "likes": "1",
+                    "time": "10/03/2021-11:32:00",
+                    "content": "Before talking about my implementation details, there is one last somewhat substantial change that I have been thinking about, namely the separation of the signature verification and the call. My motivation:  The opcode doing both seems overloaded, with 13 arguments right now It is non-trivial to implement gas pricing that only charges for the (outer part of the) call portion if the signature is correct In its combined form there is no native support for multiple calls from the same sponsee - they each require an additional signature verification overhead Passing in the sponsee address, while a sensible gas saving, feels like a bit of a hack The opcode returning two stack elements is unusual  My alternative idea would be:   AUTHORIZE  takes in: extra, v, r, s  returns: sponsee or 0  validiates the signature sets a new context variable authorizedSponsee     AUTHORIZEDCALL  takes in: gas, addr, value, in_offset, in_length, ret_offset, ret_length  returns: success  throws if authorizedSponsee is 0  otherwise, behaves exactly like CALL, just with msg.sender set to authorizedSponsee     This has several advantages:  Native bundled calls from the same sponsee (one AUTHORIZE, any number of AUTHORIZEDCALL) Cleaner opcodes, AUTHORIZECALL almost identical to CALL  Sensible way to recover sponsee address without need to pass it in from the outside It allows for clear separation of invoker logic, where calls are only attempted in the case of a valid signature  Note that extra can be used to commit to a specific list of transactions, so no functionality is lost. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.374140565317036
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "11/03/2021-05:09:31",
+                    "content": "This would effectively be saying, \u201cthis caller can do whatever it wants from my account\u201d right?  I\u2019m assuming the authorization would only be valid for the call frame where AUTHORIZE was called?  Presumably, any user doing this would essentially fully trust the contract it is giving permission to? From a cleanliness and future capabilities perspective, I really like the idea.  However, it means that signing tools will have significantly less information available to present the user with as to what exactly they are signing.  From the signing tool\u2019s perspective, the user is just giving blanket power to a particular address.  Note: The signature would need to be over invoker. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.8065476190476195
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adietrichs",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "11/03/2021-10:17:38",
+                    "content": "I think that is a correct summary. Regarding the implications, I think it is important to distinguish between the two main use cases I see for this EIP:   In a trusted context (for example for significantly reducing gas usage of centralized exchanges, or for users controlling multiple addresses from a smart contract wallet and/or without the need for ETH in every account), this invoker trust assumption is not an issue, as the sponsor and the sponsee are the same person. I would expect a multitude of implementations, that all only have to pass the usual smart contract security scrutiny.   In a trustless context (mainly transaction relaying), trust into the specific invoker implementation is important. However, I think this has already been true for all of the latest revisions of the EIP, once the signed fields became minimal. I would not expect wallets to expose functionality to sign over arbitrary invokers (or if they do, word it in a \u201cdelegate full account control to contract\u201d way). Instead / in addtion, there can be a handful of community vetted ERCs for different flavors of relayer systems, with wallets implementing more precise native support for the specific extra hash used by the ERC. So for those ERC invokers, the wallet would not ask for full account control delegation, but instead would display the specific transaction (bundle) to be authorized, with specific information like expiry and other functionality.       MicahZoltu:  I\u2019m assuming the authorization would only be valid for the call frame where AUTHORIZE was called?   Correct. Discussing this with @SamWilsn and @matt we felt like this authorizedSponsee should also not be passed along for delegate calls, to enforce all authorization-related execution to be in one place.     MicahZoltu:  Note: The signature would need to be over invoker.   Correct, the signed data would remain identical to the current EIP. No need for the invoker address to be an opcode argument to AUTHORIZE though, because it would be the address of the currently executing contract. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.657224958949096
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poojaranjan",
+                    "index": "44",
+                    "likes": "2",
+                    "time": "12/03/2021-15:18:18",
+                    "content": "Overview of the proposal with specs explained in PEEPanEIP with @SamWilsn      ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "15/03/2021-07:04:10",
+                    "content": "I think that require(tx.origin != signerAddress) should be removed. Without this limitation, this EIP provides significantly more value because it would allow people to do the \u201capprove and call\u201d flow with ERC20 tokens in a single transaction.  In such cases, they are paying for their own gas and they shouldn\u2019t have to go out and find a relayer and pay them extra or fund/use a second account just to get around this limitation. Also, I don\u2019t see any meaningful value in enshrining the require(tx.origin == signerAddress) behavior because it was already a broken protection that can be bypassed today. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.705357142857142
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "15/03/2021-07:08:31",
+                    "content": "I think the value for the call should be deducted from the signer\u2019s account, rather than the invoker\u2019s account. This would allow users to use this functionality to do transaction batching (i.e., execute the following series of operations in sequence) where one or more of the transactions they want to batch attaches ETH. If there is fear that such a change would delay the launch of this EIP, then I propose we launch with require(value == 0) and then after a more careful evaluation we can remove that constraint and deduct from the signer. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.8999999999999995
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "15/03/2021-16:09:37",
+                    "content": "Hi @jpitts, could we have this thread renamed to \u201cEIP-3074: AUTH and AUTHCALL opcodes\u201d to match the latest EIP title? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "15/03/2021-19:50:17",
+                    "content": "From shemnon on GitHub:  I would want to see how this interacts with account abstraction before I would be comfortable moving forward with it. I concur with alexey and martin in that it is too early in the design to freeze it for implementation, which moves it out of London.  Pretty much the whole reason I started investigating this EIP was because EIP-2711 is not compatible with account abstraction. There\u2019s an (admittedly small) section on compatibility in EIP-3074. In a bit more detail: With mempool rules, we ban using AUTHCALL before PAYGAS. AUTH should be fine, as far as I can tell. After PAYGAS, an account abstraction contract behaves the same as a regular contract, and would be able to AUTHCALL to its heart\u2019s content. There are certainly some concerns with creating an ungriefable abstract account sponsor. The AA sponsor wouldn\u2019t be able to rely on external contracts for swapping, or token balances, or pretty much anything, but that\u2019s no different than AA without EIP-3074. That said, I don\u2019t see anything that would preclude an AA contract that receives ETH or WETH deposits, and then lets you use that to pay for transactions from your EOA. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-2711",
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3074.md#another-sponsored-transaction-eip"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.994708994708995
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "15/03/2021-20:05:46",
+                    "content": "From Alexey on Discord:  Sponsored Transaction Precompile - not to include to London - is there a way to do it without precompile (these are ugly things and should not be regarded as normal artefacts of EVM development), also consider who exactly will need it and what are the alternatives.  We\u2019ve switched off the precompile (now two opcodes.) As for interested parties, we have several! @stonecoldpat (who has been active on this thread) is from Infura Transactions/any.sender. I\u2019ve had a bit of contact with OpenZeppelin about this EIP as well, though no strong endorsement (yet!) The alternatives are: Natively Set msg.sender  EIP-2711 - Sponsored, expiring and batch transactions EIP-2733 - Transaction Package EIP-2997 - IMPERSONATECALL opcode  Avoid msg.sender Entirely  EIP-2612 - permit \u2013 712-signed approvals EIP-3009 - Transfer with Authorization EIP-2771 - Secure Protocol for Native Meta Transactions  ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-2711",
+                        "https://eips.ethereum.org/EIPS/eip-2733",
+                        "https://eips.ethereum.org/EIPS/eip-2997",
+                        "https://eips.ethereum.org/EIPS/eip-2612",
+                        "https://eips.ethereum.org/EIPS/eip-3009",
+                        "https://eips.ethereum.org/EIPS/eip-2771"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 4.969907407407407
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "50",
+                    "likes": "1",
+                    "time": "17/03/2021-04:27:25",
+                    "content": "I posted a thread on twitter giving a high-level overview of how this EIP will be used in practice:  https://twitter.com/lightclients/status/1371911245561917441?s=20 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "51",
+                    "likes": "1",
+                    "time": "17/03/2021-22:04:47",
+                    "content": "    matt:  EIP-3074: AUTH and AUTHCALL opcodes   No problem, I\u2019ll update it now\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "18/03/2021-13:13:11",
+                    "content": "I\u2019ve written a document to discuss some different threat models EIP-3074 should be considered under and how they compare to EOAs and smart contract wallets today: https://hackmd.io/@matt/BknnAnyNu ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5357142857142865
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "53",
+                    "likes": "0",
+                    "time": "18/03/2021-20:43:46",
+                    "content": "EIP-191 specifies a safe format for signed messages, which already contains a subformat for messages of the type (ID || validator || payload). Could you use that rather than reinventing the wheel? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "54",
+                    "likes": "0",
+                    "time": "18/03/2021-21:01:06",
+                    "content": "Per @timbeiko\u2019s request, here\u2019s a link to a twitter thread I\u2019ve written on this EIP. Probably my most important comments from the thread are: Okay, so top question this is going to provoke, especially for \u201cshould we commit to shipping this tomorrow?\u201d: IS IT SECURE? I believe the answer is YES, and for a simple reason: EIP-3074 signatures always have a 0x3 prefix, which currently no Ethereum wallet will sign (at least without a warning that you may be signing everything away). For this simple reason, we can already safely say \u201cno user can become vulnerable to this without accepting the risk.\u201d Also: Fun challenge: What other features could you implement for any account with this pattern? While these invokers all derive their power from a signature, they can have state, and are replay-strategy agnostic! You could have a cold wallet that delegates to an m-of-n multisig! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.464583333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "19/03/2021-02:41:59",
+                    "content": "    Arachnid:  EIP-191 specifies a safe format for signed messages, which already contains a subformat for messages of the type (ID || validator || payload). Could you use that rather than reinventing the wheel?   191 is just a draft while 2918 is in review and will almost certainly be included in Berlin (brining it to final).  Also (probably a better discussion for 191 discussion), it is unclear to me why 191 is so prescriptive about the layout of the bytes after the version, and why the first byte is wasted on always being 0x19 instead of just having the first byte be a version (constrained to not compatible with legacy transactions). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.081632653061224
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "56",
+                    "likes": "0",
+                    "time": "19/03/2021-04:13:10",
+                    "content": "To be fair EIP-191 has been in production for about 5 years now. I think EIP-191 is a more proper standard to use for non-tx signing and commonly supported by most wallets. We can introduce a version explicitly for this EIP so there is no change of signature collision and wallets must opt-in support. I don\u2019t really see a downside to switching to EIP-191. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None"
+                    ],
+                    "Sentiment": 6.142857142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "57",
+                    "likes": "0",
+                    "time": "19/03/2021-05:34:24",
+                    "content": "Assuming the authors of 191 decide to move forward with the standardization process, what benefits does it provide over 2718 transaction types? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "58",
+                    "likes": "0",
+                    "time": "19/03/2021-13:27:25",
+                    "content": "IMO 2718 = transaction types, where 191 = message signing format. This EIP is not a transaction, so 191 seems to be a better fit. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aak-dev",
+                    "index": "59",
+                    "likes": "0",
+                    "time": "19/03/2021-20:22:47",
+                    "content": "Assuming multiple protocol allow a similar invoker, it can open a gate for users to sign as many functions thereby spamming until one trx get successfully mined. Similar to opensea spam bots which keep bidding even if they dont have the equivalent assets in wallets ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.041666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "60",
+                    "likes": "1",
+                    "time": "19/03/2021-21:31:47",
+                    "content": "Someone\u2019s gotta pay for that gas, and if the gas price is too low, the transactions won\u2019t propagate, so I don\u2019t think this EIP introduces any more risk of spam than normal transactions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 6.083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "61",
+                    "likes": "10",
+                    "time": "02/04/2021-16:40:36",
+                    "content": "Congrats to @SamWilsn on a great presentation of EIP-3074 today on the All-Core Devs call. I think you provided the correct answer to most challenges that were presented, and I hope you\u2019re not discouraged by the sentiment to take more time to prove its safety. (1/x thread) This call made me think of a theme that has become tragically common in my mind in the last few years, as Chip Morningstar says, \u201cYou can\u2019t tell people anything\u201d (we might need to demonstrate the value to get the actual buy-in) http://habitatchronicles.com/2004/04/you-cant-tell-people-anything/ In violation of that advice, I\u2019m now going to take a shot at explaining the safety again, in response to a repeated misunderstanding on the call. I was pretty disappointed to see multiple smart people, (and every objector!) comparing this proposal to SUDO. It\u2019s a catchy objection, but I think it\u2019s pretty easy to demonstrate why that equivalence is dramatically off, and I think drilling into exactly why it\u2019s different might help others build an intuition for how this EIP works. This is Alice. She has lots of different valuable things in her account.  In actuality, her account is just a metaphor for control, and each of these assets is defined by a different smart contract that obeys her account to control her assets. These arrows represent a flow of control from their fundamental source of truth to an intended recipient.  Screen Shot 2021-04-02 at 9.37.19 AM848\u00d7594 65.7 KB  Today, when interacting with a smart contract like an exchange that needs one of Alice\u2019s coins, she has to first ask that contract for permission, and then inform the other contract (like BobDEX), she first needs to tell the token\u2019s contract to grant an allowance to this new contract, and if this is granted to a malicious contract, guess what happens? (Follow the arrow!)  Screen Shot 2021-04-02 at 9.37.40 AM856\u00d7416 89.8 KB  As we can see from this new \u201callowance\u201d arrow, Alice used the allowance function to symbolically delegate control of one of her tokens to this new dex. If Bob is evil, he can now steal all of her BlueCoin. People sometimes grant their whole token balance to an untrustworthy contract, and that\u2019s a form of phishing that is real and people do it. There are different approaches to solving that problem, and they are rooted in multiple problems that are at play:  The user got phished into wanting to use an exchange that was malicious. For convenience the user delegated their whole token balance, when \u201cjust enough\u201d would be safer.  Fundamentally, if a user wants to engage with a smart contract, they need to deposit assets into its trust. Even platforms that are prioritizing \u201coffer safety\u201d like Agoric\u2019s Zoe (we guarantee you will receive at least X in exchange for Y) requires that you trust the offer-safety contract itself. Without that initial risk, there is no contract to be had. This is the tension of a smart contracting platform: Squeezed between letting the user do whatever they want, and keeping them safe. It is natural to want to avoid introducing new insecurity, even at the benefit of new features, and so we should strive to prove that a new mechanism introduces no new insecurity to the platform, and I think this can be proven. Coming back to EIP-3074. An invoker contract allows for a user to delegate FULL CONTROL OF THEIR ACCOUNT. The most concerned people say this sounds like SUDO, and probably imagine it looks like this to interact with an application:  Screen Shot 2021-04-02 at 9.37.59 AM638\u00d7754 135 KB  But actually, this new proposal never suggests delegating messages to new applications. It\u2019s not a tool for that at all, and its \u201cinvokers\u201d are better understood as part of the wallet\u2019s own code.  Screen Shot 2021-04-02 at 9.38.37 AM852\u00d7530 55 KB  While the addition of an invoker is sensitive, and should be treated as carefully as an infinite allowance permission, this risk is not for regular interactions with new applications, and most wallets probably won\u2019t even allow users to perform this delegation (and at least should never without extreme caution). Once a wallet trusts an Invoker, it is able to perform batching operations with the user\u2019s keys, or whatever other features the invokers offer and the wallets feel is worth the risk of adding. Exactly like the risks that wallet developers already take every day when evaluating and adding new features. One of the reasons of infinite allowances today is that gas is expensive, and a user might want to avoid an increased-approval transaction later by approving a higher allowance now. If we had support for batching, wallets would actually have tools to facilitate fewer, cheaper user approvals that allow them to delegate LESS authority to outside parties.  Screen Shot 2021-04-02 at 9.39.15 AM848\u00d7478 75.9 KB  When invoking SUDO, a UNIX user grants the highest authority of the entire system to an application they are invoking. Heck, in UNIX, every invocation grants your full user account authority to any program you run. In UNIX, every time you run a program you\u2019re basically handing it your private key, and no one is more concerned about those kinds of unintentional delegation risks than wallet developers, and that\u2019s why at MetaMask we\u2019re building tools to allow running scripts with reduced system access:   github.com    LavaMoat/LavaMoat tools for sandboxing your dependency graph. Contribute to LavaMoat/LavaMoat development by creating an account on GitHub.      Unlike the unix permissions model, A 3074 invoker adds a system for wallets to add new trusted modules that can allow for new ways of key-managed accounts to delegate authority. Once delegated, the most those invokers can do is send messages from the user\u2019s account, meaning if a contract is secure against current user behavior today, it should continue to be secure regardless of any delegation actions the user performs outside of that contract\u2019s system. If another account\u2019s behavior can put a contract you care about at risk, then that contract is not secure. ",
+                    "links": [
+                        "https://ethereum-magicians.org/uploads/default/original/2X/0/0436c8182348cbf23092ab3d43b7aad6e881dc45.png",
+                        "https://ethereum-magicians.org/uploads/default/original/2X/d/d6786404b9b90c772d3447fc7bfd52075b7344c7.png",
+                        "https://ethereum-magicians.org/uploads/default/original/2X/7/7105d783370200746d550fdec5bb3c5e2d005b8f.png",
+                        "https://ethereum-magicians.org/uploads/default/original/2X/a/ae3d7d30e58e6c53377305dc9931b01dfe068996.png",
+                        "https://ethereum-magicians.org/uploads/default/original/2X/0/0728ee2da9bb4913c03938ae23f2e3bdbe3f35f7.png",
+                        "https://github.com/LavaMoat/LavaMoat",
+                        "https://github.com/LavaMoat/LavaMoat",
+                        "https://ethereum-magicians.org/t/a-case-for-a-simpler-alternative-to-eip-3074/6493/2"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.581416011971568
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "62",
+                    "likes": "0",
+                    "time": "03/04/2021-09:22:04",
+                    "content": "    danfinlay:  I was pretty disappointed to see multiple smart people, (and every objector!) comparing this proposal to SUDO   It was compared not to Unix sudo, but to SUDO opcode proposal, which was April fool\u2019s joke, of course. I think comparison with SUDO opcode is actually quite useful to understand what EIP-3074 does. As I mentioned on the call, it does it with restrictions, and I also explained what these restrictions are, from my point of view. I am sorry for not engaging into the discussion on this topic on the call (simply because I was engaging into discussion in the Discord channel, and I also I had to leave the call earlier), but I did want to voice my objection because, as it happens, objectors have to object on every single call for the objections to be heard (and this is unfortunate). I am Ok with you being disappointed, but I wanted to say that I was not trying to be difficult. I was willing to put work in understand what the EIP was, pretty early on, and go against the \u201ccommunity sentiment\u201d to voice my concerns. Consider this as a contribution and not as trolling please. I do understand that this may be necessary security compromise for better usability, but I think I correctly judge that most people don\u2019t really understand what is being changed, and why this is a compromise. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.053571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "63",
+                    "likes": "0",
+                    "time": "03/04/2021-17:05:43",
+                    "content": "    AlexeyAkhunov:  It was compared not to Unix sudo, but to SUDO opcode proposal, which was April fool\u2019s joke, of course.   For the record, the joke proposal is here, and allows anyone to send messages from any account without any proof:  github.com/ethereum/EIPs         New Opcode: SUDO   ethereum:master \u2190 wjmelements:sudo            opened 03:58AM - 01 Apr 21 UTC               wjmelements             +73 -0           I think comparing these is ludicrous, as one lets anyone do anything, and the other allows key holders to delegate their own powers, and no more. I disagree that this proposal makes security compromises. If we assume two security properties, it is safe:  Users and wallets do not sign invoker messages without intending to delegate account powers. Existing smart contracts are secure under unrestricted behavior of other accounts.  I was not disappointed that you expressed concerns (and I agree they should not need presenting on every call), but it\u2019s pretty shocking to me that you\u2019re still insisting 3074 is anything like SUDO. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/3455",
+                        "https://github.com/wjmelements",
+                        "https://github.com/ethereum/EIPs/pull/3455/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.406520562770563
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "64",
+                    "likes": "0",
+                    "time": "03/04/2021-17:12:14",
+                    "content": "On the All Core Devs Call, @vitalikbuterin mentioned that long term all accounts should be tending towards being contract accounts anyways, and I think this was maybe a point for why this EIP isn\u2019t needed. I think we all agree that from a feature perspective, this is a desirable future, but from an implementation perspective, this introduces lots of complexity related to the migration. EIP 3074 provides a concrete migration path from a private key controlled account to a contract account, so that existing EOAs can continue operating even if its original keys are no longer on hot wallets, and they are transitioned to a mostly contract-style use ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.680555555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "65",
+                    "likes": "0",
+                    "time": "03/04/2021-18:22:25",
+                    "content": "    danfinlay:  I think comparing these is ludicrous, as one lets anyone do anything, and the other allows key holders to delegate their own powers, and no more.   I disagree that it is ludicrous. When I myself tried to understand what EIP-3074 actually does, one of the iterations of my understanding was the same functionality as SUDO opcode, a completely unrestricted version of AUTHCALL. Then, of course, I realised that such opcode is dangerous, and how exactly EIP-3074 restricts this. I also insists that it does make security compromise, which needs to be acknowledged, if this EIP goes in (which, of course, may happen despite my opposition). The main problematic thing I see in this EIP is that it creates a possibility of a very lucrative scam, which does need to involve wallet providers, willingly or not, and which is not really possible with today\u2019s meaning of signatures. If someone manages to inject code into wallet provider\u2019s release in some way, and introduce a \u201csleeper bug\u201d, which will not attack users straight away, but work as expected, but harvest signatures to an upgradeable invoker contract. Once the time is right (enough signatures are harvested, containing enough value to steal), the attacker upgrades the contract and sweeps the tokens, at the time of their choosing. I know you would say this is unlikely, but, given the reward, such scheme is not outside of realm of possibility. And, as far as I know, such scheme would not work today, because one signature cannot give access to arbitrary number of operations in the future, and also the signature can be made invalid by issuing a transaction with the same nonce. In the harvesting signatures scenario, the only revocation possible is to create new address and issue lots of transactions to move tokens over. And to conclude, there is alternative to this, which I unfortunately could not put a lot of work in. It is through the new transaction type allowing multiple signatures. I do posit that transaction relay is not the use case where we HAVE to introduce the property that one signature authorises unlimited number of future actions. Such property may be required for other things, but not for sponsored transactions. From my point of view, it is overshooting, i.e., a more security-conservative solution would be enough. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.032908976987924
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "66",
+                    "likes": "0",
+                    "time": "03/04/2021-18:41:01",
+                    "content": "    AlexeyAkhunov:  If someone manages to inject code into wallet provider\u2019s release in some way, and introduce a \u201csleeper bug\u201d, which will not attack users straight away, but work as expected, but harvest signatures to an upgradeable invoker contract. Once the time is right (enough signatures are harvested, containing enough value to steal), the attacker upgrades the contract and sweeps the tokens, at the time of their choosing.   Is the attack vector that you\u2019re concerned about here that the wallet UI could be modified into allowing signatures to an untrusted invoker then the signatures could be reused later once the invoker is modified? Regardless, once you can inject code into a wallet, you can encrypt and exfiltrate the account\u2019s private key as extra bytes in calldata. Yes, I know hardware wallets exist, but they should prevent signing EIP-3074 messages anyway. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.214285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "67",
+                    "likes": "0",
+                    "time": "03/04/2021-19:02:43",
+                    "content": "    SamWilsn:  Yes, I know hardware wallets exist, but they should prevent signing EIP-3074 messages anyway.   I always use hardware wallets for signing anything of value. But checking what you are signing is not easy, perhaps unless you have something like Grid lattice. That\u2019s why I do not usually like working with tokens  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.770833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "68",
+                    "likes": "0",
+                    "time": "03/04/2021-19:05:17",
+                    "content": "    AlexeyAkhunov:  But checking what you are signing is not easy   This is exactly why wallets won\u2019t leave it to users to hopefully review which EIP-3074 invokers they\u2019re signing over. It will be hard coded that the wallet only supports these specific invokers that the wallet team has reviewed and that have community trust/support. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.741666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "69",
+                    "likes": "1",
+                    "time": "05/04/2021-20:58:39",
+                    "content": "    AlexeyAkhunov:  The main problematic thing I see in this EIP is that it creates a possibility of a very lucrative scam, which does need to involve wallet providers, willingly or not, and which is not really possible with today\u2019s meaning of signatures. If someone manages to inject code into wallet provider\u2019s release in some way, and introduce a \u201csleeper bug\u201d, which will not attack users straight away, but work as expected, but harvest signatures to an upgradeable invoker contract. Once the time is right (enough signatures are harvested, containing enough value to steal), the attacker upgrades the contract and sweeps the tokens, at the time of their choosing.   Thanks for sharing a concrete example. Thanks in part to CREATE2, I think you\u2019re right that an invoker could be changed at the same address. There are simple ways to completely avoid this, like only trusting invokers that are published with CREATE, since their address generation cannot be reproduced. This is a good example of a serious consideration that needs to be taken when delegating to an invoker, but I don\u2019t think this is new. Wallets are effectively already constantly exposed to this kind of attack (new code could silently undermine user trust at a later date), it\u2019s just that it\u2019s client-side, not always on-chain (although contract-based wallets are basically already vulnerable to the exact scenario you describe). I don\u2019t think this changes the threat model of wallet development in any way. Fortunately, no one is exposed to these risks by 3074 without someone at a later date making a deliberate choice to integrate the invoker into a wallet, or to sign a delegation message, and even then, the risk is limited to the negligent parties (or that wallet\u2019s users). Fortunately, this conversation would not end at the inclusion of EIP-3074, instead it would represent the beginning of the design of secure invokers. I have no doubt that good invokers can be built that are widely vetted and easy to trust, and will leave this particular concern comfortably to rest. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.6948763955342905
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/d10r",
+                    "index": "70",
+                    "likes": "2",
+                    "time": "20/04/2021-16:43:46",
+                    "content": "I\u2019m involved in the development of the Minerva Wallet and was pretty happy when reading about this EIP. 3074 reminds me of the Proxy pattern which separates state from logic. In a way, it would provide all EOAs with the optionality of behaving like a proxy contract which can freely choose its implementation contract with every transaction. To me that sounds appealing both from a wallet provider and from a user perspective. 3074 vs contract wallets I agree that in theory everybody should just use contract wallets. In practice however they have their own set of tradeoffs:  they seem to still not be first class citizens in large parts of the ecosystem. There\u2019s (still) a lot of tooling and contracts out there assuming the sender to be an EOA. I don\u2019t have any stats supporting that claim, just my subjective impression. they can pose an entry barrier. Creating an EOA is a trivial off-chain activity which can take place on any device, doesn\u2019t require connectivity and doesn\u2019t require any funds or sponsor. Creating an account with a contract wallet requires either a funded EOA to start from or a sponsor. I guess however that disadvantage was at least partially mitigated with CREATE2. contract wallets create a kind of vendor lock-in. As a user, I was always hesitant to commit to a contract wallet. That\u2019s because I know that migrating from a wallet using a contract account (often a contract specific to that wallet) to another wallet is a non-trivial operation.  Intuitively I\u2019d say that 3074 kind of retrofits EOAs with optional contract wallet functionality. Security I\u2019m probably not qualified enough to comment about the overall tradeoffs in terms of complexity/attack surface/security etc. on a protocol level. Just wanted to comment on the specific concern voiced by @akolotov about potential signature harvesting. I hardly see a significant difference btw. a conventional EOA and an 3074 enabled EOA there. If I were a blackhat able to inject code into a wallet today which allowed me to sign arbitrary messages, I\u2019d just harvest a lot of signatures, varying nonces, token addresses (most popular first), amounts (not knowing what the balance will be when I\u2019m ready to steal). That may not allow me to steal and break everything, but would likely come pretty close in many cases. That\u2019s assuming that I couldn\u2019t just steal the PK itself anyway (as was the case e.g. in the 2018 Copay incident). ",
+                    "links": [
+                        "https://bitpay.com/blog/npm-package-vulnerability-copay/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.155993431855501
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poojaranjan",
+                    "index": "71",
+                    "likes": "5",
+                    "time": "29/04/2021-11:35:58",
+                    "content": "Follow the development update, Puxi testnet progress & a demo with other useful discussions from the EIP-3074 community call #2      ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.4375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "72",
+                    "likes": "1",
+                    "time": "14/05/2021-01:03:05",
+                    "content": "I\u2019m sorry if these questions were asked already, but:   Why isn\u2019t chainid part of the signed data for AUTH? i.e. keccak256(MAGIC || paddedChainId, paddedInvokerAddress || commit). yParity seems to be restricted to 0/1, so it is not utilising EIP-155-style chainid inclusion.   Is there a strong reason to keep retOffset/retLength in AUTHCALL? If the only reason is \u201cbeing similar to other CALL*s\u201d, then I would suggest to not have. If the reason is that contract developers would prefer using that as opposed to returndatacopy, then of course it makes a lot of sense to keep it.   Why is AUTH/AUTHCALL separated? Is it motivated by a) simplicity; b) allowing multiple AUTHCALLs; c) having the ability to check if a signature is valid without executing a call?   I believe the answer is mostly b) (and c) comes as a benefit), but it could be much better explained. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.505208333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "73",
+                    "likes": "1",
+                    "time": "14/05/2021-03:16:01",
+                    "content": "    axic:  Why isn\u2019t chainid part of the signed data for AUTH? i.e. keccak256(MAGIC || paddedChainId, paddedInvokerAddress || commit). yParity seems to be restricted to 0/1, so it is not utilising EIP-155-style chainid inclusion.   If the authorized contract wants to check chain ID, it can.  It is not up to the EVM to do all possible validations, and anywhere that validation can be delegated to the contract it is.     axic:  Is there a strong reason to keep retOffset/retLength in AUTHCALL? If the only reason is \u201cbeing similar to other CALL*s\u201d, then I would suggest to not have. If the reason is that contract developers would prefer using that as opposed to returndatacopy, then of course it makes a lot of sense to keep it.   Is retOffset/retLength just a legacy holdover from before returndatacopy was introduced?  If so, then I think we should remove them.     axic:  Why is AUTH/AUTHCALL separated? Is it motivated by a) simplicity; b) allowing multiple AUTHCALLs; c) having the ability to check if a signature is valid without executing a call?   There are a number of use cases where the signature may not sign over the calldata.  A few examples:  one auth, multiple calls (approve and transfer) permanent auth (one signature that gives contract 100% perpetual control) one auth with multiple code paths that lead to different calls  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.140151515151516
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/geoknee",
+                    "index": "75",
+                    "likes": "4",
+                    "time": "09/06/2021-21:35:07",
+                    "content": "We have come to be very excited about this EIP over at statechannels.org as it allows for a novel contract architecture we might call synthetic-EOA-per-channel. We believe this is likely to be the most elegant and efficient architecture for state channels, offering a large reduction in blockchain state usage as well as an improved user experience. The EIP authors introduced us to the idea of a \u201csynthetic, externally-owned\u201d account. It is somewhat like a contract account in that the associated private key is not known or used, but very different to a contract account in that it cannot have any code or storage. The address of the account is found by recovering the public key from a fixed message digest. For example, using an EIP-3074 digest: digest = keccak256(MAGIC || padTo32Bytes(Invoker) || padTo32Bytes(0)) and a \u201csynthetic signature\u201d, constructed without the use of a private key*. Using the EIP-3074 digest hands complete control of the synthetic EOA to the Invoker, as explained in the EIP. State channels may then be executed by participants sending funds directly to a synthetic EOA of their choice \u2014 one derived from the channelId, for example (which is roughly speaking the hash of the participants\u2019 accounts). The Invoker can then release funds from the synthetic EOA conditional on all of the usual checks defined by the state channel protocol (e.g. the channelId itself, signatures on off-chain states, etc). This avoids the need to i) have an additional \u201clayer 2 accounting system\u201d for state channels (i.e. no need to use contract storage to record which channel has how many tokens because the ethereum accounting system suffices), or ii) deploy a contract per channel using CREATE2 (which is expensive and will shortly become more so as SELFDESTRUCT refunds are removed) and also avoids the need to iii) approve and transferFrom tokens into the state channel in two separate transactions. The bottom line from a state channels point of view is: improved state hygiene by avoiding writes to storage and/or code deposits and improved UX. Both imply increased gas efficiency. Projects like Connext are executing a high volume of state channels in production, making these improvements all the more significant. *We would like a deterministic, reliable algorithm for this: it seems somewhat nontrivial and worthy of some more research. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.773099816849817
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "76",
+                    "likes": "0",
+                    "time": "15/06/2021-17:02:19",
+                    "content": "I wanted to bubble up an interesting idea from Jeff Coleman on Twitter:   twitter.com    Jeff Coleman | Jeff.eth (technocrypto)  @0xMidnight @TCRPartyBot And if we design the invoker right, we can get secure ENS validation on hardware wallets. This would be this biggest practical gain in security for a ton of use cases. We could also use secure templates to make function calls/arguments user readable on HWs too! \u064b @lightclientsEthereum wallets may be getting a significant upgrade soon. With the proposed change, EOAs will immediately be able to send batch txs, expiring txs, unordered txs, and more. (thread)    8:14 AM - 15 Jun 2021     5            To flesh out the idea just a bit more, we could write an invoker that takes the normal transaction inputs, but replace to: Address with to: ENS. This way, the signature of the AUTH msg would be over MAGIC || INVOKER || hash([nonce, to_ens, gas_limit, gas_price, value, data]). Doing this binds the msg to the to_ens handle and allows the hardware wallet to actually show to: someperson.eth rather than 0x12..34. The invoker can then trustlessly resolve the Ethereum address associated with the ENS domain during execution and route the rest of the call to that address. Resolving the ENS name on-chain is the only way to trustlessly interact with ENS. Even if you run your own node, there is nothing binding standard transactions to a certain ENS domain. If you secure your assets with the hardware wallet (instead of with a smart contract wallet), you won\u2019t be able to interact with ENS address trustlessly. You\u2019ll always need to verify the Ethereum address on the device against what the ENS name should resolve to in order to be certain no part of the stack was compromised. ",
+                    "links": [
+                        "https://twitter.com/technocrypto/status/1404829720315891714?s=20",
+                        "https://twitter.com/lightclients/status/1371911245561917441",
+                        "https://twitter.com/technocrypto/status/1404829720315891714?s=20"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.671992481203008
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "77",
+                    "likes": "0",
+                    "time": "16/06/2021-02:21:46",
+                    "content": "Dropping a link to a follow-up post:     A case for a simpler alternative to EIP 3074 EIPs   A case for a simpler alternative to EIP 3074 The AUTH/AUTHCALL mechanism is very appealing from a developer\u2019s point of view.  It gives anyone the ability to come up with an invoker that can implement different batching strategies (e.g. supporting multiple nonces for better parallelism), gas abstraction models, complex account abstraction methods, etc.  The flexibility comes from being completely unopinionated about how this mechanism is used.  Instead of requiring the developer to conform to a \u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.857142857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "78",
+                    "likes": "0",
+                    "time": "16/06/2021-21:16:20",
+                    "content": "Am I right, that making one wrong signature would allow attacker to drain whole wallet: all tokens and ETH from the EOA balance? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.976190476190476
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "79",
+                    "likes": "0",
+                    "time": "17/06/2021-00:48:18",
+                    "content": "EIP-3074 cannot move ETH from EOA balances, but technically yes. However that\u2019s only half the story. To even get to that point, your wallet would have to allow you to create a bad signature. We trust our wallets to not do this every time we send a transaction, why think about EIP-3074 differently? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.133333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "80",
+                    "likes": "0",
+                    "time": "17/06/2021-11:36:31",
+                    "content": "@matt but you can\u2019t spend all your ERC20 balances within 1 transaction now. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "81",
+                    "likes": "0",
+                    "time": "17/06/2021-14:30:02",
+                    "content": "Not today, but tx batching will come. EIP-3074 will expedite it, but it\u2019s coming regardless, and at that point the risk profiles will be the same. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ncitron",
+                    "index": "82",
+                    "likes": "0",
+                    "time": "22/06/2021-14:53:37",
+                    "content": "A possibility to ease security concerns is to add an AUTHRELEASE opcode. This opcode could be called by any contract that had previously received an AUTH from an EOA and would relinquish the authorization (for a particular commit of course). This allows for contracts to implement two new kinds of functionalities. First, they could create a batchExecuteThenRelease function, which would allow users to send a signed AUTH message for batch execution, but could call AUTHRELEASE at the end of the execution to ensure that the contract does not retain indefinite control of the EOA. The second feature that can be built with this is a revoke function for an invoker, which would simply call AUTHRELEASE for a particular commit, allowing a user to safely remove authorization from a contract that they no longer trust. Of course, this system has many downsides. To start, these abilities can be created entirely at the smart contract level, so it does not necessarily require a new opcode, but form often fits function, and it is likely if we added this opcode that many invokers would chose to take advantage of it. An additional downside is it would require the precompile to access storage to store who has released an authorization, which I understand has never been done before. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.801226551226551
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "83",
+                    "likes": "0",
+                    "time": "22/06/2021-15:28:36",
+                    "content": "This sort of opcode would significantly increase the cost of AUTH, since there would need to be a state read to check if the EOA has been released or not. Your proposal also doesn\u2019t outline how the \u201crelease\u201d function works. If you release the EOA itself, how do you \u201cun-release\u201d? If you release the signature, you\u2019ll have to store the hash of the signature in the trie which costs ~22k gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ncitron",
+                    "index": "84",
+                    "likes": "0",
+                    "time": "22/06/2021-15:54:56",
+                    "content": "I was thinking that release would work exactly as you described, where you release the signature, which should be unique. This would mean that calling auth would only have the increased gas cost of reading state. I do agree though that the increased gas costs may make my proposed solution not worth it, especially since these features can be implemented at the smart contract level. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.269132653061225
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/safinbot",
+                    "index": "85",
+                    "likes": "0",
+                    "time": "25/06/2021-14:10:54",
+                    "content": "an address is EOA,and someone uses  EIP-3074 for this address can others create this address as a contract? for example,hash collisions occur on binance chain and ethereum    Binance (BNB) Blockchain Explorer    Address 0x491604c0fdf08347dd1fa4ee062a822a5dd06b5d | BscScan The Address 0x491604c0fdf08347dd1fa4ee062a822a5dd06b5d page allows users to view transactions, balances, token holdings and transfers of both BEP-20 and ERC-721 (NFT) tokens, and analytics.      https://etherscan.io/address/0x491604c0fdf08347dd1fa4ee062a822a5dd06b5d ",
+                    "links": [
+                        "https://bscscan.com/address/0x491604c0fdf08347dd1fa4ee062a822a5dd06b5d",
+                        "https://etherscan.io/address/0x491604c0fdf08347dd1fa4ee062a822a5dd06b5d"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Dominator008",
+                    "index": "86",
+                    "likes": "0",
+                    "time": "30/06/2021-18:38:06",
+                    "content": "This likely isn\u2019t hash collision. Just someone sent the address some BNB and CTSI on BSC. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/david",
+                    "index": "87",
+                    "likes": "1",
+                    "time": "12/07/2021-14:18:27",
+                    "content": "Hey, I thought I\u2019d post this Twitter conversation that\u2019s being had about ERC-3074 and composability, starting from this tweet:   twitter.com    David Mihal @dmihal    @acuestacanada @gakonst @PaulRBerg Again: I haven't done much research into this yet  But if contracts start requiring signatures so that they can AUTH users & send an approve() on behalf of that user, then smart contracts can't call that function anymore.   2:07 AM - 12 Jul 2021       The concern is that if application developers begin using 3074 in their contracts, then those contracts basically become EOA-only. You can take a look at this example from @fubuloubu:  transferFrom(msg.sender, this, amt) Can just be transfer(this, amt, auth=sig)  If applications use transfer{ auth: ... }() instead of transferFrom(), then contracts can no longer use this function, since contracts can\u2019t sign messages (@gakonst pointed out that ERP-1271 could be used, but I think it would be difficult to get much adoption of that). It seems that these issues can be avoided if application-level use of EIP-3074 is discouraged, and AUTH is only invoked from a handful of whitelisted \u201cinvoker\u201d contracts.   twitter.com    \u064b @lightclients    @dmihal @gakonst @acuestacanada @PaulRBerg Not in the protocol, but to use EIP-3074 you must sign an AUTH message that commits to a certain invoker address. Wallets have generally agreed that they will limit what invokers users can sign over to only heavily tested / audited / formally verified invokers.   2:08 AM - 12 Jul 2021           2            So my takeaways from this conversation is that usage of EIP-3074 should be limited at these levels:  Wallet layer: wallets should only allow signing 3074 messages for whitelisted invokers (and there should be a very scary warning before adding new invokers to the whitelist) Language layer: Solidity & Vyper should not add support for 3074 opcodes, invokers should be built in Yul (or using inline Yul) Social layer: discourage developers from using 3074 opcodes directly, instead encourage them to build for existing invokers.  ",
+                    "links": [
+                        "https://twitter.com/dmihal/status/1414579442073194498",
+                        "https://twitter.com/dmihal/status/1414579442073194498",
+                        "https://twitter.com/dmihal/status/1414579442073194498",
+                        "https://twitter.com/lightclients/status/1414581676890419200",
+                        "https://twitter.com/lightclients/status/1414581676890419200",
+                        "https://twitter.com/lightclients/status/1414581676890419200",
+                        "https://twitter.com/lightclients/status/1414581676890419200"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.914637445887446
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jaerith",
+                    "index": "88",
+                    "likes": "0",
+                    "time": "27/07/2021-01:51:04",
+                    "content": "I\u2019ve been under a rock for the past few months, but I was thrilled to learn about 3074 while watching the presentation at EthCC 4.  It\u2019s refreshing to finally see more discussion with a focus on improving transaction efficiency and delegation, so that mainstream adoption (especially by enterprise) can happen in the near future.  Bravo! I\u2019m the author of EIP-2746, and so I definitely have an interest in this subject, especially in regard to batching and rules.  (I\u2019ll admit that my EIP is definitely not as thought out as this one.  I\u2019m absolutely an amateur in this space.)  I apologize for not yet being familiar with the implementation, but I was especially curious about the rules being encoded in these AUTHCALL requests (particularly in terms of their flexibility) and about the assumption that these new opcodes could be invoked within a L2. Basically, I\u2019m wondering what considerations have been made in terms of rule complexity and whether these rules can be other contract methods.  I could see an interest in the Invoker executing a standard, lengthy set of rules that are too complicated and too costly to be encoded as part of a transaction\u2019s calldata.  In one example, a company might have a complicated validation algorithm that exists as a contract method and simply returns a boolean.  In another example, a government or accounting firm could post a contract method (or a EIP-2746 ruletree - shameless plug) that is the standard for calculating a VAT tax, one that could be used by any enterprise without fear, and returns a numeric value.  So, my question is this: could an AUTHCALL request result in the Invoker getting input from a contract method (using only a CALL, to be safe), to either evaluate in a rule or to pass along to the sponsored transaction?  If not, can the Invoker receive and then store these encoded rules (which are part of the calldata?) on behalf of the caller, so that they can be invoked again at a later time and without the cost of sending them once again?  That storage might be costly, but in the case of 3074 being deployed to a L2 (like Optimism), these storage costs could possibly be mitigated.  Assuming, of course, that storage might be cheaper on a L2 in the long run. Very curious about what\u2019s possible.  And great work so far! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.181082887700534
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jaerith",
+                    "index": "89",
+                    "likes": "0",
+                    "time": "29/07/2021-20:25:53",
+                    "content": "Whoops\u2026I forgot one question: do you think that EIP-3074 could possibly be compatible with a batching implementation found in a L2, like the Optimism sequencer? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "90",
+                    "likes": "0",
+                    "time": "29/07/2021-21:22:57",
+                    "content": "L2s have more flexibility, so they can define their accounts to have arbitrary functionality. But yes, it would be compatible. I still think there is different way of thinking about contract wallet accounts that benefits significantly from EIP-3074 and L2s could support something similar, even if EIP-3074 doesn\u2019t reach mainnet. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.775
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jaerith",
+                    "index": "91",
+                    "likes": "0",
+                    "time": "02/08/2021-02:30:28",
+                    "content": "I agree wholeheartedly.  In addition to a new paradigm for account management, an Invoker instance from EIP-3074 could be a foundation for organizations and enterprises to build upon.  If the Invoker proved to be a stable, safe platform by itself that could control an account through a set of dispatched rules (which are predefined simple actions), then their investment into contract creation (of developing, of auditing, of deploying, etc.) becomes unnecessary as they would just deploy their strategies to the Invoker, accelerating the buy-in of the mainstream. Unfortunately, mainnet acceptance will probably be difficult to achieve.  Do you think that Optimism would be curious to consider 3074 and test the new opcodes in the OVM? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.545454545454545
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greg",
+                    "index": "92",
+                    "likes": "1",
+                    "time": "14/01/2022-23:55:01",
+                    "content": "Created a small website that I\u2019ll slowly add educational materials about how EIP-3074 can improve day-to-day lives. Currently just showcasing how much has been spent on approvals. https://www.approvals.wtf/ ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.833333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "94",
+                    "likes": "0",
+                    "time": "09/02/2022-16:39:24",
+                    "content": "I have a question about this EIP, especially this line in the Behavior section:   If the gas available for the subcall would be less than gas, execution is invalid.   In Frontier, we had this rule also for CALL and CALLDATA but in EIP150 this was removed: the reason was that contracts (in most cases) used something like PUSH 23 GAS SUB CALL, where 23 here is the gas cost of CALL plus the cost of SUB (this thus relies all GAS to the call frame). The problem is, that if you increase the base cost of CALL, this mechanism breaks. This EIP is thus also subject to this case, if we ever change AUTHCALL costs then some contracts will break. I don\u2019t understand the rationale for it. The contract itself can check if there is enough gas left (can also be put in the commit, for instance). If there is not enough gas left, then revert the frame. I would suggest to use the rule from EIP150: if the GAS wants to send more GAS than currently is left, then send 63/64 of the available gas. Any safety checks can be handled by the contract implementation itself. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.309523809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "95",
+                    "likes": "0",
+                    "time": "10/02/2022-12:46:49",
+                    "content": "An idea was posted to replace WETH with a mapping using EIP-3074:    Getting rid of WETH using EIP-3074 Core EIPs       (Originally posted here.)  While randomly looking at WETH I was wondering,   Hmm, this was written such a long time ago, what would it look like with modern Solidity?   WETH9 was written for 0.4.18 (2017!) and we are at 0.8.10 today. (@MrChico, what does 9 stands for?)  So I started iteratively changing it, adding small improvements one-by-one:   Turning those constants into actual constants Upgrading the syntax of the fallback function Adding the emit keyword to events Fine-tuning public into e\u2026     This would require the \u201cEther transfer\u201d functionality to be enabled in EIP-3074. ",
+                    "links": [
+                        "https://hackmd.io/@axic/HJKDHbUpF",
+                        "https://etherscan.io/address/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2#code"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.890625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "96",
+                    "likes": "1",
+                    "time": "14/03/2022-17:12:35",
+                    "content": "We are working on a draft implementation at EthereumJS/VM: Implement EIP3074: AUTHCALL by jochem-brouwer \u00b7 Pull Request #1788 \u00b7 ethereumjs/ethereumjs-monorepo \u00b7 GitHub The EIP is really well written, I have not yet encountered any edge cases which are not covered by the spec (but might do so when writing tests). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "97",
+                    "likes": "2",
+                    "time": "14/03/2022-18:01:16",
+                    "content": "Yes, a small thing: Note that yParity is expected to be 0 or 1. I think we should enforce this, so if yParity is not 0 and also not 1 then the operation is invalid, throw and consume all gas. (Maybe this is meant by this sentence already) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "98",
+                    "likes": "0",
+                    "time": "26/03/2022-09:59:46",
+                    "content": "We have implemented the EIP in EthereumJS/VM: Implement EIP3074: Authcall by jochem-brouwer \u00b7 Pull Request #1789 \u00b7 ethereumjs/ethereumjs-monorepo \u00b7 GitHub (it is targeted towards a develop branch so it will take some time to start using it directly from npm). There is one more question I have which is not stated in the EIP. In case we are in a STATICCALL frame, are we allowed to AUTHCALL? Following EIP-214 logic it should throw if either value or valueExt is nonzero, but if both are zero, it should be allowed. Can this be specified in the EIP? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "99",
+                    "likes": "1",
+                    "time": "02/04/2022-05:19:20",
+                    "content": "    jochem-brouwer:  There is one more question I have which is not stated in the EIP. In case we are in a STATICCALL frame, are we allowed to AUTHCALL?   I believe it must throw the same way as CALL, since it\u2019s defined as a list of changes:  AUTHCALL is interpreted the same as CALL, except [\u2026]  ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "100",
+                    "likes": "0",
+                    "time": "02/04/2022-05:20:24",
+                    "content": "Put up a change to auth to make it more future compatible. Comments welcome!   github.com/ethereum/EIPs         Finally add signer to auth [EIP-3074]   ethereum:master \u2190 SamWilsn:eip-3074-the-signing            opened 05:14AM - 02 Apr 22 UTC               SamWilsn             +48 -16           ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/4967",
+                        "https://github.com/SamWilsn",
+                        "https://github.com/ethereum/EIPs/pull/4967/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "101",
+                    "likes": "0",
+                    "time": "05/04/2022-16:26:27",
+                    "content": "Had an interesting discussion today where it might be theoretically possible to create a single \u201cmeta-invoker\u201d that enforces replay protection/revocable signatures/etc, which then delegate calls into app-specific \u201csub-invokers\u201d. If that ends up being possible, the whitelisting process would only need to approve the one \u201cmeta-invoker\u201d to cover 90% of use cases. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.428571428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "102",
+                    "likes": "0",
+                    "time": "12/04/2022-17:32:58",
+                    "content": "This is now merged. Instead of pushing everything on the stack, auth now takes an address and a memory range. Currently the memory range contains the commit and signature, and the address from the stack must match the address recovered from the signature. In the future, should EIP-3074 get merged, auth can be modified to work with EOAs and smart contract wallets! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.446428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "103",
+                    "likes": "0",
+                    "time": "21/04/2022-15:23:02",
+                    "content": "In the current EVM, tx.origin is the account from which the transaction originates (logically, the account \u201cdoing the thing\u201d) as well as the account that pays the gas to execute the tx. They are synonymous. With EIP-3074, this is no longer the case; these identities get split up: The logical originating account account \u201cdoing the thing\u201d is the AUTH\u2019d account, but the account paying the gas to initiate the transaction is the account making the AUTHCALL to remote control the AUTH\u2019d account into \u201cdoing the thing\u201d. I think (correct me if I\u2019m wrong), your implementation leaves tx.origin as the account paying the gas where I believe tx.origin should be the AUTH\u2019d account performing, in spirit, the action. I\u2019m not sure if this is the proper venue to discuss, but what are your (and others\u2019) thoughts on which account should be tx.origin\u2026 the account paying the gas or the account logically originating the action/\u201cdoing the thing\u201d? Edit: Way out of my depth, but what about a new \u201ctx.gaspayer\u201d identity to distinguish the two? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.068181818181818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "104",
+                    "likes": "2",
+                    "time": "21/04/2022-16:05:21",
+                    "content": "    cyrus:  I think (correct me if I\u2019m wrong), your implementation leaves tx.origin as the account paying the gas   That is correct.     cyrus:  I\u2019m not sure if this is the proper venue to discuss, but what are your (and others\u2019) thoughts on which account should be tx.origin\u2026 the account paying the gas or the account logically originating the action/\u201cdoing the thing\u201d?   I\u2019m mostly indifferent to what tx.origin represents. I think there are arguments for it to be the \u201cgas payer\u201d, or the \u201cfirst actor\u201d, or just an alias to msg.sender. If we set tx.origin to authorized when AUTHCALLing, it would certainly make it harder to distinguish smart contract wallets from EOAs, which I suppose I support. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.205357142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "105",
+                    "likes": "0",
+                    "time": "11/06/2022-12:19:45",
+                    "content": "On balance, what msg.sender/tx.origin/gaspayer scheme do you (or anyone reading this) think makes the most sense in a post-merge, 3074-adopted world? I\u2019d love to see tx.origin aliased to msg.sender, personally. Elegant. Simple. Not sure how realistic. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.180555555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "106",
+                    "likes": "0",
+                    "time": "09/07/2022-16:01:16",
+                    "content": "Seems like there are two implementations of this so far: quilt go-ethereum (adeitrichs) and ethereumjs (brouwer) Are we aware of any others? Is there some common location (aside from this thread) for implementation writers to report their work on 3074? Can my suggestion for setting tx.origin to the account being remote-controlled, not the gas payer, be added to the EIP? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.083333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "107",
+                    "likes": "0",
+                    "time": "20/07/2022-17:11:35",
+                    "content": "    cyrus:  Can my suggestion for setting tx.origin to the account being remote-controlled, not the gas payer, be added to the EIP?   I\u2019m worried that adding an even more controversial change to the EIP will make it even less likely to be adopted. Once the merge is complete, I think we can reopen the discussion with core devs and see where we stand? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.983333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "108",
+                    "likes": "0",
+                    "time": "20/07/2022-17:27:38",
+                    "content": "But it sounds like such a change is not controversial; more that nobody really seems to have an opinion one way or the other. In this way, it\u2019s more controversial not to make the change, isn\u2019t it? Because I do have a very strong opinion on it.  Once the merge is complete, I think we can reopen the discussion with core devs and see where we stand?  Yes, I plan to voice my concern with the core devs group whenever it\u2019s appropriate. Thanks for the reply. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.2333333333333325
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "110",
+                    "likes": "0",
+                    "time": "09/09/2022-18:22:24",
+                    "content": "From a perspective of secure contract design, I think having a shortcut for \u201cremove authorisation\u201d (= clear authorisation context) would be a nice addition, even at the expense of an extra opcode. This can be current accomplished by sending \u201crubbish\u201d to the AUTH instruction. Would auth(0, 0, 0) do the trick? The spec seems lenient at invalid input lengths. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.285714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "111",
+                    "likes": "0",
+                    "time": "09/09/2022-23:04:03",
+                    "content": "    SamWilsn:      chriseth:   Why is so much data put into the arguments instead of using stack slots? I would assume almost everything to be taken from the stack apart from the actual payload.    I had separated it out so that signed parts of the message go in memory and the unsigned parts go on the stack. It also has the nice property that introducing a new type down the road is pretty flexible. I think but am not 100% sure that copying the TLP out of calldata into memory should be reasonably efficient.   Since the data in memory is not \u201cversioned\u201d or distinguished in any manner I do not think this achieves the goal of extensibility. I did found the old stack version much more \u201cuser friendly\u201d too. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.16540404040404
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "112",
+                    "likes": "0",
+                    "time": "12/09/2022-22:23:45",
+                    "content": "    axic:  Would auth(0, 0, 0) do the trick?   Yes, I believe so:  If the signature is instead invalid or the signer address does not equal authority, authorized is reset to an unset value.      axic:  Since the data in memory is not \u201cversioned\u201d or distinguished in any manner I do not think this achieves the goal of extensibility.   In a future extension of AUTH, the interpretation of the memory range would be defined by authority (from the stack.) If there is code at that address, that code could parse the signature and decide to authorize or not. This is somewhat similar to EIP-1271\u2019s isValidSignature. If no code exists at authority, the behaviour would be the same as 3074 currently specifies.     axic:  I did found the old stack version much more \u201cuser friendly\u201d too.   Me too, honestly. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/greeegor",
+                    "index": "113",
+                    "likes": "0",
+                    "time": "15/09/2022-14:15:36",
+                    "content": "I\u2019d second this  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "114",
+                    "likes": "1",
+                    "time": "06/10/2022-17:01:18",
+                    "content": "@SamWilsn  and authors, great EIP. I wonder if this could make Shanghai ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 9.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "115",
+                    "likes": "0",
+                    "time": "24/10/2022-11:52:34",
+                    "content": "Now that the merge is complete, is now the right time to discuss how to handle tx.origin? The range of possibilities:  Alias to msg.sender Set as \u201cfirst actor\u201d Leave as \u201cgas payer\u201d  I\u2019d love to see option 1 (what are the implications of going this route?), but between choices 2 and 3, I think you are correct that option 2 gets us closer to true account abstraction and is, also, what I\u2019m advocating for. (I\u2019ve joined the wallet dev discord and we can discuss there, if you like.) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.544642857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "116",
+                    "likes": "0",
+                    "time": "24/10/2022-13:51:58",
+                    "content": "Just to restate my opinion which I suspect is somewhere above: tx.origin referring to the signer/account that initiated the transaction makes the most semantic sense with \u201ctransaction origin\u201d.  However, this has caused much trouble because people use it to block \u201ccontracts\u201d from interacting with dapps which includes contract wallets, and eventually could include account abstraction.  I would feel no remorse breaking apps that have depended on this behavior as we have been advising people against this for a long time. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/cyrus",
+                    "index": "117",
+                    "likes": "0",
+                    "time": "24/10/2022-15:28:46",
+                    "content": "Respectfully but emphatically disagree. 3074 introduces something \u201cnew\u201d - a rearward step in the transaction chain - and then moves something \u201cold\u201d (tx.origin) to this new first frame that never existed before. That really flies in the face of immutability and should be avoided at all costs, IMO. I agree that we shouldn\u2019t feel much remorse for those who were advised against tx.origin and then proceeded to use it anyway. But that\u2019s not my case. The opposite, in fact. In 2015, I asked Chris Reitweissner about refunding the transaction sender and was told about tx.origin.  chriseth1171\u00d7565 88.5 KB  While he didn\u2019t outright advise using tx.origin, you can see that it was floated as valid when I was previously on the msg.sender bandwagon. (The first two versions of Etheria correctly use msg.sender to determine token ownership. The last two use tx.origin, unfortunately, based on this gitter exchange.) The danger of tx.origin wasn\u2019t widely known until 9 months later in mid-2016 as shown here:  github.com/ethereum/solidity     \t      Remove tx.origin            opened 06:23PM - 24 Jun 16 UTC             closed 11:28AM - 11 Aug 16 UTC               PeterBorah                 ## Summary  `tx.origin` is a security vulnerability, breaks compatibility with o\u2026ther contracts including security contracts, and is almost never useful. Removing it would make Solidity more user-friendly. If there are exceptional cases where access to the transaction origin is needed, a library using in-line assembly can provide it. ## The Problems  1) `tx.origin` is a security vulnerability. As we [recently saw with the Mist wallet](https://blog.ethereum.org/2016/06/24/security-alert-smart-contract-wallets-created-in-frontier-are-vulnerable-to-phishing-attacks/), using `tx.origin` makes you vulnerable to attacks comparable to phishing or cross-site scripting. Once a user has interacted with a malicious contract, that contract can then impersonate the user to any contract relying on `tx.origin`.  2) `tx.origin` breaks compatibility. Using `tx.origin` means that your contract cannot be used by another contract, because a contract can never be the `tx.origin`. This breaks the general composability of Ethereum contracts, and makes them less useful. In addition, this is another security vulnerability, because it makes security-based contracts like multisig wallets incompatible with your contract.  3) `tx.origin` is almost never useful. This is the most subjective point, but I have yet to come across a use of `tx.origin` that seemed legitimate to me. I welcome counter-examples, but I've written dozens or hundreds of smart contracts without needing it, and I have never heard of anyone else needing it either. ## Rationale for Removal  Solidity's design philosophy is to prioritize security and reliability over expressiveness. In other cases where behavior is unreliable, Solidity does not expose it. (For instance, there is no way to call an external contract and retrieve the return value if the signature is not known ahead of time.)  The \"escape clause\" is in-line assembly, which allows the creation of libraries to do anything expressible as EVM assembly. Behavior that is unsafe and unreliable is best kept in libraries, rather than given to all users as part of the core language.       Indeed, leaving the EIP-3074 spec with tx.origin as the gaspayer would open a potential vulnerability: If a tile holder sponsors a transaction, any other frame in the transaction chain would have the ability to hijack these tokens. (Of course, we can advise owners to never use such an account to sponsor transactions, but I shouldn\u2019t have to teach this nor can I ever guarantee reaching owners with this warning/education.) If we are otherwise fine with breaking tx.origin because \u201cpeople should have known better since mid-2016\u201d, then we can both get what we want by simply aliasing tx.origin to msg.sender and being done with it. Solves my problem and eliminates tx.origin issues forever. (That said, I don\u2019t have the expertise to know how impactful this would be throughout the entire ecosystem.) Failing this abrupt aliasing, I strongly insist that \u201ctx.origin\u201d means, in spirit, \u201cthe first actor\u201d and should remain that way for immutability reasons. This new initial frame created by 3074 should then be called \u201ctx.gaspayer\u201d to appropriately add a new label to a new frame and leave the old label with the old frame. Doesn\u2019t this move us to a more complete \u201caccount abstraction\u201d anyway? ",
+                    "links": [
+                        "https://github.com/ethereum/solidity/issues/683",
+                        "https://github.com/ethereum/solidity/issues/683",
+                        "https://github.com/PeterBorah"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.6945909992785
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "118",
+                    "likes": "0",
+                    "time": "24/10/2022-19:23:12",
+                    "content": "Before thinking of altering the behaviour of tx.origin, please think about its current nice side-effect: it allows creating view-only transactions. Assume that I want to simulate a specific code portion (either just to find if it runs at all, or some side-effects, such as creating contracts and query some data from them) - but WITHOUT really letting the user run this code on-chain. The simple way we can use right now is to add require(tx.origin == address(0)) to the code (and document that this method has to be called only with \u201ceth_call({from:'0x0' })\u201d Do you know of any other way of forcing a code to run in view-mode only? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.480357142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "119",
+                    "likes": "1",
+                    "time": "24/10/2022-19:45:26",
+                    "content": "You\u2019d need to somehow generate a valid signature from the zero address for that to be a problem. If someone can do that, we have bigger issues  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "120",
+                    "likes": "0",
+                    "time": "24/10/2022-22:01:15",
+                    "content": "Creating a fake tx using an extremely high gas price or gas limit would most likely work (I do not think eth_call checks those things). And then thus check require(gasleft() > HIGH_VALUE) or require(tx.gasprice > HIGH_VALUE). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.2
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "121",
+                    "likes": "0",
+                    "time": "11/12/2022-16:16:55",
+                    "content": "I have a quick question about AUTHCALL not resetting AUTH. From a security point of view, I would argue that it should reset AUTH; the reason is that now it opens ways for \u201cattacks\u201d similar as to re-entrancy attacks. (First AUTHCALL into some contract, do some nasty stuff over there to trick the calling contract to invoke another AUTHCALL when it returns from the authcall frame later\u2026?) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.479166666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "122",
+                    "likes": "0",
+                    "time": "11/12/2022-16:44:21",
+                    "content": "You should only be signing AUTH messages to contracts (invokers) you explicitly trust to have 100% control of all of your funds.  The idea here is that you can delegate control of your EOA to a contract, and you shouldn\u2019t be AUTHing some random contract.  Wallets should be incredibly restrictive about allowing this opcode, likely only allowing it for their own contract wallet or community trusted ones. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matt",
+                    "index": "124",
+                    "likes": "1",
+                    "time": "13/12/2022-00:40:04",
+                    "content": "I think you mean to say you should only signing AUTH-messages to contracts (invokers) which you trust 100%. Once the AUTHCALL happens, it\u2019s just the standard security model of interacting with smart contracts - e.g. they have control over only what you explicitly give them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.901785714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "125",
+                    "likes": "1",
+                    "time": "13/12/2022-10:13:47",
+                    "content": "    matt:  I think you mean to say you should only signing AUTH-messages to contracts (invokers) which you trust 100%.   Yes, fixed!  More words to satisfy spam bot. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.390625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "126",
+                    "likes": "1",
+                    "time": "28/02/2023-22:11:42",
+                    "content": "I was always too skeptical about this EIP due it is introducing ability to steal all user tokens with 1 transaction, not only ETH as previously. But today I realized that this EIP is effectively generalizing signature based calls as EIP-2612 (aka Permit) and others. This EIP is also almost resolving EOA non-programmability. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.808333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "127",
+                    "likes": "1",
+                    "time": "28/02/2023-22:26:27",
+                    "content": "It could even effectively deprecate ERC20 approves/allowances usage especially if AuthContract will be additionally introduced compatible with EIP-1271. Wish we had unification among EOA and smart contract based authentications (aka signatures) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.357142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "128",
+                    "likes": "0",
+                    "time": "28/02/2023-22:48:29",
+                    "content": "What do you think about introducing transaction format change allowing specifying DELEGATECALL for the top transaction trace? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "129",
+                    "likes": "0",
+                    "time": "28/02/2023-23:21:55",
+                    "content": "There are a few proposals that attempt to add bytecode execution to EOAs (eg. EIP-2803.) Not exactly the same, but similar idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.59375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "130",
+                    "likes": "0",
+                    "time": "03/03/2023-09:03:26",
+                    "content": "Found exactly the same: EIP-5806: Delegate transaction Discussion: EIP-5806 Delegate transaction - #2 by Amxx ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-5806-delegate-transaction/11409/2"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/WangHallO",
+                    "index": "131",
+                    "likes": "0",
+                    "time": "14/03/2023-03:11:32",
+                    "content": "I have a question about calculating the dynamic gas portion (dynamic_gas ), and the gas available for execution in the sub call (subcall_gas ) for AUTHCALL. According to the provided pseudo-codes, if the value is not zero, the cost of gas should add 6700, it is not 9000 because no gas stipend even if the value is not zero. The value added to gas is CallValueTransferGas - CallStipend, which means stipend gas is included in 9000 value transfer gas. if value > 0:     dynamic_gas += 6700         # NB: Not 9000, like in `CALL`  But in go-ethereum, the stipend gas is not included in 9000. When executing the opcode CALL, if value is not 0, firstly add 9000 gas in function gasCall() :  github.com   ethereum/go-ethereum/blob/94ff7219114540263c76d1895618041959fae1f9/core/vm/gas_table.go#L377-L379                   \tif transfersValue {           \t\tgas += params.CallValueTransferGas           \t}                   Then value will be checked in function opCall(), if it is not 0, 2300 stipend gas will be added :  github.com   ethereum/go-ethereum/blob/94ff7219114540263c76d1895618041959fae1f9/core/vm/instructions.go#L683-L686                   \tif !value.IsZero() {           \t\tgas += params.CallStipend           \t\tbigVal = value.ToBig()           \t}                  Therefore, I think the dynamic_gas should add 9000 not 6700 in provided pseudo-codes. ",
+                    "links": [
+                        "https://github.com/ethereum/go-ethereum/blob/94ff7219114540263c76d1895618041959fae1f9/core/vm/gas_table.go#L377-L379",
+                        "https://github.com/ethereum/go-ethereum/blob/94ff7219114540263c76d1895618041959fae1f9/core/vm/instructions.go#L683-L686",
+                        "https://github.com/ethereum/go-ethereum/blob/94ff7219114540263c76d1895618041959fae1f9/core/vm/instructions.go#L683-L686"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.40625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "132",
+                    "likes": "0",
+                    "time": "14/03/2023-15:53:52",
+                    "content": "It\u2019s been a long while and I\u2019m not extremely familiar with geth, but I think the first link (core/vm/gas_table.go) is where the gas is deducted from the parent, and the second link (core/vm/instructions.go) calculates how much is available to the child. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.4125
+                }
+            ]
+        }
+    ],
+    "group_index": "1175"
+}

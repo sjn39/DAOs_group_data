@@ -1,0 +1,507 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4494-extending-erc-2612-style-permits-to-erc-721-nfts/7519",
+            "title": "EIP-4494: Extending ERC-2612-style permits to ERC-721 NFTs ",
+            "index": 7519,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft",
+                "erc-721",
+                "erc"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wschwab",
+                    "index": "1",
+                    "likes": "6",
+                    "time": "21/11/2021-10:47:33",
+                    "content": "This thread is intended for an upcoming ERC based around EIP-2612-style approvals for ERC721 NFTs. The development work has been done by @dievardump , and is a result of conversation\u2019s in @anett 's NFT Standards Working Group. There\u2019s a tentative implementation here. ERC2612 accomplishes this by creating a signed message involving the addresses of the owner and proposed spender of an ERC20 token, in addition to the amount being approved, a deadline, and a signature. This ERC (despite being Stagnant at the time of this writing) enjoys a large amount of traction, and, for example, is leveraged by Uniswap wherever available. There are a few things we\u2019d like community feedback on regarding the best way to set this up for ERC721 NFTs.  1) owner-based or tokenId-based nonces While trying to apply this formula to ERC721 NFTs, there is an additional optimization allowing for more flexibility than ERC2612 owing to the unique architecture of ERC721. ERC2612 takes the value being approved as an argument, and increments a nonce after each call to the permit function in order to prevent replay attacks. Since each ERC721 token is discrete, it allows for having the nonce based not on the owner's address or calls to permit, but rather to tie the nonce to tokenId and to increment on each transfer of the NFT. One gain from this pattern is that allows an owner to create multiple permits for the same NFT, since the nonce will only be incremented if the NFT is transferred. (For comparison, 2612 needs to focus on the owner, and the owner needs to either only give one permit at a time, or make sure that they are used sequentially.) Another advantage to this setup is that 2612 permits can only be signed by the owner of the tokens, but not by parties approved by the owner. This setup should allow approved parties to create permits for NFTs that they have been approved on too. tokenId seems to us to be the best way to handle nonces, though otoh 2612 is owner-based, as are Uniswap v3\u2019s position NFTs. We\u2019re interested in community feedback about this!  2) v,r,s vs full signatures EIP2612 takes v, r, and s arguments, which are the three parts of a signature. The full signature is needed to verify the message, though. The author of 2612, Martin Lundfall, told me that his reasoning was that v, r, and s are all fixed length (uint8, bytes32, and bytes32), whereas the full signature would need to be a dynamically-sized array (if I understood him right, apologies if I missed something there), though if we kept v, r, and s as arguments (as in 2612), likely every function would need to concatenate them (using abi.encodePacked) in order to use ecrecover to verify. @Amxx has a repo with a singleton contract that \u201cwraps\u201d ERC20, 721, or 1155 tokens in a permit structure which was a big inspiration in this project here, and you can see his use of OZ utilities for verification - all of which take a full signature. We\u2019d like to keep things as similar to 2612 as possible, but are interested in community feedback if there\u2019s a preference towards keeping the three elements separate or maybe towards ingesting the signature whole. There are likely other major conversation points here, this is meant to kick things off, and we\u2019re looking forward to what people say! ",
+                    "links": [
+                        "https://github.com/dievardump/erc721-with-permits",
+                        "https://github.com/Amxx/Permit"
+                    ],
+                    "GPT-summary": "The author of the post is proposing an ERC based around EIP-2612-style approvals for ERC721 NFTs and is seeking community feedback on two main points. Firstly, whether to use owner-based or tokenId-based nonces, and secondly, whether to use v, r, and s arguments or the full signature. The post is open to constructive criticism and questions from third parties, and the author is extending the proposal to the community for feedback.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Community and engagement",
+                        "Token economics",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None"
+                    ],
+                    "Sentiment": 6.084590517241379
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dievardump",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "21/11/2021-13:01:38",
+                    "content": "    wschwab:  2) v,r,s vs full signatures EIP2612 takes v, r, and s arguments, which are the three parts of a signature. The full signature is needed to verify the message, though. The author of 2612, Martin Lundfall, told me that his reasoning was that v, r, and s are all fixed length (uint8, bytes32, and bytes32), whereas the full signature would need to be a dynamically-sized array (if I understood him right, apologies if I missed something there), though if we kept v, r, and s as arguments (as in 2612), likely every function would need to concatenate them (using abi.encodePacked) in order to use ecrecover to verify.   About this, I would like to add: since version 4.1, ECDSA from OpenZeppelin\u2019s contracts repository implements EIP-2098 which allows signature of length 64. We will not be able to support this easily with (r, s, v) as parameters since encodePacked(bytes32, bytes32, uint8) will always return a signature of 65 length. This is why for the moment I went with the full bytes memory signature in the example of implementation, letting the library manage what EIP to follow according to the length of the bytes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.51058201058201
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dievardump",
+                    "index": "3",
+                    "likes": "2",
+                    "time": "22/11/2021-19:48:51",
+                    "content": "Seems like I expressed myself in a confusing manner: ECDSA supports 2 types of signature: (r, s, v) which is standard and 65 bytes long, and (r, vs) the \u201ccompact form\u201d (eip 2098) which is 64 bytes long. if we use (r, s, v) as parameters, it will be more complicated to support EIP 2098. if we use bytes memory signature, ECDSA can be used to automatically detect what type of signature it is, before recovering the address. I can\u2019t say if it\u2019s better or not, but I suppose other EIPs might come later with other signature types/lengths, so maybe using the full bytes and let the Libraries handle the detection is a good habit to take. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0576923076923075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "4",
+                    "likes": "2",
+                    "time": "25/11/2021-15:08:26",
+                    "content": "Great to see an EIP for that! One minor suggestion: the name nonces is generic but has been used so far to represent account based nonce. Also it is possible for an ERC721 contract to want to have both type of nonces example 1):  account nonce would be more fitting  for approveForAll permit for example example 2): DAO based on ERC721 votes have the need for signature nonce for delegation and these use account based nonce Renaming nonces to be tokenNonces would be preferable in my opinion to avoid such conflict. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.28125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "25/11/2021-20:43:42",
+                    "content": "Actually just realised that since nonces(uint256) is not the same as nonces(address) there is no conflict ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wschwab",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "28/11/2021-09:26:20",
+                    "content": "Starting to wonder if it\u2019s worth it to add a transferWithPermit function that does a safeTransfer using a signature - I originally felt like maybe not since we were trying to keep things as close to 2612 as possible, but am starting to have my doubts. In addition, I\u2019m beginning to doubt how I did the EIP165 inegration - currently the interface ID is taken from the interface for 4494 + 165. The thing is that ERC721 already requires 721, meaning that if someone would build their contract strictly as described in the EIP, they\u2019d run into circular inheritance problems from EIP165 being in both 721 and 4494. This makes me think that I should probably have the 4494 interface inherit the ERC721 interface, and then take the interface ID from there, but I wanted to open this up for conversation first. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.578125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "7",
+                    "likes": "2",
+                    "time": "29/11/2021-13:25:33",
+                    "content": "Hello. First of all, I\u2019d like to say that I welcome this standardization effort. This is really needed. For the record, I am responsible for OZ supporting EIP-2098, and I am also the author of GitHub - Amxx/Permit. That might make you think I would favor bytes sign  over uint8 v, bytes32 r, bytes32 s  That is however not where I stand! While I hate early implementers forcing the hand of later standardization effort, I really think the permit being implemented by UniswapV3 sets a strong precedent in favor of sticking with uint8, bytes32, bytes32. AFAIK, bytes is more expensive, because it requires an additional slot to store the length. It is thus however more versatile in some cases, particularly when dealing with signatures that are produced by multisig and are then verified using 1271 (see this library that, if possible, should be preferred to ECDSA) The question then becomes:  Do we want to future proof the standard with support for smart wallets (and other smart contracts) Do we want to stick with simple, EOA based signature, that would be cheaper to process  I don\u2019t think there is an easy answer, particularly when smart wallets (and other smart contracts) can already implement meta-tx / signature based methods for calling approve (or any other functions). They don\u2019t really need to be supported here. One should keep in mind that using this permit interface for EOA would be irrelevant if/when EIP-3074 becomes available. ",
+                    "links": [
+                        "https://github.com/Uniswap/v3-periphery/blob/main/contracts/base/ERC721Permit.sol#L54-L85",
+                        "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/SignatureChecker.sol#L21-L35"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.590773809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dievardump",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "29/11/2021-16:01:27",
+                    "content": "    Amxx:  Do we want to future proof the standard with support for smart wallets (and other smart contracts)   This was the idea, because NFTs are more and more put in Vaults or managed by multisig and their usage, imo, will continue to grow, which is why supporting them. However, we should be able to use Contract.isValidSignature with r,s,v the same way Uniswap does it now. Supporting 2098 came mostly because this implementation here was inspired by yours. But if people are more in favor of sticking with 3 parameters and forgetting the bytes form, then let\u2019s go!     Amxx:  (see this library that, if possible, should be preferred to ECDSA)   In the example implementation, I did not use SignatureChecker first because I am also checking if the signer is approved, which needs to recover the address. I added SignatureChecker (following your implementation) as the second condition, if the first does not work.     wschwab:  This makes me think that I should probably have the 4494 interface inherit the ERC721 interface, and then take the interface ID from there, but I wanted to open this up for conversation first.   I think your interface id is the right one. I used type(Interface).interfaceId and the tests are passing. Usually, for extensions, we try to have only the methods specific to the extension in the interface Id. So no need to add nor EIP165, nor 721. ",
+                    "links": [
+                        "https://github.com/dievardump/erc721-with-permits/blob/main/contracts/ERC721WithPermit.sol#L153"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.692857142857143
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "9",
+                    "likes": "1",
+                    "time": "29/11/2021-16:33:35",
+                    "content": "    dievardump:  However, we should be able to use Contract.isValidSignature with r,s,v the same way Uniswap does it now.   I strongly disagree with that. We should never assume that the bytes part of ERC1271\u2019s isValidSignature is a 64 or 65 bytes long ECDSA signature. It would be anyone, including the concatenation of multiple ECDSA signatures, or even non ECDSA based signatures. Taking 3 values, packing them, and passing them to isValidSignature might work in some case, but possibly lose a lot of the generality offered by ERC1271. Again, I also want to point that these smart-contract based wallets don\u2019t need permit as much as EOA do. In particular, they (often) include batching mechanism that allow to atomically execute an approve call, and a call to another contract. They also (often) include meta-tx relaying mechanism, allowing the owner to sign this batch of operations and letting someone else pay for the gas. These are two cases where permit is essential to EOA but not needed for smart wallets ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.732142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wschwab",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "08/12/2021-17:50:27",
+                    "content": "if we would go the route of accommodating 1271 and 2098, what would be the best way to validate? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dievardump",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "09/12/2021-10:15:37",
+                    "content": "    Amxx:  I strongly disagree with that.   So if I recapitulate:  you are in favor of uint8, bytes32, bytes32  we shouldn\u2019t abi.encodePacked() those in order to use SignatureChecker? we shouldn\u2019t really care for non-EOA because they already offer ways (arbitrary tx execution, batch tx/approve) to do things      Amxx:  Taking 3 values, packing them, and passing them to isValidSignature might work in some case, but possibly lose a lot of the generality offered by ERC1271.   That I fully understand, which is why I think it\u2019s better to go with the full bytes (and always use full bytes from now on, signature will evolve over time) than with r, s, v. But if r, s, v is the only thing we offer users, why not at least try with it. I would better add cases where it might work than just ignore it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.966666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "12",
+                    "likes": "2",
+                    "time": "09/12/2021-13:32:00",
+                    "content": "How about using bytes officially, but specifying an optional interface in the EIP with r,s,v options that \u201cMAY\u201d be implemented? This would be a way of recognizing the precedent of Uniswap v3 permits, while moving towards a more general solution (EIP1271 signatures). If a token implements both they would be compatible with code that assumes Uniswap-style interface, but the EIP mandates only the first so going forward that is really the option that UIs must implement for general support. I\u2019d like to see how this impacts bytecode size but theoretically it shouldn\u2019t be a huge overhead as most of the code will be shared. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "10/12/2021-14:01:34",
+                    "content": "I did have a second thought about all that, and I think I changed my mind in favor of using bytes. The main point is that, while smart wallet don\u2019t technically need to uses these signature, because they can batch calls, the web3 apps that are going to connect to the wallet (through something like walletconnect) are not going to differentiate between smart wallets and EOA. They will apply the same workflow to both, and that means signing a message that will have to be recovered. So at least until 3074 is a thing, and all wallets have the ability to propose a \u201csendbatch\u201d metchanism, we should have as much genericity as possible in signature schemes. This means using bytes. Its a shame that ERC2612 doesn\u2019t use bytes, but if we have the choice between reproducting the same errors for consistency sake, and break things for the better, maybe we should do the former. EDIT: +1 to @frangio idea ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4146825396825395
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wschwab",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "27/12/2021-11:38:12",
+                    "content": "I\u2019ve been thinking about this, and as a second draft of this EIP, wanted to consider going a bit further. I haven\u2019t run this by @dievardump yet, so this is just my rough thoughts for a second draft. First, in terms of signature, I think permit() should be overloaded, one that takes v,r,s like 2612 does for ERC20, and another which takes bytes like we originally suggested. We can explicitly state in the EIP that implementers MAY choose to only accept v,r,s signatures and have the bytes version either feed into it or revert. This allows implementers to decide how they want to handle signatures, gives the traditional v,r,s for people who find it easier, and makes an allowance that will have the groundwork for dealing with 2098 and 1271. In addition, once we\u2019re overloading, I really think we should overload safeTransferFrom to also accept a signature (both the v,r,s and bytes versions). A prominent use of permit is to make a one-tx approval and transfer, and it is my opinion that we should include a standard way of doing so. In summary, this would mean adding an additional permit and two safeTransferFrom functions to the interface (and needing to update the EIP-165 interfaceId accordingly). Thoughts? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.380208333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "27/12/2021-15:12:59",
+                    "content": "If someone is using safeTransferFrom as the method to invoke a receiver smart contract I don\u2019t think they need to use permit right? What I understand is the idea for permit is that you send the permit to a contract so they can approve themselves and transfer the token to themselves, then do something with it. Using safeTransferFrom is an alternative flow, I don\u2019t see how it makes sense to combine them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wschwab",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "28/12/2021-11:40:01",
+                    "content": "Let\u2019s say I\u2019m building a platform like Uniswap (or Aave) that needs approval in order to pull user assets. (This is mixing into ERC20s a bit, but the same thing should be applicable to something like OpenSea with NFTs.) By exposing a transfer function which accepts a signature we can design the following flow on the frontend:  user signs message permitting/approving the platform to spend their NFT the router (or alternative) can then hit the exposed transfer function, inputting the sig as an arg, which will first call permit to approve the contract, and then immediately make the transfer on top of it  Basically, using the OZ contract templates, it would look something like: function safeTranferFrom(   address from,   address to,   uint256 tokenId,   uint256 deadline,   bytes sig ) external {   permit(msg.sender, tokenId, deadline, sig);   _safeTransfer(from, to, tokenId, \"\"); }  The nice thing about this flow is that the user only needs one tx, and while this is also somewhat via a once-per-contract setApprovalForAll, this does not suffer the massive trust needed for setApprovalForAll, allowing users to spot approve only what they want the platform to move without incurring extra costs and UX burden of adding a tx every time they interact. It\u2019s possible I misunderstood the question, though - does this answer what you were asking? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.613636363636364
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "17",
+                    "likes": "1",
+                    "time": "28/12/2021-19:20:38",
+                    "content": "No I see, but I don\u2019t think this function is necessary. Just permit is enough. You grant a permit to a smart contract that will first invoke permit and then invoke either of the standard ERC721 transfer functions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.464285714285715
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dievardump",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "18/01/2022-23:45:29",
+                    "content": "I\u2019m not sure if we shouldn\u2019t add it. I had already added an example of safeTransferWithPermit() in the example of implementation I created for the EIP (erc721-with-permits/NFTMock.sol at main \u00b7 dievardump/erc721-with-permits \u00b7 GitHub) It can be really useful since it allows a user to use a permit and transfer the NFT in one go. Which is great to save gas and time. Problem is, it adds another method to a standard that is already not so small. I think there are pro and cons for this idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.638888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/duncancmt",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "19/01/2022-16:20:33",
+                    "content": "One thing I haven\u2019t seen mentioned here is the mismatch between who is allowed to approve versus permit. approve allows an approved-for-all sender, while permit only allows the owner to sign. The maximally general version of permit should have the following form: function permit(     address ownerOrApprovedForAll,     address spender,     uint256 tokenId,     uint256 deadline,     bytes memory signature ) external;  in order to support 1271, 2098, and to homogenize approve/permit. Alternatively, to more closely mirror 2612, the form could be: function permit(     address ownerOrApprovedForAll,     address spender,     uint256 tokenId,     uint256 deadline,     uint8 v,     bytes32 r,     bytes32 s ) external;  but this makes the compatibility with 1271 somewhat less useful.  And just to add my $0.02, I think safeTransferFromWithPermit and its ilk are unnecessary since the same behavior can be achieved with a simple helper contract. ERC721 is already a conceptually/bytecode large standard to support; let\u2019s not bloat it further with features that can be achieved simply through other means. The focus of the standard should be to build minimal blocks that enable useful applications, not to build the applications themselves. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.150689223057644
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dievardump",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "21/01/2022-11:26:48",
+                    "content": "The example of implementation coming with the EIP allows both Approved on the tokenId and approvedForAll of the owner to create permits on a token id. This doesn\u2019t have to come in the method signature, it\u2019s how the signer address is checked that matters here   github.com   dievardump/erc721-with-permits/blob/main/contracts/ERC721WithPermit.sol#L75-L88                       (address recoveredAddress, ) = ECDSA.tryRecover(digest, signature);           require(               // verify if the recovered address is owner or approved on tokenId               // and make sure recoveredAddress is not address(0), else getApproved(tokenId) might match               (recoveredAddress != address(0) &&                   _isApprovedOrOwner(recoveredAddress, tokenId)) ||                   // else try to recover signature using SignatureChecker, which also allows to recover signature made by contracts                   SignatureChecker.isValidSignatureNow(                       ownerOf(tokenId),                       digest,                       signature                   ),               '!INVALID_PERMIT_SIGNATURE!'           );                      However I am of the idea that this is just a sample, and implementers should decide themselves if they want any approved, approved for all or only owners to sign permits. i.e: In the implementation I already use, I only add ApprovedForAll and owners  About mirroring 2612, as discussed before, I think using (v, r, s) was a bad idea and that we should stick to bytes memory, to accommodate all present and future types of signatures (v, r, s) (r, vs), \u2026 ",
+                    "links": [
+                        "https://github.com/dievardump/erc721-with-permits/blob/main/contracts/ERC721WithPermit.sol#L75-L88"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.067708333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/duncancmt",
+                    "index": "21",
+                    "likes": "1",
+                    "time": "21/01/2022-14:32:15",
+                    "content": "    dievardump:  This doesn\u2019t have to come in the method signature, it\u2019s how the signer address is checked that matters here   Ahh, but unfortunately it does. In order to support 1271 with approved-for-all permits, the \u201csigner\u201d has to be an explicit argument to the function. Otherwise, how do we know which contract to call isValidSignature on? The implementation you provide above only allows the owner to use 1271. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "22",
+                    "likes": "2",
+                    "time": "23/01/2022-21:47:10",
+                    "content": "    wighawag:  Actually just realised that since nonces(uint256) is not the same as nonces(address) there is no conflict   Relying on this Solidity quirk as a solution doesn\u2019t seem like a good idea. I don\u2019t think there is any additional overhead to specifying it as tokenNonces(uint256 tokenId) instead in order to prevent conflict with other uses of this function.      Amxx:  AFAIK, bytes is more expensive, because it requires an additional slot to store the length. It is thus however more versatile in some cases, particularly when dealing with signatures that are produced by multisig and are then verified using 1271 (see this library that, if possible, should be preferred to ECDSA)   Note that ERC2098 would have the same size calldata as uint8 v, bytes32 r, bytes32 s since there is only 64 byes (plus length). uint8 takes a full 32 bytes to encode in calldata. I like that ERC2098 is also more flexible (at the expense of extra gas cost to process)      Amxx:  One should keep in mind that using this permit interface for EOA would be irrelevant if/when EIP-3074 becomes available.   I like EIP-3074, but conversations around it have really slowed down since EIP-3074 was first discussed. It makes me think that it\u2019s at least a few years away from going live.      wschwab:  In addition, once we\u2019re overloading, I really think we should overload safeTransferFrom to also accept a signature (both the v,r,s and bytes versions). A prominent use of permit is to make a one-tx approval and transfer, and it is my opinion that we should include a standard way of doing so.   Overloading like this isn\u2019t the best solution I think.      frangio:  No I see, but I don\u2019t think this function is necessary. Just permit is enough. You grant a permit to a smart contract that will first invoke permit and then invoke either of the standard ERC721 transfer functions.   @frangio is right @wschwab, smart contracts can natively batch txns very easily, so there is no necessity for this use case of transfer w/ permit in one function.      dievardump:  t can be really useful since it allows a user to use a permit and transfer the NFT in one go.   Why doesn\u2019t a straight transfer work then? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.784735249318582
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "23",
+                    "likes": "2",
+                    "time": "23/01/2022-21:53:46",
+                    "content": "Additional questions/comments:  Why does nonce need to change when the token transfers?  It sees like the nonce will no longer be valid if you change the owner. I suppose the only caveat to this would be if you transfer it, and transfer it back, and no nonce change has occured, then older signatures are now valid (assuming their deadline hasn\u2019t expired)   ERC721 approvals are action-based, meaning they are only good for one action and not a limited number of tokens. This might batch interactions much harder to replicate (in a use case I am working on, the NFT owner can decide to have their NFT mutated a number of times in order to fulfill a rebalancing need)   I think allowing the ApprovedForAll operator have permit authority might be really dangerous, especially given multiple NFT ownership where the nonces might be the same. Additionally, it\u2019s unlikely that this type of operator would be an EOA to send signatures in the first place, nevermind the potential for requiring another nonces field to track per-account nonces alongside per-token ones.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.017460317460317
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "29/01/2022-21:13:42",
+                    "content": "NOTE I believe due to the recent AnySwap hack, this EIP should incorporate a bool return value (that is just True) so that the permit call can be authenticated as passing.   Medium \u2013 23 Jan 22    Without Permit: Multichain\u2019s exploit explained A few days ago Multichain\u2019s users were hacked by several attackers groups, all abusing the same vulnerability in Multichain (previously\u2026  Reading time: 6 min read       ",
+                    "links": [
+                        "https://medium.com/zengo/without-permit-multichains-exploit-explained-8417e8c1639b"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.020833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dievardump",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "02/02/2022-10:50:08",
+                    "content": "    fubuloubu:  It sees like the nonce will no longer be valid if you change the owner. I suppose the only caveat to this would be if you transfer it, and transfer it back, and no nonce change has occured, then older signatures are now valid (assuming their deadline hasn\u2019t expired)   This is the reason, and I think it\u2019s primordial that a permit could not be used after any transfer. And we can see it now with the OpenSea debacle on OrderBooks with old orders still valid, it has to be 100% clear that after a transfer, even if the nft comes back to you, any Permit is revoked.     fubuloubu:  I think allowing the ApprovedForAll operator have permit authority might be really dangerous, especially given multiple NFT ownership where the nonces might be the same.   The idea was to allow X to transfer/sell the NFT they have in their Gnosis-Safe, without having to transfer them back in their main account. However as I mentioned, for me it\u2019s up to the implementers. I did add it like this because I think ApprovedForAll should have as much right as an owner (because with Permits, there will be much less need to add accounts as ApprovedForAll, only the bare minimum) I see Permits as a perfect use case for selling stuff on MarketPlaces and never have to do an approve/setApprovalForAll for a contract anymore.  Select your NFT sitting in your Vault fill what is required from the marketplace Sign a Permit Sign a Sell Order  If you change your mind, just up the nonce, revoke the permit or transfer your NFT to yourself and you\u2019re good. All from outside your Vault.     fubuloubu:  Additionally, it\u2019s unlikely that this type of operator would be an EOA to send signatures in the first place, nevermind the potential for requiring another nonces field to track per-account nonces alongside per-token ones.   I don\u2019t really understand this. Can you explain?     fubuloubu:  NOTE I believe due to the recent AnySwap hack, this EIP should incorporate a bool return value (that is just True) so that the permit call can be authenticated as passing.   I think that would be wise yes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.495811287477954
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "03/02/2022-19:20:39",
+                    "content": "    dievardump:  This is the reason, and I think it\u2019s primordial that a permit could not be used after any transfer. And we can see it now with the OpenSea debacle on OrderBooks with old orders still valid, it has to be 100% clear that after a transfer, even if the nft comes back to you, any Permit is revoked.   Totally agreed on this now, yes.     dievardump:  If you change your mind, just up the nonce, revoke the permit or transfer your NFT to yourself and you\u2019re good. All from outside your Vault.   This is actually in conflict with the above re: OpenSea hack, because what really happens is that people sign orders and forget about their existence. Permits are best used as a short-term use case where a metatxn service provider might batch process a bunch of permits for a given contract (say for example, an auction contract). You are approving the token for transfer by another entity, there is no concept of an actual \u201cexchange\u201d in the permit use case (nor should there be). These should be left up to separate use cases to define.     dievardump:  However as I mentioned, for me it\u2019s up to the implementers. I did add it like this because I think ApprovedForAll should have as much right as an owner (because with Permits, there will be much less need to add accounts as ApprovedForAll, only the bare minimum)   This will make the logic more complicated, because you will have to have a per-account nonce, and a per-token nonce, and updates to both will have to be handled whenever an action occurs. Also, ApprovedForAll is more a \u201cforever permit\u201d (along the lines of EIP-2612) vs. this standard, which is doing single token transfer permits. The contexts are so mixed.     dievardump:  I don\u2019t really understand this. Can you explain?   It\u2019s more likely that an operator would be a contract than an EOA. Not sure the comment makes as much sense upon reading it again.     dievardump:  I think that would be wise yes.   Upon further conversations, this is not really a security critical issue (it was a red herring in the disclosure), but for gas efficiency\u2019s sake, it is a bit cheaper to return a value than not. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.613275613275613
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dievardump",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "05/02/2022-11:53:35",
+                    "content": "    fubuloubu:  Permits are best used as a short-term use case where a metatxn service provider might batch process a bunch of permits for a given contract (say for example, an auction contract). You are approving the token for transfer by another entity, there is no concept of an actual \u201cexchange\u201d in the permit use case (nor should there be).   I sure disagree with this. I see permit as a way to secure tokens by suppressing the need to give approvals/approvalForAll to exchanges contracts. That\u2019s actually the use case I\u2019m the most interested in with the ability to let someone \u201ctake an NFT from my account\u201d without me having to spend one cent in gas. I see those use cases way more \u201cday to day use case\u201d than a metatxn service batch processing stuff. and that\u2019s why I brought it up.     fubuloubu:  This will make the logic more complicated, because you will have to have a per-account nonce, and a per-token nonce   I don\u2019t understand that. Except for the contracts approved-for-all permit problem pointed by duncan, this implementation here works as expected with owner or approvedForAll without needing any other nonce. The nonce is per-token, not per-signer. And it shouldn\u2019t be, else one signer couldn\u2019t sign permits on different tokens at the same time.     fubuloubu:  This is actually in conflict with the above re: OpenSea hack, because what really happens is that people sign orders and forget about their existence.   That\u2019s why Permits would have totally make this \u201chack\u201d impossible, since all those Orders would have  been revoked after any transfer, since the nonce increases every time the NFT is transferred. You can sign as much Permits as you want and forget them. You can even sign the same Permits (nonce) to several actors at once, and be sure that after any of them transfers the nft, any other signed permit for this token at this nonce, will be revoked. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.631944444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "08/02/2022-20:02:28",
+                    "content": "    dievardump:  suppressing the need to give approvals/approvalForAll to exchanges contracts.   For one thing, you\u2019ve created a huge race condition where an MEV opportunity exists to capitalize on executing a trade. But disregarding that, these permits don\u2019t have any concept or representation of an \u201corder\u201d, and no way to tie one in. You are approving an address to transfer for a tokenId on your behalf. I believe this ERC to be well-formed for that use case. It is most ideal to permit approve some sort of exchange contract, as the \u201cterms and conditions\u201d of that contract can be known ahead of time. That contract could additionally define an order book structure, allow lockup/deposit calls, perform fractionalization, you name it. That design space is super complicated, but having this ERC means I can permit approve an operator to deposit on my behalf to some sort of exchange. If the use case is thinking that two signed messages will be executed together, e.g. 1 permit message and 1 order, well there is an assumption they \u201chave\u201d to be processed together, which is a false assumption. Unless they are committed to the blockchain (e.g. The permit is \u201cused up\u201d) it is still valid, and can be replayed in any venue that will accept it. You could let it linger for longer, and have permits for multiple such contracts at the same time, but the longer it\u2019s valid for, the more likely it is that you\u2019ll forget about signing the message, which can come around and bite you at a later point in time a la BAYC \u201cthefts\u201d. Either way, I don\u2019t think this is a big issue, your use case is still totally possible with an alternative design leveraging this ERC. I think we are perhaps talking past each other on this point.     dievardump:  The nonce is per-token, not per-signer.   The nonce value for per-token approvals is okay to be per-token. The nonce value for approvedForAll would have to be per-account because the concept of tokenId doesn\u2019t apply. That was my point.     dievardump:  since all those Orders would have been revoked after any transfer   Again, this ERC doesn\u2019t describe \u201corders\u201d at all, and are best left out of scope for security purposes. NFT order book exchanges seem like a very complicated topic to try and standardize here. I think this ERC makes sufficient space available for different types of exchange contracts to be built without being prescriptive about how they do it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.592803030303031
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dievardump",
+                    "index": "29",
+                    "likes": "1",
+                    "time": "08/02/2022-22:44:58",
+                    "content": "    fubuloubu:  The nonce value for per-token approvals is okay to be per-token. The nonce value for approvedForAll would have to be per-account because the concept of tokenId doesn\u2019t apply. That was my point.   Oh I think there has been a misunderstanding here. I\u2019m talking about the fact that for me, an operator that is already approvedForAll for an account, should be able to sign simple approve permits, on any token of this account (i.e My token is in my vault, I am an approvedForAll operator on all tokens of my vault, I should be able to sign an approve permit on those tokens) I\u2019m not talking about permits that gives approvalForAll, only approve permits.  About the rest: I\u2019m mentioning use cases for permits, I\u2019m not trying to standardize those things in here. Just mentioning \u201cthis is a use case where this would work and bring a good solution to a problem that today makes people lose hundreds of thousands of dollars\u201d. We\u2019re in discussions, I did not mention order books in the EIP itself, because the eip is about permits. But the different use cases of permits that people can see will decide what we add in the eip. Several people asked about - and already implemented for some - Permits that gives approvalForAll. I\u2019m of the idea that it\u2019s not necessary because using a permit sets approve and deletes it in the same transaction, which in term of gas brings a refund. The simplicity of use, the low gas cost and the fact it brings security is for me enough to not have approvalForAll which can be considered dangerous in some way. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.615384615384615
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/markuswaas",
+                    "index": "30",
+                    "likes": "1",
+                    "time": "10/03/2022-08:22:47",
+                    "content": "    duncancmt:  Ahh, but unfortunately it does. In order to support 1271 with approved-for-all permits, the \u201csigner\u201d has to be an explicit argument to the function. Otherwise, how do we know which contract to call isValidSignature on? The implementation you provide above only allows the owner to use 1271.   I also came across that, but I don\u2019t think the standard here should be bloated even more for this. And there is a workaround for it. An approved for all contract could simply approve himself first using ERC721.approve. And in the signature verification one would do require(     isValidEOASignature     || _isValidContractERC1271Signature(ownerOf(tokenId), hash, signature)     || _isValidContractERC1271Signature(getApproved(tokenId), hash, signature),     \"ERC721Permit: invalid signature\" );  @dievardump I know this is an early draft and I saw you discussed changing the signature passing as bytes for example. I just published Advancing the NFT standard: ERC721-Permit which includes a little library, so if anything changes in the standard I\u2019d be happy to get notified to change it. Thanks. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.447115384615384
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/duncancmt",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "28/03/2022-19:39:53",
+                    "content": "_isValidContractERC1271Signature(getApproved(tokenId), hash, signature),  This seems quite dangerous because it breaks existing intuitions about how ERC721 approvals work. An approved (but not approved-for-all) address can spend the token, but not create additional approvals. With this scheme, if the approved address is a contract, then it breaks this intuition. Of course, the net permission granted is the same because the contract could just spend the token to itself and then do whatever it wants, but subtle bugs are introduced when peoples\u2019 intuitions are violated. I can\u2019t presently anticipate what that might be, but I advise conservatism and adherence to existing patterns. I also dislike this workaround because it is cumbersome. Rather than giving blanket permission for the approved-for-all contract to take implicit actions through 1271 signatures, which encourages contracts to be generic and composable, this requires the approved-for-all contract to make a non-static call to the token contract to get the approval before it can take a 1271-enabled action.  I reiterate that I believe the correct signature for this standard ought to be: function permit(     address ownerOrApprovedForAll,     address spender,     uint256 tokenId,     uint256 deadline,     bytes memory signature ) external;  with the option of whether to support ERC1271 left up to the implementer. This does not mandate ERC1271 support, but leaves open the option for those implementations that wish to support it. If an extra word of calldata is considered \u201cbloat\u201d, then I suppose I am advocating for a bloated standard   I am mostly neutral on the tokenId-nonce vs. owner-nonce distinction, but slightly prefer the owner-nonce concept because it doesn\u2019t penalize non-4494 users\u2019 gas for the existence of the 4494 feature in the token contract. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.90625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "06/06/2022-23:17:14",
+                    "content": "For EIP-4973, if we introduced a function mintWithPermission(/*msg.sender*/uint256 tokenId, uint256 deadline, bytes memory signature) (where address receiver would have to be the msg.sender) this would allow for a very interesting mechanic where:  account-bound tokens could at first be minted purely offline by the issuer sending a permission signature and the metadata to an ABT receiver. and then the ABT receiver (in case they need the ABT on-chain), to \u201clazy-mint\u201d the token with permission of the issuer to their account using EIP-4494.  It\u2019d solve one problem elegantly which Twitter and others in the space like https://erc1238.notion.site/ (see section on \u201cConsent\u201d, actually they implement a variant of EIP-712) have talked about:  By default NOT putting any credential immediately on-chain. But only those that the user deems necessary to put on-chain. Minting only towards an account if a mutual agreement between two accounts can be representatively sent to the Ethereum signature validation mechanism aka PoW consensus.  ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-4973-account-bound-tokens/8825/76"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.008928571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "24/06/2022-06:29:23",
+                    "content": "EIP-4494: Permit for ERC-721 NFTs reference implementation points to external link and seems to be licensed differently than specification: erc721-with-permits/package.json at a2afe09fe93e4bf41cb4e99e910796ea40c257af \u00b7 dievardump/erc721-with-permits \u00b7 GitHub Why not include reference implementation in assets directory? ",
+                    "links": [
+                        "https://github.com/dievardump/erc721-with-permits/blob/a2afe09fe93e4bf41cb4e99e910796ea40c257af/package.json#L10"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "24/06/2022-06:42:08",
+                    "content": "Proposing to add EIP-1271 as required to document header: Include EIP-1271 as required by TimDaub \u00b7 Pull Request #5178 \u00b7 ethereum/EIPs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "1511"
+}

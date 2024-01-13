@@ -1,0 +1,301 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-2126-signature-type-recognition/3392",
+            "title": "ERC-2126: Signature Type Recognition ",
+            "index": 3392,
+            "category": [
+                "Wallets"
+            ],
+            "tags": [
+                "signatures"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "19/06/2019-13:06:45",
+                    "content": "Enable Dapps to be able to recognize how a given signature was signed (e.g. by owner of a smart contract, EOA, etc) so that they can use the correct mechanism to verify the signature. Inspired by 0x Protocol V2.0 Signature Types   github.com/ethereum/EIPs       ERC-2126: Signature Type Recognition     by pedrouid   on 01:07PM - 19 Jun 19 UTC   6 commits   changed 1 files   with 131 additions   and 0 deletions.       ",
+                    "links": [
+                        "https://github.com/pedrouid",
+                        "https://github.com/ethereum/EIPs/pull/2126",
+                        "https://github.com/pedrouid",
+                        "https://github.com/ethereum/EIPs/pull/2126"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.7857142857142865
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "19/06/2019-13:20:45",
+                    "content": "I would like to get some feedback on the Web3 JSON API support IMO I think that the typeBytes shouldn\u2019t be optional and they would technically be backwards compatible since the byte as appended at the end of the signature. However @hiddentao raised a good point that a longer signature length can break verification of some modules that exist right now. Although technically the r,s,v parameters are left untouch with this proposal, there could be libraries that may error if provided with a longer signature. My suggestion would be to audit the most used javascript libraries (web3.js, ethers,js and eth.s) first to consider the implications of signature length before introducing this optional parameter to signing schemes on the Web3 API PS - not just javascript libraries, which should also consider Geth and Parity clients plus other provider implementations in other languages like Swift, Kotlin, Python, etc ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.825396825396826
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dekz",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "02/08/2019-08:13:47",
+                    "content": "Note we recently amended the Wallet Signature Type to return a known value rather than bool. To prevent a contract with truthy return value being used as a signature verification function. # When wallet signature this value must be returned or revert bytes32 magic_salt = bytes32(bytes4(keccak256(\"isValidWalletSignature(bytes32,address,bytes)\")));  Looks like this EIP still has boolean isValid function isValidSignature(     bytes32 hash,     address signerAddress,     bytes memory signature )     public     view     returns (bool isValid);  EIP1271 uses: bytes4(keccak256(\"isValidSignature(bytes,bytes)\")  We opted for changing it rather than returning the function signature as an additional safety mechanism. @pedrouid what do you think about reserving some additional types and providing an offset for custom types to start from? I wonder what 0x05 will be in the wild after a year, it could mean a number of different signatures. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.7875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/hiddentao",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "03/08/2019-10:37:24",
+                    "content": "Good point. The isValidSignature example in ERC-2126 needs to be updated - that method is not part of ERC-2126 anyway, it\u2019s just referring to it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "05/08/2019-08:44:49",
+                    "content": "The issue with ERC1271 is that everyone is implementing it differently. References at the bottom of the EIP point to 0x using it in the format (bytes32, bytes) \u2192 (bool). I have an implementation in kitsune wallet that uses the same interface. So does iExec\u2019s signature verification. I understand the rationnal behind returning a magic_salt but it looks like no one is using it. I\u2019ve also seen the addition of the \u2018address signerAddress\u2019 for the first time here, which could make sens, but then why limit it to an address and not a bytes32 to support more DIDs format ? It\u2019s high time discussion on ERC1271 restart \u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.425
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PhABC",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "23/10/2019-20:32:34",
+                    "content": "@pedrouid @hiddentao After so long, seems like the community is still divided between the (bytes32,bytes) vs (bytes,bytes). To come to a place of proper standardization instead of being in limbo, I believe ERC-1271 should bite the bullet and support both. If that was the case, what do you guys think of having something like     Signature byte Signature type     0x00 Illegal   0x01 Invalid   0x02 EIP712   0x03 EthSign   0x04 WalletBytes   0x05 WalletBytes32    Also, I don\u2019t think Invalid should be part of the standard as it\u2019s mainly for testing IIRC. What do you guys think? Imo the split between the bytes and bytes32 hurts more than having people supporting both. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.261904761904762
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/hiddentao",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "24/10/2019-06:53:31",
+                    "content": "I\u2019m ok with removing Invalid since Illegal is likely good enough for testing purposes. As for bytes vs bytes32, i\u2019d rather standardize on one of them and have the community update their implementations. This will avoid confusion (e.g. \u201cwhich one should I use?\u201d type of questions) and follows the generally agreed-upon \u201cless is more\u201d convention. It seems to me that bytes would be the one to standardize since it provides the most flexibility and is already what\u2019s stated in 1271. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.87962962962963
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PhABC",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "24/10/2019-12:59:12",
+                    "content": "I don\u2019t disagree with you, however it\u2019s been over a year and people still can\u2019t seem to agree on bytes or bytes32. For instance, ERC-1654 was created for people that want to use the bytes32 version for it. Imo having some people using bytes32 and others using bytes is worst than having everyone agree to implement both. bytes32 is definitely simpler than bytes (smart wallet receiving the bytes array need to know what the data is and how to hash it), so I can see the appeal of bytes32 as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.6904761904761907
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "28/10/2019-16:31:40",
+                    "content": "Actually since EIP-1654 is already using the bytes32 version, there is no need for EIP-1271 to support bytes32. EIP-1654 could be a Signature type, like EIP-1271 is described here. That\u2019s actually how we do it here : https://github.com/pixowl/sandbox-smart-contracts/blob/master/src/Sand/erc20/NativeMetaTransactionProcessor.sol#L180 Also relevant to the option of supporting both is my comment on EIP-1271 : https://github.com/ethereum/EIPs/issues/1271 ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/issues/1271"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PhABC",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "28/10/2019-16:37:19",
+                    "content": "Right, but now some project will support ERC-1654 while others ERC-1271 and we will have a divide that will be annoying. If both are always implemented together, might as well une one \u201cumbrella\u201d standard. As per your comment, I don\u2019t think your flow of checking for one then trying the other if the first fails is necessary if we use ERC-2126, it seems like added complexity. The signature identifier would be 0x04 if you used isValidSignature(bytes,bytes) or 0x05 if you used isValidSignature(bytes32,bytes). 0x uses 0x04 for the (bytes32,bytes) method and the 0x07 for the (bytes,bytes). At Horizon, we use 0x03 for the (bytes,bytes) and 0x04 for the (bytes32,bytes). ",
+                    "links": [
+                        "https://github.com/arcadeum/multi-token-standard/blob/f30bfacb7fa9f1d82f0bf27981a7d2fb59115aca/contracts/utils/SignatureValidator.sol#L24"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.364795918367347
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "28/10/2019-16:42:01",
+                    "content": "The flow was to show the potential issue of supporting both on the wallet side. As I mentioned in our implementation we use a parameter signatureType to not have to do that but my point was that if a wallet support both and do not throw on EIP-1654 version, an attacker could use the gas issue to always use the EIP-1654 and skip the check that would have been performed by EIP1271. But this is even easier for the attacker if we use SignatureType as the way to decide which one to use ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "28/10/2019-16:44:36",
+                    "content": "As for the division, I don\u2019t think it is an issue, Contract would be incentivised to support both. Edit: does not make sense  And as mentioned anyway due to the (gas / signature type skipping) attack vector , when enabling EIP-1271 version the EIP-1654 version need to be disabled. As such every wallet contract that want to support will have to support both version</del But at the same time, if the goal of EIP-1271 is to clarify the situation, I am all for it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.59375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "30/10/2019-10:37:43",
+                    "content": "The current specification states that:  the signature is encoded in the following way:     Offset Length Contents     0x00 1 v (always 27 or 28)   0x01 32 r   0x21 32 s      While this could be a valid encoding, it is not (AFAIK) the one commonly used by wallet. Usually, the signature is encoded (r,s,v). Decoding is ususally done in assembly like this FYI: the code I use to verify signature and support both EOA & ERC1271 (old) in one single function is also part of this file) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.565476190476191
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "14",
+                    "likes": "2",
+                    "time": "19/11/2019-17:46:27",
+                    "content": "Hey everyone, I\u2019d like to pick up on this EIP so that we can merge a draft that we could start sharing with other projects. Regarding the illegal vs invalid discussion, I would like to have @dekz opinion on this too since they are already using this in their stack. I agree that it seems a bit duplicated but don\u2019t want to introduce unnecessary breaking changes Regarding the bytes vs bytes32 discussion, I think that they can coexist specially since that there are EIPs for each and about the same number of projects implementing each. Therefore I would signal to make them separate signatures labelled by the respective EIPs     Signature byte Signature type     0x00 Illegal   0x01 Invalid   0x02 EIP712   0x03 EthSign   0x04 EIP1271   0x05 EIP1654    I will ping more community members and projects that would be relevant to this EIP too so that we can move this further cc @juniset @itamarl @rmeissner @Stefan @alexvandesande @marek ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.866071428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "20/11/2019-12:47:39",
+                    "content": "I might be missing something, but would the \u201csignature bytes\u201d be when doing a ERC712 signature that has to be recognised through an ERC1271 redirection? EthSign and ERC712 way to build a digest from a message/object \u2026 and the digest is then signed by the PK. In case of ERC1271 you just have to pass this digest, it gets verified by the \u201cidentity\u201d contract using erecover, without necessarily knowing whats actually signed. Does it have to know? My point is the contract verifying the dignature has to know how to build the digest (ethsign vs erc712) and then it has to know weither to check the validity using ecrecover or asking the \u201cidentity\u201d through ERC1271. Example: function verifySignature is called with an ERC712 hash and a bytes signature   github.com   iExecBlockchainComputing/PoCo/blob/master/contracts/IexecClerk.sol#L209    \t\t/** \t\t * Check orders authenticity \t\t */ \t\tIdentities memory ids; \t\tids.hasDataset = _datasetorder.dataset != address(0);   \t\t// app \t\tids.appHash  = _apporder.hash().toEthTypedStructHash(EIP712DOMAIN_SEPARATOR); \t\tids.appOwner = App(_apporder.app).owner(); \t\trequire(m_presigned[ids.appHash] || verifySignature(ids.appOwner, ids.appHash, _apporder.sign));   \t\t// dataset \t\tif (ids.hasDataset) // only check if dataset is enabled \t\t{ \t\t\tids.datasetHash  = _datasetorder.hash().toEthTypedStructHash(EIP712DOMAIN_SEPARATOR); \t\t\tids.datasetOwner = Dataset(_datasetorder.dataset).owner(); \t\t\trequire(m_presigned[ids.datasetHash] || verifySignature(ids.datasetOwner, ids.datasetHash, _datasetorder.sign)); \t\t}   \t\t// workerpool          github.com   iExecBlockchainComputing/PoCo/blob/master/contracts/SignatureVerifier.sol#L22  \t\treturn bytes32(uint256(_addr)); \t}   \tfunction checkIdentity(address _identity, address _candidate, uint256 _purpose) \tinternal view returns (bool valid) \t{ \t\treturn _identity == _candidate || IERC734(_identity).keyHasPurpose(addrToKey(_candidate), _purpose); // Simple address || ERC 734 identity contract \t}   \t// internal ? \tfunction verifySignature( \t\taddress      _identity, \t\tbytes32      _hash, \t\tbytes memory _signature) \tpublic view returns (bool) \t{ \t\treturn recoverCheck(_identity, _hash, _signature) || IERC1271(_identity).isValidSignature(_hash, _signature); \t}   \t// recoverCheck does not revert if signature has invalid format \tfunction recoverCheck(address candidate, bytes32 hash, bytes memory sign)        ",
+                    "links": [
+                        "https://github.com/iExecBlockchainComputing/PoCo/blob/master/contracts/IexecClerk.sol#L209",
+                        "https://github.com/iExecBlockchainComputing/PoCo/blob/master/contracts/SignatureVerifier.sol#L22",
+                        "https://github.com/iExecBlockchainComputing/PoCo/blob/master/contracts/SignatureVerifier.sol#L22"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/miguelmota",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "21/11/2019-06:36:01",
+                    "content": "Regarding the (bytes32,bytes)  vs  (bytes,bytes) discussion; I\u2019m in favor of  (bytes,bytes) because we have a use case where the isValidSignature method needs to validate against multiple signatures at once for it to be considered valid, and the different message data and signatures are concatenated and separated with solidity abi encoder so the data type needs to be a bytes. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PhABC",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "29/11/2019-17:48:42",
+                    "content": "Other than the \u201cInvalid\u201d one, I personally agree with this proposal.     pedrouid:      Signature byte Signature type     0x00 Illegal   0x01 Invalid   0x02 EIP712   0x03 EthSign   0x04 EIP1271   0x05 EIP1654       I also agree with @pedrouid That the bytes vs bytes32 seems too difficult to agree on and might as well have a standard for each. It will be clearer for everyone which method is supported or not, or both. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "30/11/2019-12:52:42",
+                    "content": "In regards of ERC 1271 for account contracts, I see the correct method would use bytes, bytes as they are more flexible and future proof. In regards of signature type, I think that might be useful\u2026 I have a usecase where the account contract is a multisig, and each of these address may or may not be an account contract aswell. For a very simple account contract, let say SimpleAccount.sol, I can have an owner, which can also be an account contract, or an externally owner account, so I have:     /**      * @notice checks if owner signed `_data`. ERC1271 interface.      * @param _data Data signed      * @param _signature owner's signature(s) of data      */     function isValidSignature(         bytes memory _data,         bytes memory _signature     )         public         view         returns (bytes4 magicValue)     {         if(isContract(owner)){             return ERC1271(owner).isValidSignature(_data, _signature);         } else {             return owner == ECDSA.recover(ECDSA.toERC191SignedMessage(_data), _signature) ? MAGICVALUE : bytes4(0xffffffff);         }     }      /**      * @dev Internal function to determine if an address is a contract      * @param _target The address being queried      * @return True if `_addr` is a contract      */     function isContract(address _target) internal view returns(bool result) {         assembly {             result := gt(extcodesize(_target), 0)         }     }  However, if this Account contract happened to be a MultisigAccount.sol, then all the addresses must be externally owned accounts, because the contract have no way of telling where to check the signature. Imagine could be a multisig of all account contracts, that themselves could also be signed by other account contracts - I see this would be a very edgy use case but It seems a valid use case that may happen in future as account contracts get more popular. ",
+                    "links": [
+                        "https://gist.github.com/3esmit/ef9fbaaab13b62c1b1b459a170db3caa#file-multisigaccount-sol"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.395
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "19",
+                    "likes": "2",
+                    "time": "02/12/2019-13:37:35",
+                    "content": "I think there are good arguments regarding bytes vs bytes32 made by everyone on the EIP-1271, let\u2019s signal these on the EIP1271 thread below cc @miguelmota @PhABC @3esmit @Amxx @wighawag   github.com/ethereum/EIPs     \t      ERC-1271 : Standard Signature Validation Method for Contracts             opened 01:25AM - 28 Jul 18 UTC               PhABC               Simple Description Many blockchain based applications allow users to sign off-chain messages instead of directly requesting users to do an on-chain transaction....         Finally regarding solely on the signature type recognition, I would propose to remove the ambiguity of the Illegal and Invalid and also order signature types by date created as follows:     Signature byte Signature type     0x00 Illegal   0x01 EthSign   0x02 EIP712   0x03 EIP1271   0x04 EIP1654    I would like @dekz feedback on this since it would break the backwards compatibility on their stack. Hopefully it shouldn\u2019t be too extensive to fix and it would make it clearer for new projects integrating this standard. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/issues/1271",
+                        "https://github.com/PhABC"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.198347107438016
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dekz",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "04/12/2019-18:01:18",
+                    "content": "For purely selfish reasons this would be very annoying. Developers could work around this by checking who the sender is and branching logic off of that. Our v3 version uses the following: enum SignatureType {         Illegal,                // 0x00, default value         Invalid,                // 0x01         EIP712,                 // 0x02         EthSign,                // 0x03         Wallet,                 // 0x04         Validator,              // 0x05         PreSigned,              // 0x06         EIP1271Wallet,          // 0x07         NSignatureTypes         // 0x08, number of signature types. Always leave at end.     }  EIP712 and EthSign are the most used in our protocol (note: verified by our contracts not by third party contracts). We could adopt the standard in the next version of the protocol but it would be some time. We would probably look to move some of the more 0x specific Sig types into a namespace safe area (PreSigned, Validator). So an agreement on which bytes are future reserved, which are safe for application specific etc, would be useful as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.1
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PhABC",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "07/01/2020-23:31:26",
+                    "content": "    pedrouid:      Signature byte Signature type     0x00 Illegal   0x01 EthSign   0x02 EIP712   0x03 EIP1271   0x04 EIP1654       @pedrouid Would you mind updating the official ERC draft to reflect this? Also, why did the EIP712 and EthSign type swap? EIP712 used to be the one before. I don\u2019t mind either way, but I\u2019ve personally been using the following:     Signature byte Signature type     0x00 Illegal   0x01 EIP712   0x02 EthSign   0x03 EIP1271   0x04 EIP1654    As can be seen in this contract. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "22",
+                    "likes": "1",
+                    "time": "08/01/2020-09:38:02",
+                    "content": "I raised an issue that was addressed a while back, and I\u2019d like to re-submit it. I think this enumeration put some very different thinks at the same level, like if there was a choice between them when it\u2019s more of a combination.   EthSign and EIP712 are standard on how to compute a digest (aka challengeHash) which signature\u2019s is checked at a further point. This allows signature verification mechanisms supporting a single type (bytes32) to extend to any message with some guaranties.  The choice here is app based. If the 0x protocole uses EIP712 signature I, as a user, have to use this scheme.    EIP1271, EIP1654 (and ecrecover) are standards that describe how to check the actual signature against the digest produced earlier.  This is the part we want to make \u201cuniversal\u201d as its availability dependes on the wallet used by the user. External accounts support direct ecrecover. Smart contract based wallet do not support ecrecover but can support EIP1271 and or EIP1654. We would like dapps to support these seamlessly.    What I mean is we can have EthSign + ecrecover (most common case today), EthSign + EIP1271, EIP712 + ecrecover , EIP712 + EIP1271, \u2026 depending of the digest scheme and the signing account specifications. That being said, I understand this enumeration does not allow combination of bytes. What Signature byte should be set in the case of an structure signed with EIP712 hashing by a wallet using EIP1271 ? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.272321428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "09/01/2020-17:25:11",
+                    "content": "    PhABC:      Signature byte Signature type     0x00 Illegal   0x01 EIP712   0x02 EthSign   0x03 EIP1271   0x04 EIP1654       EIP 712 changed significantly over time, there are now 4 variations out there (MetaMask supports 3: v1, v3, v4), so it might be worth either reserving an identifier for each, or specifying which is intended by this standard. v1: Was very simple, just a key-value store, no array or struct support. v2: Cipher browser was the only one to implement it, I\u2019m unaware of where to find docs on it. v3: Added array support v4: Added struct, and recursive type support. Our docs on these are not great at the moment, but here\u2019s a lead: https://metamask.github.io/metamask-docs/API_Reference/Signing_Data/Sign_Typed_Data_v4 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.859375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/pedrouid",
+                    "index": "24",
+                    "likes": "4",
+                    "time": "09/01/2020-17:52:20",
+                    "content": "Actually do we even need EIP712? Signature verification should be independent of its structure right? If a Dapp requests an eth_sign or eth_signTypedData, it will verify the signature the same way no matter if it\u2019s a EOA or Smart Contract Wallet. Correct me if I\u2019m wrong but it would be more reasonable to focus this EIP in uniquely different verification processes:     Signature byte Signature type Signature verification     0x00 Illegal None   0x01 EIP191 ecrecover   0x02 EIP1271 isValidSignature(bytes, bytes)   0x03 EIP1654 isValidSignature(bytes32, bytes)    PS - Actually eth_sign and eth_signTypedData are described under EIP191 so I\u2019ve renamed from EthSign to EIP191 in the table too PSS - I just noticed that @Amxx had already mentioned that EIP712 didn\u2019t really make sense to be indexed ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "14/01/2020-19:35:32",
+                    "content": "Which signature type uses the \u201cCompact Signature\u201d, where it 65 bytes size? This is used by Gnosis Wallet, see https://github.com/gnosis/safe-contracts/blob/development/contracts/common/SignatureDecoder.sol#L38-L40 Perhaps we need to standardize that aswell.  This is important, because wallets should be aware that the signature should be provided in this format. I opened an issue at gnosis wallet here https://github.com/gnosis/safe-contracts/issues/169 detailing it, and where it came from. ",
+                    "links": [
+                        "https://github.com/gnosis/safe-contracts/issues/169"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "15/01/2020-19:29:35",
+                    "content": "Another thing to consider https://eips.ethereum.org/EIPS/eip-2098 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "863"
+}

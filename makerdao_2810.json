@@ -1,0 +1,272 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/configure-arbitrage-bot/4624",
+            "title": "Configure arbitrage bot ",
+            "index": 4624,
+            "category": [
+                "Miscellaneous",
+                "Developers"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#1",
+                    "likes": "0",
+                    "time": "07/10/2020-16:55:04",
+                    "content": "I am trying to configure arbitrage bot:   github.com   makerdao/developerguides/blob/master/keepers/simple-arbitrage-keeper/simple-arbitrage-keeper.md#simple-arbitrage-keeper-guide # Simple Arbitrage Keeper Guide  Level: Intermediate   Estimated Time: 60 minutes  - [Simple Arbitrage Keeper Guide](#simple-arbitrage-keeper-guide)   - [Overview](#overview)   - [Learning objectives](#learning-objectives)   - [Pre-requisites](#pre-requisites)   - [Guide](#guide)     - [Introduction to Arbitrage](#introduction-to-arbitrage)     - [System Process Structure](#system-process-structure)     - [Documentation](#documentation)     - [Startup on Kovan](#startup-on-kovan)       - [Keeper Installation](#keeper-installation)       - [Install the DappHub Toolkit](#install-the-dapphub-toolkit)       - [Keeper Ethereum Address](#keeper-ethereum-address)       - [Deploy TxManager](#deploy-txmanager)       - [Deploy/Find a parity node](#deployfind-a-parity-node)       - [Uniswap Exchange Addresses](#uniswap-exchange-addresses)     This file has been truncated. show original      I followed tutorial and got an error: requests.exceptions.ConnectionError: HTTPSConnectionPool(host='https', port=443): Max retries exceeded with url: //93ad48d9e784fd857d160044772e35.eth.rpc.rivet.cloud/:8545 (Caused by NewConnectionError('<urllib3.connection.VerifiedHTTPSConnection object at 0x7f7b9ef7cfd0>: Failed to establish a new connection: [Errno -2] Name or service not known',))  This is my .sh settings file:  #!/bin/bash /home/user/simple-arbitrage-keeper/bin/simple-arbitrage-keeper \\  --rpc-host 'https://93ad48d884d857d160044772e35.eth.rpc.rivet.cloud/' \\  --eth-from '0xD63e5265f0033FA77a316516f768d26F7f879F6a' \\  --eth-key 'key_file=/home/user/.ethereum/keystore/UTC--2020-10-06T15-07-58.672992832Z--d63e5265ffa77a316516f768d26f7f879f6a' \\  --uniswap-entry-exchange '0x47D4Af3BBaEC0dE4dba5F44ae8Ed2761977D32d6' \\  --uniswap-arb-exchange '0x1D79BcC198281C5F9B52bf24F671437BaDd3a688' \\  --oasis-address '0x4A6bC4e803c62081ffEbCc8d227B5a87a58f1F8F' \\  --oasis-api-endpoint 'https://kovan-api.oasisdex.com' \\  --entry-token '0xC4375B7De8af5a38a93548eb8453a498222C4fF2' \\  --arb-token '0xd0A1E359811322d97991E03f863a0C30C2cF029C' \\  --arb-token-name 'WETH' \\  --min-profit 1 \\  --max-engagement 10 \\   As far as I understand the problem is with rpc-host settings. What do I do? ",
+                    "links": [
+                        "https://github.com/makerdao/developerguides/blob/master/keepers/simple-arbitrage-keeper/simple-arbitrage-keeper.md#simple-arbitrage-keeper-guide",
+                        "https://github.com/makerdao/developerguides/blob/master/keepers/simple-arbitrage-keeper/simple-arbitrage-keeper.md#simple-arbitrage-keeper-guide"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.409902597402597
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ed_Noepel",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "07/10/2020-18:33:48",
+                    "content": "I believe Rivet uses geth nodes, which should be compatible as long as the full JSON-RPC API is supported.  That said, we haven\u2019t had the opportunity to test compatibility with one of their nodes.  You can use https://github.com/makerdao/pymaker/blob/master/tests/manual_test_node.py to check node compatibility first. The error you\u2019re getting is likely due to Rivet desiring a connection on port 443, though this code suggests the keeper is attempting to use port 8545: https://github.com/makerdao/simple-arbitrage-keeper/blob/master/simple_arbitrage_keeper/simple_arbitrage_keeper.py#L55 You\u2019ll likely need to modify the keeper source to resolve this, since it appends the port to the end of the URL, which isn\u2019t what Rivet expects. ",
+                    "links": [
+                        "https://github.com/makerdao/simple-arbitrage-keeper/blob/master/simple_arbitrage_keeper/simple_arbitrage_keeper.py#L55"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.354166666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ed_Noepel",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "07/10/2020-18:56:44",
+                    "content": "And if you\u2019d like to go the extra mile to submit a PR which resolves the URL issue; here\u2019s some sample code for configuring web3 to support such URLs:   github.com   makerdao/auction-keeper/blob/master/auction_keeper/main.py#L134  parser.add_argument(\"--gas-reactive-multiplier\", type=float, default=1.125,                     help=\"Increases gas price when transactions haven't been mined after some time\") parser.add_argument(\"--gas-maximum\", type=float, default=2000,                     help=\"Places an upper bound (in Gwei) on the amount of gas to use for a single TX\")  parser.add_argument(\"--debug\", dest='debug', action='store_true',                     help=\"Enable debug output\")  self.arguments = parser.parse_args(args)  # Configure connection to the chain self.web3: Web3 = kwargs['web3'] if 'web3' in kwargs else web3_via_http(     endpoint_uri=self.arguments.rpc_host, timeout=self.arguments.rpc_timeout, http_pool_size=100) self.web3.eth.defaultAccount = self.arguments.eth_from register_keys(self.web3, self.arguments.eth_key) self.our_address = Address(self.arguments.eth_from)  # Check configuration for retrieving urns/bites if self.arguments.type == 'flip' and self.arguments.create_auctions \\         and self.arguments.from_block is None and self.arguments.vulcanize_endpoint is None:     raise RuntimeError(\"Either --from-block or --vulcanize-endpoint must be specified to kick off \"        ",
+                    "links": [
+                        "https://github.com/makerdao/auction-keeper/blob/master/auction_keeper/main.py#L134"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0285714285714285
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "08/10/2020-11:21:40",
+                    "content": "Hello, Ed, thanks for reply! I\u2019ve edited line 55 in simple_arbitrage_keeper.py parser.add_argument(\"--rpc-port\", type=int, default=443,#8545                     help=\"JSON-RPC port (default: `8545')\")   https://prnt.sc/uvekgy But I still get the same error requests.exceptions.ConnectionError: HTTPSConnectionPool(host='https', port=443): Max retries exceeded with url: //93ad48d9e7884f9d857d160044772e35.eth.rpc.rivet.cloud/:443 (Caused by NewConnectionError('<urllib3.connection.VerifiedHTTPSConnection object at 0x7f2c1db789e8>: Failed to establish a new connection: [Errno -2] Name or service not known',)) Any suggestions? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.136363636363637
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "08/10/2020-11:35:42",
+                    "content": "I also tried  to use this https://github.com/makerdao/pymaker/blob/master/tests/manual_test_node.py with following params: #line43     endpoint_uri = 'https://93ad48d9e7884f9d857d160044772e35.eth.rpc.rivet.cloud/' #sys.argv[1]              # ex: https://localhost:8545     web3 = Web3(HTTPProvider(endpoint_uri=endpoint_uri, request_kwargs={\"timeout\": 30}))     if len(sys.argv) > 3:         web3.eth.defaultAccount = '0xD63e5265f0033FA77a316516f768d26F7f879F6a'#sys.argv[2]  # ex: 0x0000000000000000000000000000000aBcdef123         register_keys(web3, ['key_file=/home/defidragon/.ethereum/keystore/UTC--2020-10-06T15-07-58.672992832Z--d63e5265f0033fa77a316516f768d26f7f879f6a'])      # ex: key_file=~keys/default-account.json,pass_file=~keys/default-account.pass         our_address = Address(web3.eth.defaultAccount)         run_transactions = True     else:         our_address = Address('0xD63e5265f0033FA77a316516f768d26F7f879F6a')         run_transactions = False  And it gave me an error: File \u201cmanual_test.py\u201d, line 47, in  mcd = DssDeployment.from_node(web3) AttributeError: type object \u2018DssDeployment\u2019 has no attribute \u2018from_node\u2019 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.916666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ed_Noepel",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "08/10/2020-11:36:30",
+                    "content": "Changing the default port isn\u2019t going to be enough.  You\u2019ll need to ensure the correct URL is being passed as the endpoint_uri parameter in the Web3 constructor.  The sample code I provided should help with this. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ed_Noepel",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "08/10/2020-11:42:53",
+                    "content": "You\u2019ll need to update to a newer version of pymaker to gain this feature; a git pull within lib/pymaker should achieve this. Edit: I submitted a PR to try and clean this up.  Changes within might be helpful if you want to get up-and-running before that\u2019s reviewed and merged. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.833333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "08/10/2020-12:43:23",
+                    "content": "Where do I put this code, you provided?(I guess its faster than waiting for pr request to be approved) I got confused  here  because I don\u2019t have https://github.com/makerdao/auction-keeper/blob/master/auction_keeper/main.py The main file that I run is https://github.com/makerdao/simple-arbitrage-keeper/blob/master/simple_arbitrage_keeper/simple_arbitrage_keeper.py I tried to change line 111 at simple_arbitrage_keeper like this https://prnt.sc/uvgkkg  # from pymaker import Address, web3_via_http # Configure connection to the chain self.web3: Web3 = kwargs['web3'] if 'web3' in kwargs else web3_via_http(     endpoint_uri=self.arguments.rpc_host, timeout=self.arguments.rpc_timeout, http_pool_size=100) self.web3.eth.defaultAccount = self.arguments.eth_from # register_keys(self.web3, self.arguments.eth_key) # Check configuration for retrieving urns/bites  But got and error: NameError: name 'web3_via_http' is not defined And when I try to import it like this: from pymaker import web3_via_http I get imort error: ImportError: cannot import name 'web3_via_http' What do I do? ",
+                    "links": [
+                        "https://github.com/makerdao/simple-arbitrage-keeper/blob/master/simple_arbitrage_keeper/simple_arbitrage_keeper.py"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.416666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ed_Noepel",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "08/10/2020-12:46:17",
+                    "content": "pushd lib/pymaker git pull origin master popd  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#11",
+                    "likes": "0",
+                    "time": "08/10/2020-12:48:59",
+                    "content": "Did it Now I have this error: > Traceback (most recent call last):        File \"/usr/lib/python3.6/runpy.py\", line 193, in _run_module_as_main         \"__main__\", mod_spec)       File \"/usr/lib/python3.6/runpy.py\", line 85, in _run_code         exec(code, run_globals)       File \"/home/defidragon/defidragon/simple-arbitrage-keeper/simple_arbitrage_keeper/simple_arbitrage_keeper.py\", line 27, in <module>         from simple_arbitrage_keeper.uniswap import UniswapWrapper       File \"/home/defidragon/defidragon/simple-arbitrage-keeper/simple_arbitrage_keeper/uniswap.py\", line 1, in <module>         from pymaker import Transact, Address       File \"/home/defidragon/defidragon/simple-arbitrage-keeper/lib/pymaker/pymaker/__init__.py\", line 36, in <module>         from web3._utils.contracts import get_function_info, encode_abi     ModuleNotFoundError: No module named 'web3._utils'  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ed_Noepel",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "08/10/2020-12:49:59",
+                    "content": "pip3 install -r lib/pymaker/requirements.txt  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "08/10/2020-12:52:04",
+                    "content": "once second, doing it ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#14",
+                    "likes": "0",
+                    "time": "08/10/2020-12:55:28",
+                    "content": "File \u201c/home/defidragon/.local/lib/python3.6/site-packages/requests/adapters.py\u201d, line 516, in send raise ConnectionError(e, request=request) requests.exceptions.ConnectionError: HTTPSConnectionPool(host=\u2018https\u2019, port=443): Max retries exceeded with url: //93ad48d9e7884f9d857d160044772e35.eth.rpc.rivet.cloud/:443 (Caused by NewConnectionError(\u2019<urllib3.connection.HTTPSConnection object at 0x7fa00e6f1be0>: Failed to establish a new connection: [Errno -2] Name or service not known\u2019,)) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.1439393939393936
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ed_Noepel",
+                    "index": "#15",
+                    "likes": "0",
+                    "time": "08/10/2020-12:59:22",
+                    "content": "Two problems with the way it\u2019s parsing your URL:  It\u2019s truncating the https for some reason It\u2019s still trying to suffix an explicit port number  The code changes I made here should resolve this. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "08/10/2020-13:09:14",
+                    "content": "thanks, I am checking this ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#17",
+                    "likes": "0",
+                    "time": "08/10/2020-16:19:04",
+                    "content": "The situation is the following: I am trying to make it work step by step, so firstly I removed tx manager. I managed to make it run, but it tells only this: 2020-10-08 16:13:45,501 INFO     Keeper connected to RPC connection https://93ad48d9e7884f9d857d160044772e35.eth.rpc.rivet.cloud/ 2020-10-08 16:13:45,501 INFO     Keeper operating as 0xD63e5265f0033FA77a316516f768d26F7f879F6a 2020-10-08 16:13:45,824 INFO     Waiting for the node to have at least one peer...  When I try to deploy tx manager  dapp create TxManager --password p.txt, it says: curl: (7) Failed to connect to 127.0.0.1 port 8545: Connection refused seth-rpc-curl: Please make sure that you are running a local Ethereum node: seth-rpc-curl:   For example, try running either `parity' or `geth --rpc'. seth-rpc-curl: You could also try connecting to an external Ethereum node: seth-rpc-curl:   For example, try `export ETH_RPC_URL=https://mainnet.infura.io'. seth-rpc-curl:   If you have an Infura API key, add it to the end of the URL. curl: (7) Failed to connect to 127.0.0.1 port 8545: Connection refused  I tried to export it like this ETH_RPC_URL=\u2018https://93ad48d9e7884f9d857d160044772e35.eth.rpc.rivet.cloud\u2019 But didn\u2019t help What do I do? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.145833333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/jernejml",
+                    "index": "#18",
+                    "likes": "0",
+                    "time": "09/10/2020-05:28:44",
+                    "content": "    1116:  curl: (7) Failed to connect to 127.0.0.1 port 8545: Connection refused   Just read your errors. Client (curl) tried to connect to the ip address 127.0.0.1 (that is locally - localhost)  and it\u2019s port 8545 and was ACTIVELY refused by the host. Probably nothing is listening on this port, i.e. port is not open.    Pico    What is a TCP Connection Refused? What is a TCP Connection Refused?      ",
+                    "links": [
+                        "https://www.pico.net/kb/what-is-a-tcp-connection-refused"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.616666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#19",
+                    "likes": "0",
+                    "time": "09/10/2020-12:11:38",
+                    "content": "    jernejml:  8545   I don\u2019t have a firewall and nothing is on this port. And I am not sure  how to understand this message when I try to launch it without tx manager 2020-10-08 16:13:45,824 INFO     Waiting for the node to have at least one peer...  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/1116",
+                    "index": "#20",
+                    "likes": "0",
+                    "time": "12/10/2020-07:34:18",
+                    "content": "Hello guys @Ed_Noepel any ideas? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ed_Noepel",
+                    "index": "#21",
+                    "likes": "0",
+                    "time": "12/10/2020-18:16:44",
+                    "content": "It seems dapp create is looking for a node running on your own machine rather than your Rivet node.  I looked at the dapptools documentation but didn\u2019t find how to configure the node endpoint.  Hoping someone experienced with that tooling can chime in. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Ed_Noepel",
+                    "index": "#22",
+                    "likes": "0",
+                    "time": "12/10/2020-18:26:38",
+                    "content": "Rivet probably isn\u2019t supporting JSON RPC API for revealing peer count.  pymaker uses this as a safety mechanism to ensure you aren\u2019t transacting with an unsynced endpoint.  You may need to comment this check out of pymaker to see if there are any other issues with Rivet. This seems unrelated to the dapp tools issue. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/NikKunkel",
+                    "index": "#23",
+                    "likes": "0",
+                    "time": "12/10/2020-21:23:06",
+                    "content": "dapp create utilizes seth which uses ETH_RPC_URL for an RPC endpoint. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/KentonPrescott",
+                    "index": "#24",
+                    "likes": "0",
+                    "time": "15/10/2020-15:59:07",
+                    "content": "@1116 Ed\u2019s PR to simple-arbitrage-keeper was merged ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#25",
+                    "likes": "0",
+                    "time": "14/01/2021-21:59:10",
+                    "content": "This topic was automatically closed 91 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

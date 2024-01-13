@@ -1,0 +1,300 @@
+{
+    "poll_list": [
+        {
+            "title": "Inclusion Poll for Centrifuge Direct Liquidation Module (MIP22)- 12 October, 2020",
+            "index": "3930",
+            "option": "Yes",
+            "supporting_mkr": "28,946",
+            "highest_fraction": 0.58
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip22-centrifuge-direct-liquidation-module/3930",
+            "title": "MIP22: Centrifuge Direct Liquidation Module ",
+            "index": 3930,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "centrifuge",
+                "mip-22",
+                "mip-accepted"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/spin",
+                    "index": "#1",
+                    "likes": "8",
+                    "time": "02/09/2020-19:53:39",
+                    "content": "MIP22: Centrifuge Direct Liquidation Module Preamble MIP#: 22 Title: Centrifuge Direct Liquidation Module Author(s): Lucas Vogelsang (@spin on forum.makerdao.com, [email\u00a0protected]) Contributor(s): Lea Schmitt ([email\u00a0protected]), Lev Livnev (@equivrel on forum.makerdao.com) Type: Technical Status: Accepted Date Proposed: 2020-09-02 Date Ratified: 2020-10-27 Dependencies: none Replaces: none Licenses: AGPL   References  Introductory post discussing the economics and legal benefits of this liquidation: Vault Liquidation Mechanism for Centrifuge Trade Finance Assets - A Pre MIP Discussion  Relevant MIP6 Proposals for which this liquidation could be used: Paperchain, ConsolFreight, Harbor Trade Credit  Example code: tinlake_flip.sol and drop_join.sol in this repository  Sentence Summary This proposal provides a vault liquidation mechanism for Tinlake based short-term loan collateral that entails letting a portfolio of said short term assets mature or refinance them off-chain and using loan repayments to settle the Vault balance. Paragraph Summary For Vaults of Centrifuge pooled short term loans, auctioning off a portfolio of short term loans is not necessarily the most effective way for Maker to liquidate a vault. When these assets are very illiquid the discount a keeper would want outweights the benefit of just waiting for maturity of the underlying loans. Centrifuge has built the Tinlake contracts to manage the liquidations of loan portfolios on chain. This mechanism allows the Maker smart contracts to get direct access to these repayments without the need for any external keepers. Component Summary MIP22c1: Collateral Prerequisites Describes the requirements for the collateral type to make use of the proposed liquidation module. MIP22c2: Liquidation Mechanism Describes the mechanism by which Vaults are liquidated when the described adapter is used. MIP22c3: Definitions Adapter Component Definitions MIP22c4: Proposed Code An explanation of the logic along with code MIP22c5: Usage of Code & Test Cases Still outstanding MIP22c6: Security Considerations Still outstanding MIP22c7: License The code is licensed under APGL. Motivation As we have stated in previous threads and discussions we believe that adding real world assets (RWA) to MCD is the path forward to scale Dai supply and balance the collateral risk portfolio through uncorrelated assets. A key issue preventing the addition of RWA to the Maker Protocol has been the absence of a reliable process to liquidate a Maker vault that is backed by these assets. When a legal entity invests in a Tinlake pool that is backed by RWA they enter a legal contract with the issuer and therefore get a legal claim on the underlying collateral (the real world asset). When Maker liquidates a Vault backed by these tokens it must have a way to get the DAI repaid that was generated in the Vault without having to enter a legal contract with the issuer. We are proposing a liquidation mechanism that solves for that whenever a Vault is backed by by short-term loan collateral. This mechanism does not require an auction and no additional legal structures. We see this solution as a major push towards making RWA in MCD a reality near term. The solution proposed in this MIP requires that the pool of loans that is tokenized through Centrifuge is either:  Of very short maturity and waiting for loan maturity is economically viable.  or  The loans can be sold off (refinanced) by the issuer off chain and there is a process in place for the liquidation of the pool in case any DROP token holder (such as Maker)  Whether the proposed liquidation component should be used for a given collateral type should be part of the Risk Assessment and discussed on an asset by asset basis. If that is desired, the below code should be configured to be used when adding a new collateral with the MIP12 executive vote. Specification MIP22c1: Collateral Prerequisites Assets that should be able to use this collateral have a few requirements:  This only works for collateral that is using Centrifuge\u2019s Tinlake smart contracts to tokenize their off-chain loans. There must be sufficient investors besides MakerDAO that ensure the correct operation of the legal recoure. The Risk Domain Teams deem this liquidation mechanism for the collateral type sufficient.   MIP22c2: Liquidation Mechanism When the liquidation of a Vault is kicked, the proposed liquidation adapter forces the Tinlake pool into liquidation by submitting an order to redeem all collateral in the Vault. The Tinlake contracts than automatically allocate all incoming cash-flows from borrowers to investors (i.e. the Maker Vault) for redemptions. 1135\u00d71102 43.9 KB  MIP22c3: Definitions   Tinlake Flipper: the contract that can liquidate a Vault by going to the Tinlake Pool contracts to redeem DROP for DAI and then transfer the raised DAI to the Vow   DROPJoin: An adaptor based heavily on GemJoin which allows only a selected Tinlake pool contract to add collateral to the Maker Vault.  Tinlake Pool: a pool of asset backed loans settled in DAI  DROP: the senior pool share ERC20 token which is redeemable against a share of the DAI repaid by the loans in the Tinlake Pool   MIP22c4: Proposed Code The code has been kept to a minimum and any functional changes are shown below. We will publish a Git repository after collecting feedback on this proposal (to be ammended). The code in full can be viewed here. For each Tinlake pool there will only be one Vault owned by the pool. The pool will have the logic necessary to manage the Vault. We modify the standard GemJoin adapter to only allow the join method to be called by wards (i.e. it is an authorized call). This will prevent anyone else from opening a CDP with DROP tokens as they would not be able to add the collateral to the system. The TinlakeJoin contract looks as follows. Note the added auth modifier in the join function. This is the only necessary change. contract DROPJoin is GemJoin {     function join(address usr, uint wad) external auth note {         require(live == 1, \"GemJoin/not-live\");         require(int(wad) >= 0, \"GemJoin/overflow\");         vat.slip(ilk, usr, int(wad));         require(gem.transferFrom(msg.sender, address(this), wad), \"GemJoin/failed-transfer\");     } }  The Tinlake Flipper takes all of the collateral from a Vault and requests redemption from the pool. The Tinlake contracts then enforce that any payments on loans are disbursed to the any DROP holder that requests redemption. As DAI is redeemed from the Pool, the adapter transfers the DAI into the vow until the tab is recovered. At that point any additional DAI that could be redeemed with the DROP is given back to the Pool. The auction mechanism is binary: only liquidating part of the collateral would not be desired from an economical perspective. Therefore the mechanism is designed to liquidate everything and only after return any excess DAI raised to the pool. When a Vault is liquidated (Cat.bite is called), the Cat will call Flipper.kick which kicks off the liquidation. At first it withdraws the entire collateral (the DROP tokens) from the system and places a redeemOrder on the pool contract.    function kick(address usr_, address gal, uint256 tab, uint256 lot, uint256 bid)        public auth returns (uint256 id)    {        vow = gal;        usr = usr_;        vat.flux(ilk, msg.sender, address(this), lot);         dropJoin.exit(address(this), lot);        pool.redeemOrder(lot);    }  The redeem order will now be taken into account whenever loan repayments flow into the pool or other investors want to join the pool. As the pool redeems the DROP any user can call the function take. It moves the DAI available for withdrawal from the pool and either repays up outstanding debt (tab) to the vow or returns it to the pool. This method can be called multiple time to cause the pool to disburse more DAI and return it to the pool as funds available for borrowers.     function take() public {         uint returned, _ = pool.disburse();         if (tab < returned) {             dai.transferFrom(address(this), usr, sub(returned-tab));             returned = tab;         }         if (tab != 0) {             dai.join(vow, returned);             tab = sub(tab, returned);         }     }  The Tinlake smart contracts collect redeem orders and return any DAI returned by borrowers proportionally to all DROP token holders first. This means that to receive highest priority on the redemption the liquidation should request the entire DROP to be redeemed. This can be done by setting the variable dunk to uint(-1). This raises the minimum size of the collateral to auction off during the liquidation to above the maximum collateral that can ever exist thus forcing liquidation of the entire Vault and not just part of it.  MIP22c5: Test Cases Tinlake is undergoing an audit which will be published by Sep 22nd. We will ammend this section with information on the test cases we have covering both the GemJoin and the Flipper.  MIP22c6: Security Considerations This section will be completed. The core Tinlake contracts have undergone security audits in the past (reports) and we will be publishing the audit we are conducting for the next release in the next few weeks as it is ready. As for the contracts that interact directly with MakerDAO (TinlakeFlipper and DROPJoin) those will be submitted with extensive test coverage and have been written following MakerDAO/DappHub\u2019s smart contract style guide, make use of no external libraries and are easy to audit totalling to less than 100 lines of code.  MIP22c7: License  All code is licensed under the AGPL license   ",
+                    "links": [
+                        "https://forum.makerdao.com/t/pc-drop-mip6-application-paperchain-drop-tokenized-music-streaming-invoices/2215",
+                        "https://forum.makerdao.com/t/cf-drop-mip6-application-consolfreight-drop-tokenized-freight-shipping-invoices/2214",
+                        "https://forum.makerdao.com/t/htc-drop-mip6-application-harbor-trade-credit-drop-short-term-trade-receivables/3502",
+                        "https://github.com/lucasvo/mips/tree/mip22/MIP22",
+                        "https://github.com/centrifuge/security/tree/master/audits/tinlake",
+                        "https://forum.makerdao.com/t/htc-drop-collateral-onboarding-risk-evaluation/8001",
+                        "https://forum.makerdao.com/t/pa-drop-mip6-application-us-based-supply-chain-finance-for-large-oems/7787/5",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-137-thursday-april-15-17-00-utc/7384/6",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/25",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-136-thursday-april-8-17-00-utc/7279/8",
+                        "https://forum.makerdao.com/t/new-silver-onboarding-executive-presentation/7373",
+                        "https://forum.makerdao.com/t/real-world-finance-core-unit-report-2021-03/7289",
+                        "https://forum.makerdao.com/t/maker-relay-ep-38/7249",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/23",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-134-thursday-march-25-17-00-utc/7095/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-37-en-espanol/7168",
+                        "https://forum.makerdao.com/t/maker-relay-ep-37/7154",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-132-thursday-march-11-17-00-utc/6859/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-36-en-espanol/7053",
+                        "https://forum.makerdao.com/t/maker-relay-ep-36/7039",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/21",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-132-thursday-march-11-17-00-utc/6859/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35-en-espanol/6949",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35/6932",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/20",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-131-thursday-march-4-17-00-utc/6737/10",
+                        "https://forum.makerdao.com/t/maker-relay-ep-34-en-espanol/6815",
+                        "https://forum.makerdao.com/t/maker-relay-ep-34/6802",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/19",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-130-thursday-february-25-17-00-utc/6651/5",
+                        "https://forum.makerdao.com/t/real-world-finance-core-unit-report-2021-01/6310",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-125-thursday-january-21-17-00-utc/6050/3",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-125-thursday-january-21-17-00-utc/6050/7",
+                        "https://forum.makerdao.com/t/cf-drop-collateral-onboarding-risk-evaluation/5597",
+                        "https://forum.makerdao.com/t/ns2drp-ns-drop-mip22-token-smart-contract-domain-team-assessment/5517",
+                        "https://forum.makerdao.com/t/on-the-priority-of-real-world-assets-where-do-we-stand/5424/23",
+                        "https://forum.makerdao.com/t/2020-year-end-schedule/5218",
+                        "https://forum.makerdao.com/t/ns-drop-collateral-onboarding-risk-evaluation/5418",
+                        "https://forum.makerdao.com/t/mip30-adaptador-de-cusdc-farmeable-cropjoin/5226",
+                        "https://forum.makerdao.com/t/mip30-farmable-cusdc-adapter-cropjoin/5163",
+                        "https://forum.makerdao.com/t/mip22-modulo-de-liquidacion-directa-de-centrifuge/5011",
+                        "https://forum.makerdao.com/t/maker-relay-ep-19-en-espanol/4981",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-117-thursday-november-5-16-00-utc/4929/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-19/4975",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-pt-br-portugues/4891",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-en-espanol/4882",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18/4881",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-pt-br-portugues/4810",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-en-espanol/4804",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17/4798",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-pt-br-portugues/4722",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-en-espanol/4719",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16/4710",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15-pt-br-portugues/4597",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15-en-espanol/4576",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15/4574",
+                        "https://forum.makerdao.com/t/relay-ep-14-en-espanol/4457",
+                        "https://forum.makerdao.com/t/maker-relay-ep-14/4450",
+                        "https://forum.makerdao.com/t/poll-rwa-working-group-centrifuge-model/4381",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-108-thursday-september-3-16-00-utc/3850/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-13-en-espanol/4313",
+                        "https://forum.makerdao.com/t/maker-relay-ep-13/4310",
+                        "https://forum.makerdao.com/t/maker-relay-ep-12/4153",
+                        "https://forum.makerdao.com/t/signal-request-should-real-world-asset-collateral-onboarding-be-prioritised-in-the-short-term/4075",
+                        "https://forum.makerdao.com/t/kf-drop-mip6-application-kickfurther-drop-consignment-inventory-finance-for-ecommerce-retail-brands/4064",
+                        "https://forum.makerdao.com/t/mip13c3-sp5-declaration-of-intent-maker-to-commence-onboarding-work-of-centrifuge-based-collateral/4059",
+                        "https://forum.makerdao.com/t/week-14-dai-distributions-sourcecred-trial/4044",
+                        "https://forum.makerdao.com/t/maker-relay-ep-11/4041",
+                        "https://forum.makerdao.com/t/mip21-real-world-assets-off-chain-asset-backed-lender/3917/6",
+                        "https://forum.makerdao.com/t/blocktower-credit-ces-domain-team-assessment/18817",
+                        "https://forum.makerdao.com/t/centrifuge-collateral-a-way-forward-with-a-delaware-statutory-trust-and-the-arranger-model/11566",
+                        "https://forum.makerdao.com/t/fortunafi-external-audit-report-by-luca-prosperi/10363",
+                        "https://forum.makerdao.com/t/discussion-liquidation-mechanisms-for-drop-assets-under-collateralized-mispriced/8719/9",
+                        "https://forum.makerdao.com/t/discussion-liquidation-mechanisms-for-drop-assets-under-collateralized-mispriced/8719/5",
+                        "https://forum.makerdao.com/t/discussion-liquidation-mechanisms-for-drop-assets-under-collateralized-mispriced/8719/4",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-144-thursday-june-3-17-00-utc/8459/2",
+                        "https://forum.makerdao.com/t/rwa006-pp1drp-p1-drop-mip22-token-protocol-engineering-domain-team-assessment/8418",
+                        "https://forum.makerdao.com/t/rwa005-ff1drp-fft1-drop-mip22-token-protocol-engineering-domain-team-assessment/8417",
+                        "https://forum.makerdao.com/t/rwa004-ht2drp-htc-drop-mip22-token-protocol-engineering-domain-team-assessment/8416",
+                        "https://forum.makerdao.com/t/rwa-006-p1-drop-collateral-onboarding-oracle-assessment-mip10c3-sp32/8402",
+                        "https://forum.makerdao.com/t/rwa-005-fft1-drop-collateral-onboarding-oracle-assessment-mip10c3-sp31/8401",
+                        "https://forum.makerdao.com/t/rwa-004-htc-drop-collateral-onboarding-oracle-assessment-mip10c3-sp30/8400",
+                        "https://forum.makerdao.com/t/rwa-003-cf-drop-collateral-onboarding-oracle-assessment-mip10c3-sp29/8399",
+                        "https://forum.makerdao.com/t/rwa003-cf4drp-cf-drop-mip22-token-protocol-engineering-domain-team-assessment/8382"
+                    ],
+                    "GPT-summary": "This post is a proposal for a Centrifuge Direct Liquidation Module, which provides a vault liquidation mechanism for Tinlake based short-term loan collateral. The proposal includes a technical description of the mechanism, collateral prerequisites, liquidation mechanism, definitions, proposed code, usage of code and test cases, security considerations, and license. The author explains the proposal in detail, while a 3rd party provides constructive criticism and asks questions about the proposal. There is no indication of collaboration being sought.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Grants, Funding and resource allocation",
+                        "Interoperability and Scalability",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.598689420335762
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "03/09/2020-10:13:01",
+                    "content": "Hi @spin and thank you for this MIP proposal. It even comes with the code. Question: as far as I see it the precise liquidation trigger points are still adjustable? So Vault liquidation could be triggered at let\u2019s say when TIN is down 50% or 80% er even completely wiped? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.555555555555555
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/spin",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "03/09/2020-13:52:03",
+                    "content": "Yes, the liquidation would still be triggered by the collateral value of the vault dropping. This would be dependent on the health of the pool (i.e. how much the TIN ratio is and how much the overall value of the pool is). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "03/09/2020-23:48:51",
+                    "content": "Aight, going to go through line by line and just do feedback as it occurs to me. Hopefully some of it is useful.     spin:  Author(s): Lucas Vogelsang (@spin on forum.makerdoa.com, [email\u00a0protected]) Contributor(s): Lea Schmitt ([email\u00a0protected]), Lev Livnev (@equivrel)    Spelling on a couple of these. Makerdoa and centrifug.     spin:  References   Previously (though not always) items in the references section have been included within the MIPs repository so that they can be fixed at time of submission. It\u2019s probably fine not to do this with forum threads (and we haven\u2019t before.) But it\u2019s important to remember that the forum content isn\u2019t guaranteed to be static.     spin:  This proposal provides a vault liquidation mechanism for short-term loan collateral that entails letting a portfolio of said short term assets mature and using loan repayments to settle the Vault balance.   Is this proposal unique to centrifuge assets? I haven\u2019t got to the meat of it yet, but feels like this is probably the case. It should be specified in the Sentence Summary.     spin:  Component Summary   Formatting-wise leave a space between the components. I believe in markdown you can achieve this by ending the line with two space characters. Possibly this has just been lost in translation to the forum from the source. Either way I would still add newlines between these to make this more readable.     spin:  Describes for which collateral types this adapter can be used.   Not sure this is accurate. Feels like the component would be more accurately summarized as: \u201cDescribes the requirements for the collateral type to make use of the proposed liquidation module.\u201d     spin:  MIP22c3: Definitions Definition of the different components.   Can you be more specific here? Both with the component name and description. Adaptor Component Definitions? Not sure what fits best.     spin:  MIP22c4: Proposed Code An explanation of the logic along with code   Maybe: \u201cIncludes the proposed adaptor code and a description of the smart contract logic and liquidation process.\u201d     spin:  For RWA to be addet to the system, the key problem for Maker has been the absence of a reliable process to liquidate a Maker vault that is backed by these assets.   addet -> added. Seeing a couple of typos of this nature. Maybe run the whole thing through grammarly or somesuch to catch the obvious stuff? I would actually maybe reword this slightly too it it were me. \u201cA key issue preventing the addition of RWA to the Maker Protocol has been\u2026\u201d?     spin:  When a legal entity invests in a Tinlake pool that is backed by RWA they enter a legal contract with the issuer and therefore get a claim on the assets in the SPV.   I know what SPV means, you know what SPV means. I\u2019m fairly sure that some don\u2019t, and to be fair beyond knowing it stands for \u2018Special Purpose Vehicle\u2019  and that it\u2019s some sort of legal entity, I\u2019m drawing blanks. Maybe link this to a definition somewhere? Maybe give the full name in brackets so less-business oriented readers can go google it.     spin:  Assets that should be able to use this collateral have a few requirements:  This only works for collateral that is using Centrifuge\u2019s Tinlake smart contracts to tokenize their off-chain loans. There must be sufficient investors besides the use of the tokens The Risk Domain Teams deem this liquidation mechanism for the collateral type sufficient.    I\u2019m not sure I\u2019m understanding point 2 here, not sure that statement makes sense as written.     spin:  MIP22c2: Liquidation Mechanism When the liquidation of a Vault is kicked, the proposed liquidation adapter forces the Tinlake pool into liquidation by submitting an order to redeem all collateral in the Vault.   Switching gears here slightly. Does this affect all DROP investors? IE, does this command liquidate the entire pool, or just enough to return DAI to the Maker Vault? If it\u2019s the whole pool, are other drop investors happy with this setup? Do they also have the ability to trigger liquidation of the tinlake pool which would affect Maker?     spin:  Tinlake GemJoin: a GemJoin adapter that only allows the pool to add collateral   Can we name this ShortTinJoin or something?  Also, can you maybe reword the explanation here? Something like: \u201cAn adaptor based heavily on GemJoin which allows only a selected tinlake pool contract to add collateral to the Maker Vault.\u201d     spin:  DROP: the senior pool share ERC20 token it is redeemable against a share of the DAI repaid by the loans in the Tinlake Pool   Maybe needs a slight reword.  \u201cthe senior pool share ERC20 token which is redeemable against a share of the DAI repaid by the loans in the Tinlake Pool\u201d?     spin:  The code has been kept to a minimum and any functional changes are shown below. We will publish a repo after collecting some feedback on this proposal (to be ammended).   I would use \u2018github repository\u2019 here rather than repo. Again, just so this is slightly more understandable by non-tech users. ammended -> amended.     spin:  The code in full can be viewed here.   Could this be included in the reference section?  On a more general note, the idea seems sounds to me. I\u2019m not really the right person to comment on the smart contract code, but going by the description of its operation it seems workable. I\u2019m looking forward to seeing it in practice, and thanks for pushing this as a solution to the liquidation issue with short-term loan collateral. I think my two main content-based questions are ones I mentioned above (but will repeat here):  If Maker liquidates the whole pool, is this going to annoy other holders of DROP? Can other holders of DROP also liquidate the whole pool and potentially annoy Maker?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.760210622710622
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/spin",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "04/09/2020-09:41:24",
+                    "content": "I\u2019ve added the small changes you suggested to the pull request (Commit).     LongForWisdom:  I think my two main content-based questions are ones I mentioned above (but will repeat here):  If Maker liquidates the whole pool, is this going to annoy other holders of DROP? Can other holders of DROP also liquidate the whole pool and potentially annoy Maker?    To answer these two questions: yes, other investors are affected by Maker liquidating. The pool will redeem DROP to investors on a pro-rata basis. Any investor (incl. Maker) can submit redemption requests and if not enough DAI is available to redeem all, it will be given out proportionally to the size of your redeem request. Maker is treated like any other investor. It ultimately depends on whether Maker is the only stakeholder that thinks the pool is a bad investment or other investors as well. In fact if other investors want to join this pool and Maker wants out, Maker doesn\u2019t even need to wait for any loan repayments but the investment of these investors can be used to redeem Maker. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-19/4935",
+                        "https://forum.makerdao.com/t/weekly-mips-update-18/4847",
+                        "https://forum.makerdao.com/t/weekly-mips-update-17/4746",
+                        "https://forum.makerdao.com/t/weekly-mips-update-15/4243",
+                        "https://forum.makerdao.com/t/weekly-mips-update-14/4028",
+                        "https://forum.makerdao.com/t/octobers-monthly-mips-governance-poll-is-live-go-vote/2842"
+                    ],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.851851851851851
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/charlesstlouis",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "09/09/2020-17:12:52",
+                    "content": "This proposal has been moved to the Request for Comments (RFC) phase and will have a 1 month feedback period before being eligible for Formal Submission. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/spin",
+                    "index": "#7",
+                    "likes": "4",
+                    "time": "01/10/2020-18:18:44",
+                    "content": "We\u2019re now formally submitting this MIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#8",
+                    "likes": "3",
+                    "time": "14/10/2020-16:48:07",
+                    "content": "This MIP is on vote and is currently passing with 54% (3 people against) while the linked MIP13 is passing with 100%. Feel free to add any argument against in the post (or DM me) so we can keep that in mind while working on onboarding Centrifuge collateral (you can create a new account if you want to remains anonymous). ",
+                    "links": [
+                        "https://vote.makerdao.com/polling-proposal/qmqyevr1g9zjrdzmqahqgj7hhvbaaxdm2dqgbnarqbe6qs",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-115-thursday-october-22-16-00-utc/4757/5"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.893939393939394
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#9",
+                    "likes": "3",
+                    "time": "22/10/2020-14:36:17",
+                    "content": "The smart contracts team has reviewed this technical MIP, and while the overall idea is conveyed, the technical implementation is mostly prototype code.  We would suggest the next steps would be to fully flesh out the Flipper implementation, get it to compile, and update it for LIQ-1.2.  You can do this by starting with a template flip.sol from the dss repo:   github.com   makerdao/dss/blob/master/src/flip.sol // SPDX-License-Identifier: AGPL-3.0-or-later  /// flip.sol -- Collateral auction  // Copyright (C) 2018 Rain <[email\u00a0protected]> // // This program is free software: you can redistribute it and/or modify // it under the terms of the GNU Affero General Public License as published by // the Free Software Foundation, either version 3 of the License, or // (at your option) any later version. // // This program is distributed in the hope that it will be useful, // but WITHOUT ANY WARRANTY; without even the implied warranty of // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the // GNU Affero General Public License for more details. // // You should have received a copy of the GNU Affero General Public License // along with this program.  If not, see <https://www.gnu.org/licenses/>.  pragma solidity >=0.5.12;     This file has been truncated. show original      As for the GemJoin with the auth modifier, we would prefer you use the AuthGemJoin located here:   github.com   makerdao/dss-gem-joins/blob/master/src/join-auth.sol // SPDX-License-Identifier: AGPL-3.0-or-later  /// join-auth.sol -- Non-standard token adapters  // Copyright (C) 2018 Rain <[email\u00a0protected]> // Copyright (C) 2018-2020 Maker Ecosystem Growth Holdings, INC. // // This program is free software: you can redistribute it and/or modify // it under the terms of the GNU Affero General Public License as published by // the Free Software Foundation, either version 3 of the License, or // (at your option) any later version. // // This program is distributed in the hope that it will be useful, // but WITHOUT ANY WARRANTY; without even the implied warranty of // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the // GNU Affero General Public License for more details. // // You should have received a copy of the GNU Affero General Public License // along with this program.  If not, see <https://www.gnu.org/licenses/>.      This file has been truncated. show original      Obviously, before any final deploy of any code, DROP tokens would need to follow the typical collateral onboarding process.  This will require that this technical MIP, as well as dependancies like the redeemer will be pulled into scope for review.  Part of that collateral onboarding process means rigorous integration tests must be passed.  We may require that liquidations, redemptions, and emergency shutdown be proven in this process. ",
+                    "links": [
+                        "https://github.com/makerdao/dss/blob/master/src/flip.sol",
+                        "https://github.com/makerdao/dss/blob/master/src/flip.sol",
+                        "https://github.com/makerdao/dss-gem-joins/blob/master/src/join-auth.sol",
+                        "https://github.com/makerdao/dss-gem-joins/blob/master/src/join-auth.sol",
+                        "https://github.com/makerdao/dss-gem-joins/blob/master/src/join-auth.sol",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-115-thursday-october-22-16-00-utc/4757/2"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.693371943371943
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#10",
+                    "likes": "2",
+                    "time": "03/11/2020-16:31:03",
+                    "content": "Have the test cases mentioned in \u201cMIP22c5: Test Cases\u201d been done and published yet? If so, can you please add them to that section of the MIP ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#11",
+                    "likes": "2",
+                    "time": "12/01/2021-01:19:51",
+                    "content": "Following up for the MIP Tracker, has the code been updated as recommended by @cmooney? Also to @Davidutro\u2019s point do we have an audit of these liquidations to add to the MIP in GitHub? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/spin",
+                    "index": "#12",
+                    "likes": "2",
+                    "time": "12/01/2021-07:30:10",
+                    "content": "Yes, we\u2019ve been working with the SC Domain Team on a few change requests they\u2019ve had. The most recent version of the code which includes these changes is here: https://github.com/centrifuge/tinlake-maker-lib ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5
+                }
+            ]
+        }
+    ],
+    "group_index": "2657"
+}

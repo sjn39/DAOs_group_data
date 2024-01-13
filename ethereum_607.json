@@ -1,0 +1,192 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/hypothetical-maximum-scale-of-eth-1-x/2264",
+            "title": "Hypothetical maximum scale of Eth 1.x ",
+            "index": 2264,
+            "category": [
+                "Working Groups",
+                "Ethereum 1.x Ring"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "20/12/2018-14:21:48",
+                    "content": "I\u2019ve never seen this topic addressed directly so I thought it would be interesting to do so here. I\u2019m trying to answer the question: What is the maximum theoretical scale that could be achieved on the existing Ethereum 1.x chain, that is, without sharding? I\u2019m interested in a purely theoretical approach to this question, from a project management perspective, rather than in a more scientific answer, or in actually attempting to achieve such scale. If it seems likely that we could get serious performance gains on the existing, pre-Serenity chain, then I think investment in a more concerted \u201cEthereum 1.x\u201d scaling effort would be justified. I\u2019ve had conversations with @fredhr, @jpitts, @AlexeyAkhunov, and several members of the Ewasm team recently, and @karalabe spoke to the same topic recently as part of the Eth 1.x conversation, so this is my attempt to summarize and draw some conclusions from these conversations. The prerequisite for all of the ideas listed here is that they do not require major protocol changes, and are not breaking changes of the sort that will be introduced with Serenity. Many of these would not require a hard fork; most do not involve a protocol change. A couple are admittedly pushing the envelope as far as \u201cnot requiring major protocol changes\u201d but \u201cmajor\u201d is subjective. These are not hypothetical, \u201csomeday maybe\u201d technologies; they\u2019re technologies that have  been proven elsewhere and/or extensively studied. I chose not to include, e.g., STARKs here since they don\u2019t seem to be feasible yet in their present form. Possible scaling technologies and max. theoretical scale of each, very roughly in order of feasibility/confidence:  Reduced uncle rate, shorter block processing time (discussion here): 10x Improved I/O from better data structures, e.g., TurboGeth (source: @AlexeyAkhunov): 4x State pruning (reduced I/O) (source): 15x Bounded account/storage trie growth via state rent or stateless clients (source: my own wild speculation, and discussion with @AlexeyAkhunov: block processing should get faster with reduced I/O, and with bounded state we should see I/O benefits over time from improving hardware): 5x Block pre-announcement, pre-warming the state (source: @AlexeyAkhunov): 5x BitcoinNG-style leader election and block proposal (source): 50x Ewasm with JIT compilation (source: benchmarking work that @gcolvin did last year, code and talk): 50x (modulo concerns about JIT safety) Parallelization of transactions (source: internal conversations on the Ewasm team): 50x Multidimensional gas/metering (gas is a blunt tool and is designed to be overly conservative; if we could meter, say, I/O and computation separately then we could pack more transactions into each block) (source: me)  Naively multiplying these all yields a scale of 1.87 billion x current scale. This is obviously an absurdly high number for at least two reasons: 1. This is a \u201cbest case scenario\u201d and many of these ideas may not perform \u201cas advertised\u201d or may not work at all. 2. This assumes total orthogonality among the ideas, which is obviously not the case. However, even if we assume, for the sake of argument, that only 10% of these ideas yield fruits, and that those yield only 1% of \u201cadvertised\u201d performance/orthogonality, that\u2019s still 1.875 million. Still a pretty high number. Still lots of room to poke holes. One obvious weakness in this argument is that it\u2019s \u201ctop down\u201d versus \u201cbottom up,\u201d i.e., these ideas are all nice in theory until we try actually implementing them in existing clients and find that they might not actually work, might take as long as Serenity (e.g., stateless clients, which have wicked UX challenges), might break other things (e.g. usability), or might be mutually incompatible. Another import caveat: as @karalabe and @AlexeyAkhunov eloquently explained in their Eth 1.x proposals, any attempt to scale today will immediately exacerbate the state and storage size issues, so any meaningful scaling (of Eth 1.x or 2.0) is still blocked on that. Finally, there are probably fundamental limits to how far a single chain can be scaled, such as sync time (possibly alleviated by stateless clients?) and I/O limits. What am I missing? What have I got wrong here? Is this exercise useful? To reiterate, the point is not to come up with some specific,. proposed scaling plan for Eth 1x, but rather to consider the question of reinvesting in scaling Eth 1x vs. doubling down on Eth 2 from a high-level, project management perspective. Thanks! ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/on-raising-block-gas-limit-and-state-rent/2249/2?u=lrettig",
+                        "https://gist.github.com/karalabe/60be7bef184c8ec286fc7ee2b35b0b5b#theoretical-solution",
+                        "https://github.com/ethereum/wiki/wiki/Sharding-FAQs#what-about-approaches-that-do-not-try-to-shard-anything",
+                        "https://github.com/gcolvin/evm-drag-race",
+                        "https://youtu.be/ArR2W4v5evk",
+                        "https://twitter.com/VitalikButerin/status/1072488883533869058?s=20",
+                        "https://blog.ethereum.org/2016/10/31/uncle-rate-transaction-fee-analysis/",
+                        "https://ethereum-magicians.org/t/experiments-we-should-be-running/2573",
+                        "https://ethereum-magicians.org/t/what-factors-may-have-been-blocking-efforts-to-scale-the-current-ethereum/2266"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.564012145262145
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "20/12/2018-14:47:33",
+                    "content": "    lrettig:  Block pre-announcement, pre-warming the state (source: @AlexeyAkhunov): 5x   This should already be happening to certain extent - one of the geth\u2019s latest releases effectively included contract storage items into the state caching (I do not have info about Parity, but Turbo-Geth has been doing from the beginning). It means that if you are a miner, and mining a block, but then someone else beat you to it, you need to import your block before you start mining the next one. Since the block you are mining and the one you have imported very likely have almost the same set of transactions, your caches will be warm, and import should be quick. And that also means (unexpectedly), that this caching actually somewhat penalises miners mining empty blocks.     lrettig:  However, even if we assume, for the sake of argument, that only 10% of these ideas yield fruits, and that those yield only 1% of \u201cadvertised\u201d performance/orthogonality, that\u2019s still 1.875 million   I suspect that most of these estimated were made based on the CURRENT state of things, and not on the state of things already improved by other measures, so they would not compound in a straightforward way. I would rather add these numbers than multiply them  EDIT: Addition     lrettig:  To reiterate, the point is not to come up with some specific,. proposed scaling plan for Eth 1x, but rather to consider the question of reinvesting in scaling Eth 1x vs. doubling down on Eth 2 from a high-level, project management perspective.   I support this sentiment (of course I would). I also think that we can make Ethereum 1.0 more changeable (one idea is to make clients simpler by not supporting all historical rules - that would also cut down historical tests - as I described in Backwards-Forwards sync article) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.612301587301587
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "20/12/2018-14:57:50",
+                    "content": "    AlexeyAkhunov:  I suspect that most of these estimated were made based on the CURRENT state of things, and not on the state of things already improved by other measures, so they would not compound in a straightforward way. I would rather add these numbers than multiply them   Valid point. I agree that there is likely a low degree of orthogonality among many of these ideas, but I contend that it\u2019s probably higher than 1%. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "4",
+                    "likes": "2",
+                    "time": "20/12/2018-19:14:14",
+                    "content": "Thanks for opening this up this @lrettig! Experienced engineers do often wish to be conservative in their promises about outcomes, but it is crucial to know what outcomes are on the table when determining community-wide resource allocation. Also, I created a separate related topic, a postmortem of sorts to discuss what was potentially blocking investment in upgrades to the current Ethereum. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Chandan",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "20/12/2018-19:29:32",
+                    "content": "1.87 million X scale means = Block size of 24K X 1.87 million (around 30GB) Do you want Ethereum networking layer chugging along 30GB to 10000 full nodes? Block size > 1MB becomes unmanageable. So your hypothetical max improvement is around 40X. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "21/12/2018-05:57:44",
+                    "content": "Hmm. I\u2019m pretty sure we can achieve better scale than that with a compression technology like zk-SNARKs but that might be too much on the theoretical side for this conversation. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.45
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "7",
+                    "likes": "4",
+                    "time": "21/12/2018-06:14:57",
+                    "content": "40x isn\u2019t bad. Just under 52m transactions a day (On average). If 2nd Layer is prevalent and is a 100x gain, then we are at very reasonable scales with only a few major improvements. Many great ideas, but the state reduction seems to be a blocker in almost all cases to allow a computer of average resources to full sync long term. Isn\u2019t this the number one priority? We can prototype a 40x improvement, but the state size still blocks it. Solving the state size may also increase throughput by itself. Also, hopefully it goes without saying that innovation prior to Serenity can also most likely be used once it\u2019s released. That should mean scaling improvements today are scaling improvements long term for sharding. Seems like it is totally worth the investment now. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.322222222222223
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Chandan",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "22/12/2018-00:43:03",
+                    "content": "40x is the upper limit. Whether we can achieve it or not, I am not sure. Most of Eth 1.x changes are performance tuning at the node level. State reduction seems like more of an imagined issue than real issue. People running nodes can use beefier hardware with more disk space. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.208333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "9",
+                    "likes": "2",
+                    "time": "22/12/2018-01:47:39",
+                    "content": "    Chandan:  State reduction seems like more of an imagined issue than real issue. People running nodes can use beefier hardware with more disk space.   Sure. Then we end up with a version of ethereum entirely supported by the only people who can afford thousands of dollars a month to run a node: Infura, etherscan, and very few others. This is not in anyone\u2019s interest, and I consider this a failure. It\u2019s not the ethereum I want to see. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.702083333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Chandan",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "22/12/2018-01:51:18",
+                    "content": "What is the $$ threshold? $1000 server? $500 laptop? $100 chromebook? $20 raspberry pi? 80% of the world can not afford the server which can run ethereum full node now. As long as we have enough people who can run full nodes, this whole affordability argument is red herring. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.708333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "22/12/2018-05:50:25",
+                    "content": "Compiled EVM was as fast or faster than eWasm in those benchmarks, @lrettig   Same safety concerns. https://github.com/gcolvin/evm-drag-race/blob/master/time-vs-gas.pdf ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "24/12/2018-04:01:27",
+                    "content": "    Chandan:  80% of the world can not afford the server which can run ethereum full node now. As long as we have enough people who can run full nodes, this whole affordability argument is red herring.   There is a massive difference between \u201c20% can afford it\u201d and \u201c0.001% can afford it.\u201d The function is non-linear. It\u2019s a slippery slope. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.607142857142858
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "24/12/2018-04:02:53",
+                    "content": "Hi @gcolvin, thanks for the clarification. I may have misunderstood the results of your benchmarking research. evmjit refers to JIT-compiled EVM? Did you test JIT-compiled Wasm? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ldct",
+                    "index": "15",
+                    "likes": "1",
+                    "time": "24/12/2018-08:21:14",
+                    "content": "It might be instructive to examine the upper bound constraints on the maximum scale - e.g. how many ecrecovers a node can do per second, or the transaction data rate that fits into the bandwidth of a node, etc. to see which proposals address which and also to answer the question you raised. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lrettig",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "24/12/2018-09:00:52",
+                    "content": "Agree this data would be helpful. I think a lot of that work has been done, I\u2019ll post links when and if I can find them. The primary upper bound constraint right now is I/O, which is why several of the technologies I describe address I/O issues. Peter and Alexey wrote more about this in their proposals, too. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.185714285714285
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "17",
+                    "likes": "2",
+                    "time": "26/12/2018-23:59:18",
+                    "content": "    lrettig:  Hi @gcolvin, thanks for the clarification. I may have misunderstood the results of your benchmarking research. evmjit refers to JIT-compiled EVM? Did you test JIT-compiled Wasm?   @lrettig In the graph I linked to evmjit is EVM code compiled with @chfast\u2019s JIT, and evm2wasm is EVM code translated to eWasm and compiled with V8.  For these benchmarks Solidity generating eWasm directly might be better.  But better a evmjit might also help, especially if combined with EVM 1.5. No doubt other benchmarks would give different results, but I\u2019ve never seen any intrinsic reason why the EVM can\u2019t be as fast as eWasm. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.859375
+                }
+            ]
+        }
+    ],
+    "group_index": "607"
+}

@@ -1,0 +1,182 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/an-idea-for-vaults-2-0-or-advanced-vaults/11389",
+            "title": "An Idea For Vaults 2.0 Or Advanced Vaults ",
+            "index": 11389,
+            "category": [
+                "Governance",
+                "Proposal Ideas"
+            ],
+            "tags": [
+                "collateral-app",
+                "discussion"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/makercaesar",
+                    "index": "#1",
+                    "likes": "7",
+                    "time": "03/11/2021-13:17:12",
+                    "content": "Motivation So now we have different kind of vault types for the same collateral let\u2019s take Eth, now we have for example ETH A with a liquidation ratio of 145% and 2% fee then we have ETH B with a liquidation ratio 130% and a fee rate with 5 %, instead of offering A, B, C\u2026 etc. Types just offer a vault where the user can set up their own parameter for liquidation ratio. A part of the total stability fee would be a liquidation ratio dependent fee. You have something like this total fee i=offset fee+(liquidation ratio dependent fee) so basically the lower the liquidation ratio the higher is the liquidation dependent fee. The liquidation dependent fee would also be exponentially so for example for ETH you have the lowest liquidation ratio is 120% if someone decides to borrow at this rate he would have a total fee of 20% p.a. with a LR at 130% a fee with 5% (like now the ETH B vault) and at 175% LR he would have 1 %. I would apply this method to all collateral types. Let me demonstrate how I would approach this for example. For our \u201csafe\u201d collateral types like ETH/WBTC WBTC ETH lowest LR with 120% and there for a total fee of 20%. Max LR 175 and a fee 1%  Those are assumptions so you would need a proper mathematical and risk analysis for each collateral. Maybe I am too ambitious with the low LR but you can adjust them what is supposed to be the most risk we can take. Goals What I am heading for is to have a design that is more user driven. It would be possible to open a Vault with a LR 137% or 169 % whatever the user decides. Also with this \u201cfee-curve\u201d users would match their own sweet spot for borrowing DAI they actually need for an interest they are willing to pay. Crytpo markets are extremely volatile maybe users would choose to have a lower liquidation price and willing to have for that a higher fee for the same amount of Dai. Also this high fee range could be extremely profitable for the protocol. With the offset fee you can adjust general market risks, adjust the liquidation dependent fee you could manage the collateral type risks. Better Feedback with this dynamic system, so we would automatically have a better monitoring market behavior from users because you have more natural data. You would come close to a normal distribution . A scenario where a majoraty  move their LR from conservative area to more risky one we would notice that and raise the fees to balance risks. One Problem would be that the ceiling would also be more dynamic due to risk managing. I am aware that this is pretty early stage thoughts and evaluation the risk could be pretty interesting. ",
+                    "links": [],
+                    "GPT-summary": "The author proposes a new design for Vaults 2.0 or Advanced Vaults, where users can set up their own parameters for liquidation ratio and match their own sweet spot for borrowing DAI. The proposal includes a fee-curve that adjusts the general market risks and manages the collateral type risks. The author acknowledges that the proposal is in the early stage and evaluation of the risks could be interesting. A 3rd party could give constructive criticism or ask questions about the proposal.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.026111111111111
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "04/11/2021-02:15:16",
+                    "content": "I suggested a long time ago that Maker consider adopting a utilization based rate curve so that governance wouldn\u2019t have to change rates so frequently and the DC utilization as well as rates would be market optimized.     Proposal interest rate adjustment by debt facility utilization Risk       I am posting this as a new topic for discussion because after the first round of analysis and the fact the GSM time delay is not activated means the IAMs that could be used to implement it could be coming on line shortly.   Also my wife is now suffering a debilitating medical condition that requires almost constant care currently and so it is time I hand various details/ideas I have found off to others for discussion and debate.  I don\u2019t want to talk about implementation issues but simply the me\u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.107438016528926
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/makercaesar",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "04/11/2021-10:24:23",
+                    "content": "I find your approach with a utilization based rate curve also interesting, I had more the user aspect how he could act more \u201cfreely\u201d when he could choose the LR with balance risk from our perspective and be more dynamic. Free markets always find a balance where everyone benefits from it. Your model also includes user behavior, but I would have some questions about it, like you would still have to manage the utilization, and is this the right metric to monitor risk in markets. (natural growth vs over leveraged markets). But for now the vaults seem pretty static and our attitude on the subject is use it or leave. I know there is a lot of work done form risk management, maybe combie this for those kind of vaults. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.653769841269841
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#4",
+                    "likes": "14",
+                    "time": "04/11/2021-20:20:50",
+                    "content": "I\u2019ll comment briefly here just from the technical feasibility perspective: The biggest change with this proposal is that fees would accumulate on a per-Vault basis, instead of per-collateral type. It\u2019s economically infeasible to loop over all Vaults on-chain, so you have to go to a model where you force fee collection any time a user interacts with their Vault (and providing a way for Keepers to trigger fee collection per-Vault as well when they see a liquidation opportunity). This will raise costs for users and Keepers, and make Keeper logic more complex. Any significant adjustment to an interest rate curve can cause outsized harm to users (or the protocol, depending on the directionality of the change) due to the more asynchronous nature of fee collection. It also becomes a lot harder to understand the financial state of the system, requiring careful tracking at the individual Vault level. Then there\u2019s the question of whether this could be implemented in the current system. I\u2019m afraid the answer is \u201cnot really\u201d. There might be some extremely hacky and inefficient things we could do to achieve this without replacing the Vat (the core accounting contract), but without spending a lot of time thinking through it carefully it\u2019s hard to say for sure. The assumption of a homogeneous interest rate for each collateral is deeply baked into the protocol\u2019s logic. It would be easiest to look at implementing it first as part of an L2 Maker deployment, where we aren\u2019t constrained by previously-deployed contracts (it is still non-trivial though as we\u2019d need to substantially redesign multiple contracts and logical flows). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.212121212121213
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#5",
+                    "likes": "3",
+                    "time": "28/11/2021-04:30:14",
+                    "content": "While Maker can\u2019t get a completely curve like result @makercaesar suggests. Maker can (and in time probably will) add more vaults to fill in the gaps.   It shouldn\u2019t add to oracle costs and is probably the easiest way to stimulate more deposits is by filling in gaps on the LR, SF curve.   This is probably the best thing MCD was made for - to have multiple vaults spanning many different LR, SF combinations to satisfy everyone along the risk, fee curves with same collateral. The grain can be smoother than 3 ETH vaults and 3 wBTC vaults on our largest collateral types.  I honestly saw Maker having multiple vaults on the same collateral type long ago for this and a number of other reasons:  Try to spread liquidations over a wider price range (declumping borrowing if possible) Allow the markets by vault use to give us a better idea of real borrowing appetite for risk and fees As a better way to manage risk in particularly clumped collateral type portfolio.   I expect this approach to be valid for RWA players btw - to have different vaults with different portfolio risk exposures, different LR, and SF (and acceptable collateral types/terms/conditions).  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.045634920634921
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Makernewbies08",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "28/11/2021-13:31:30",
+                    "content": "I am pretty new in vaults. There are quite a number of technical terms in which I am not familiar with. Looking forward if you can describe more in detail. From what has been perceived from the discussion, utilization based rate curve is referring to how frequent the user adjust and/or manipulate a vault. With higher utilization of the vault, one is allowed to choose the liquidation ratio (LR) with balance risk from his/her perspective, which it is more dynamic. In my opinion, most of the platform would not allow the user to apply this utilization based rate curve. However, if it is dynamic, we will have to monitor the vault very closely, having said that the ETH or any other crypto is extremely volatile. At the current state, all the vaults are static. You have the right point that whether the user use it or leave it. I don\u2019t think there is a combination for those kind of vaults. Do comment. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.940160533910534
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Eumenes",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "28/11/2021-17:06:51",
+                    "content": "I like this approach. My one suggestion here is that Maker have a decent sense of the risk/return profile of the different vault product offerings.  Also does Maker track its competitor product offerings?  Seems like we should have a product/vault rate sheet that includes both our offerings and our key competitors ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.277777777777778
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/makercaesar",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "29/11/2021-13:20:27",
+                    "content": "Yeah sure I can try to explain more precisely, so instead of having ETH A, B, C, D collateral types of vaults, in this model vaults would have a framework for a specific asset or asset group, in which is dependend from the LR and SF, the users can choose their own LR, and from the LR the SF would be determined by the exponential equation. For example a user wants to open a vault with ETH, when the user is more riskier and chooses a very low LR (he could generate more dai) \u201cthe more expensive his vault becomes\u201d due to the higher SF.  The SF would be a total = offset fee + liquidation ratio dependent fee. Offset fee includes general market risks and utilization. I\u2019m pretty sure there is a mathematically better composition how the structure should be. For ETH the framework would be in numbers MIN/MAX LR[125;175] SF[1;20] don\u2019t get confused the SF would be 20% by a LR for 125%. All the solutions from the equation would be the stability fee curve , users would have the option to move along the curve from their perspective for costs/risks. For example how I would have set the framework for Alts Min/Max LR[130;200] SF[2;40] For LP Tokens [120;175] SF [2;30] for WBTC the same like for ETH Those are just theoretically numbers and not include utilization just to get more understanding how this model would work. @Kurt_Barry  mentioned that fee collection would be a total mess since it is on chain for every single vault, what I did not know before. If you would combine @MakerMan utilization based rate curve that would affect the SF automatically, higher utilization would mean higher SF, raises the offset fee, I don\u2019t see that as a big conflict, it would be more of a complement since I didn\u2019t know how to approach the ceiling and utilization in this model. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.83323732718894
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Eumenes",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "29/11/2021-16:37:10",
+                    "content": "We should understand why a given function, here the exponential equation, reasonably models the underlying risk across the range of products ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#10",
+                    "likes": "1",
+                    "time": "29/11/2021-20:42:20",
+                    "content": "This is a very interesting concept and the liquidation \u201cmessy\u201d portion that Kurt mentions above is already being done on Avalanche (Alpha Homora v2), where each vault is individually liquidated by any end-user. However nobody that I\u2019ve seen out there is using this concept of allowing an end-user to choose the LR, and based on preference the SF is determined. So, I believe this will be innovative\u2014and as Kurt mentioned maybe on an L2, or another protocol on an L1 will be first. But all in all good stuff  BTW, as a Yankee I would shy away from anything above 20% SF \u2014 this can be interpreted as loan sharking out here  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.7857142857142865
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Makernewbies08",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "30/11/2021-13:19:42",
+                    "content": "Thank you for the explanation. Before I could reply and comprehend further, there are several terms I might not able to understand. Would be glad if you can explain further.   MIN/MAX LR[125;175] SF[1;20]   Alts Min/Max LR[130;200] SF[2;40] Unsure what is the definition of Alts.   LP Tokens [120;175] SF [2;30] for WBTC   Appreciate if you could explain them. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/makercaesar",
+                    "index": "#12",
+                    "likes": "1",
+                    "time": "01/12/2021-11:10:55",
+                    "content": "    Eumenes:  We should understand why a given function, here the exponential equation, reasonably models the underlying risk across the range of products   Why the function, this is the way for each user to determine the interest rates, everyone has the same conditions with different induvidual preferences and needs. Another point, the protocol would constantly adjust itself automatically, and you would need less micromanagement, specifically if you need to adjust quickly, you could still interfere if you need to.     flipflopflapdelegate:  BTW, as a Yankee I would shy away from anything above 20% SF \u2014 this can be interpreted as loan sharking out here   Actually, the longer I think about it, the more negative I see exponentially high fees. My initial intention was that higher fees could cushion extreme market performance at extreme limits, and you would still have the ability to borrow what you think you need. Market behavior is unpredictable, and I view every market as a force of nature, and if you want to deal with nature and build framework models around it, the e-function is your best friend. Lower LR could be more competitive to other protocols like aave compound, the Liquidity protocol has a LR 110 %. With higher SF you could justify lower LR, users could experience lower LR with a high standards protocol if they could choose their LR.     Makernewbies08:  MIN/MAX LR[125;175] SF[1;20]   Yeah sure so LR stands for Liquidation Ratio if you take the current ETH A collateral type, the LR is 145% means in numbers for your collateral 100,000 Dollar worth of ETH you could generate almost 69,000  DAI and you have a stability fee (SF) of 2,5 % yearly, so the lower the LR is the more DAI you can generate for the same value of collateral, ETH B LR is 130%  you could generate with 100,000 Dollar of ETH almost 77,000 of DAI ETH B has a SF of 6%. You should be aware that if you generate the maximum from your collateral you are close to the liquidation price, keep that in mind. In this model you choose the LR in from 125% to 175 % and pay form 20% to 1% per year. Since a low LR is more riskier for the protocol and market the user has a higher SF.     Makernewbies08:  Alts Min/Max LR[130;200] SF[2;40] Unsure what is the definition of Alts.   With Alts I meant altcoins collateral like aave, matic, comp\u2026 these are considered riskier and should have a higher SF, and should be covered with more collateral so that they cause less bad debt. (now aave and comp are offboarded as collateral types because they cause more cost than earinings due to oracle costs, maybe we will see them in the future on L2 MakerDao. ) With the framework and parameters the key message is that I would treat each collateral individually, as each collateral creates individual risks and benefits. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.536991869918699
+                }
+            ]
+        }
+    ]
+}

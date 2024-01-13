@@ -1,0 +1,94 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5058-erc-721-lockable-standard/9201",
+            "title": "EIP-5058: ERC-721 Lockable Standard ",
+            "index": 9201,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "nft"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TylerMeta",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "08/05/2022-14:26:39",
+                    "content": "Keywords: Lockable, non-fungible tokens, NFTs,  ERC-721  EIP-5058 DRAFT: EIP-5058:Lockable ERC-721 Standard by radiocaca \u00b7 Pull Request #5058 \u00b7 ethereum/EIPs \u00b7 GitHub   This standard makes NFTs more suitable for NFTFi, such as locking, staking, lending, crowdfunding, etc. ",
+                    "links": [],
+                    "GPT-summary": "The post is a proposal for a new standard called EIP-5058: ERC-721 Lockable Standard, which aims to make non-fungible tokens (NFTs) more suitable for NFTFi by introducing features such as locking, staking, lending, crowdfunding, etc. The post is primarily explaining the proposal, but also invites feedback, collaboration, and advertisement. Some constructive criticism is also welcomed.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party or author is advertising proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "29/09/2022-13:32:09",
+                    "content": "Hi, EIP-5192: Minimal Soulbound NFTs is not final and features similar functionality albeit without an approval function for locking. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/final-eip-5192-minimal-soulbound-nfts/9814/42"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.833333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AurelianoDiaz",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "25/10/2022-19:14:17",
+                    "content": "How can I write the smart contract code for ERC 721 implementing EIP 5058? Is there any source code? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.071428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TimDaub",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "06/02/2023-23:00:05",
+                    "content": "IMO this almost the perfect SBT standard to date if it was slimmed down a bit (it is potentially already better than my attempts EIP-5192 and EIP-4973) The name \u201cLockable tokens\u201d is also very good. Here\u2019s what would make it golden:  Focus on Lock and lock approval remove the expiry feature as it doesn\u2019t directly map to EIP721 transfer+transferapprove (could be optional) make boundNFT an optional extension clearly state in the Specification section that when the function locked returns true, what the other functions then have to return (e.g. that transfers have to throw etc). Allow no undefined behavior in the spec (here\u2019s how that could look: ERC5192/ERC5192.t.sol at main \u00b7 attestate/ERC5192 \u00b7 GitHub (I didn\u2019t do a great job in EIP-5192 admittedly).  Then in security section, I\u2019d also add:  If a token implements EIP-5058 and then there exists a vault contract that e.g. allows to do a trade of: \u201cI lock token, you give me 1 ether. I unlock token when you give me 1 ether back\u201d, then the vault contract must allow listing the EIP-5058 token as purely relying on the interface of a contract isn\u2019t prove that the contract correctly implemented EIP-5058. But IMO this is already fairly standard with EIP-20 etc., so I think it\u2019s not a deal breaker with EIP-5058  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.386798941798942
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sullof",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "18/02/2023-23:23:29",
+                    "content": "I like this interface. I don\u2019t like, however, when we \u2014 the development community \u2014 is forced to choose between similar interfaces. So, I would suggest a change. If instead of interface IERC5058 {   event Locked(address indexed operator, address indexed from, uint256 indexed tokenId, uint256 expired);   event Unlocked(address indexed operator, address indexed from, uint256 indexed tokenId);   event LockApproval(address indexed owner, address indexed approved, uint256 indexed tokenId);   event LockApprovalForAll(address indexed owner, address indexed operator, bool approved);   function lockerOf(uint256 tokenId) external view returns (address locker);   function lock(uint256 tokenId, uint256 expired) external;   function unlock(uint256 tokenId) external;   function lockApprove(address to, uint256 tokenId) external;   function setLockApprovalForAll(address operator, bool approved) external;   function getLockApproved(uint256 tokenId) external view returns (address operator);   function isLockApprovedForAll(address owner, address operator) external view returns (bool);   function isLocked(uint256 tokenId) external view returns (bool);   function lockExpiredTime(uint256 tokenId) external view returns (uint256); }  You extend ERC5192 \u2014 which is in the final stage and will most likely be used in standard contracts \u2014 and change the code as interface IERC5192 {   event Locked(address indexed operator, address indexed from, uint256 indexed tokenId, uint256 expired);   event Unlocked(address indexed operator, address indexed from, uint256 indexed tokenId);   function locked(uint256 tokenId) external view returns (bool); }  interface IERC5058 is IERC5192 {   event LockApproval(address indexed owner, address indexed approved, uint256 indexed tokenId);   event LockApprovalForAll(address indexed owner, address indexed operator, bool approved);   function lockerOf(uint256 tokenId) external view returns (address locker);   function lock(uint256 tokenId, uint256 expired) external;   function unlock(uint256 tokenId) external;   function lockApprove(address to, uint256 tokenId) external;   function setLockApprovalForAll(address operator, bool approved) external;   function getLockApproved(uint256 tokenId) external view returns (address operator);   function isLockApprovedForAll(address owner, address operator) external view returns (bool);   function lockExpiredTime(uint256 tokenId) external view returns (uint256); }  The only change is that the function isLocked is renamed locked. That will of course change the interfaceId, but since it is in a draft stage, it would make a lot of sense and would also facilitate the approval of EIP 5058. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.04
+                }
+            ]
+        }
+    ],
+    "group_index": "1735"
+}

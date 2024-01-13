@@ -1,0 +1,783 @@
+{
+    "poll_list": [
+        {
+            "title": "Inclusion Poll for Debt Ceiling Instant Access Module (MIP27)- November 9, 2020",
+            "index": "4625",
+            "option": "Yes",
+            "supporting_mkr": "31,485",
+            "highest_fraction": 1.0
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip27-debt-ceiling-instant-access-module/4625",
+            "title": "MIP27: Debt Ceiling Instant Access Module ",
+            "index": 4625,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "debt-ceiling",
+                "iam",
+                "dc-iam",
+                "mip-accepted"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#1",
+                    "likes": "17",
+                    "time": "07/10/2020-17:03:19",
+                    "content": "MIP27: Debt Ceiling Instant Access Module Introduction Following the Pre-MIP Discussion, this MIP formalises the Maker Improvement Proposal request for a Debt Ceiling Instant Access Module. Since further work has also been done on  MIP17 it is worth noting that this MIP does not render MIP17 redundant. It will be for the community to decide at which point they wish to move towards using an Instant Access Module for controling debt ceilings. Preamble MIP#: 27 Title: Debt Ceiling Instant Access Module Author(s):  Smart Contracts Domain Team Type: Technical Status: conception Date Proposed: 2020-10-07 Dependencies:  Replaces: Weekly governance executive debt ceiling adjustments  Sentence Summary MIP27 defines the Debt Ceiling Instant Access Module (DC-IAM) allowing any user to adjust the debt ceiling within constraints that are voted on by Governance. Paragraph Summary An Instant Access Module contains components to create direct, bounded changes to the Maker Protocol without consensus in DSChief (or DssGov). This MIP introduces a Debt Ceiling Instant Access Module that permits anyone to adjust the debt ceiling within constraints that are voted in by Governance. This flexibility introduces concepts such as the minimum time required to wait before it is possible to increase the debt ceiling, as well as the maximum amount that the ceiling can be adjusted to, which will be discussed below. The parameters and boundaries included herein should be considered examples and will be voted in at the time of implementation. There is an expectation that MIP17 and ongoing community governance experience will help inform the correct risk boundaries and governance parameters. Motivation The Debt Ceiling Instant Access Module decentralises debt ceiling control to the broader community by allowing all stakeholders to control this important risk variable. It helps solve the somewhat frequent problem where the community finds itself having reached the debt ceiling and now needs to wait for an executive vote to pass in order to make further adjustments. The same occurs in reverse when it becomes necessary to lower the debt ceiling in the event there is a reduction in Dai supply. This capability will be available once the community has a good idea of the logic defined in MIP17 and then once the DC-IAM has been voted in by Governance, after which point, executive votes would not be necessary to adjust the debt ceiling within a predefined upper boundary. An executive vote can however always be used to overrule the behavior of an IAM. Below outlines the system variables that allow this module to function, and then explores how these variables are applied to adjust the debt ceiling. In the interest of simplicity, target risk premiums have been omitted from this design, however, once we better understand the relationship between debt ceilings and stability fees, these could also be explored. Specification The following checks and variables define the parameters of the DC-IAM and can be set and amended by Governance through an executive vote. MIP27c1 Definitions   on - A check to see that the ilk is enabled and part of the vat   line - The maximum debt ceiling possible. This variable is determined by Governance and can only be updated through a governance vote as it prevents the DC-IAM from exceeding an upper limit.  top - The amount that it is possible to adjust the ceiling over the existing ilk debt ceiling. This can be a percentage or an absolute value, which will be determined by Governance.  lineNew - The new target debt ceiling once the new variable top is introduced. This value is a calculation based on the actual collateral debt plus the top as long as the final value falls within the maximum debt ceiling allowed (line). If it falls beyond the maximum allowed debt ceiling, then the line itself will be the highest possible value for the new debt ceiling.  DDC - the defensive debt ceiling acts as a minimum floor preventing the debt ceiling from being reduced any lower.  ttl - The minimum time required to wait before it is possible to increase the debt ceiling. Note, the ttl is not required when lowering the debt ceiling.  last - The reference point in time that ttl uses to determine the last time the ceiling was increased.  MIP27c2 Adjusting the Debt Ceiling  The Debt Ceiling Module is independent for each collateral type and will work for any ilk in the vat. There will be a minimum time interval required to pass before setting a new increase. This is determined by the ttl.  ttl will consider the OSM upgrade schedule so it takes into consideration the new OSM price before allowing an increase in the debt ceiling. Anyone can trigger a transaction to adjust the debt ceiling if supply conditions are met and the required amount of time since the last debt ceiling increase has also been met. The debt ceiling can only be increased if the underlying supply is also increasing. The amount of increase possible will always be a single value, known as the top. This can be defined as an absolute value or a percentage relative to the existing ilk debt. If the supply is equal to or lower than the current debt ceiling and trending down, then it will be possible to reduce the debt ceiling - again, using top relative to the supply. Note that the reduction of the debt ceiling does not need to check the ttl which is what sets the interval for how often the debt ceiling raise can be implemented. This means that there is no waiting period required for reducing the debt ceiling.  MIP27c3 Example After enabling this module through an executive vote, any individual with a web3 browser will be able to adjust the debt ceiling per accepted collateral type. Let\u2019s use the below example values:  The current supply is 100M for a particular collateral type Max limit is 150M % increase is set to 10% Once the ttl passes, let\u2019s say the supply has since gone from 100M to 108M, anyone can increase the debt ceiling 10% higher, to 118.8M. [10% * 108M = 10.8M. 10.8M + 108 = 118.8M] Once again, after the next ttl, let\u2019s say the supply has gone up to 115M, meaning anyone can at that point increase the debt ceiling to 126.5M. [10% * 115M = 11.5M. 11.5M + 115M = 126.5M]  Increase628\u00d7742 24.7 KB This process can be repeated until the limit value of 150M is reached, which will be determined by governance. It would then be up to governance to make changes to the hard limit (via an executive vote) if there was appetite to increase this limit.  If Governance wanted to decrease the debt ceiling due to a reduction in supply, it is possible to do so without waiting on the ttl time. This ensures that the ability to draw be kept tight against supply. Let\u2019s say supply is at 115M and the debt ceiling is at 126.5M. If the supply were to decrease to 112M, then the debt ceiling could immediately be reduced to 123.2M in order to retain the 10% buffer that Governance has deemed safe.    Calculation for the above: when the dai supply is reduced to 112M, the module takes 10% of that value (11.2M) and adds it to the Dai Supply amount (112 +11.2 = 123.2), therefore, the new debt ceiling will be 123.2M. The DC-IAM is always based off of the Dai Supply and either moves up or down 10% (or another value as determined by governance).  MIP27c4 Defensive Debt Ceiling In the event of a contracting market as in the above example, the community should ensure that the debt ceiling defensively tracks the contracting Dai supply to minimise excessive exposure. There is a level, called the Defensive Debt Ceiling (DDC) that prevents the Debt Ceiling from being reduced any further. This will be a fixed absolute number per collateral type, determined by Governance and Risk. MIP27c5 Authority Any individual with a web3 browser will be able to change the Debt Ceiling as long as the intended changes meet the parameters as voted in by Governance. MIP27c6 Security The ttl acts as a pause that prevents any individual from hitting the debt ceiling, increasing it, hitting the debt ceiling and repeating all the way up to the line limit. This function will allow governance to control the velocity at which the actual debt ceiling is able to increase. If for any reason the DC-IAM module is misbehaving (e.g. our ttl time period or upper boundary is too inflexible), it will be possible to bypass it through an executive vote where governance can also vote to skip the delay in the GSM. MIP27c7 DC-IAM Onboarding of Collateral Types The onboarding of collateral types into the DC-IAM will require independent executive votes whereby the values described above (MIP27c1 Definitions) will need to be confirmed by Governance. It is expected that the community will want collateral types to have a track record before we hand DC control to the IAM. MIP27c8 Licensing AGPL3+ ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip17-weekly-actual-debt-ceiling-adjustments/4312",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/signal-request-adjust-eth-b-debt-ceiling/5282/20",
+                        "https://forum.makerdao.com/t/signal-request-adjust-eth-b-line-iam-ceiling/5731",
+                        "https://forum.makerdao.com/t/2020-year-end-schedule/5218",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21-en-espanol/5199",
+                        "https://forum.makerdao.com/t/maker-relay-ep-21/5181",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-117-thursday-november-5-16-00-utc/4929/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-20-en-espanol/5084",
+                        "https://forum.makerdao.com/t/maker-relay-ep-20/5078",
+                        "https://forum.makerdao.com/t/maker-relay-ep-19-en-espanol/4981",
+                        "https://forum.makerdao.com/t/maker-relay-ep-19/4975",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-115-thursday-october-22-16-00-utc/4757/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-114-thursday-october-15-16-00-utc/4657/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-pt-br-portugues/4810",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-en-espanol/4804",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17/4798",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-113-thursday-october-8-16-00-utc/4505/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-pt-br-portugues/4722",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-en-espanol/4719",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16/4710",
+                        "https://forum.makerdao.com/t/week-19-dai-distributions-sourcecred-trial/4707",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-113-thursday-october-8-16-00-utc/4505/5",
+                        "https://forum.makerdao.com/t/gobernanza-de-un-vistazo-14-01-2021-autor-original-prose11/6073",
+                        "https://forum.makerdao.com/t/governance-at-a-glance-2021-01-14/6048",
+                        "https://forum.makerdao.com/t/signal-request-rolling-out-the-debt-ceiling-instant-access-module-dc-iam/6008",
+                        "https://forum.makerdao.com/t/signal-request-adjust-eth-a-debt-ceiling-2021-02/5993",
+                        "https://forum.makerdao.com/t/signal-request-adjust-eth-a-debt-ceiling-2020-01/5881/2",
+                        "https://forum.makerdao.com/t/signal-requst-adjust-univ2daieth-a-debt-ceiling/5814/6",
+                        "https://forum.makerdao.com/t/collateral-onboarding-and-mip-updates-2020-12-11/5661",
+                        "https://forum.makerdao.com/t/maker-governance-review-november-2020/5453"
+                    ],
+                    "GPT-summary": "The post introduces MIP27, which proposes the creation of a Debt Ceiling Instant Access Module (DC-IAM) that allows any user to adjust the debt ceiling within constraints that are voted on by Governance. The post explains the motivation behind the proposal, the system variables that define the parameters of the DC-IAM, and how the DC-IAM can be adjusted. The post also discusses the security measures in place and the onboarding process for collateral types. The post does not advertise the proposal, ask for collaboration, or answer questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Grants, Funding and resource allocation",
+                        "Law and regulations",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.395860864281917
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#2",
+                    "likes": "3",
+                    "time": "07/10/2020-18:16:22",
+                    "content": "Holy Batman! Do you ever take a day off @cmooney Chris, you are a Magician  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "07/10/2020-18:20:04",
+                    "content": "This is really great! Instant Access Modules is a sort of do-it-yourself-governance, I can\u2019t wait to try it.     cmooney:  Any individual with a web3 browser will be able to change the Debt Ceiling   Could you maybe detail this one? I am sure there is a bit more too it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.083333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "07/10/2020-19:19:08",
+                    "content": "Hi Planet_X the thinking here was that anyone with e.g. a MetaMask wallet would be able to connect and if the conditions for a change are allowed (e.g. Dai supply is coming close to hitting the debt ceiling) then they will be able to create a transaction making the DC changes. This would even be possible through etherscan by writing to the contract. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "07/10/2020-19:27:36",
+                    "content": "So no MKR or DAI deposit? Fee? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#6",
+                    "likes": "2",
+                    "time": "07/10/2020-19:44:54",
+                    "content": "Ahh, gotcha, it would just be a simple ethereum contract call - very minimal gas fee. No Dai or MKR required. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.675000000000001
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "12/10/2020-13:11:47",
+                    "content": "Going to just read through and leave feedback. Super excited about this one! Thanks for taking the time to write up the proposal.     cmooney:  Since further work has also been done on MIP17  it is worth noting that this MIP does not render MIP17 redundant. It will be for the community to decide at which point they wish to move towards using an Instant Access Module for controling debt ceilings.   So I\u2019m going to go out on a limb and say that it maybe should. It appears to be a more autonomous version of the same thing. Setting up polls and executives each week takes a reasonable chunk of my time each week, and I know it takes up the smart contracts team\u2019s time as well. If we can minimize the time-cost of governing debt ceilings, that leaves us able to focus on other, more valuable items of work. From a governance perspective reducing the number of repetitive votes is also a clear win for voters in my eyes.     cmooney:  Author(s):  Smart Contracts Domain Team   Can we be more specific here? Technically in the future we may have multiple teams, I can see a path where this becomes confusing down the line.     cmooney:  Replaces: Weekly governance executive debt ceiling adjustments   This field is supposed to MIPs that are being replaced, not just random things. I would just change this to N/A.     cmooney:  There is an expectation that MIP17 and ongoing community governance experience will help inform the correct risk boundaries and governance parameters.   If we need a MIP that defines the process to control this/these modules, I suggest we write a MIP specifically with that aim, rather than trying to make MIP17 that MIP. Although it\u2019s related, it wasn\u2019t quite written with MIP27 in mind.     cmooney:  This capability will be available once the community has a good idea of the logic defined in MIP17 and then once the DC-IAM has been voted in by Governance   I would actually reverse this as I\u2019ve suggested above. Let\u2019s sign-off the use of DC-IAM\u2019s in principle (in the form of this MIP), then we can craft a MIP that fits the functionality we have available.     cmooney:  MIP27c1 Definitions   Incredibly minor formatting thing. In almost all the other MIPs these are written as MIP27c1: Definitions. (Added colon.)     cmooney:  top - The amount that it is possible to adjust the ceiling over the existing ilk debt ceiling. This can be a percentage or an absolute value, which will be determined by Governance.   When you say this is determined by governance, do you mean that the IAM supports both and we can use either interchangably, or that we need to decide once in advance whether we want absolute or relative values for all DC-IAM\u2019s, or that we can decide per ilk?     cmooney:  The Debt Ceiling Module is independent for each collateral type and will work for any ilk in the vat .   To clarify, is there one module that controls all ilks or one module per ilk?     cmooney:  ttl will consider the OSM upgrade schedule so it takes into consideration the new OSM price before allowing an increase in the debt ceiling.   Did you mean \u2018update\u2019 rather than \u2018upgrade\u2019?     cmooney:  After enabling this module through an executive vote, any individual with a web3 browser will be able to adjust the debt ceiling per accepted collateral type.   Is there planned to be a UI for this module? Or is it thought that this interaction will take place using direct contract interaction on Etherscan?     cmooney:  Once the ttl passes, let\u2019s say the supply has since gone from 100M to 108M, anyone can increase the debt ceiling 10% higher, to 118.8M. [10% * 108M = 10.8M. 10.8M + 108 = 118.8M]   How do these changes affect the global protocol line value?     cmooney:  MIP27c4 Defensive Debt Ceiling   I\u2019m not sure I understand the utility of the defensive debt ceiling. Can you maybe elaborate as to why this exists in the MIP?     cmooney:  MIP27c5 Authority Any individual with a web3 browser will be able to change the Debt Ceiling as long as the intended changes meet the parameters as voted in by Governance.   Does the individual enter new values manually? Or does the system just have an \u2018update\u2019 method which calculates everything and requires no parametrized input?     cmooney:  MIP27c7 DC-IAM Onboarding of Collateral Types The onboarding of collateral types into the DC-IAM will require independent executive votes whereby the values described above (MIP27c1 Definitions) will need to be confirmed by Governance. It is expected that the community will want collateral types to have a track record before we hand DC control to the IAM.   Pretty sure I understand this, but assuming the DC-IAM is proved out, is it possible to activate it in the same executive as a new collateral is onboarded? ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-17/4746",
+                        "https://forum.makerdao.com/t/weekly-mips-update-19/4935",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-pt-br-portugues/4891",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-en-espanol/4882",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18/4881",
+                        "https://forum.makerdao.com/t/weekly-mips-update-18/4847"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.639168470418471
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "04/11/2020-17:11:13",
+                    "content": "Apologies, I realise the above questions didn\u2019t get answered. In advance of the Smart Contract Team formalising this MIP, I have provided some quick responses below;  Agree, it feels like this MIP will render MIP17 redundant. Note that the additional UI frontend work will however take more time to implement. Re: author specificity - yes, the Smart Contract Mandated Actors are proposing this enhancement. Re: percentages or absolute values. This should be updated to an absolute value only. Debt ceiling parameters will be set per ilk. Depending on the frontend design it may be possible to batch DC changes in a single transaction for efficiency through a proxy contract (TBD). Agree, that the process for changing parameters will need to be a new sub-MIP dependent on the UI frontend designed for this purpose. There is one module that controls all ilks based on what exists in the vat. The intention is to build a UI specifically for this module in order to reduce the weekly voting burden. The UI should self calculate the possible change for the user to then action a transaction. Note, no frontend work has been defined yet so this may change. Individual ilk DC raises will also increase the global line value. It will be possible to use the DC-IAM for an ilk in the same executive that it is onboarded (because that collateral will then exist in the vat).  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.451899951899952
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/mrabino1",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "04/11/2020-17:21:09",
+                    "content": "What are the implications of MIP27 with MIP21? I understand why this is needed when we have an unknown number of users that might cause DAI minting. However, it is not clear to me if this is truly needed for Real World Assets or actually how it would impact operational off-chain lending. thoughts? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#10",
+                    "likes": "4",
+                    "time": "04/11/2020-17:56:02",
+                    "content": "Good question! So, the DC-IAM needs to be authorised per collateral type, therefore, Governance would need to approve it\u2019s use for RWA (for example). Due to the different risk/collateral parameters being proposed in MIP21 I do not think we would want to activate this module for real world assets - at least not initially. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.541666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#11",
+                    "likes": "2",
+                    "time": "04/11/2020-19:37:15",
+                    "content": "I\u2019ve officially moved this MIP from RFC to Formal Submission for the November governance cycle.  @charlesstlouis ",
+                    "links": [
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-117-thursday-november-5-16-00-utc/4929/4"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "04/11/2020-19:58:54",
+                    "content": "    Derek:  Ahh, gotcha, it would just be a simple ethereum contract call - very minimal gas fee. No Dai or MKR required.   Hello Derek\u2013you mention that Anybody can increase/decrease the DC via the IAM without the need of holding/owning MKR/DAI\u2013I would imaging the Team has discussed how an actor could use the DC IAM to trigger a Flash Loan? Was there consideration that perhaps only MKR holders that lock their MKR in the DSChief (or DssGov) should be allow to use/trigger the DC IAM? Just thinking out loud\u2026 ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-21/5222"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.783333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#13",
+                    "likes": "1",
+                    "time": "04/11/2020-21:00:42",
+                    "content": "    Derek:  So, the DC-IAM needs to be authorised per collateral type, therefore, Governance would need to approve it\u2019s use for RWA (for example).   This is correct.  For RWA, governance would leave this module off. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#14",
+                    "likes": "2",
+                    "time": "05/11/2020-12:33:15",
+                    "content": "Hi @flipflopflapdelegate , correct, the idea is that anyone can make a transaction as long as the rules for a debt ceiling change are met - namely that the current Dai supply for a collateral type is within a defined range of the debt ceiling but still below the upper limit, and that the time (ttl) to make a change has elaspsed. Initial discussion did consider limiting the IAM only to those that hold MKR (e.g. using an IOU token to control such functionality), however because of the rules that are in place, such as; time limits preventing immediate subsequent DC increases as well as limits to how much the DC can be increased or decreased, meant that authorising the DC-IAM to operate within these bounds becomes possible without restricting it to MKR holders. It also helps democratise the IAM capability to those that may be vault holders but not necessarily MKR holders - although it is always MKR holders that determine, through Governance the risk parameters that define the system. With regards to flashloans\u2026hmm, I don\u2019t think they would be relevant here\u2026but let\u2019s keep the idea alive for a bit\u2026so, a standard ethereum transaction is all that is needed to implement a DC change. So let\u2019s say a DC is raised - in the same way as it is today when we raise the DC, there\u2019s nothing stopping any vault from maxing out the limit - for example this is what we saw earlier this year with the Nexo vault that I think maxxed out WBTC. In such a scenario, all we can do is monitor and make sure that the parameters we have in place - amount of the  increase, the time to new increase and relevant SF\u2019s and Liq ratios, are sufficient enough for the risk that the protocol is taking on. But I\u2019d be keen to hear if anyone has any thoughts around how flashloans could be of influence here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.292355371900826
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#15",
+                    "likes": "4",
+                    "time": "30/11/2020-10:11:53",
+                    "content": "Hi everyone, thank you for the positive DC-IAM feedback on the G&R calls, R/C and forum. The overall function of this module remains as initially outlined in the above MIP, however the Smart Contracts Team have renamed one of the contract functions, specifically: top has been renamed to gap and is defined as an absolute value. It is worth noting that the gap will also function as a minimum debt ceiling. As a result, it is high time for the community to work with the risk team (@Primoz) to determine the following four values;  Which collateral types (ilks) will the DC-IAM support? What is the maximum debt ceiling (line) allowed per collateral type? What distance (gap) do we want between existing debt (Dai supply) and the debt ceiling? What amount of time (ttl) do we want to enforce between debt ceiling changes?  Let\u2019s dive into each of these in a little more detail to provide a reference point from which to begin: ilk : Which collateral types will be authorised to use the DC-IAM and what will be their initial debt ceilings?  The Smart Contracts Team is comfortable for all collateral types to be authorised to use this module. This statement is made with the awareness that the module is limited to controlling only the debt ceiling within parameters defined by governance. Therefore is the rest of the community comfortable with all collateral types having this capability or do we want to trial-run this with a limited number of ILK\u2019s?  line : What is the maximum debt ceiling allowed per collateral type?  The maximum debt ceiling limit can always be increased or decreased through a governance action. The maximum debt ceiling is a hard limit that prevents any further incremental debt ceiling increases through the module. As an example, this value should be sufficiently high enough to not require adjustment for the following 3-4 months (otherwise it defeats the purpose of having an IAM).  gap : What absolute number should be the distance between the current debt (Dai supply) and the debt ceiling?  The Smart Contracts Team recommends looking at existing Dai mint amounts to ensure that these can be supported within the proposed gap. Governance often observes the creation of large Dai generating vaults which ideally should not be hindered. It is worth noting that the maximum borrow amount of Dai may be slightly higher in the event that there is an immediate supply decrease which hasn\u2019t yet triggered a debt ceiling decrease.  ttl : What amount of time is required to pass before a new adjustment to the debt ceiling can be made?  The value chosen should require at least one OSM update so the module reflects an accurate market price. For example, a ttl of 2 hours, with a maximum 10m increase, would allow users to increase the debt ceiling by +100m in a single day, which is similar to what we have today when passing an executive vote. Note, the ttl is not required when reducing the debt ceiling.  These values should be agreed upon in the following format for the Smart Contract Mandated Actors to code and implement:     ILK (Collateral Type) Participate in the DC-IAM (Yes/No) LINE (Max Debt Ceiling) GAP(Distance between Debt and Ceiling) TTL (Time between DC changes)     ETH-A       ETH-B       Etc\u2026        User Interaction: Initially this contract can be called through etherscan by any user familiar with the contract write capability . In time the expectation is to provide a user interface that visually illustrates the debt ceiling per ILK with the ability to call the contract through the UI. Timeline: The intention is to agree upon the above values with the community and mandated Risk Team in time to launch the DC-IAM as part of the December 11th executive. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.554068061568062
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#16",
+                    "likes": "1",
+                    "time": "30/11/2020-13:39:10",
+                    "content": "Thanks Derek, Are you expecting the community to post signal requests to determine these parameters or is the risk team going to propose starting parameters? Thanks ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#17",
+                    "likes": "5",
+                    "time": "30/11/2020-13:52:00",
+                    "content": "Thanks @Derek. Since we have only this week to discuss this topic and have parameters proposed I would personally prefer trial-run implementation for vault types that will see most benefits using this, especially during the holidays when executive voting will be limited. Therefore I suggest we implement DC IAM for ETH-A, ETH-B and WBTC-A. Potentially also for YFI-A where DC is maxed out, but we need to agree on higher SF, which as I mentioned in the other forum thread, could go to double digit numbers. Plus, we almost had a single YFI-A vault liquidated last week with 9m debt exposure. I personally think DC IAM is mostly beneficial for ETH-B vaults, because it helps us protect against OSM attacks. Also, I think DC IAM can not be very efficient until we decrease GSM delay, currently set to 3 days. The idea is to have a line (max DC) set higher than what current debt ceiling is, but at the same time we need to be able to lower it if something goes wrong. If GSM delay is set to 3 days, maximum debt ceiling could be already reached, unless we have a very low gap or high ttl. But this can become very limiting and efficiency of IAM DC becomes questionable. Nevertheless, we can still implement it for all collateral types if the community prefers. We spent some time already to calculate max DC figures for each collateral type, which are based on certain estimates of risk tolerance (mostly based on CEX+DEX volumes). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.376147959183673
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#18",
+                    "likes": "0",
+                    "time": "30/11/2020-14:05:47",
+                    "content": "Sounds good. Are you planning to present on this in the next G&R call or here? What are the next steps? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#19",
+                    "likes": "3",
+                    "time": "01/12/2020-11:28:22",
+                    "content": "We are planning to post some suggested parameters for these three vault types here very soon. I was only waiting for community if someone thinks we should implement it for all vault types next week. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#20",
+                    "likes": "6",
+                    "time": "02/12/2020-17:58:41",
+                    "content": "After analyzing parameters needed for IAM DC and right before proposing them here we did another analysis of user behaviour under IAM DC. Unfortunately we found a bug that makes IAM DC very ineffective and limiting if particular actors were to be performing certain actions. Below is a scenario where an actor could perform a larger repay and consecutive equal amount of mint and in between lower actual DC. Since lowering DC is not limited by ttl it means DC could in theory be maxed out all the time if such actions were to be performed in a timely manner by certain actors. | ttl = 6 | gap = 25 |             |     |              |      |                                                                  | |---------|----------|-------------|-----|--------------|------|------------------------------------------------------------------| |         | activity | actual debt | gap | debt ceiling | line |                                                                  | | t - 1   | /        |          40 |  25 |           65 |  100 |                                                                  | | t       | 10 mint  |          50 |  25 |           75 |  100 | debt ceiling is increased, 6 hour ttl time clock starts          | | t + 1   | 25 repay |          25 |  25 |           50 |  100 | debt ceiling is reduced, no timelock                             | | t + 1   | 25 mint  |          50 |  25 |           50 |  100 | debt ceiling fully utilized and can not be increased for 5 hours |  I hope @Protocol-Engineering an find a solution to this issue. I was thinking we could have ttl applied also for DC decreases, but I think the same attack could be performed, the only difference is that it can be performed only once ttl time lock is reset. We can post our analysis on parameters proposed, but I think it doesn\u2019t make much sense until current implementation is fixed. I was also thinking such attack doesn\u2019t really make any economic benefits to anyone so maybe we could still try it out for ETH-B vault type, where benefits of IAM DC are highest due to potential OSM attacks. Note however that in the worst case someone can make ETH-B DC constantly fully utilized. Preferably of course different solution needs to be found. Feedback welcome, particularly from @Protocol-Engineering as we may have also missed something here. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/compound-d3m-risk-assessment/12580/7",
+                        "https://forum.makerdao.com/t/iam-dc-eth-a-parameters-27th-jan-2021/6235"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.206845238095238
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#21",
+                    "likes": "1",
+                    "time": "03/12/2020-19:42:34",
+                    "content": "Does this mean that MIP27 can\u2019t be deployed until a new implementation is developed to work around this problem? Where do we go from here? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.8731060606060606
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#22",
+                    "likes": "4",
+                    "time": "04/12/2020-21:07:47",
+                    "content": "dss-auto-line griefing attack The current implementation of the dss-auto-line contains a potential griefing vulnerability. The essential function of the auto-line is to allow public users to increase or decrease a collateral line value by some amount gap, which results in a new line value that is the existing debt balance plus the gap. The line will not increase if the last increase happened less than ttl seconds ago. The line will decrease regardless of how many seconds have elapsed since the last change. Functionality 983\u00d7855 20 KB The motivation for adding the delay between increases is to mitigate the risk that the price of a collateral is read higher than the current market price. In the worst case, the oracle price is higher than market price by more than the collateralization ratio buffer, which would allow one to fill a Vault and generate the maximum amount of Dai against the collateral, thus causing the Vault to be under 100% CR in the next oracle update. If the ttl is too short, anyone could increase the line multiple times before the oracle price matches the market price, which would cause the protocol to take on excess amounts of bad debt.  Mitigating against this risk is the reason we have debt ceilings in the first place, and also the reason the ttl should not be too short. Decreasing the debt ceiling carries no such risk, and is in fact desirable if the oracle price for an asset is considerably higher than the market price.  For this reason, there is no ttl before decreasing the debt. It\u2019s this lack of a ttl before decreasing the debt that creates the potential for a griefing attack. This griefing attack would allow a user with a large vault to prevent the line from increasing after the ttl. There could be a financial incentive to perform this attack in a Dai liquidity crunch, which would allow the vaultholder to corner the Dai market and prevent supply over a critical period.  While the protocol has, and will create more, Vaults that are available in a liquidity crunch, it\u2019s still worth considering this attack vector for an asset. Hypothetical scenario is as follows  auto-line is configured with a gap of 5,000,000 and a ttl of 1 hour. malicious vaultholder has $10,000,000 (or more) worth of collateral in WBTC-A and 5,000,000 Dai in debt.  WBTC-A line is 160,000,000, WBTC-A total debt is 160,000,000 malicious vaultholder calls AutoLine.exec(\"WBTC-A\") which increases line to 165,000,000 malicious vaultholder flash borrows 5,000,000 Dai and repays all or a portion of their debt. Total debt is now 155,000,000 malicious vaultholder immediately calls AutoLine.exec(\"WBTC-A\") which decreases line to starting value of 160,000,000 malicious vaultholder generates 5,000,000 Dai and repays flash loan  WBTC-A line value remains at 160,000,000 for the next hour legitimate vaultholder is unable to generate more Dai for the remaining ttl. This problem is compounded if malicious vaultholder repeats the attack hourly.  1664\u00d7500 17.6 KB Mitigation considerations  A shorter ttl would make this attack more operationally expensive, but it also reduces the effectiveness against oracle attacks. A larger gap would require an actor with more resources, however this sort of assumption might not work in a world of flash loans. Another ttl for DC decreases.  This would prevent us from being able to cap the DC to gap if the market price was lower than the oracle price, and doesn\u2019t prevent the griefing attack, it just pushes it to the end of the new ttl period.  Actions Taken  We\u2019ve removed the ability for flash loans to be used to execute this attack here.  Conclusions The smart contracts domain team as limited the griefing attack to actors with extremely large positions.  We believe this reduces the risk of griefing the debt ceiling significantly, enough that the other benefits of this module may be realized.  Nevertheless, we suggest deploying this with just ETH-B for now.  This allows domain teams and governance to get used to the functionality of the module, and if the griefing attack proves to be a problem, ETH-A is always available for additional debt. Future Notes Some future notes about when we consider this module for other collateral types.  By removing the flash loan capability in conjunction with this module, it would mean an attacker would have to have the capital to fill the gap in order to execute a griefing attack.  Under the mitigation section, we discussed making the gap larger in order to make this attack less available. Make sure certain collateral types like USDC-B, or perhaps those managed by any future implementation of a PSM are not managed by this module.  NOTE: While we think the risk is low, it would still be helpful if the community could think about various motivations for this attack, other than those mentioned above.  What would an attacker gain by griefing one, many, or all, of the collaterals that use this module? Credits @brianmcmichael for the initial discovery and writeup of this attack. @Primoz et al. for discovering this independently in a risk review.  Great work! @galabasquer implementing the DC IAM, and the flash loan mitigation. ",
+                    "links": [
+                        "https://github.com/makerdao/dss-auto-line/pull/5/files",
+                        "https://forum.makerdao.com/t/mip29-peg-stability-module/5071",
+                        "https://forum.makerdao.com/t/signal-request-rolling-out-the-debt-ceiling-instant-access-module-dc-iam/6008"
+                    ],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.473353545963841
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#23",
+                    "likes": "0",
+                    "time": "04/12/2020-21:18:50",
+                    "content": "If I understand correctly, At the end of the day, once the flash loan risk is removed, we currently have a same risk. If I recall it has already happen with USDC or ETH when we had 0%. someone filled up the vault to push governance to increase then remove the loan. Except that with the MIP27 it is 5h instead of one week. The other option, but I guess you have already thought about it and there is an issue somewhere that I can\u2019t see. We save the previous line and allow people to go back to it with out ttl. If it is with in the previous ttl. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.958333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#24",
+                    "likes": "1",
+                    "time": "05/12/2020-21:50:14",
+                    "content": "Good stuff Mooney! Took me a bit to fully understand it\u2013I have read about griefing on Minecraft and insufficient gas griefing, but never about a main dish of collateral shortfall/DC disruption/griefing with a side dish of Flash Loans haha Thank you to @brianmcmichael for having the eye of the Tiger and for Primoz for always having our best interest at heart\u2013and of course to @galabasquer for his hard work and dedication.     cmooney:  NOTE: While we think the risk is low, it would still be helpful if the community could think about various motivations for this attack, other than those mentioned above. What would an attacker gain by griefing one, many, or all, of the collaterals that use this module?   Hey @yaronvel wanted to circle you into this thread and ask if you can help the community think of any other attacks that would motivate a malicious vaultholder to increase line with other collateral types outside of ETH, such as WBTC-A and perhaps the proposed/talked about WBTC-B collateral type? Your thoughts would be helpful! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.741071428571428
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#25",
+                    "likes": "0",
+                    "time": "06/12/2020-08:07:52",
+                    "content": "I am not sure i fully understand, but wouldn\u2019t an attacker without extra capital would be able to perform same attack simply by temporarily decreasing his position? E.g., I withdraw the DAI to supply liquidity to uniswap, and now I use the ETH/DAI LP as a collateral to borrow more dai, and then i repay some of my DAI debt. Or I withdraw DAI to supply liquidity to curvfi, and now i use it as a collateral at cream to borrow DAI. Etc. Or even simpler, just take my current ETH collateral to a minimum, put it in another vault, and mint DAI. But more generally why only capital-less (aka flash-loan) attack is the issue? It seems only whales could apply it anw, so assuming they have few millions on the side, on alternatively that they could decrease their debt by few millions using their extra collateral, is not unlikely. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.383333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#26",
+                    "likes": "1",
+                    "time": "06/12/2020-13:00:01",
+                    "content": "In WBTC-A (and other mintable coins, like USDC), one motivation to increase line is when the admin key is being compromised (in WBTC it is technically more than just admin key, but same idea), and infinite minting occur. The more DAI one could mint wrt the now 0 value WBTC, the more profitable your attack was. Even in the absence malicious intents, i think it is always the interest of WBTC (but also YFI etc) whales to increase the line, so their coins would have more usage, and they could e.g., mint DAI to get some yield on it in curvfi or pickle. For the proposed WBTC-B, the backstop has an incentive to have biggest line as possible, as over time it will bring more users. But this is solvable by setting the absolute cap to a reasonable value. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 6.0625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#27",
+                    "likes": "0",
+                    "time": "06/12/2020-20:25:12",
+                    "content": "4 posts were split to a new topic: ETH-B DC-IAM: Initial Parameters ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#30",
+                    "likes": "1",
+                    "time": "06/12/2020-18:33:17",
+                    "content": "    yaronvel:  But more generally why only capital-less (aka flash-loan) attack is the issue?   Oh, if it wasn\u2019t clear from my original post, a whale can still grief the DC.  This is why I wanted the community to think of strong reasons to do so, and if it\u2019s obvious this would become a problem from whales. Removing the ability for anyone to grief the DC, we believe, lowers the risk of this happening to a point where the protocol can benefit from a more automated DC.  That is, the risks outweigh the benefits.  To test this out, we suggested just putting it on ETH-B to start, as the automated increases would prove useful, and if a whale did grief the DC, ETH-A still exists as an escape hatch. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.940972222222221
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#31",
+                    "likes": "2",
+                    "time": "06/12/2020-19:54:34",
+                    "content": "    cmooney:  malicious vaultholder flash borrows 5,000,000 Dai and repays all or a portion of their debt. Total debt is now 155,000,000   Also it states that the fix only mitigates a flash loan. but it seems that you have to be a whale to begin with ($5m net position) to execute the attack. So it is not really about flash loan right? That said, personally I don\u2019t see a way where one can directly profit from it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.204081632653061
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/brianmcmichael",
+                    "index": "#32",
+                    "likes": "1",
+                    "time": "07/12/2020-14:32:04",
+                    "content": "    yaronvel:  That said, personally I don\u2019t see a way where one can directly profit from it.   It\u2019s possible that in a Dai squeeze a whale could attempt to corner the market on Dai, driving up the price the price of Dai and profiting from that while retaining the exclusive ability to create it. That said, with the initial proposal to use this only on ETH-B I\u2019m not entirely sure that this is undesirable from a system security perspective. Since ETH-B has the lowest collateralization ratio this \u201cattack\u201d could protect the system by encouraging the use of other vault types with higher collateralization ratios and fees (like USDC-B), increasing the overall system collateralization in a market downturn. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.986111111111111
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#33",
+                    "likes": "0",
+                    "time": "07/12/2020-14:51:25",
+                    "content": "Is this fixable just by adding a cooldown for any changes? Adding the flash-loan guard gives one block for others to interrupt the cycle. What if you just have a 1 hour delay that triggers after any change (up or down) in addition to the 12 hour ttl on increases? That way you can reduce the debt ceiling rapidly during downturns, but you wouldn\u2019t be able to decrease the ceiling until 1 hour after you increased it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.861111111111112
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/yaronvel",
+                    "index": "#34",
+                    "likes": "0",
+                    "time": "07/12/2020-15:25:18",
+                    "content": "yeah, so reducing the supply or just an attack by a competitor that want more people to borrow DAI on his platform. But hard to put $ value to it. That said, other than simplicity, what other advantages are there in making the line going down quickly, as opposed to the line increasing which is more gradual? Is it to always to put a tight upper bound on the profits from an oracle attack? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.254188712522046
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/brianmcmichael",
+                    "index": "#35",
+                    "likes": "1",
+                    "time": "07/12/2020-19:18:04",
+                    "content": "    LongForWisdom:  What if you just have a 1 hour delay that triggers after any change   We\u2019d discussed this, but the shorter delay provides mitigation against oracle attacks in a rapid market downturn or against an oracle attack, by quickly lowering the collateral line we put an upper limit the ability of users to print unbacked Dai before the OSM update. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#36",
+                    "likes": "1",
+                    "time": "07/12/2020-19:20:28",
+                    "content": "    yaronvel:  Is it to always to put a tight upper bound on the profits from an oracle attack?   I think we want to limit DC exposure to rapid price crashes where the delta of market price is much lower than the oracle price.  This can happen with an oracle attack or otherwise (BT).  Having no ttl on lowering is a huge advantage in this case.  It remains to be seen if this advantage outweighs the possibility a whale griefs the DC-IAM. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.526785714285714
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#37",
+                    "likes": "1",
+                    "time": "07/12/2020-19:25:52",
+                    "content": "    LongForWisdom:  Is this fixable just by adding a cooldown for any changes? Adding the flash-loan guard gives one block for others to interrupt the cycle. What if you just have a 1 hour delay that triggers after any change (up or down) in addition to the 12 hour ttl on increases?   This was one of the backup plans.  It still means the grief can happen after that cooldown period, but would create a window where the DC could not be lowered.  This window, however, needs to be shorter than OSM updates to limit DC exposure in a crash.  If we see this grief attack being a problem in the future, this is the lowest hanging fruit for a solution, but we lose some of the security functionality of capping the ceiling. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.8055555555555554
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#38",
+                    "likes": "3",
+                    "time": "22/12/2020-22:32:30",
+                    "content": "Human-managed updates of the collateral line could be regarded as having a large gap of often 10-50% of the previous line and ttl on the order of weeks. A sufficiently well financed \u201cattacker\u201d could perform a similar griefing attack on the current non-automated, human-managed system. As soon as the line is set through an executive, the attacker could mint sufficient DAI to reach the line, blocking other vaults from minting. The attacker could even continue to mint more DAI to compensate for other vaults paying down their DAI debt to keep the total DAI minted at line. This situation could be maintained until a few days before the community is to decide to raise the line, at which point the attacker would pay back the DAI and disappear. Suddenly, the community will note DAI generation is far below the debt ceiling and may keep the line unchanged or maybe even lower it. So maybe the dss-auto-line griefing attack is not so severe given that the current-human managed line is also theoretically vulnerable to a similar attack. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.847354497354497
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#39",
+                    "likes": "1",
+                    "time": "03/01/2021-15:25:00",
+                    "content": "I am bringing up this MIP, to check if anyone has an idea about a fix to mitigate this issue? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#40",
+                    "likes": "0",
+                    "time": "30/01/2021-14:29:46",
+                    "content": "Hi there, I can\u2019t see where the git repo is for this MIPs. Any idea where I can clone the repo? Edit : Ok found it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#42",
+                    "likes": "0",
+                    "time": "30/01/2021-14:51:20",
+                    "content": "@alexis In view of my reply above (MIP27: Debt Ceiling Instant Access Module), why do you think we need to defend against this attack? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#44",
+                    "likes": "0",
+                    "time": "30/01/2021-15:17:59",
+                    "content": "It is actually different as the line can\u2019t go down. Or at least an external user can increase and decrease the line, only governance can do it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.544444444444444
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#45",
+                    "likes": "0",
+                    "time": "30/01/2021-15:45:34",
+                    "content": "@alexis Yeah, but my point is that manually adjusting the debt ceiling is subject to the same vulnerability. Whether we use MIP27 or manual adjustment, it doesn\u2019t matter. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.583333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#46",
+                    "likes": "0",
+                    "time": "30/01/2021-16:03:45",
+                    "content": "Sorry, my comments are actually not relevant. I removed them as they can make people confused. Just realized that there is a governance vote on it. My point was to make the governance vote happen as we reach again the ceiling, well too late it is already there. To be honest I don\u2019t believe this issue is significant and can be mitigated by setting back the line to 0 and let the governance taking back control on it. The code is on makerdao GitHub. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.734375
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/debt-ceiling-instant-access-module-pre-mip-discussion/3924",
+            "title": "Debt Ceiling Instant Access Module: Pre-MIP Discussion ",
+            "index": 3924,
+            "category": [
+                "Governance",
+                "Proposal Ideas"
+            ],
+            "tags": [
+                "meta-governance",
+                "proposal",
+                "mips"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#1",
+                    "likes": "14",
+                    "time": "02/09/2020-10:59:11",
+                    "content": "Hi all, The purpose of this forum post is to revisit the discussion on how a Debt Ceiling Instant Access Module could work. This work builds upon the thoughts generated in MIP17 and the subsequent community discussions such as the Working Group Call and the 30th July G&R Call, which describes MIP17 as laying the groundwork for a future Instant Access Module (IAM) to help automate such functions. This post, therefore, illustrates exploratory work done by the Smart Contracts Team for how an IAM could work in the space of debt ceiling adjustments, with particular credit to @galabasquer . To manage community expectations, please be aware that the development of a DC-IAM is secondary in priority to Liquidations new Chief contract work, despite this I think we can generate some good discussion that will help inform the implementation of MIP17 and how it can be developed going forward. Instant Access Module Introduction An Instant Access Module contains components to create direct, bounded changes to the Maker Protocol without consensus in the DS-Chief. In the context of this forum post, the idea is to introduce a Debt Ceiling Instant Access Module that permits anyone* to adjust the debt ceiling within constraints that are voted in by Governance. This flexibility introduces concepts such as the minimum time required to wait before it is possible to increase the debt ceiling, as well as the maximum amount that the ceiling can be adjusted via the module, which will be discussed below. Although not the scope of this post, one can see how direct changes to the Maker protocol could be used to make changes to a whole host of system variables such as the Dai Savings Rate or the Stability Fee, thereby reducing the weekly governance burden that we currently experience - of course for this to be efficient we need to better understand the effect of changes on the overall ecosystem, including edge cases and security risks. *anyone could literally be any individual signing an Ethereum transaction which would be executed only if the defined rules are met. If we feel this is too liberal, we could explore a solution that while bypassing Chief requires a minimum amount of MKR to act as a bond for a set time period while the system changes are introduced. Refer to the \u2018Authority\u2019 section below for more info. Debt Ceiling Instant Access Module Summary The Debt Ceiling Instant Access Module decentralises debt ceiling control to the broader community by allowing all stakeholders to control this important risk variable. It helps solve the somewhat frequent problem where the community finds itself having reached the debt ceiling and now needs to wait for an executive vote to pass in order to make further adjustments. The same occurs in reverse when it becomes necessary to lower the debt ceiling in the event there is a reduction in Dai supply. This capability will be available once the community has a good idea of the logic defined in MIP17 and then once the DC-IAM has been voted in by Governance, after which point, executive votes would not be necessary to adjust the debt ceiling within a predefined upper boundary. An executive vote can however always be used to overrule the behavior of an IAM. Below outlines the system variables that allow this module to function, and then we look at how these variables are applied to adjust the debt ceiling. In the interest of simplicity, target risk premiums have been omitted from this design, however, once we better understand the relationship between debt ceilings and stability fees, these could also be explored as was initially proposed in MIP17. DC-IAM Variables The following checks and variables define the parameters of the DC-IAM and can be set and amended by Governance through an executive vote.   on - A check to see that the ilk is enabled and part of the vat   line - The maximum debt ceiling possible. This variable is determined by Governance and can only be updated through a governance vote as it prevents the DC-IAM from exceeding an upper limit.  top - The amount that it is possible to adjust the ceiling over the existing ilk debt. This can be a percentage or an absolute value, which will be determined by Governance.  lineNew - The new target debt ceiling once the new variable top is introduced. This calculation is based on the actual collateral debt plus the top as long as the final value falls within the maximum debt ceiling allowed (line). If it falls beyond the maximum allowed debt ceiling, then the line itself will be the highest possible value for the new debt ceiling.  ttl - The minimum time required to wait before it is possible to increase the debt ceiling. Note, the ttl is not required when lowering the debt ceiling.  last - The reference point in time that ttl uses to determine the last time the ceiling was increased.  Adjusting the Debt Ceiling  The Debt Ceiling Module is independent for each collateral type and will work for any ilk in the vat. There will be a minimum time interval required to pass before setting a new increase. This is determined by the ttl.  ttl will consider the OSM upgrade schedule so it takes into consideration the new OSM price before allowing an increase in the debt ceiling. Anyone can trigger a transaction to adjust the debt ceiling if supply conditions are met and the required amount of time since the last debt ceiling increase has also been met. The debt ceiling can only be increased if the underlying supply is also increasing. The amount of increase possible will always be a single value, known as the top. This can be defined as an absolute value or a percentage relative to the existing ilk debt. If the supply is equal to or lower than the current debt ceiling and trending down, then it will be possible to reduce the debt ceiling - again, using top relative to the supply. Note that the reduction of the debt ceiling does not need to check the ttl which is what sets the interval for how often the debt ceiling raise can be implemented. This means that there is no waiting period required for reducing the debt ceiling.  Example After enabling this module through an executive vote, anyone is able to adjust the debt ceiling. Let\u2019s use the below example values:  The current supply is 100M for a particular collateral type, Max limit is 150M % increase is set to 10% Once the ttl passes, let\u2019s say the supply has since gone from 100M to 108M, anyone can increase the debt ceiling 10% higher, to 118.8M. [10% * 108M = 10.8M. 10.8M + 108 = 118.8M] Once again, after the next ttl, let\u2019s say the supply has gone up to 115M, meaning anyone can at that point increase the debt ceiling to 126.5M. [10% * 115M = 11.5M. 11.5M + 115M = 126.5M]  628\u00d7742 24.7 KB This process can be repeated until the limit value of 150M is reached, which has been determined by governance. It would then be up to governance to make changes to the hard limit (via an executive vote) if there was a desire to increase this limit.  If Governance wanted to decrease the debt ceiling due to a reduction in supply, it is possible to do so without waiting on the ttl time. This ensures that the ability to draw be kept tight against supply. Let\u2019s say supply is at 115M and the debt ceiling is at 126.5M. If the supply were to decrease to 112M, then the debt ceiling could immediately be reduced to 123.2M in order to retain the 10% buffer that Governance has deemed safe.    Calculation for the above: when the dai supply is reduced to 112M, the module takes 10% of that value (11.2M) and adds it to the Dai Supply amount (112 +11.2 = 123.2), therefore, the new debt ceiling will be 123.2M. The DC-IAM is always based off of the Dai Supply and either moves up or down 10% (or another value as determined by governance).  Authority  Should we think of this module in the same way as we think about e.g. calling drip when updating the DSR? It could be called by anyone as long as it falls within the time and boundary parameters determined by Governance. Could this be an altruistic bot or an incentivised action? All good topics for debate.  Security  If for any reason the DC-IAM module is misbehaving (e.g. our ttl time period or upper boundary is too inflexible), it will be possible to bypass it through an executive vote where governance can also vote to skip the delay in the GSM. In the event of a contracting market, the community should ensure that the debt ceiling defensively tracks the contracting Dai supply. This value should be informed by Risk. Currently there is no incentivisation for such altruistic/defensive behaviour. It may therefore be relevant to introduce a Defensive Debt Ceiling (DDC), which would be a lower boundary voted in by governance, similar in effect to the upper boundary, whereby the IAM would not be able to lower the debt ceiling below this point.  Future Considerations This pre MIP discussion has restricted its focus on the Debt Ceiling mechanics of an IAM. It is reasonable to assume, as was explored in MIP17 that a future design will build on this to include a risk premium element. Initial thinking is that the greater the concentration of an asset in the governance portfolio, the higher the risk premium should be to take into account exposure and inherent risk. This will require further analysis to better understand the relationship between the debt ceiling and the risk premium and their respective growth rates. Conclusion This forum post details initial thoughts behind a debt ceiling instant access module that I hope will give the audience an understanding of what could be possible while also helping to inform the previously discussed, unratified MIP17. Following community discussion, I am hopeful we can revisit documenting a formal MIP and a followup executive vote. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip17-working-group-call-summary-next-steps/3464",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-103-thursday-july-30-4-00-pm-utc/3318",
+                        "https://forum.makerdao.com/t/signal-request-should-we-reduce-the-usdc-a-collateralization-ratio/3886/43",
+                        "https://forum.makerdao.com/t/signal-request-should-we-increase-usdc-a-debt-ceiling/4068/6",
+                        "https://forum.makerdao.com/t/week-14-dai-distributions-sourcecred-trial/4044",
+                        "https://forum.makerdao.com/t/maker-relay-ep-11/4041",
+                        "https://forum.makerdao.com/t/mip27-debt-ceiling-instant-access-module/4625",
+                        "https://forum.makerdao.com/t/weekly-mips-update-15/4243",
+                        "https://forum.makerdao.com/t/signal-request-should-we-take-emergency-action-to-fix-the-peg/4096/33"
+                    ],
+                    "GPT-summary": "The post discusses the possibility of introducing a Debt Ceiling Instant Access Module (DC-IAM) to automate debt ceiling adjustments in the Maker Protocol. The author explains the concept of an IAM and how it could be used to adjust the debt ceiling within constraints voted in by Governance. The post also outlines the variables that define the parameters of the DC-IAM and how the debt ceiling can be adjusted using the module. The post invites feedback and discussion on the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Grants, Funding and resource allocation",
+                        "Community and engagement",
+                        "Token economics",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.466428816005086
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "02/09/2020-11:29:17",
+                    "content": "    Derek:  It is the intention for all instant access modules to have a parent module that will enable their safe upgradability.   Do we actually need this? It seems like these modules could just be replaced as needed when a new version is implemented. Isn\u2019t it just a matter of giving permissions to the IAM contract and revoking them when we want to replace it with a new contract? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.7727272727272725
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#3",
+                    "likes": "4",
+                    "time": "02/09/2020-13:58:19",
+                    "content": "Yes, exactly, modules could be replaced as needed with an executive vote. I\u2019ll remove that statement as it is incorrect. (My reason for including it was a bit beyond the scope of this post, so being more specific, the thinking here was that ideally anyone should be able to call for a DC increase/decrease, but in the instance that the community thinks that\u2019s too liberal, and that users should instead put up a bond/stake, we\u2019d need to manage any sort of stake/slash function in the event of malicious/spammy/disruptive activity. If this is beyond the IAM, then such a module could also be whitelisted to shutdown the DC-IAM with a minimum amount of MKR - although if our upper/lower boundaries are correctly set this would be unnecessary). Anyway, for now we should probably focus on the IAM rules for raising/decreasing the DC\u2026and then work on the authority piece - perhaps as a v2. So, the values we will need to come up with for each collateral type will be the following, starting with ETH-A and BAT-A:     Collateral  line(Max DC)  ttl (Wait Time)  top (Adjustment Value)     ETH-A      BAT-A        ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "02/09/2020-15:35:07",
+                    "content": "I find the naming conventions for top and lineNew to be confusing. since lineNew is not actually a change in the line variable can we consider changing the names of these variables? Perhaps top could be room or delta or something, as this represents the difference between the current dai supply and possible target debt ceiling after IAM adjustment. Perhaps lineNew could be changed then to top or roof or something, so that it is clear that it is semantically distinct from line. It is also a little unclear to me how the currently named top variable is used when lowering the debt ceiling. Does this now represent the lowest value the new debt ceiling can be set to? This seems reasonable since there would be an upper and lower bound on how much the debt ceiling can change during a single IAM adjustment. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.699245607333843
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "04/09/2020-16:48:30",
+                    "content": "Hi @befitsandpiper , I like your naming conventions, in particular \u2018roof\u2019. Let me get with the smart contracts team and review, thanks! Correct, if the supply were to reduce, then the top would be used to lower the new upper boundary (your roof). (I should include these naming conventions against my examples) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.056096681096681
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "09/09/2020-00:39:15",
+                    "content": "How is this IAM different than what we already have with voting for DC increases since you have to vote for a max anyways? What are the benefits of this implementation over the current system? Thanks in advance. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/galabasquer",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "09/09/2020-11:19:09",
+                    "content": "lineNew is actually an internal calculation variable. So not part of the storage layout, then nor something that governance will set up. I think it would be better to take it away from the description to avoid confusion. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/galabasquer",
+                    "index": "#8",
+                    "likes": "2",
+                    "time": "09/09/2020-11:28:04",
+                    "content": "It should allow to set the max ceilings higher than the current debt ceilings. One of the functions of the debt ceilings is to protect against the osm delay attack, which can happen if there is a hard crash of a collateral market price. Someone could full-fill the debt ceiling at that moment generating DAI below the 100% ratio (against the actual market price). With this module, that specific problem would be mitigated at certain extent, as the debt ceiling would be always tight to the total supply. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.996279761904762
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "10/09/2020-20:11:33",
+                    "content": "    Derek:  The debt ceiling can only be increased if the underlying supply is also increasing.   Are we talking since the last increase or the last ttl? In the later case you can be stuck at the line if you miss a ttl.     Derek:  An executive vote can however always be used to overrule the behavior of an IAM.   Meaning disable it? Or something else? MIP17 was more specific on top being an absolute value at the beginning and a percentage at some point. I liked the idea, not sure if that can be done here. Anyway, good job. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-110-thursday-september-17-16-00-utc/4074/2"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.022727272727273
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "11/09/2020-16:51:04",
+                    "content": "    galabasquer:  It should allow to set the max ceilings higher than the current debt ceilings. One of the functions of the debt ceilings is to protect against the osm delay attack, which can happen if there is a hard crash of a collateral market price. Someone could full-fill the debt ceiling at that moment generating DAI below the 100% ratio (against the actual market price). With this module, that specific problem would be mitigated at certain extent, as the debt ceiling would be always tight to the total supply.   Completely accurate. I also want to add for aaron.   The whole point of this is we already have a decent idea of how the DCs should be managed what we don\u2019t have is an automated mechanic to do that management.    A clear goal here is to make it so that governance only needs to change the DC maximum and DC minimum as well as DC rate of change say once every few months vs. every bloody week. Frankly once we have the above MIP DC_IAM I\u2019d also like to see an EPC take on the role of being the one to manage coming up with proposed DC changes, or DC IAM changes and pushing them through governance. So one of the things I am back to is revisiting onboarding EPCs defining responsibilities and authorities. Let\u2019s put some of this governance micromanagement stuff into EPC hands so we can have people who have vested interests in making their work \u2018more efficient\u2019 work toward making \u2018all of our work\u2019 in governance \u2018more efficient\u2019. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.959033613445378
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#11",
+                    "likes": "3",
+                    "time": "13/09/2020-15:41:56",
+                    "content": "Hi SebVentures, I was referring to there being a minimum interval required to pass before setting a new increase i.e. for example if the ttl is a duration of 12 hours, then a subsequent debt ceiling increase would not be possible until this period of time has elapsed. Similarly, yes, an executive vote could always be submitted through Governance to disable anything introduced by the IAM. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.170454545454546
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#12",
+                    "likes": "0",
+                    "time": "13/09/2020-16:31:40",
+                    "content": "This is the piece I was missing. It wasn\u2019t clear where the delay was to stop someone from hitting the current DC, raising it, and then hitting it again etc, essentially doing the OSM attack with a few more steps. If there is an algorithmic delay thats perfect. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.857142857142858
+                }
+            ]
+        }
+    ],
+    "group_index": "2654"
+}

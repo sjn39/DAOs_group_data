@@ -1,0 +1,119 @@
+{
+    "poll_list": [
+        {
+            "title": "Increase the Dust Parameter for Select LP Token Vaults - January 10, 2022",
+            "index": "12313",
+            "option": "Yes",
+            "supporting_mkr": "85,229",
+            "highest_fraction": 1.0
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/signal-request-adjusting-dust-parameter-lp-token-vaults-2021-5/12313",
+            "title": "[Signal Request] Adjusting Dust Parameter - LP Token Vaults (2021-5) ",
+            "index": 12313,
+            "category": [
+                "Governance",
+                "Signal Archive"
+            ],
+            "tags": [
+                "signaling",
+                "sig-status-accepted",
+                "uni-lp",
+                "dust"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#1",
+                    "likes": "3",
+                    "time": "20/12/2021-22:45:38",
+                    "content": " Dust Parameter Definition dust is the minimum permitted debt for a vault. Users must borrow at least this amount to open a vault, and cannot repay their debt below this amount unless they pay off the entire remaining balance. Higher dust values make vaults less accessible for smaller users, but also protect Maker from risk of vaults being too small to liquidate profitably. You can learn more in the documentation here.  Dust Limit Review Dust Limit Analysis Sheet We recently held a signal request poll to raise the dust limit for most vault types. However, I had failed to account for the additional gas costs involved in liquidating LP token based vaults when making poll options and breakdowns. Additionally, stablecoin based vaults have significantly lower liquidation ratios (and therefore lower excess collateral), which also impacts our margin of safety for liquidations. Due to these factors, I\u2019d like to poll the community for sentiment on increasing dust parameters for these LP based vault types. In a typical liquidation, we account for the operations to trigger liquidation, purchase collateral, and then sell on a DEX platform. For LP vaults, we\u2019d need to account for two additional operations - removing funds from the LP token position, and then selling or transferring a second asset received from the LP. This has been incorporated into models for setting LP vault dust limits. Stablecoin LP Vaults Stablecoin LP vaults are a special case, with stable price and liquidations disabled. This means Maker is very unlikely to be forced to liquidate these positions during gas spikes. On the other hand, these positions have only 2% in excess collateral, which is small enough that Maker could potentially face losses even when liquidating at lower gas prices (eg. if liquidation was planned as part of routine vault offboarding). See figure below for minimum safe vault dust depending on gas prices.  Additionally, stablecoin LP vaults become uneconomical for their primary purpose (leveraged yield earning) at small debt sizes. The figures below show the additional annualized borrowing costs at 15,000, 100,000, and 1,000,000 DAI debt. Even at 100,000 DAI, the estimated gas costs of opening a position could add over 25% in cost over a year, likely wiping out most or all of the yield earned on the position. Maintaining borrowing availability below this threshold may not be worthwhile considering users effectively can\u2019t benefit from it.  1600\u00d7362 138 KB   1600\u00d7360 132 KB   1600\u00d7360 138 KB  Vault Cost Analysis Sheet On the other hand, raising dust limits can make it more difficult for small users to manually close their position, as it\u2019s only possible to withdraw excess collateral while vault debt is higher than the dust requirement. Due to this factor, and the relatively small number of low value stablecoin LP vaults and minimal market risk, no changes to stablecoin LP vault dust parameters are proposed at this time. Stablecoin-Volatile Pair LP Vaults Vaults including a stable and unstable asset have relatively low liquidation ratios. This leaves a lower buffer for drawdowns and gas expenses before Maker would begin to face losses during liquidation, so the dust parameter should be set relatively higher for these vaults. DAIETH, USDCETH, and WBTCDAI Uniswap v2 LP vaults are included in this category.  To accommodate for 1,000 gwei gas and 15% price drawdown for the volatile asset (matching our buffers for other assets like ETH and WBTC) requires roughly 60,000 DAI dust for these vaults. Volatile LP Vaults Other LP vaults can compensate for price drawdown and gas costs with roughly 25,000 DAI dust. This includes the WBTCETH and UNIETH LP vaults. This figure is lower than stablecoin-volatile pairs because these vaults require relatively higher collateralization ratios, which gives better protection against price falls (one factor considered in these simulations).    Proposed Changes To increase margin of safety for LP vault types to match other vaults, I propose the following dust parameter changes:  Increase dust for UNIV2DAIETH-A, UNIV2USDCETH-A, and UNIV2WBTCDAI-A to 60,000 DAI Increase dust for UNIV2WBTCETH and UNIV2UNIETH to 25,000 DAI  Additionally, users should be cautioned against opening stablecoin-stablecoin LP vaults with less than 100,000 DAI debt, as dust may be increased for these vault types in the future and positions below this size are generally uneconomical.  User Impact Analysis Data sourced from mcdstate site. The figure below shows the rough number of vaults affected by the dust limit change for top collateral types (data as of 20 December 2021).  1462\u00d7326 36.3 KB  Source: Dust analysis sheet In the table, \u201cactive vaults\u201d means currently open vaults that are above the preexisting dust limits, while \u201cimpacted vaults\u201d are the subset of active vaults that would be below the newly proposed dust limits. Overall, we see 35% of active positions across these assets would be affected, but there is significant variance depending on vault type. In fact, only the UNIV2DAIETH and UNIV2USDCETH vaults currently have users that would be impacted by these dust changes. The percentage of debt impacted is significantly lower (as a few large borrowing positions skew the average). When vaults are below the required dust limit, automation services that protect vaults from liquidation may not work as intended. Reviewing the existing positions for the above vault types, we see there is at least a 45% buffer before any vault would be below the minimum collateral ratio. For most affected users, the buffer before their impacted position would face liquidation is significantly higher. So users should be able to adjust their positions and automation mechanisms without immediate risk of liquidation. Dust can sometimes also interfere with users manually unwinding their positions. For example, users cannot repay partial amounts or withdraw excess collateral while below the dust threshold. Users may need to use outside resources or potentially flash loan mechanisms to repay the entire amount at once in order to free their collateral assets. DefiSaver\u2019s Recipe Creator mechanism could be useful for these users, as it allows for creating a series of actions including flash loans to unwind vault positions atomically. Note that users must create a contract wallet to be able to interact with DefiSaver.  483\u00d7690 48.8 KB  Source: DefiSaver  Signal Request Questions    Do you support increasing the dust parameter for the UNIV2DAIETH-A, UNIV2USDCETH-A, and UNIV2WBTCDAI-A to 60,000 DAI?  Yes No Abstain     0 voters        Do you support increasing the dust parameter for the UNIV2WBTCETH-A and UNIV2UNIETH-A vaults to 25,000 DAI?  Yes No Abstain     0 voters      Next Steps This poll will run until Thursday January 6, 2022. If a majority of forum voters excluding abstain votes are in favor of changing dust parameters, this will move forward to an on-chain poll in the following week. ",
+                    "links": [
+                        "https://docs.google.com/spreadsheets/d/1TDtcJVUFHwhnKjBoa4rX1-qo8KJVsyk8jokM_oG4wYI/edit?usp=sharing",
+                        "https://forum.makerdao.com/t/signal-request-adjusting-dust-parameter-2021-4/11598",
+                        "https://docs.google.com/spreadsheets/d/1U3D8_v-vPDzCQc-bN5mm5cF7eyNYlYQsmHNZnzRb4XM/edit?usp=sharing",
+                        "https://beta.mcdstate.info/",
+                        "https://docs.google.com/spreadsheets/d/1TDtcJVUFHwhnKjBoa4rX1-qo8KJVsyk8jokM_oG4wYI/edit?usp=sharing",
+                        "https://app.defisaver.com/recipes",
+                        "https://app.defisaver.com/recipes/create?recipe=TWFrZXJGbGFzaExvYW5BY3Rpb24sMTAwMDtNYWtlclBheWJhY2tBY3Rpb24sMCxyZWNpcGUsJDE7TWFrZXJXaXRoZHJhd0FjdGlvbiwwLCx3YWxsZXQ7VW5pc3dhcFYyV2l0aGRyYXdBY3Rpb24sMHg2YjE3NTQ3NGU4OTA5NGM0NGRhOThiOTU0ZWVkZWFjNDk1MjcxZDBmLDB4QTBiODY5OTFjNjIxOGIzNmMxZDE5RDRhMmU5RWIwY0UzNjA2ZUI0OCwsd2FsbGV0LHdhbGxldCwyLDIwO1NlbGxBY3Rpb24sMHhBMGI4Njk5MWM2MjE4YjM2YzFkMTlENGEyZTlFYjBjRTM2MDZlQjQ4LHJlY2lwZSw2MDAsMHg2YjE3NTQ3NGU4OTA5NGM0NGRhOThiOTU0ZWVkZWFjNDk1MjcxZDBmLHdhbGxldCwwLjE7TWFrZXJGbGFzaExvYW5QYXliYWNrQWN0aW9uLCQy",
+                        "https://forum.makerdao.com/t/weekly-relay-dec-14-2021-jan-3-2022/12463",
+                        "https://forum.makerdao.com/t/risk-core-unit-month-in-review-december-2021/12436",
+                        "https://forum.makerdao.com/t/encuestas-de-la-semana-10-de-enero-de-2022/12561",
+                        "https://forum.makerdao.com/t/paxg-collateral-onboarding-risk-evaluation/4833/18",
+                        "https://forum.makerdao.com/t/curvelp-steth-eth-parameters-adjustment/13767",
+                        "https://forum.makerdao.com/t/feedblack-loops-llc-delegate-platform/9366/39",
+                        "https://forum.makerdao.com/t/schuppi-delegate-platform/11193/23",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-january-7th-13th-2022/12614",
+                        "https://forum.makerdao.com/t/relay-semanal-4-10-de-enero-de-2022/12593",
+                        "https://forum.makerdao.com/t/compound-d3m-risk-assessment/12580",
+                        "https://forum.makerdao.com/t/schuppi-delegate-platform/11193/20",
+                        "https://forum.makerdao.com/t/the-risk-core-unit-2022-year-in-review/19372",
+                        "https://forum.makerdao.com/t/weekly-relay-january-4-10-2022/12544",
+                        "https://forum.makerdao.com/t/relay-semanal-14-de-diciembre-de-2021-3-de-enero-de-2022/12531"
+                    ],
+                    "GPT-summary": "The author proposes to increase the dust parameter for certain LP-based vault types due to additional gas costs involved in liquidating LP token-based vaults. The proposal includes a detailed analysis of the impact of the proposed changes on users and the number of vaults affected. The author also provides a cautionary note against opening stablecoin-stablecoin LP vaults with less than 100,000 DAI debt. The post includes a signal request poll to gather community sentiment on the proposed changes. The post also provides information on how users can adjust their positions and automation mechanisms without immediate risk of liquidation.",
+                    "GPT-proposal-categories": [
+                        "Change to proposal pipeline",
+                        "Token economics",
+                        "Smart contract updates",
+                        "Community and engagement",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.191539782057023
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#2",
+                    "likes": "3",
+                    "time": "03/01/2022-17:32:26",
+                    "content": "Happy new year everyone! Heads up, this signal poll is scheduled to close this Thursday, January 6. Participation is still a bit low (probably due to the holidays), so please take a moment to vote in the signal polls! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.017755681818182
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "06/01/2022-17:19:59",
+                    "content": "    monet-supply:  oment to vote in the   Bumping this one more time, if we could get some more participation that would be great  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Patrick_J",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "08/01/2022-18:00:32",
+                    "content": "This Signal Request has now concluded. As the majority of non-abstain votes were in favour, it will move to an on-chain poll on Monday, January 10. Thank you to everyone who participated in this Signal Request. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "08/02/2022-04:00:52",
+                    "content": "This topic was automatically closed 30 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ],
+    "group_index": "479"
+}

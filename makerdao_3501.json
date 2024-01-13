@@ -1,0 +1,87 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/esm-end-module-upgrades-and-disclosures/7569",
+            "title": "ESM+End Module Upgrades and Disclosures ",
+            "index": 7569,
+            "category": [
+                "Updates"
+            ],
+            "tags": [
+                "security",
+                "executive",
+                "liq-20",
+                "esm",
+                "end"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#1",
+                    "likes": "29",
+                    "time": "19/04/2021-21:14:44",
+                    "content": "As was previously communicated, the Liquidations 2.0 upgrade of the Maker Protocol requires an update of the Emergency Shutdown Module (ESM) and the End module. With the extra scrutiny that these modules received for the LIQ2.0 upgrade, the Smart Contracts Domain Team discovered two latent bugs in their code base. An ESM issue was discovered a few weeks ago and planned for disclosure when the spell adding MIP45 and activating it for LINK-A became available for voting. An additional End module bug was discovered last Friday, April 16th, while running simulation tests for that spell, and this bug is the reason the spell was postponed. Thankfully, neither of these issues pose an active threat to the protocol, but they could become problematic in certain scenarios involving Emergency Shutdown. It is also necessary to fix them simultaneously for reasons that will be explained below.  The Emergency Shutdown Module Bug The ESM collects MKR and, if a threshold is exceeded, allows anyone to trigger Emergency Shutdown. The ESM hardcodes the address of the End, and since the End must be upgraded for MIP45, a new ESM is required. The purpose of the ESM is to mitigate two serious scenarios:  a critical bug that is too dangerous to share knowledge of widely or attempt to fix; and, a governance attack.  The present ESM is suitable to deal with the former, but it overlooks an important consideration for the latter. Namely, a malicious entity in control of the governance mechanism could steal all collateral even after shutdown via the privileged access of the Governance Security Module (GSM) to the core accounting contract (the Vat). The governance delay would have to pass before this became possible; however, with the current delay of 48 hours, Emergency Shutdown would not reach completion before the malicious entity became capable of acting. The fix is to revoke the authority of the GSM over the Vat when shutdown is triggered. The new ESM additionally allows anyone to revoke the authority of the GSM over any module that authorizes the ESM once the threshold amount of MKR is reached. The new auction contracts (Clippers) will be deployed granting this authorization, so that the entity behind a governance attack cannot interfere with the auction unwinding process of Emergency Shutdown. The old auction contracts (Flippers) will also authorize the new ESM. The new ESM greatly strengthens the game-theoretic deterrent to a governance attack in the Maker system. It comes, however, with a tradeoff: governance can no longer intervene benevolently in an ESM-triggered shutdown for a critical bug. This might be desirable, for example, if there is a bug in the End module. The issue found with the End module, discussed below, is an example of this, and thus both bugs must be fixed in tandem.  The End Module Bug The End module orchestrates the global settlement of the Maker Protocol after an Emergency Shutdown. Its primary responsibility is allowing the redemption of DAI for approximately 1 USD of backing collateral. As part of running simulation tests against mainnet state in preparation for the upgrade to LIQ-2.0 on Friday, April 16th, a bug was discovered that prevents the autonomous completion of the End process. Specifically, a numeric overflow can cause a revert when calculating the amount of a collateral to disburse per DAI. The exact condition to trigger this is that the amount of a collateral needed to cover the DAI it backs exceeds approximately 115,792. This is the case for ETH-A today. The End process becomes stuck for any overflowing collateral type and thus that particular collateral cannot be permissionlessly distributed. This bug can be mitigated by governance intervention via access to the Vat after shutdown occurs, assuming the shutdown was not due to a governance attack and that governance remains controlled by benevolent actors post-shutdown. Since the new ESM module would prevent such intervention, we cannot safely deploy the new ESM without resolving this issue as well. The fix, fortunately, is straightforward\u2013by performing the calculation in a slightly different way, the range of values that can be handled without overflow is greatly increased. The only drawback is a tiny loss of numeric accuracy, negligible in practice, and similar to many other small rounding errors that are unavoidable consequences of finite-precision computations. Randomized testing (\u201cfuzzing\u201d) was applied across a broad range of magnitudes on the new formula; it differed from the previous calculation by less than one part in a hundred million in all cases (i.e. it resulted in a less than one millionth of a cent difference in the value of a redeemed DAI token). In addition to the fix, we carefully audited all other mathematical operations in the End for potential magnitude errors\u2013none were found.  Risk Mitigation and Transparency There were many different ways to handle these two issues and their coordination with the MIP45 update. We endeavored to choose a path that mitigated the most overall risk to the system while giving MKR holders the transparency they need to confidently decide whether or not to vote in favor of executives. We take both risk mitigation and transparency very seriously, and would like to make our reasoning clear for the specific balance we struck between the two. First, regarding disclosure of the ESM bug: it was not immediately disclosed as we were concerned it might increase the short-term risk of a governance attack. We further believed it was simple enough that a disclosure released with the executive to install it would allow MKR holders the time needed to digest the information and make their voting decision. While several weeks of public knowledge seemed too risky, a few hours or days of exposure with a fix ready to be voted in was judged acceptable in order to fully inform voters. After the End bug was found, numerous options and rationales for them were debated. Ultimately, we decided to delay Liquidations 2.0 launch by only a few days, and ship a fix for the End bug with it, for the following reasons:  Because Liquidations 2.0 significantly decreases the risk of low Keeper liquidity, every day it is delayed represents another chance for a Black Thursday-like event to re-occur. By delaying only a few days to fix the End bug, we maximized the chances of being able to activate Liquidations 2.0 for all relevant collaterals on schedule. Not fixing the End bug requires also not fixing the ESM bug, as discussed above. These two bugs had to be fixed eventually, and doing so is non-trivial\u2013replacing the End is a complex operation involving many authorization updates, and some integrators need to make changes on account of it. Replacing the ESM requires emergency infrastructure to be updated. Since the MIP45 activation spell must replace both anyway, it was the perfect opportunity to fix both without extra overhead later on. This choice also allowed the fastest mitigation of the risks posed by both issues.  Full disclosure of the End bug was not made immediately for reasons similar to the ESM bug\u2013a potential short-term increase in the risk of malicious shutdowns. A more limited disclosure saying a bug had been found but the system was safe was considered, but we felt this might cause more worry than necessary and distract from readying a fix as quickly as possible. We felt that once the fix and executive to install it were ready, disclosure to fully inform voters was once again worth a few hours-to-days of heightened risk. Balancing risk mitigation and transparency is always a challenge and something we\u2019re continually seeking to improve at. Any feedback\u2013positive, negative, or constructive\u2013is welcome.  Future Considerations One thing that seems desirable is separate ESMs\u2013one for critical bugs that allows governance to retain administrative access after shutdown, and another for use in governance attack scenarios that locks governance out. Unfortunately, simply adding a second ESM allows a malicious actor with an MKR majority to potentially use the bug-focused ESM to prevent the operation of the attack-focused ESM. This is due to a technical detail of the Vat\u2013after shutdown, it does not allow modifications of its authorizations. This behavior helps to ensure that Emergency Shutdown cannot be disabled by de-authorizing the End, so it\u2019s not necessarily undesirable, and anyway replacing the Vat is infeasible. Longer-term, a special permission-handling contract (the \u201cVatMom\u201d) could be added between the GSM and the Vat which would enable dual ESMs without the previously mentioned drawback. However, there is an argument that post-ES, governance cannot be considered trustworthy even if shutdown was triggered due to a bug and not malice, as the price of MKR may decline significantly, making it easy to obtain a controlling stake. Thus, at this point it\u2019s not a certainty that an authorization structure permitting dual ESMs will be pursued. Rather, it requires further discussion.  Reflections The discovery of both of these bugs, in particular the End bug, shows that the processes and technologies we are developing for safety both work, and can be greatly improved. For example, we see that the simulation tests we write to validate executives are indeed valuable despite their labor-intensive nature. On the other hand, if we had simulations of Emergency Shutdown running automatically against mainnet on a continual basis, we could have discovered this bug much sooner. Of course, detection prior to deployment would be even more ideal, for example via unit tests or formal methods that ensure our numerical routines can handle magnitudes that may be encountered \u201cin the wild\u201d. We did test the Emergency Shutdown process on testnet and kovan with the cage-keeper, and even manually orchestrated the process in a secret deployment of MCD on mainnet prior to the November 2019 launch. However, none of those tests used enough collateral to trigger the latent overflow risk. In a way, it\u2019s a sign of MCD\u2019s success that we finally reached a sufficient amount of collateral on mainnet to reveal this issue. It\u2019s also a sign that we need to step up our safety standards even further\u2013fortunately, we\u2019ve been planning just such an initiative. Check out the recently-released Safety Roadmap to learn more. The above isn\u2019t meant to be a complete analysis; expect full postmortems for both issues once we\u2019ve had time to catch our breath and ensure Liquidations 2.0 is working as intended. ",
+                    "links": [
+                        "https://github.com/makerdao/esm",
+                        "https://github.com/makerdao/dss/blob/master/src/end.sol",
+                        "https://forum.makerdao.com/t/mip45-executive-spell-technical-delay-2021-04-16-2021-04-19/7532",
+                        "https://github.com/makerdao/dss/blob/6fd7de01e3807e65edbcab52591828d93adea539/src/end.sol#L337",
+                        "https://github.com/makerdao/cage-keeper",
+                        "https://forum.makerdao.com/t/protocol-engineering-the-road-to-defi-safety/7567",
+                        "https://forum.makerdao.com/t/maker-relay-ep-42/7673",
+                        "https://forum.makerdao.com/t/discussion-multi-esm/7649",
+                        "https://forum.makerdao.com/t/maker-relay-ep-41-en-espanol/7614",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-april-16-22/7609",
+                        "https://forum.makerdao.com/t/mkr-holders-now-is-your-time-to-shine-memes-inside/7579",
+                        "https://forum.makerdao.com/t/maker-relay-ep-41/7571",
+                        "https://forum.makerdao.com/t/mip45-executive-spell-technical-delay-2021-04-16-2021-04-19/7532/4",
+                        "https://forum.makerdao.com/t/esm-governance-permission-revocation-bug-postmortem/9205",
+                        "https://forum.makerdao.com/t/protocol-engineering-month-in-review-may-2021/8471",
+                        "https://forum.makerdao.com/t/end-flow-overflow-bug-postmortem/8027",
+                        "https://forum.makerdao.com/t/maker-governance-review-april-2021/7853",
+                        "https://forum.makerdao.com/t/sourcecred-distribution-for-week-ending-april-25th-2021/7744",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-138-thursday-april-22-17-00-utc/7515/3",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-138-thursday-april-22-17-00-utc/7515/2"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.445581430064189
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/e18r",
+                    "index": "#2",
+                    "likes": "13",
+                    "time": "19/04/2021-22:22:05",
+                    "content": "These critical bug fixes are included in the recently published Liquidations 2.0 executive spell. In order to include them in the system as soon as possible, please vote for the spell here: https://vote.makerdao.com/executive/liquidations-2-0-contracts-increase-emergency-shutdown-threshold ",
+                    "links": [
+                        "https://forum.makerdao.com/t/sourcecred-distribution-for-week-ending-april-25th-2021/7744"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ejbarraza",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "20/04/2021-17:37:36",
+                    "content": "Fantastic work by you guys. Everyone needs to vote on better safety and security by adopting the core unit. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.25
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "04/05/2021-17:37:36",
+                    "content": "This topic was automatically closed 14 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

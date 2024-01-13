@@ -1,0 +1,53 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/wsteth-collateral-onboarding-oracle-assessment-mip10c3-sp42/10881",
+            "title": "[wstETH] Collateral Onboarding Oracle Assessment (MIP10c3-SP42) ",
+            "index": 10881,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "oracle-domain-work",
+                "steth",
+                "wsteth",
+                "lido"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/NikKunkel",
+                    "index": "#1",
+                    "likes": "15",
+                    "time": "10/10/2021-00:31:05",
+                    "content": " ## Preamble MIP10c3-SP#: 42 Author(s): Niklas Kunkel (@NiklasKunkel) Contributors: Type: Process Component Status: RFC Date Proposed: 2021-10-09 Date Ratified: <yyyy-mm-dd>   Specification  Introduction This Oracle would provide the wstETH/USD price as part of the collateral onboarding process for wstETH.  Oracle Data Model |    Source    |  Asset Pair   |Quorum | Feed Model  | Oracle Model | | :----------- | :------------ | :---: | :---------: | :----------: | |   Balancer   |   stETH/ETH   |  13   |    Median   |    Median    | |     Curve    |   stETH/ETH   |    Oracle Supporting Data Model(s) ETH/USD (canonical) |    Source     |  Asset Pair   |  Feed Model  | | :------------ | :------------ | :----------: |  |   Binance     |    ETH/USD    |    Median    | |   Bitfinex    |    ETH/USDT   |              | |   Bitstamp    |    ETH/USD    |              | |   Coinbase    |    ETH/USD    |              | |   Gemini      |    ETH/USD    |              | |   Kraken      |    ETH/USD    |              |  USDT/USD (canonical) |    Source     |  Asset Pair   |  Feed Model  | | :------------ | :------------ | :----------: |  |   Binance     |    BTC/USDT   |    Median    | |   BitFinex    |    USDT/USD   |              | |   FTX         |    ETH/USDT   |              | |   Huobi       |    ETH/USDT   |              | |   Kraken      |    USDT/USD   |              | |   OKEx        |    BTC/USDT   |              |   Oracle Address  Medianizer - Mainnet TBD Oracle Security Module (OSM) - Mainnet TBD   Supported Tools   Setzer - ff32581143f08885f2ba8c154a6123daa463f0bf - Added support for wstETH/USD   Gofer - c70f8172abf75a64a54a9e084093e63a0aa3fe5d - Added support for wstETH/USD   Omnia - 232707e4c896014f84b86a2d917ff172e0f2f1f0 - Added support for wstETH/USD   Omnia - 76578ed80ee0d705da23c4b5bfc37048c67c0697 - Added support for RPC Splitter   Gofer - a6cc49b941984877a17a84d756a7b5fd16588bc9 - Added support for RPC Splitter   Goerli - wstETH/USD Medianizer - 0x9466e1ffA153a8BdBB5972a7217945eb2E28721f    Remaining Work  Deploy and configure Medianizer and Oracle Security Module smart contracts to Mainnet Push new relayer configuration with stETH/USD Mainnet Medianizer smart contract address Hand off Medianizer and Oracle Security Module smart contract addresses to PE for spell construction and oMegaPoker update.   Summary The integration of wstETH in the Maker Oracles is quite a bit more complex than previous collateral assets that were onboarded. This stems from the stETH liquidity centralizing around two sources, Curve, and more recently Balancer due to the liquidity mining rewards the Lido Protocol issues to those AMM pools. Lacking a diverse array of price sources makes it difficult to construct a robust Data Model that is resistant to manipulation. The first approach taken by the Oracle Core Unit was to construct a purely on-chain Oracle. This however introduces its own attack surface as flash loans can temporarily distort pool balances. One solution to make a flash-loan resistant mechanism is to utilize Merkle Proofs to validate reserve balances in Curve. The Merkle Proof essentially acts as a snapshot mechanism at the conclusion of a block, thereby side-stepping flash loan shenanigans that happen inside the block itself. It also had the added benefit of being completely trustless, thereby avoiding the traditional Feed consensus mechanism used by the Maker Oracles to generate data integrity. Ultimately this approach was abandoned because the gas costs for verifying Merkle Proofs on-chain are too expensive to run an Oracle in a cost-efficient manner. Depending on the size that wstETH in the Maker Protocol scales to down the road, it may become financially viable for the Maker Protocol to introduce this mechanism. Following this, the Oracle Core Unit used the traditional Feed-based mechanism to construct a wstETH Oracle. With this approach came different challenges. One of the key innovations of Oracles V2 over the previous Oracle V1 architecture was removing the need for a Feed to run an Ethereum node. Ethereum nodes were expensive to run, had a lot of stability issues, and Feed operators were required to keep up with Ethereum client updates to support forks which happened frequently or risk going offline. Usage of Infura was inadequate because it would create a critical dependency on Infura, meaning if Infura went down or even intentionally censored the Feeds, the Maker Oracles would stop functioning. By removing this dependency in Oracles V2, a critical point of failure was resolved. However, as DeFi grew, and on-chain liquidity in DEXes started to rival offchain liquidity on centralized exchanges, the need arose for Feeds to query on-chain price sources. Fortunately there existed new infrastructure technologies like The Graph which allowed querying of on-chain data without requiring an RPC node. The downside of The Graph is that it\u2019s a centralized data provider. This means that there\u2019s no data integrity guarantees that the data a Subgraph spits out actually correlates with on-chain activity. This also means that if The Graph goes offline we can\u2019t query any on-chain data. This trade-off of data integrity and infrastructure dependency for convenience can be rational when the on-chain data sources that are dependent on The Graph are a minority of the Data Model. For example, the ETHUSD Data Model has Uniswap V3 as one of its 7 sources. This means that even if The Graph were to report a malicious price or go offline, the price spit out by the Data Model would be unaffected. As DeFi has continued to evolve we now see tokens whose liquidity is completely on-chain or even just majority on-chain. This effect is compounded by the common usage of liquidity mining incentives to bootstrap token liquidity. The problem of leveraging The Graph in this type of context becomes much more dangerous. Staked ETH is one example of this type of token, where liquidity is limited to Curve and Balancer. In light of this, we\u2019re re-introducing Ethereum Nodes as a dependency on the Feed client. However, we\u2019re doing so in the context of an ecosystem which as evolved greatly since the decision to remove them was made in 2018. Ethereum clients are much more stable than they once were. There are now a multitude of RPC service providers such as Alchemy, BlockDaemon, Infura, QuickNode, etc. which are affordable and stable. The Maker Protocol also has a large amount of Light Feeds which are run by protocols who likely have numerous internal Ethereum clients available that they use all over their techstack. The Oracle Core Unit has a developed an RPC Splitter module. The RPC Splitter can be configured with numerous RPC nodes. Data is then queried from all nodes and compared against each other, thereby guaranteeing data integrity. It also solves for redundancy in case one or more nodes goes offline. Not only does this enable the Oracle Core Unit to deliver a secure and resilient wstETH Oracle, but going forward we\u2019ll be able to leverage this new mechanism to facilitate onboarding of on-chain native assets. ",
+                    "links": [
+                        "https://github.com/makerdao/oracle-suite/commit/c70f8172abf75a64a54a9e084093e63a0aa3fe5d",
+                        "https://github.com/makerdao/oracles-v2/commit/232707e4c896014f84b86a2d917ff172e0f2f1f0",
+                        "https://github.com/makerdao/oracles-v2/commit/76578ed80ee0d705da23c4b5bfc37048c67c0697",
+                        "https://github.com/makerdao/oracle-suite/commit/a6cc49b941984877a17a84d756a7b5fd16588bc9",
+                        "https://goerli.etherscan.io/address/0x9466e1ffa153a8bdbb5972a7217945eb2e28721f",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-october-7th-october-14th/11003",
+                        "https://forum.makerdao.com/t/maker-relay-ep-66-en-espanol/10982",
+                        "https://forum.makerdao.com/t/maker-relay-ep-66/10950"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.395664983164982
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "08/01/2022-00:31:24",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

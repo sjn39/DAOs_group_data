@@ -1,0 +1,132 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/rwa-001-erc20-token-smart-contract-domain-community-assessment/5363",
+            "title": "RWA-001 ERC20 Token Smart Contract Domain Community Assessment ",
+            "index": 5363,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "mips",
+                "sc-domain-work",
+                "real-world-finance",
+                "sixs",
+                "rwa-001"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/wil",
+                    "index": "#1",
+                    "likes": "9",
+                    "time": "27/11/2020-18:17:05",
+                    "content": "General Information This assessment deviates from the standard smart contract technical assessment format because of the idiosyncratic nature of the RWA collateral type. This assessment is intended only for the asset-backed lender scenario described in the Relevant MIP links section below, and should not be applied to other Real World Asset contracts. In summary, because of their simplified and constrained nature, these contracts are considered low risk.   Symbol: RWA-001  Relevant MIP information:  MIP21: Real World Assets - Off-Chain Asset Backed Lender MIP13c3-SP4 Declaration of Intent & Commercial Points - Off-Chain Asset Backed Lender to onboard Real World Assets as Collateral for a DAI loan    Total supply: 1 WAD (1 * 10 ^ 18)  Github repository:  https://github.com/livnev/rwa-example    Can use existing MCD collateral type adapter?  Yes, the AuthGemJoin adapter. You can find the actual implementation, slightly changed, here: https://github.com/livnev/rwa-example/blob/master/src/RwaJoin.sol     Technical Information   Does the contract implement the ERC20 token standards? Yes.  Decimals: 18.  Overflow checks: No.  Mitigation against allowance race-condition: No.  Upgradeable contract patterns: No.  Access control or restriction lists: No.  Non-standard features or behaviors: No.  Key addresses:  The auth governance address The operator address that is permitted to operate on the RwaUrn contract. This can be multiple addresses, however, each address must be approved by governance.    Additional notes:  The RWA code implementation resides within a sandbox-like environment, and any operation not related to locking, freeing, drawing, or wiping in the RwaUrn contract must be voted on by governance. The code itself is lightweight. This implementation uses simplified Flipper, Oracle, and Urn contracts to achieve the functionality required for this specific instance of RWA. While there are no overflow checks, no use of a SafeMath library, and no mitigation against the allowance race-condition, the idiosyncratic nature of the contract does not make them a requirement.    Reviewing the Architecture The core RWA architecture consists of the following contracts:  RwaLiquidationOracle RwaFlipper RwaUrn RwaToken RwaConduit  The following are considered out of scope for this assessment, and if needed, are subject to governance approval via an executive vote:  RwaDeploySpell RwaInitSpell Auxiliary wallet contracts for handling disbursement and repayment of Dai RwaLiquidateSpell RwaRemedySpell RwaWriteOffSpell  RwaLiquidationOracle contract Source code Consists of four state-changing functions, all protected by the auth modifier and can only be called by governance:   init(bytes32,bytes32,address,uint48),  tell(bytes32),  cure(bytes32),  cull(bytes32).  There is one externally accessible view function: good(bytes32) that anyone can use to check the liquidation status of the position. This function does not change state. This is not a typical Maker oracle. It will only report on the liquidation status of the RwaUrn, and can only be acted upon by governance. To state it plainly, this oracle is not vulnerable to flash loan attacks or any manipulation aside from a governance attack. RwaFlipper contract Source code Aside from the core DSS wards, rely(address) and deny(address) functions, there is just one state-changing function and it is only callable by governance: kick(address,address,uint,uint,uint). This Flipper contract does nothing but record the loss on the system\u2019s balance sheet, allowing for system debt to be created. RwaUrn Source code Aside from the core DSS wards, can, rely(address), deny(address), hope(address), and nope(address) functions, there are five functions: file(bytes32,address), lock(uint256), free(uint256), draw(uint256), and wipte(uint256). The file function can only be called by governance (via the auth modifier). The rest of the functions can only by called by those who have been given permission (hoped or noped) on the RwaUrn contract. And any Dai drawn by the RwaUrn can only be sent to the fbo address defined by governance when deploying the contract. RwaToken contract Source code A standard implementation of the ERC20 token standard, with the balanceOf(address) of the deployer of the contract being set to 1 WAD at deployment. There is 18 decimals of precision. There are three state changing functions, that are all the ability of the tokenholder, and are specific to the ERC20 token standard:  transfer(address dst, uint wad) external returns (bool); transferFrom(address src, address dst, uint wad) public returns (bool); approve(address usr, uint wad) external returns (bool);  To reiterate how simple this ERC20 token, please reference the Surya Description Report section below and compare it against other ERC20 token assessments. RwaConduit Source code A simple contract with one function: push() that can be called by anyone with a current MKR balance. This function holds transitory funds, that upon being called, are transferred to the to address set in the constructor when deploying the contract. Contract Risk Summary This is a low risk contract. The ERC20 functions of the RwaToken are implemented to industry standard, but do not mitigate the allowance race-condition or use a SafeMath library. This is of minor consequence, as actual usage of the approve(address,uint) function should be constrained. Future, more advanced implementations of RWA that will trade on markets should not use this implementation. The core functions of the contracts are very limited in ability, and are restricted only to governance or the trusted addresses to lock, free, draw, or wipe Dai in the RwaUrn. Compared to a standard ERC20 token with administrative functions and multiple admin/controller addresses, this is a considerably lower risk contract. Inheritance Diagram The ERC20 token contract does not inherit other contracts. Surya\u2019s Description Report Files Description Table     File Name SHA-1 Hash     RwaToken.sol 676984734384a844a7b9facf45cacfa8bebed9fa    Contracts Description Table     Contract Type Bases       \u2514 Function Name Visibility Mutability Modifiers          RwaToken Implementation      \u2514 add Internal       \u2514 sub Internal       \u2514  Public    NO\u2757\ufe0f   \u2514 transfer External    NO\u2757\ufe0f   \u2514 transferFrom Public    NO\u2757\ufe0f   \u2514 approve External    NO\u2757\ufe0f    Legend     Symbol Meaning      Function can modify state    Function is payable     ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip13c3-sp4-declaration-of-intent-commercial-points-off-chain-asset-backed-lender-to-onboard-real-world-assets-as-collateral-for-a-dai-loan/3914",
+                        "https://github.com/livnev/rwa-example",
+                        "https://github.com/livnev/rwa-example/blob/master/src/RwaJoin.sol",
+                        "https://github.com/livnev/rwa-example/blob/token-conduit/src/RwaLiquidationOracle.sol",
+                        "https://github.com/livnev/rwa-example/blob/token-conduit/src/RwaFlipper.sol",
+                        "https://github.com/livnev/rwa-example/blob/token-conduit/src/RwaUrn.sol",
+                        "https://github.com/livnev/rwa-example/blob/token-conduit/src/RwaToken.sol",
+                        "https://github.com/livnev/rwa-example/blob/token-conduit/src/RwaConduit.sol",
+                        "https://forum.makerdao.com/t/mip72-delegated-collateral-attachment-rwa-arranger-application-6s-capital/14482",
+                        "https://forum.makerdao.com/t/ns2drp-ns-drop-mip22-token-smart-contract-domain-team-assessment/5517",
+                        "https://forum.makerdao.com/t/makerdao-accounting-and-implications/5346/11",
+                        "https://forum.makerdao.com/t/maker-relay-ep-23-en-espanol/5442",
+                        "https://forum.makerdao.com/t/maker-relay-ep-23/5419"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.205086580086579
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/aave-erc20-token-smart-contract-domain-community-assessment/5490",
+            "title": "[AAVE] ERC20 Token Smart Contract Domain Community Assessment ",
+            "index": 5490,
+            "category": [
+                "Collateral Onboarding"
+            ],
+            "tags": [
+                "aave"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/naszam",
+                    "index": "#1",
+                    "likes": "4",
+                    "time": "04/12/2020-15:16:50",
+                    "content": "[AAVE] ERC20 Token Smart Contract Domain Community Assessment General Information   Symbol: AAVE  Address(es):  InitializableAdminUpgradeabilityProxy (Token Proxy): 0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9  AaveToken (Implementation): 0xea86074fdac85e6a605cd418668c63d2716cdfbc  InitializableAdminUpgradeabilityProxy (Migrator Proxy): 0x317625234562B1526Ea2FaC4030Ea499C5291de4  LendToAaveMigrator (Implementation): 0x86241b6c526998582556F7C0342D8863b604B17b     Deployment Date:  AaveToken Proxy: Sep-24-2020 06:06:28 PM +UTC AaveToken Implementation: Sep-24-2020 06:05:36 PM +UTC LendToAaveMigrator Proxy: Sep-24-2020 06:07:36 PM +UTC LendToAaveMigrator Implementation: Sep-24-2020 06:07:12 PM +UTC    Total supply: 16,000,000 AAVE  Developers allotment: 3,000,000 AAVE (Aave Ecosystem Reserve)  Project website: https://aave.com/   Github repository: https://github.com/aave/aave-token   Can use existing MCD collateral type adapter? No, it needs a custom adapter  Risk Summary   Does the contract implement the ERC20 token standards? Yes, the contract implements all the required ERC20 functions.  Risk analysis: MEDIUM  Technical Information   Compiler version: v0.6.10+commit.00c0fcaf  Decimals: 18  Overflow checks: Yes, the contract inherits SafeMath uint256 Library from OpenZeppelin  Mitigation against allowance race-condition: Yes, via increaseAllowance and decreaseAllowance functions.  Upgradeable contract patterns: Yes, the contract is upgradable.  Access control or restriction lists: No  Non-standard features or behaviors: permit function, snapshot hook on _transfer, _mint and _burn functions, ability to upgrade the contract.  Formal Verification Considerations:   Does transfer have simple semantics? Yes  Does transferFrom have simple semantics? Yes  Can balances be arbitrarily modified by some actor? No  Are there any external calls? Yes, aaveGovernance.onTransfer inside the snapshot hook  Testnet Information Ropsten: 0x73317bcCDD6186B705c07F8306d5121011F84698 Rinkeby: 0xf8e64B6A75b2508f8d9F7C6643D314440111fB81 AAVE networks deployment information: https://github.com/aave/aave-token#development-deployment Contract Logic Summary At its core the implementation is a standard erc20 contract which uses SafeMath module form OpenZeppelin. The contract also implements permit function and snapshot hook on _transfer, _mint and _burn functions that includes an external call, onTransfer, to Aave Governance contract. Administrative Addresses Below is a list of addresses related to token management: domain separator: 0x2901a982e363189e3f2e4db2e5c3291fa1067b815a3ac9890ac6573e51bf33b0 permit typehash: 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9 Governance:  AaveProtoGovernance: 0x8a2Efd9A790199F4c94c6effE210fce0B4724f52  AssetVotingWeightProvider: 0x5aC493b8C2cEf1F02F117B9BA2797e7DA95574aa  AavePropositionPower: 0x72BbcFC20d355Fc3E8aC4Ce8FcAF63874F746631  GovernanceParamsProvider: 0xF7Ff0aee0c2D6fBdeA3A85742443e284B62fd0b2   Contract Risk Summary This is a medium risk contract. The ERC20 functions are implemented to the industry standard, although approve does have a race condition that can be mitigated via increaseAllowance and decreaseAllowance functions. The contract makes use of SafeMath Library from OpenZeppelin to prevent integer underflow and overflow. AAVE is a governance token that includes a migrator for LEND token. Supporting Materials https://docs.aave.com/aavenomics/flashpaper   Ethereum Improvement Proposals    EIP-20: ERC-20 Token Standard Details on Ethereum Improvement Proposal 20 (EIP-20): ERC-20 Token Standard      Tests 891\u00d7798 127 KB Architecture Diagram 739\u00d71585 132 KB Inheritance Diagram  S\u016brya\u2019s Description Report Files Description Table     File Name SHA-1 Hash     AaveToken.sol e4da71e2ded330e1ac6707b184643fdcd9f32d98   LendToAaveMigrator.sol b23cf6990c1788bf50df036640556b3fe144de27    Contracts Description Table     Contract Type Bases       \u2514 Function Name Visibility Mutability Modifiers          AaveToken Implementation ERC20, VersionedInitializable     \u2514  Public    ERC20   \u2514 initialize External    initializer   \u2514 permit External    NO\u2757\ufe0f   \u2514 getRevision Internal       \u2514 _writeSnapshot Internal       \u2514 _beforeTokenTransfer Internal              LendToAaveMigrator Implementation VersionedInitializable     \u2514  Public    NO\u2757\ufe0f   \u2514 initialize Public    initializer   \u2514 migrationStarted External    NO\u2757\ufe0f   \u2514 migrateFromLEND External    NO\u2757\ufe0f   \u2514 getRevision Internal        Legend     Symbol Meaning      Function can modify state    Function is payable     ",
+                    "links": [
+                        "https://etherscan.io/address/0xea86074fdac85e6a605cd418668c63d2716cdfbc#code",
+                        "https://etherscan.io/address/0x317625234562b1526ea2fac4030ea499c5291de4#code",
+                        "https://etherscan.io/address/0x86241b6c526998582556f7c0342d8863b604b17b#code",
+                        "https://aave.com/",
+                        "https://github.com/aave/aave-token",
+                        "https://github.com/aave/aave-token#development-deployment",
+                        "https://etherscan.io/address/0x8a2efd9a790199f4c94c6effe210fce0b4724f52#code",
+                        "https://etherscan.io/address/0x5ac493b8c2cef1f02f117b9ba2797e7da95574aa#code",
+                        "https://etherscan.io/address/0x72bbcfc20d355fc3e8ac4ce8fcaf63874f746631#code",
+                        "https://etherscan.io/address/0xf7ff0aee0c2d6fbdea3a85742443e284b62fd0b2#code",
+                        "https://docs.aave.com/aavenomics/flashpaper",
+                        "https://eips.ethereum.org/EIPS/eip-20#approve",
+                        "https://eips.ethereum.org/EIPS/eip-20#approve",
+                        "https://forum.makerdao.com/t/collateral-onboarding-and-mip-updates-2020-12-11/5661",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24-en-espanol/5574",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24/5534",
+                        "https://forum.makerdao.com/t/collateral-onboarding-and-mip-updates-2020-12-18/5726"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.079670329670329
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/uni-erc20-token-smart-contract-domain-community-assessment/5347",
+            "title": "[UNI] ERC20 Token Smart Contract Domain Community Assessment ",
+            "index": 5347,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "sc-domain-work",
+                "uni"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/naszam",
+                    "index": "#1",
+                    "likes": "10",
+                    "time": "26/11/2020-02:36:45",
+                    "content": "[UNI] ERC20 Token Smart Contract Domain Community Assessment General Information   Symbol: UNI  Address: 0x1f9840a85d5af5bf1d1762f925bdaddc4201f984   Deployment Date: September 14, 2020  Total supply: 1,000,000,000 UNI  Developers allotment: 212,660,000 UNI (21.266% to team members and future employees with 4-year vesting)  Project website: https://uniswap.org   Github repository: https://github.com/Uniswap/governance   Can use existing MCD collateral type adapter? Yes, GemJoin   Risk Summary   Does the contract implement the ERC20 token standards? Yes, the contract implements all the required ERC20 functions.  Risk analysis: LOW  Technical Information   Compiler version: v0.5.16+commit.9c3226ce  Decimals: 18  Overflow checks: Yes, the contract has custom safe Integer and add functions  Mitigation against allowance race-condition: No, the approve function has a race condition  Upgradeable contract patterns: No  Access control or restriction lists: Minter access to setMinter and mint functions  Non-standard features or behaviors: permit, minting, voting, and vote delegation related functions  Formal Verification Considerations:   Does transfer have simple semantics? Yes  Does transferFrom have simple semantics? Yes  Can balances be arbitrarily modified by some actor? No  Are there any external calls? No  Testnet Information Ropsten: 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 Rinkeby: 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 G\u00f6rli: 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 Kovan: 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 UNI networks deployment information: https://uniswap.org/docs/v2/governance/overview/ Contract Logic Summary At its core the implementation is a standard erc20 contract which uses the custom safe integer and add functions. The contract also implements mint functions which use a custom SafeMath Library derived form Math (OpenZeppelin), permit function and various voting, and vote delegation functions. Administrative Addresses Below is a list of addresses related to token management: delegation typehash: 0xe48329057bfd03d55e49b547132e39cffd9c1820ad7b9d4c5307691425d15adf domain typehash: 0x8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a866 permit typehash: 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9 Contract Risk Summary This is a low risk contract. The ERC20 functions are implemented to the industry standard, although approve does have a race condition. The contract makes use of custom functions to prevent integer underflow and overflow. A number of voting functions are also implemented as UNI is a governance token. Supporting Materials    uniswap.org    Uniswap UNI, the Uniswap Protocol token, is live!         Ethereum Improvement Proposals    EIP-20: ERC-20 Token Standard Details on Ethereum Improvement Proposal 20 (EIP-20): ERC-20 Token Standard      Tests 1226\u00d7987 196 KB Architecture Diagram 1077\u00d71644 147 KB Inheritance Diagram  S\u016brya\u2019s Description Report Files Description Table     File Name SHA-1 Hash     uni.sol 46e82a5db81f02d25309cbb6197827064d11c265    Contracts Description Table     Contract Type Bases       L Function Name Visibility Mutability Modifiers   SafeMath Implementation      L add Internal       L add Internal       L sub Internal       L sub Internal       L mul Internal       L mul Internal       L div Internal       L div Internal       L mod Internal       L mod Internal       Uni Implementation      L  Public       L setMinter External       L mint External       L allowance External       L approve External       L permit External       L balanceOf External       L transfer External       L transferFrom External       L delegate Public       L delegateBySig Public       L getCurrentVotes External       L getPriorVotes External       L _delegate Internal       L _transferTokens Internal       L _moveDelegate Internal       L _writeCheckpoint Internal       L safe32 Internal       L safe96 Internal       L add96 Internal       L sub96 Internal       L getChainId Internal        Legend Symbol\tMeaning \tFunction can modify state \tFunction is payable ",
+                    "links": [
+                        "https://uniswap.org",
+                        "https://github.com/Uniswap/governance",
+                        "https://github.com/makerdao/dss/blob/b280b98e0c661d5d8effe2e9626e51978dab33ce/src/join.sol#L62",
+                        "https://uniswap.org/docs/v2/governance/overview/",
+                        "https://uniswap.org/blog/uni/",
+                        "https://uniswap.org/blog/uni/",
+                        "https://eips.ethereum.org/EIPS/eip-20#approve",
+                        "https://eips.ethereum.org/EIPS/eip-20#approve",
+                        "https://forum.makerdao.com/t/collateral-onboarding-and-mip-updates-2020-12-11/5661",
+                        "https://forum.makerdao.com/t/maker-relay-ep-23-en-espanol/5442",
+                        "https://forum.makerdao.com/t/maker-relay-ep-23/5419"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.177208951762523
+                }
+            ]
+        }
+    ],
+    "group_index": "2984"
+}

@@ -1,0 +1,76 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/transient-programs-an-ancient-execution-paradigm-with-multi-send-example-and-why-storage-clean-up-doesnt-happen/2013",
+            "title": "Transient programs, an ancient execution paradigm (with multi-send example); and why storage clean-up doesn't happen ",
+            "index": 2013,
+            "category": [
+                "Primordial Soup"
+            ],
+            "tags": [
+                "ux",
+                "transient-program",
+                "storage-cleanup",
+                "multisend"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "1",
+                    "likes": "2",
+                    "time": "25/11/2018-20:56:38",
+                    "content": "This started out as a reply to a message in another thread, but boiled off into a rant.    Ethereum 1 dot X: a half-baked roadmap for mainnet improvements   I was also wondering if setting non-zero values to zero could be not only subsidized but rewarded, as a way to incentivize clearing unused storage.   That has essentially been answered.  However, I\u2019d like to add that the currently dominant contract architecture, coupled with wallet design tropes, prevents the SSTORE-refund incentive from being usable. For people to want to clean up after themselves, the cleaning-up has to happen within the same transaction as some other \u201cuseful\u201d work. But there is no way to \u201cchain\u201d the two. GasToken currently suggests using it from within other contracts, but this puts users at the mercy of contract developers. Also, from observing the ecosystem for years, most (sane) developers are reluctant to put code into their contracts that is not strictly related to its business logic. If we want to incentivise certain kinds of behaviour, we must incentivise the users, not the contract coders - as, ultimately, it is the users that are the initiators of transactions that result in storage increase; and coders all too often have the option of shifting costs onto users anyway, so tend to be less frugal.  I\u2019ve been working recently on an alternative program execution paradigm, which I call transient programs (in comparison to resident programs, commonly known as \u201ccontracts\u201d). For a short (and wholly-incorrect) explanation of what it is, to people who are familiar with Solidity only: \u201cit\u2019s like stuffing everything into the constructor\u201d. Transient programs execute at the bottom of the call stack, and are calling nobody (leaving the to field empty). An example of such a program, implementing ether multi-send, can be seen on gitlab (or, with minimal lisp syntax highlighting, at the github backup). (Also of interest is perhaps the Python test case, which shows how a transaction using this can be constructed; and this transaction on Ropsten showing a simple send to 2 recipients (wasteful).)  Using transient programs could remove the need for explicit GasToken support in end-contracts (as is currently suggested by GasToken crew), special \u201cclean-up proxy contracts\u201d (proxy this proxy that ugh the word is as sickening by now as your lack of imagination get a dictionary), batchStuff() functions that bloat contracts; and the general notion that for code to run, an authority has to deploy it first. It could allow for vastly more to be \u201cgarbage-collected\u201d; what comes to mind immediately is outdated ERC-20 allowances and spam na\u00efve air-drop ERC-20 balances, both of which are relatively easy to track by wallet software.  I\u2019ve called this execution paradigm \u201cancient\u201d in the title, because that\u2019s how contracts resident programs have been created since forever: a certain kind of a transient program claims a tiny bit of address space, where it pushes its payload. However, development of transients seems to have stopped immediately afterwards; and residents are now completely entrenched. I can\u2019t start imagining how to convince wallet makers that this feature is one that they\u2019d want to develop and support. Most wallets (all?..) don\u2019t even have a way to deploy user-provided residents (they don\u2019t allow leaving the to field empty).  Perhaps the above is too tongue-in-cheek; and this is a use pattern that no one thought of (not counting me sitting on my hands\u2026). Indeed, some EVM design choices tend to suggest so. If you followed either of the LLL links above, you\u2019d have read that:  In a transient program, both code and data must be passed in the same transaction field. Although called \u201ctransaction data\u201d when viewed externally, it will be available as code in its entirety during execution.  In the linked repository, it seems awkward that the resident variant accesses its data via CALLDATALOAD, whereas the transient has to resort to BYTECODESIZE. The fact that leaving the to field empty results in increased gas use - by way of a nonced account address assignment, instead of just using the EOA\u2019s address and deferring the nonce-ing until an actual CREATE is requested, - suggests that \u201ccontract deployment\u201d at this point is expected. (For this reason, the linked transient multi-send program only starts saving gas when having at least 5 recipients.)  I was thinking of having this ready around Devcon; for many reasons, a month later, it\u2019s in a state as sorry as ever - so here you go, a rant for a README. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/ethereum-1-dot-x-a-half-baked-roadmap-for-mainnet-improvements/1995/6",
+                        "https://ethereum-magicians.org/t/ethereum-1-dot-x-a-half-baked-roadmap-for-mainnet-improvements/1995/12?u=veox",
+                        "https://gastoken.io/#using-gst",
+                        "https://gitlab.com/veox/lll-multisend/blob/002627e6aab9af4b375286d4daef16bc52053108/contracts/multisend-transient-ether.lll",
+                        "https://github.com/veox/lll-multisend/blob/ad4635212d44a12b0f1ae3efed6c64fc120f7f33/contracts/multisend-transient-ether.lll",
+                        "https://gitlab.com/veox/lll-multisend/blob/002627e6aab9af4b375286d4daef16bc52053108/tests/test_multisend_transient_ether.py",
+                        "https://ropsten.etherscan.io/tx/0xf91c5211e2dbf219f7855171b8a20c7eb17ae0d97c0516ab6a9b731abd06b57b",
+                        "https://github.com/veox/lll-multisend/tree/ad4635212d44a12b0f1ae3efed6c64fc120f7f33/contracts",
+                        "https://ethereum-magicians.org/t/eip-xxx-transient-programs-using-no-destination-transactions/3328",
+                        "https://ethereum-magicians.org/t/ethereum-1-dot-x-a-half-baked-roadmap-for-mainnet-improvements/1995/14",
+                        "https://ethereum-magicians.org/t/ethereum-state-rent-for-eth-1-x-pre-eip-document/2018/26",
+                        "https://ethereum-magicians.org/t/brainstorming-the-token-standard-in-eth2/3135/7"
+                    ],
+                    "GPT-summary": "The author explains a new program execution paradigm called \"transient programs\" as an alternative to the currently dominant contract architecture. The author argues that transient programs could remove the need for explicit GasToken support in end-contracts and special \"clean-up proxy contracts.\" The author also provides an example of a transient program implementing ether multi-send. The post includes constructive criticism of the current contract architecture and extends to the proposal of using transient programs. The author also asks for feedback on the idea.",
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.186927655677655
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "25/11/2018-21:10:23",
+                    "content": "    veox:  It could allow for vastly more to be \u201cgarbage-collected\u201d; what comes to mind immediately (\u2026)   A slightly less universal example would be SHARE-backed orders on resolved Augur markets; and, generally speaking, losing shares - in markets and disputes (although perhaps these fall under the \u201cERC-20 balances\u201d category). I invite all to come up with more examples of garbage that you\u2019d totally get rid of, if doing so was useful didn\u2019t come at your own petty loss. Especially if it\u2019s not related to ERC-20 tokens. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.891666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "01/06/2019-14:00:36",
+                    "content": "    veox:  I invite all to come up with more examples of garbage that you\u2019d totally get rid of, if doing so was useful didn\u2019t come at your own petty loss. Especially if it\u2019s not related to ERC-20 tokens.   The opposite of what I asked: transients could be used to mount efficient sybil exploitation of these sorts of disgraceful \u201cairdrop\u201d contracts. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0
+                }
+            ]
+        }
+    ],
+    "group_index": "547"
+}

@@ -1,0 +1,112 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/deterministic-deployment-proxy-magic-wrapped-in-magic/3261",
+            "title": "Deterministic Deployment Proxy: Magic wrapped in magic ",
+            "index": 3261,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "11/05/2019-15:01:32",
+                    "content": "   GitHub    Zoltu/deterministic-deployment-proxy An Ethereum proxy contract that can be used for deploying contracts to a deterministic address on any chain. - Zoltu/deterministic-deployment-proxy      TL;DR: Ethereum contract deployed with a one-time-use account (so it has a deterministic address) that can be used to deploy arbitrary contracts via CREATE2 (so they end up with deterministic addresses). This allows anyone to deploy a contract to any EVM chain and be sure that the contract lives at the same address on every chain.  Similar to how EIP-1820 was deployed, but without the need to hard-code gas-price and gas-limit. ",
+                    "links": [
+                        "https://github.com/Zoltu/deterministic-deployment-proxy"
+                    ],
+                    "GPT-summary": "The post explains a new Ethereum contract called Deterministic Deployment Proxy that can be used to deploy contracts to a deterministic address on any chain. The author explains how it works and how it can be used. A third party gives entirely positive feedback on the proposal and extends to it, while another third party asks questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "11/05/2019-17:46:00",
+                    "content": "This is definitely magic magic. Thanks for sharing @MicahZoltu! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jpitts",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "11/05/2019-20:45:09",
+                    "content": "So many potential cross-chain applications, including ERC-725 identity which now uses proxy contracts. https://erc725alliance.org/ ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "4",
+                    "likes": "2",
+                    "time": "12/05/2019-09:03:39",
+                    "content": "I updated the code to use Yul, which brought costs down a bit. Yul source: object \"Proxy\" { \t// deployment code \tcode { \t\tlet size := datasize(\"runtime\") \t\tdatacopy(0, dataoffset(\"runtime\"), size) \t\treturn(0, size) \t} \tobject \"runtime\" { \t\t// deployed code \t\tcode { \t\t\tcalldatacopy(0, 0, calldatasize()) \t\t\tmstore(0, create2(callvalue(), 0, calldatasize(), 0)) \t\t\treturn(12, 20) \t\t} \t} }  The signed deterministic deployment transaction is now: f8748085174876e800830186a08080a3601580600e600039806000f350fe366000600037600036600034f56000526014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222  The init code for the proxy contract is now: 601580600e600039806000f350fe366000600037600036600034f56000526014600cf3  The deployed proxy\u2019s code is now: 366000600037600036600034f56000526014600cf3   For fun, I was able to gas golf the deployment code to: 6f3d36363d3d373d34f53d526014600cf33d5260106010f3  and the proxy code to: 3d36363d3d373d34f53d526014600cf3  However, I decided there was value in having Yul source code available for the deployed contract rather than just raw bytecode, so I decided to eat the extra size and costs (they are marginal). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.678062678062678
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "12/05/2019-09:06:33",
+                    "content": "Another nice thing about the switch to Yul is that deploying contracts is now done by supplying only the deployment bytecode as transaction data and put the proxy as the to.  This means you can take a normal deployment transaction and only change the to field on it from null to the proxy address (currently 0xb8744b44784dab81e6ab1e73ea3faa47887157b6) and it will deploy via the proxy. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/PaulRBerg",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "29/08/2021-10:11:09",
+                    "content": "    MicahZoltu:  This means you can take a normal deployment transaction and only change the to field on it from null to the proxy address (currently 0xb8744b44784dab81e6ab1e73ea3faa47887157b6) and it will deploy via the proxy.   Is this because the \u201cruntime\u201d object from above behaves as a fallback function? Otherwise I don\u2019t see how you could take a deployment tx as it is and not have to compute the function selector. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.1875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "29/08/2021-10:44:23",
+                    "content": "The proxy isn\u2019t written in Solidity, it is written in Yul, so we don\u2019t have to play by the normal rules.   It is Solidity that has the concept of \u201cparameters\u201d and \u201cABI\u201d.  Yul being just assembly more or less doesn\u2019t have any higher level primitives like that.  Your contract can reference calldata via the opcode, but there is no automatic interpretation of it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.916666666666667
+                }
+            ]
+        }
+    ],
+    "group_index": "827"
+}

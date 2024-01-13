@@ -1,0 +1,141 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5875-opcode-for-tx-number-in-a-block/11612",
+            "title": "EIP-5875: Opcode for TX number in a block ",
+            "index": 11612,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "opcodes"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "04/11/2022-17:39:58",
+                    "content": "Github Pull Requestion: Add EIP-5875: Opcode for TX Number by xinbenlv \u00b7 Pull Request #5875 \u00b7 ethereum/EIPs \u00b7 GitHub A TX is an atomic point of time for world state. Currently we have access to blocknum but there is no way to access a txnum within a smart contract. We hereby propose a TXNUM opcode instruction to fetch TXNUM which can be used to  identify the ordering of exact transaction in its block Better than blockNum: identifying uniquely and unambiguously the world state. Better than txHash: allow simply arithmatic  by  BlockNum.TxNum  It would be helpful for on-chain and off-chain indexing and snapshotting. An example of use-case is EIP-5805 Voting with Delegation wants to store snapshot of voting rights. The current option with with either block.timesamp or block.number all only have the granularity at the level of blocks. But world state changes across transaction. If there is any TX in the same block cause a voting right to change, the blocknum or block.timstamp will not be sufficient to pin-point the world state of snapshot of voting rights. Previous attempts:  Transaction index OpCode by decanus \u00b7 Pull Request #4363 \u00b7 ethereum/EIPs \u00b7 GitHub   Request for feedback   @Amxx , @frangio, the author and contributors of EIP-5805  ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-5805-voting-with-delegation/11407",
+                        "https://github.com/ethereum/EIPs/pull/4363"
+                    ],
+                    "GPT-summary": "The post proposes the addition of a new opcode instruction to fetch TXNUM within a smart contract, which can be used to identify the ordering of exact transactions in its block. The proposal suggests that this would be helpful for on-chain and off-chain indexing and snapshotting. The author is requesting feedback from specific individuals and contributors of a related EIP.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.830128205128205
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "2",
+                    "likes": "4",
+                    "time": "05/11/2022-10:17:31",
+                    "content": "In the past, we have introduced opcodes that seemed reasonably useful but later we found people using them in ways that harmed the network.  Examples include ORIGIN and SELFDESTRUCT.  ORIGIN is used by people to discriminate between contracts and EOAs, which has made contract wallet adoption harder than it otherwise would have been and SELFDESTRUCT has been used for gas banking over time. Given these past experiences, I am now generally reluctant to add new opcodes that expose world state details to the EVM as it is possible that someone could leverage them in the future to do bad things. This isn\u2019t to say this is a bad idea, I just want to make sure that we try extremely hard to think of the worst things people could do with the transaction number to ensure we aren\u2019t introducing another opcode that causes problems for us down the road. Off the top of my head, one can imagine using such an opcode to cause a transaction to simulate differently than it executes, perhaps leading to scams (there are other ways to do this, but they often aren\u2019t reliable). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.451089845826688
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "05/11/2022-21:47:19",
+                    "content": "I\u2019m with @MicahZoltu .  I can see a number of ways this will be abused. One is a more reliable way to mess with simulations, as Micah pointed out.  It\u2019ll have to be banned in any situation where simulation matters.  During ERC-4337 validation it\u2019ll just be added to the banned opcodes along with things like ORIGIN, but there may be less obvious ways. Another is MEV searchers messing with transactions.  The block builder has direct control over this variable.  Any reliance on this opcode to determine execution flow could enable some form of frontrunning/sandwiching. The snapshot voting use case in the EIP could be addressed by other means.  For example saving start=block.number+1 at the current block, and then only starting to count votes at start (the next block).  Mid-block changes in the previous block have no effect. Also, any use case that requires establishing causality between transactions could also be addressed through state.  E.g. checking and incrementing midBlockCtrs[block.number]. @xinbenlv if would be useful if you add a couple of more use cases where this opcode is needed.  It\u2019ll be good to consider whether:  There\u2019s no other way to address them. The opcode enables solving them safely - while assuming block builders with malicious intent.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.634114583333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "06/11/2022-00:07:23",
+                    "content": "Thanks @yoavw and @MicahZoltu . I agree with @MicahZoltu that we need to think really hard for cases that this proposed opcode can be used to do bad things. @yoavw I kind of wonder if MEV would be made worse by this opcode. Ultimately I feel that MEV has too be solved by block producer to know Zero Knowledge other than  a specific batch of TXs are valid as a whole, before they can pack a block. Anything else, if a block producer is malicious or team with MEVer, I  couldn\u2019t think of a thing that with this opcode it could abuse but without this opcode they could not abuse. Could I borrow your wisdom to get a specific example of what kind of MEV abuse is enabled that was not previously possible without the new opcode? I am also debating whether the TXNUM should return (1) the index of the TX in this current block or (2) the index of this TX in all the history of blocks\u2026 It seems at least (2) eliminates that a miner/MEVer could use the relative index of a given TX within a block ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.974905303030303
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "06/11/2022-00:53:38",
+                    "content": "    xinbenlv:  I kind of wonder if MEV would be made worse by this opcode.   I believe it can be.  This opcode gives block builders a direct way to change the outcome of the transaction.  Once the transaction is included (with the wrong outcome from the user\u2019s perspective), it is no longer in the mempool and cannot be included in a subsequent block.  Therefore any case where a block builder could benefit from censoring a transaction, would be affected by this opcode.     xinbenlv:  I feel that MEV has too be solved by block producer to know Zero Knowledge   I don\u2019t think we\u2019re ever going to fully eliminate MEV (but that\u2019s a bit beyond the scope of this thread I guess).  However, we should be careful when introducing new vectors.  I think it\u2019ll be quite challenging to use TXNUM in a contract without introducing undesired MEV vectors.     xinbenlv:  Could I borrow your wisdom to get a specific example of what kind of MEV abuse is enabled that was not previously possible without the new opcode?   Plenty.  As I explained above, if the execution flow depends in any way on TXNUM, the block builder can control that branch of the execution flow.  If it can lead to a revert, or to some operation happing or not happening, then there\u2019s a censorship vector. Frontrunners typically can\u2019t censor other transactions, only get in front of them and affect the price.  But they couldn\u2019t for example, prevent your vote in a governance proposal from being counted.  In the example you used in the EIP, a block builder could invalidate a vote that happens in the same block by moving it around.  That\u2019s something they wouldn\u2019t be able to do without this opcode. The same goes for any contract where an action would depend on TXNUM.  Suppose a contract uses commit/reveal to protect users against frontrunning.  Currently it\u2019s immune to MEV.  A concrete example is ENS, where you commit your domain registration before revealing the name.  Currently there\u2019s no way to prevent the registration.  If a block builder doesn\u2019t include it, the next one will, or the one after that.  Now suppose ENS used TXNUM anywhere in the transaction that finalizes the registration.  An mev-boost builder will pay the next builder to include it in a position that causes it to fail.  They only do it once, since the transaction reverts and the user needs to resubmit it.  Keep watching the mempool, invalidate any such transaction at the cost of a single transaction.  It would effectively censor the registration. Suppose a rollup would use TXNUM in its L1 batching contract.  A builder can similarly prevent finalization of the entire rollup chain by including it in the wrong position.  It makes things quite brittle. What are some use cases that can only be implemented with TXNUM and wouldn\u2019t be vulnerable to such attacks? The only use case I could think of, is one that benefits MEV searchers: require the block proposer to include their transaction early in the block and be able to verify it.  But I\u2019m sure that\u2019s not what you have in mind.     xinbenlv:  It seems at least (2) eliminates that a miner/MEVer could use the relative index of a given TX within a block   Why would it matter if it\u2019s relative to the entire history or just this block?  The code will still make decisions based on its relative position in the current block (or else it could just use block.number).  Once the code makes decisions based on that, it\u2019s likely to become vulnerable to such manipulations. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party giving entirely negative feedback on proposal"
+                    ],
+                    "Sentiment": 5.08771755455429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "11/11/2022-20:16:46",
+                    "content": "Adding Transaction index OpCode by decanus \u00b7 Pull Request #4363 \u00b7 ethereum/EIPs \u00b7 GitHub as previous attempt ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sbacha",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "30/11/2022-21:59:37",
+                    "content": "Am I to understand that the cost of this OPCODE is 2 ? Should it not be priced closer to EXCODESIZE or BALANCE? This would enable implementing transaction dependencies would it not? Edit: Here is a way of providing such tx hash poof using current protocol: Hidden in Plain Sight: A Sneaky Solidity Implementation of a Sealed-Bid Auction - a16z crypto see auction-zoo/OverCollateralizedAuction.sol at main \u00b7 a16z/auction-zoo \u00b7 GitHub ",
+                    "links": [
+                        "https://github.com/a16z/auction-zoo/blob/main/src/sealed-bid/over-collateralized-auction/OverCollateralizedAuction.sol#L182"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.785714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "01/12/2022-00:23:02",
+                    "content": "@sbacha thank you for the comment I was proposing gas cost to be 8 (same as BLOCK or TIMESTAMP), open to be convinced.   BLOCK 8   TIMESTAMP 8   EXTCODESIZE and BALANCE depends on the way touching address or not below      gas_cost = 100 if target_addr in touched_addresses (warm access)  gas_cost = 2600 if target_addr not in touched_addresses (cold access)   It seems none of them is 2. Could you clarify @sbacha ?  Edit: Here is a way of providing such tx hash poof using current protocol: Hidden in Plain Sight: A Sneaky Solidity Implementation of a Sealed-Bid Auction - a16z crypto  see auction-zoo/OverCollateralizedAuction.sol at main \u00b7 a16z/auction-zoo \u00b7 GitHub  @sbacha could you share a Github permlink so it doesn\u2019t change due to new commits to the repo? ",
+                    "links": [
+                        "https://github.com/a16z/auction-zoo/blob/main/src/sealed-bid/over-collateralized-auction/OverCollateralizedAuction.sol#L182"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.123782467532467
+                }
+            ]
+        }
+    ],
+    "group_index": "203"
+}

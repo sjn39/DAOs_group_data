@@ -1,0 +1,431 @@
+{
+    "poll_list": [
+        {
+            "title": "Inclusion Poll for Term Lending Module (TLM) (MIP43) - March 8, 2021",
+            "index": "6153",
+            "option": "Yes",
+            "supporting_mkr": "95,265",
+            "highest_fraction": 1.0
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip43-term-lending-module-tlm/6153",
+            "title": "MIP43 - Term Lending Module (TLM) ",
+            "index": 6153,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "mips",
+                "fixed-rate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#1",
+                    "likes": "33",
+                    "time": "22/01/2021-00:02:11",
+                    "content": " MIP43: Term Lending Module (TLM)  Preamble MIP#: 43 Title: Term Lending Module (TLM) Author(s): Alberto Cuesta Ca\u00f1ada (@acuestacanada), Lev Livnev(@equivrel), Allan Niemerg (@niemerg) Contributors: n/a Type: Technical Status: Accepted Date Proposed: <2021-01-21> Date Ratified: <2021-25-03> Dependencies: n/a Replaces: n/a License: AGPL3+   Disclosure This MIP proposes an integration with Yield Protocol. Authors Allan and Alberto are employees of Yield, Inc. a company working to build Yield Protocol. Lev is an advisor to Yield, Inc.  References  The proposed dss-tlm implementation Audit of proposed implementation   Sentence Summary We propose a new Maker module to buy and hold tokenized fixed-rate, fixed-term loans to maturity in order to encourage a fixed-rate lending market.  Paragraph Summary Extending Dai lending to fixed-rate loans by MakerDAO would encourage further Dai adoption, accrue fixed income to the protocol, and provide a new tool to improve the peg by influencing the supply and demand for Dai. We propose a new Maker module called the \u201cTerm Lending Module\u201d (the TLM) that would enable Maker to buy tokenized fixed-rate, fixed-term loans. The Term Lending Module stands available to buy loans at governance-set interest rates up to a corresponding debt limit.  Component Summary MIP43c1: Proposed code: contains snippets and a description of the proposed implementation. MIP43c2: Test cases: lists existing test cases, including integration tests MIP43c3: Security considerations: comments on the security implications of using the TLM MIP43c4: Economic / Governance considerations: discusses insolvency and liquidity risks, governance and example parameters MIP43c5: Formal verification/audit information: comments on the amenability of the proposed code to formal verification, even though formal specification, audit, or code review have yet to be conducted. MIP43c6: Licensing: states the license under which the proposal and code are distributed.  Motivation  Background With the advent of yield farming, the Maker governance community has struggled to manage the supply and demand of Dai as excess demand has caused Dai to trade above the target price of $1.00 for an extended period of time. At one point, Maker lowered stability fees all the way to the zero bound, leaving few additional tools for scaling supply. New tools, such as the Peg Stability Module (\u201cPSM\u201d), have improved the situation, but the problem is not solved, and more tools are needed for the management of the supply and demand of Dai. Additionally, the Maker ecosystem is currently disadvantaged relative to traditional finance because it lacks one of the most popular classes of financial products: fixed-rate, fixed-term loans. From mortgages to car loans, fixed-rate collateralized loans are enormously popular. And for good reason: fixed-rate borrowing and lending enable borrowers and lenders to better manage their interest rate risk. However, nearly all lending in Dai is done at floating rates: from Maker itself, to Compound, Aave, and others, the primary way to borrow Dai is at a floating rate. It will be challenging for the Maker ecosystem to compete with legacy financial products without effective ways to provide a fixed rate. Fortunately, the Dai ecosystem has evolved new kinds of fixed-rate borrowing products based on Dai. Last year, we launched Yield Protocol to bring fixed-rate, \u201clong-term\u201d (three months or more) fixed-term loans to Dai. Yield Protocol tokenizes ETH-collateralized fixed-rate, fixed-term loans into a new class of tokens that have been named \u201cfixed yield tokens\u201d (or \u201cfyTokens\u201d for short). FyTokens are similar to zero-coupon bonds and provide a fixed payout at a future maturity date. FyTokens for Dai are called \u201cfyDai.\u201d FyDai is already tightly integrated with Maker. At maturity, fyDai becomes redeemable for Dai and fyDai vaults are automatically converted into Maker vaults and begin paying the current stability fee. The Yield Protocol enables this by maintaining a vault on Maker, in which it stores all of its ETH collateral, and which it uses to issue Dai when users redeem after maturity. FyDai has no admin or governance of its own; its parameters (such as liquidation ratio) automatically mirror Maker\u2019s. Fixed-rate loans from protocols like Yield Protocol may be able to help Maker fill the gap with the legacy financial system. This increases the utility of holding Dai and will help drive additional adoption. But, there are challenges. While very promising, the market to borrow and lend at a fixed-rate for long-term loans is new and nascent. And it is unclear whether a fixed-rate lending and borrowing market in Dai can succeed without support from Maker. If Maker were to enter the long-term fixed-rate market, it may be able to earn a higher rate of return on issued Dai. For example, yield farmers may be willing to pay a higher interest rate if they can lock in Dai funding for an extended period. Buying fyDai, then, might be considered a form of balance sheet optimization which has been a topic of interest in the Maker community lately (for example, see this post examining makerdao accounting). Alternatively, if borrowers continue to prefer to borrow at floating rates, Maker may be able increase its income by raising the stability fee, while maintaining the peg by \u201cinverting the yield curve\u201d and targeting longer term interest rates below current Maker stability fees. This might be considered as a form of \u201cprice discrimination\u201d\u2013borrowers with a strong preference to borrow short-term at floating rates will pay a higher price, while still expanding the Dai supply via long-term borrowers. A successful market in long-term loans also provides opportunities to build additional tools for the management of Dai supply and demand. Before the PSM, the primary tool Maker used to maintain the Dai peg was the stability fee and the Dai Savings rate. In response to yield farming, both of these rates hit the zero lower bound, ending the effectiveness of adjusting these interest rates to encourage Dai creation. The PSM remains effective at the zero lower bound, but increases Maker\u2019s exposure to USDC (which is already at historically high levels). By buying loans in the long-term loans market, Maker may continue to increase the supply of Dai even when floating rates are zero. This is a well-known tool in traditional finance. (When performed by the Federal Reserve, it is known as an open market operation.) So, for example,  if the ETH-A stability fee is lowered to 0%, it may be possible to continue to expand the Dai supply by targeting 3 month borrowing at 2%. In sum, we see an opportunity for Maker to encourage the development of long-term fixed-rate loans, improve earnings, and add a new tool for the management of Dai supply and demand via the TLM.  Background on the Yield Protocol The goal of the Yield Protocol is to bring fixed-term, fixed-rate borrowing and lending to decentralized finance. Version 1 of the Yield Protocol launched in October 2020 and permits ETH-collateralized borrowing of Dai. Users of the protocol deposit ETH and may mint a new token called fyDai. fyDai tokens are Ethereum-based tokens (ERC20) that may be redeemed one-for-one for Dai after a predetermined maturity date. fyDai are analogous to zero-coupon, or discount, bonds. Borrowers mint fyDai and sell them to lenders to lock in a fixed rate of interest. There are several \u201cseries\u201d of fyDai, each with a different maturity date. After the maturity date is reached, lenders holding fyDai may redeem the fyDai for Dai. The Yield Protocol borrows Dai on behalf of borrowers to pay off fyDai redemptions. This is done by placing all ETH collateral into a Maker Vault and borrowing Dai as needed. Yield Protocol v1 is tightly integrated with \u2014 and complementary to \u2014 Maker. Maker users are able to use Yield\u2019s RateLock tool to migrate their Dai vaults into fyDai vaults, locking in a fixed interest rate for a period. In the future, Yield plans to add functionality to enable users to easily migrate Yield vaults back to Maker after maturity. More information about Yield can be found in this introductory article and in the Yield Whitepaper.  Specification  MIP43c1: Proposed code See tsm.sol.  Term Lending Module General Design The TLM will permit Maker governance to encourage liquidity/target lower rates for fixed-term Dai loans by providing a standing offer to buy loans at a target interest rate. Holders of fyDai may sell their tokens to the TLM at a price determined based on the target rate. The target rates are set by MakerDao governance and may be adjusted as market conditions change. Let\u2019s consider a hypothetical example of the use of the TLM. Suppose the MakerDao governance process has set a target rate of 5% for Dec 2021 fyDai. Alice notices that the market rate for Dec 2021 fyDai is currently trading at 6%. Since prices of fyTokens rise as interest rates fall (according to the Yield-to-Maturity formula described below), the TLM is paying higher prices for fyTokens than they are trading in the market. Accordingly, Alice buys the Dec 2021 fyDai at 6% and then sells them to the TLM at 5% netting a profit. (The actual price received by Alice is calculated based on the target rate and the current time.) Like the PSM, the TLM acts as a special vault which is attached to one or more permissioned gemJoin contracts with 100% Collateralization Ratio and 0% stability fees. Each gemJoin is associated with a single series of fyDai tokens. Instead of crediting fyDai gems to the supplier of the tokens, it pools them together and takes out a debt position corresponding to the price paid on the fyDai. The newly created Dai is issued to the fyDai seller. The PSM is only able to buy fyDai tokens at a discount to the redemption value of the Dai. The TLM module will be able to accept ERC-20 fyDai that conform to a standard design shown in the MaturingGemAbstract interface. Governance can add any acceptable fyDai by deploying an AuthGemJoin for the fyDai series and calling the init() function and specifying the gemJoin address of the token. For each added fyDai as collateral, Governance may also assign and update a target yield via the TLM and may also set a debt ceiling in the normal manner. To sell fyDai, users may call sellGem(bytes32 ilk, address usr, uint256 gemAmt) a function that lets a user (usr) specify a particular token to sell (ilk) and an amount to sell (gemAmt). sellGem() transfers the tokens from \u2018src\u2019 and calculates the price of the provided amount of the token based on the target rate and maturity date of the token. Based on the calculated price, the TLM calculates the amount of Dai paid on the fyDai, adds the amount to its current debt (reverting if it would exceed the ceiling), mints new Dai equal to the purchase amount, and transfers the purchase amount of Dai to the \u2018dst\u2019 address. The TLM will revert if a user attempts to sell fyDai after maturity. The price of fyDai at any given time is calculated using the Yield-To-Maturity formula. (See Yield to Maturity (YTM) Definition for background information.) Specifically, where \u2018Y\u2019 is the target yield (expressed as an annual percentage rate) and \u2018T\u2019 equals the time to maturity, the price \u2018P\u2019 of fyDai in terms of Dai is calculated by the following formula:  P = \frac{1}{(1 + Y)^{T}}  The TLM module will hold the fyDai to maturity. After maturity, the fyDai are redeemable for Dai. The Dai income after Dai redemption is forwarded to the surplus buffer. At some future time, Maker governance may decide that selling fyDai on the open market before maturity is desirable. While that is not supported by this incarnation of the TLM, the TLM has features that may be used to upgrade to a new TLM in the future.  MIP43c2: Test Cases See tlm.t.sol.  Test cases include: Testing governance adding a new fyDai series Testing selling of fyDai to TLM at target yield of 0% Testing selling of fyDai to TLM at a positive target yield Testing redemption of fyDai for Dai after fyDai maturity with any surplus going to the surplus buffer   MIP43c3: Security Considerations Security risks of the TLM include:  Yield Protocol Security Risks Like all protocols, Yield Protocol may have undiscovered security issues or bugs that may result in the inability to redeem fyDai for Dai at some future point. As is standard, Yield Protocol has been audited by Trail of Bits. Additionally, Yield Protocol has been operational since October 2020 with no currently known issues.  MIP43c4: Economic / Governance considerations  MIP43c4A: Economic risks Yield Protocol Insolvency Yield Protocol permits collateralized borrowing of Dai with ETH. From a collateral risk perspective, fyDai should be considered as being related to the existing ETH-A collateral type. If the value of the ETH collateral in the system drops too fast before collateral can be liquidated to cover debts, it is possible for the system to become insolvent. In that case, the Maker ecosystem may not be able to redeem fyDai for Dai at maturity, resulting in losses. Yield Protocol uses the same liquidation parameters as MakerDao ETH-A vaults. Any user may initiate the liquidation of an undercollateralized vault in Yield. When liquidated, ETH collateral is sold for Dai in a reverse Dutch auction. Auctions last for one hour. Yield Protocol insolvency risks are mitigated by the fact that all Yield collateral is held in MakerDao, thus there may be steps that Maker governance may be able to take to prevent losses. FyDai Interest Rate Risk The price of a fyDai token in terms of Dai is determined by the interest rates in the market. If interest rates go up, the market value of fyDai goes down. Thus, fyDai purchased by Maker may lose value when marked to market in an environment with rising interest rates. However, that loss can only be realized if fyDai are later sold. Since fyDai tokens may be redeemed one-for-one for Dai after a predetermined maturity date, Maker may always redeem the Dai after maturity for a profit. For this reasons, the TLM does not include a mechanism to sell fyDai. The TLM always holds fyDai to maturity and does take any risk of loss from the changing market value of fyDai.  MIP43c4B: Governance considerations The TLM includes two parameters that must be set for each fyDai series: an interest rate at which to buy, and a ceiling for total purchases. The interest rate chosen for purchasing fyDai of a given series should reflect governance priorities. For example, Governance may choose to initially start purchasing fyDai at an interest rate below the ETH-A stability fee. This may encourage use of the TLM and the growth of the long-term loan market. Over time, the rate may be adjusted to cool long-term lending, or lowered to encourage further long-term Dai lending growth. There is a considerable body of research on the use (and misuse) of monetary policy tools to influence the supply and demand of monetary assets like Dai, and that understanding may be applied to adjust the interest rate over time. Since yield curves tend to be upward-sloping, there is an opportunity for MakerDAO to increase its net interest margin by engaging in fixed-term lending at higher rates than what it can charge for similar loans on an open-term basis with CDPs. Moreover, allocating to fixed-term lending can diversify the rates risk of the loan portfolio, and smooth out fluctuations in stability fee income as market rates vary. The ceiling parameter for each fyDai series may be set to manage the risk and exposure that the TLM introduces to the Maker ecosystem. Some of these considerations are listed in the Risk Considerations section. As is standard practice, the TLM may be introduced with a very low ceiling that is raised over time as a better understanding of the risks is developed, and the Yield Protocol becomes more proven.  MIP43c4C: Example parameters Initial parameters may be chosen to encourage initial adoption of the TLM while limiting its potential risks. For example, the initial target yield might be chosen to be equal to the current ETH-A stability fee plus a small additional amount of interest, and the initial ceiling might be chosen to be a fraction of the current surplus. So for a 3.5% stability fee and 4 million surplus, initial values might be 3.75% for yield, and 2 million for ceiling. Over time, the yield may be raised in response to strong demand, or lowered if governance sees value in further encouraging long-term lending. Likewise, as a better understanding of the fixed-rate market is developed by the community, the ceiling may be raised to encourage further Dai borrowing.  MIP43c5: Formal verification/audit information The proposed contract is written in a way which is amenable to formal specification and verification, in accordance with the style and practices of the core multi-collateral DAI contracts, though it has not been formally specified. In the current implementation, the redeemGem function performs an external call into the fyDai token\u2019s redeem method, in order to convert fyDai into DAI after maturity. Performing external call to third party code is usually undesirable outside of adapter contracts. Alternatives are being considered that could remove this call entirely, improving the scrutability of the implementation.  MIP43c6: Licensing AGPL3+ ",
+                    "links": [
+                        "https://yield.is/TLM_audit.pdf",
+                        "https://forum.makerdao.com/t/makerdao-accounting-and-implications/5346",
+                        "https://medium.com/yield-protocol/introducing-ydai-43a727b96fc7",
+                        "https://yield.is/Yield.pdf",
+                        "https://github.com/yieldprotocol/dss-tlm/blob/main/src/tlm.sol",
+                        "https://www.investopedia.com/terms/y/yieldtomaturity.asp",
+                        "https://github.com/yieldprotocol/dss-tlm/blob/main/src/tlm.t.sol",
+                        "https://github.com/trailofbits/publications/blob/master/reviews/YieldProtocol.pdf",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html%5D",
+                        "https://forum.makerdao.com/t/maker-relay-ep-29/6214",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35-en-espanol/6949",
+                        "https://forum.makerdao.com/t/maker-relay-ep-35/6932",
+                        "https://forum.makerdao.com/t/maker-relay-ep-34-en-espanol/6815",
+                        "https://forum.makerdao.com/t/maker-relay-ep-34/6802",
+                        "https://forum.makerdao.com/t/weekly-mips-update-28/6791",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33-en-espanol/6729",
+                        "https://forum.makerdao.com/t/maker-relay-ep-33/6694",
+                        "https://forum.makerdao.com/t/weekly-mips-update-27/6649",
+                        "https://forum.makerdao.com/t/maker-relay-ep-32-en-espanol/6600",
+                        "https://forum.makerdao.com/t/maker-relay-ep-32/6596",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782/17",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-128-thursday-february-11-17-00-utc/6367/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-31-en-espanol/6455",
+                        "https://forum.makerdao.com/t/maker-relay-ep-31/6450",
+                        "https://forum.makerdao.com/t/signal-request-adjust-the-surplus-buffer-2021-2/6250/15",
+                        "https://forum.makerdao.com/t/maker-relay-ep-30-en-espanol/6360",
+                        "https://forum.makerdao.com/t/real-world-finance-core-unit-report-2021-01/6310",
+                        "https://forum.makerdao.com/t/maker-relay-ep-30/6303",
+                        "https://forum.makerdao.com/t/know-your-mip-05-term-lending-module-wednesday-february-10th-18-00-utc/6297",
+                        "https://forum.makerdao.com/t/weekly-mips-update-26/6291",
+                        "https://forum.makerdao.com/t/sourcecred-distribution-for-week-ending-jan-24th-2021-updated-payout-formula/6246",
+                        "https://forum.makerdao.com/t/maker-relay-ep-29-en-espanol/6220",
+                        "https://forum.makerdao.com/t/prioritization-framework-sentiment-polling/15554",
+                        "https://forum.makerdao.com/t/gfx-labs-delegate-platform/11556/37",
+                        "https://forum.makerdao.com/t/signal-request-onboard-d3m-for-notional-finance/13782/34",
+                        "https://forum.makerdao.com/t/signal-request-onboard-d3m-for-notional-finance/13782/14",
+                        "https://forum.makerdao.com/t/signal-request-onboard-d3m-for-notional-finance/13782/8",
+                        "https://forum.makerdao.com/t/mip39c2-sp26-adding-pairwyse-fixed-rate-core-unit/11150/2",
+                        "https://forum.makerdao.com/t/issue-discussion-2-fixed-rate-vault-solutions/10845",
+                        "https://forum.makerdao.com/t/ama-fixed-rate-maker-vaults-with-pairwyse/10397",
+                        "https://forum.makerdao.com/t/mip39c2-sp23-adding-the-deco-fixed-rate-core-unit/10224/25",
+                        "https://forum.makerdao.com/t/maker-relay-ep-37-en-espanol/7168",
+                        "https://forum.makerdao.com/t/maker-relay-ep-37/7154",
+                        "https://forum.makerdao.com/t/weekly-mips-update-30/7083",
+                        "https://forum.makerdao.com/t/maker-relay-ep-36-en-espanol/7053",
+                        "https://forum.makerdao.com/t/maker-relay-ep-36/7039",
+                        "https://forum.makerdao.com/t/weekly-mips-update-29/7000"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.760054627911771
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#2",
+                    "likes": "3",
+                    "time": "22/01/2021-02:00:49",
+                    "content": "This is super cool Allan! Congrats on your first MIP. Questions\u2013is the idea to have Apps/DApps Building on Top of Yield? As an example Linen has been trying to offer their Users DAI ( Currently only USDC) but it has not been able to because of the previous issues w/the Peg, and the DSR being turned off. I guess what I am asking is if you envision Devs developing user friendly apps that connect to Yield? Also, with Notional Finance moving into the fixed yield market\u2013would this module also benefit your competitors? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.293981481481481
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#3",
+                    "likes": "9",
+                    "time": "22/01/2021-09:44:01",
+                    "content": "This is a super exciting MIP. First, it will allow to generates more revenues when Y (the buying interest rate of the TLM) is above ETH-A SF. This should be the case most of the time. Second, it brings revenue stability. If you lend at 4% for a year, you know how much you will make every month. No prepayment risk like we have in our vaults. A bit of stability is always good. Third, and the most important one, it makes DAI compete for being the platform for term lending (the bond market). The more there is DAI-denominated bonds outstanding, the higher the demand for DAI. We should help to bootstrap it as much as we can. If we want DAI to be successful, we need to win this market. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.856481481481481
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "22/01/2021-10:12:23",
+                    "content": "Nice to see more MIP However, I don\u2019t think PSM is mint to be for long term lending as it is there is maintain the peg, therefore it is not adapter to the feature needed. Better to create a private vault, and allow the governance to increase the position with maybe something like a payed incitive to un wind the position at the end. Like give 500 box to remove the position at the end. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.550000000000001
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "22/01/2021-12:12:06",
+                    "content": "Yield was built so devs could develop user friendly apps on top of it, and we would be very happy to see that. One of the important reasons we \u201ctokenized\u201d loans as ERC20 assets was so they could interact with lots of different infrastructure and use cases. The protocol also contains lots of functionality that may be useful for devs to incorporate Yield into their use cases. Regarding Notional Finance, my understanding is that they do not use ERC20 assets, so that would require a separate MIP. But, in principal, Maker could choose to buy many different types of fixed yield assets. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.763888888888889
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#6",
+                    "likes": "0",
+                    "time": "22/01/2021-12:25:03",
+                    "content": "Just to clarify, this MIP used the PSM as \u201cinspiration\u201d, but will be a separate module, so I wouldn\u2019t characterize the PSM as being an adapter for fyDai in this case. Regarding your preference to adding fyDai as a collateral type rather than this taking this approach, I can see that argument. But, there are real challenges to adding a new collateral type that raise the cost considerably, such as providing a price oracle and dealing with liquidations. The benefit of this approach is that instead of the collateral owner earning the corresponding yield, the Maker protocol earns that income. Also, the insight gained by this approach may inform the decision of whether to add something like fyDai as a collateral type. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5606060606060606
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "22/01/2021-12:40:02",
+                    "content": "I am not sure I understand because your module uses a join too. And a join needs to have an assert associated to it which means an oracle too. here Also the maturity just blocks the redeemGem method for 2 or 3 years  which is not a good thing to have, no-one will click on it to return the collateral. What I was trying to suggest is something between MIPs 37 and RWA where somehow gov flash mint dai to fill up the join. Then instead of having the same in return which is not possible due to the maturity and gov is not good to manage this type of stuff, you give a reward to redeem once the maturity is over. I had another look at it and I believe you should think of having one contract by ilk. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.104166666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "22/01/2021-13:36:39",
+                    "content": "The \u201coracle\u201d for fyDai will be just be to treat the value of 1 fyDai as 1 Dai. Since the join is only usable by the TLM there is no need to track the market value of fyDai. Please note that there will be a separate join for each separate series of fyDai. The redeemGem method should not be blocked for 2 or 3 years, but only until a particular fyDai series is mature. Currently, no fyDai maturity exists past this year. The redeemGem function is callable by anyone, so you just need one person to call it to trigger the redemptions. But even if no one does so, nothing bad happens. The idea to have someone else do the redemption rather than have it in the TLM is good one. A simple way to do it would be to allow anyone to buy the fyDai at a price of 1 Dai at maturity. I\u2019m not sure you necessarily need a reward. We are considering making this change to the TLM. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.893939393939394
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/alexis",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "22/01/2021-15:13:47",
+                    "content": "So there will be a collateral type anyway even if the oracle is set to 1 or disabled. That is fine. What I am saying is use MIP37 instead of PSM interface which is use to create a market exchange at a fix price. Which is not what you want to do. 1/ instead of sellGem use a flash Mint to populate the vault via governance. 2/ instead of having your redeem as it is,  pay someone from the vow to kick the transaction once the maturity is over. Flash Mint like MIP37 and redeem the full position. That is probably the only way to make it works properly. Because in your implementation 1 / you start the grab which not what you want. 2 / no one will start the transaction 3 / no one will have interest to exchange fyDai. As there is 0 market gap between one Dai and another Dai. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.566666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jeff_Wu",
+                    "index": "#11",
+                    "likes": "5",
+                    "time": "22/01/2021-16:19:10",
+                    "content": "This is an interesting proposal! Would love to see something along these lines come about. Regarding Notional Finance, we currently do not support ERC20 fCash assets (our version of fyDai) but if this module did exist we would have no problem adding ERC20 support for it. Notional currently uses ERC1155 to represent our fCash tokens, we chose this standard because we think it offers superior flexibility over ERC20 for term based assets. The integrating contract only needs to whitelist the single ERC1155 contract address and can access any one of our fCash assets via a deterministic id which is determined by maturity and currency. This reduces the need to deploy and list new contract addresses. As I mentioned above, if using ERC20 is a must have we can certainly use CREATE2 to get a series of deterministic ERC20 addresses. However, I do think the pros and cons of different token standards for fixed term assets should be considered, they do have different behavioral characteristics compared to perpetual tokens like most ERC20s. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.876318993506493
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#12",
+                    "likes": "6",
+                    "time": "22/01/2021-18:25:42",
+                    "content": "Given that fixed-term loans have the potential to generate more DAI at higher interest rates and also offer more tools to control DAI demand, this proposal should be given a high priority. Governance faces many opportunities to evolve MakerDAO, such as adding more collateral types and real world assets. My opinion is that fixed-term loans would be a major functionality upgrade and increase the utility of all the collateral types. I\u2019ll just reiterate that I think that this MIP proposal should be given high priority. @niemerg It seems like the current design will require setting lots of parameters. I worry that this could be gas inefficient. Maybe some way can be devised to control the interest rate curves across many fixed-term products in a gas efficient way? Another question: How will this interact with the Dai Savings Rate (DSR)? Maybe it won\u2019t because all generated DAI is ultimately backed by a regular floating rate vault? I feel like I\u2019m missing something though. Does the DSR rate constrain the interest rate curve? It would be great if some smart person could explain this in simple terms. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.09125939849624
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ejbarraza",
+                    "index": "#13",
+                    "likes": "6",
+                    "time": "22/01/2021-18:37:51",
+                    "content": "MakerDAO definitely needs to get into fixed-term lending. It would instantly create a decentralized yield curve. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/williamr",
+                    "index": "#14",
+                    "likes": "5",
+                    "time": "24/01/2021-01:55:20",
+                    "content": "    niemerg:  Borrowers mint fyDai and sell them to lenders to lock in a fixed rate of interest. There are several \u201cseries\u201d of fyDai, each with a different maturity date. After the maturity date is reached, lenders holding fyDai may redeem the fyDai for Dai.   At first glance, this is a very interesting and useful proposal. This sort of mechanism could be at the inception of bringing benefits to both users and the protocol, just to name a couple. From a real-world user point of view, this may be the beginning of the road for retail to finally use DeFi to mortgage their homes, should rates be competitive with trad Fi. In the UK and many CommonWealth countries, home lending is not fixed for more than 5 years, even on a 30yr term loan. Home owners are frequently shopping around, refinancing and \u201chedging\u201d their short vs longer term interest payments. This sort of implementation would be very familiar to those home owners and could create a relatively easy bridge to refinance to DeFi. The challenge is the exchange rate, unless you thought of a GBP or AUD to DAI float -> fixed  . From a protocol perspective, this may be a game changer in RWA and the discussion around long term maturities. It makes the decision on terms & rates more transparent and passes on (at least) part of the responsibility on the rate setting to the asset manager/originator as what portion of the pool they may want to finance at each maturity, based on their view of the yield curve progression. Of course, considerations on credit quality overlay that pricing, but at least the fixed rate provides a sort of base rate for term setting. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.482007575757576
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#15",
+                    "likes": "4",
+                    "time": "24/01/2021-17:25:59",
+                    "content": "I am not sure that the current design will require setting lots of parameters. There is really only one parameter to set per maturity date: the interest rate Maker would pay to buy fyDai. In theory, this could be set once and never changed. More likely, the interest rate parameters would be updated roughly as frequently as the stability fee, so every few weeks or so. That should not be too high of a burden. Regarding the Dai Savings Rate, that is another Maker governance controlled interest rate. The considerations that Maker governance might use when deciding what rates to set the DSR and the fyDai interest rates are too many to list or consider here. But I think adding fyDai only increases Maker\u2019s effectiveness in managing Dai supply and demand. If there were unexpected interactions caused by the introduction of fyDai, Maker could withdraw from the fyDai market quite easily by lower the debt ceiling for fyDai. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.559722222222222
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/KentonPrescott",
+                    "index": "#16",
+                    "likes": "4",
+                    "time": "28/01/2021-07:26:20",
+                    "content": "Great proposal! This looks like a form of Yield Curve Control (YCC), where long term fyDai rates are effectively set by Maker Governance. I can imagine Maker supporting multiple fixed-rate markets in the future, influencing rates across various venues and products, such as Notional, before eventually settling on the one with the deepest markets and/or with the least amount of risk. Although interesting and beneficial for the community, IIUC it looks like fyDai is a synthetic debt token, and under extreme market volatility, is therefore at risk of becoming insolvent, as was mentioned in the MIP. It looks like Yield relies on its native reverse Dutch Auction liquidation mechanism to discharge unsafe collateral positions. I\u2019d be interested to learn why a reverse Dutch Auction model was chosen over a Dutch Auction model, as has been proposed in Maker\u2019s upcoming LIQ2.0. Would you have any data to share about liquidations? How\u2019s the level of recent keeper participation? As one involved in LIQ2.0, I\u2019m be interested in learning more.     niemerg:  Yield Protocol insolvency risks are mitigated by the fact that all Yield collateral is held in MakerDao, thus there may be steps that Maker governance may be able to take to prevent losses.   @niemerg Could you elaborate here? What would Maker Governance need to do to prevent losses caused by fyDai? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.201388888888889
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Paul_L",
+                    "index": "#17",
+                    "likes": "1",
+                    "time": "28/01/2021-14:50:08",
+                    "content": "Very interesting proposal for TLM! Could I ask - how is the rate calculated - based on which interest rates ? \u2018\u2018The price of a fyDai token in terms of Dai is determined by the interest rates in the market. If interest rates go up, the market value of fyDai goes down. Thus, fyDai purchased by Maker may lose value when marked to market in an environment with rising interest rates.\u2019\u2019 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.261574074074074
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/twoodward",
+                    "index": "#18",
+                    "likes": "4",
+                    "time": "02/02/2021-20:40:11",
+                    "content": "Teddy from Notional here. This is an interesting proposal! I\u2019m curious to understand how the market dynamics might work here. It seems like this proposal would encourage the following behavior:   Borrowers borrow through liquidity pools and push interest rates up.   Lenders lend through liquidity pools and then turn around and sell their loans to Maker. This pushes the rate down on these liquidity pools into line with the Maker governance determined rates.   My question is, shouldn\u2019t Maker just lend to borrowers directly at their policy rates? The market dynamics above seem convoluted and inefficient. In this setup, pool LPs would take two cuts out of every trade. If Maker lent directly to borrowers, there would be no need for an expensive and inefficient middleman. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.043402777777778
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#19",
+                    "likes": "0",
+                    "time": "02/02/2021-21:42:18",
+                    "content": "While it could be the case that loans are sold to Maker via arbitrage, they don\u2019t have to be. For example, if MIP43 were to pass, and Maker governance decided to buy fyDai tokens, then the TLM could be used for direct origination of loans. For example, when users use Yield, the web app could decide to route the sale of fyDai to either the liquidity pools or to the TLM based on whichever has a better interest rate. In that case, Maker would be lending directly to borrowers at their policy rates whenever that rate is best. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#20",
+                    "likes": "1",
+                    "time": "02/02/2021-22:07:59",
+                    "content": "fyDai interest rates are market based. Or put another way, the price a fyDai token imputes an interest rate because fyDai are like zero coupon bonds. @KentonPrescott.  Yield Curve Control is certainly one way Maker Governance could choose to take advantage of the TLM. I certainly hope that this MIP is the start of Maker being active in fixed-rate lending markets as you suggest. Regarding the \u201creverse\u201d Dutch auction, when liquidating a position, Yield protocol is attempting to sell as little collateral as possible to receive a particular amount of Dai. So the auction is a \u201creverse\u201d auction because the protocol continually raises the amount of collateral it is willing to sell to receive that amount of Dai. I am not sure that Maker\u2019s upcoming version is actually different (I am not that familiar with it). As of the last time that I\u2019ve looked, there have been no liquidations on Yield Protocol. This is because the price of ETH has gone more or less only up since Yield\u2019s launch. During that time, some team members have continuously run a keeper. Regarding the steps that Maker could take to prevent losses caused by fyDai, as a very simple example, if there was a bug in Yield that caused assets to be frozen in Yield, then Maker would have the power to unlock those funds. Many other scenarios are possible, and it sort of depends on Maker\u2019s threat model to determine whether Yield collateral being held by Maker protects Maker or not. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.377149470899471
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/twoodward",
+                    "index": "#21",
+                    "likes": "0",
+                    "time": "03/02/2021-15:30:37",
+                    "content": "Ok thanks Allan. A direct lending facility makes more sense to me. The only other thing I\u2019ll say is that we are very early here in the development of a fixed rate market and there are some significant structural differences between ourselves and Yield. I\u2019m biased of course, but I would suggest that Maker retain optionality for the time being and refrain from committing to a single platform before the market proves out the relative merits between the two. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.836904761904762
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/juan",
+                    "index": "#22",
+                    "likes": "2",
+                    "time": "03/02/2021-15:32:42",
+                    "content": "Join us next week as @niemerg and @equivrel explain the in-and-outs of this MIP!     Know Your MIP #05: Term Lending Module - Wednesday, February 10th 18:00 UTC Maker Improvement Proposals   [image]  What The \u201cTerm Lending Module\u201d (the TLM) enables Maker to buy tokenized fixed-rate, fixed-term loans. The Term Lending Module stands available to buy loans at governance-set interest rates up to a corresponding debt limit.  Lev Livnev (@equivrel) and Allan Niemerg (@niemerg) will be casting light on what this means and how it works   Here\u2019s the MIP: MIP43: Term Lending Module (TLM)  When February 10, 2021 @ 18:00 UTC  Time in your local-timezone format:  2021-02-10T18:00:00Z (U\u2026     ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip43-term-lending-module-tlm/6153"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.333333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hinchliff",
+                    "index": "#23",
+                    "likes": "1",
+                    "time": "11/02/2021-02:18:55",
+                    "content": "Know your MIP - Know Your MIP #05: Term Lending Module - February 10, 2021 - YouTube Very cool! This is going to be a huge market. My only worry is that we will be dependent on another protocol\u2019s liquidation process. We know how hard liquidations are to get right and to ensure the liquidity is there. Of course we could set a low DC but if we want to meet the demand I foresee this having we are going to take on a lot of 3rd party risk. I feel bad saying this, but I think this is something Maker should implement itself. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.164248511904762
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#24",
+                    "likes": "2",
+                    "time": "11/02/2021-07:26:15",
+                    "content": "    hinchliff:  I feel bad saying this, but I think this is something Maker should implement itself.   this! During the very good presentation (now in youtube) I had the same feeling. Yes, the project is cool but:  MakerDAO will carry external risks (their liquidation system, their absense of Surplus, etc). As they mentioned, there is significant risks of losses when ETH drops quickly (like -33% in 1h). MakerDAO will help Yield to grow its market share/business for free basically.  Please note that I think Yield is a great team, they developed a cool idea, and this partnership will be good! But it would be even better if they could be incorporated directly in MakerDAO:  they would work directly on our codebase (not just on \u201cvery similar code\u201d) they will work within the framework of our Auctions (2.0 coming), and MakerDAO\u2019s surplus buffer would be able to protect us against incidents.  TLDR: It would be nice[r] to \u201cbuy them\u201d rather than having them as partners  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.417156862745098
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#25",
+                    "likes": "9",
+                    "time": "11/02/2021-13:35:04",
+                    "content": "Yes, liquidations are an important component to this, and we worked hard to develop a good auction system. It certainly is a source of risk, but it\u2019s also possible that a slightly different auction system may provide some resiliency, as it is less likely to fail under the exact same conditions as Maker\u2019s. Nevertheless, I do think Maker should carefully evaluate that risk, and should deal with it via the DC mechanism. Regarding your comment and @iammeeoh\u2019s comments about how MakerDao should add fixed rates, I expect that Maker eventually will add native fixed rates. But eventually can take a while. When we started Yield, we were told that Maker was considering adding fixed rates by Maker Foundation members. Over a year later, Yield is live, and there isn\u2019t yet any work on adding fixed rates directly into Maker that I see. And for good reason: Maker has higher priority initiatives like real world assets that are going to be huge and there isn\u2019t the bandwidth to do everything. That\u2019s where the TLM comes in. It\u2019s not trivial to do fixed-rate loans. We\u2019ve had to solve a lot of problems along the way, and it still remains to be seen whether we got it right. Before Maker invests a lot of resources trying to add native fixed rate loans, buying loans can help Maker evaluate the market and the technology. If it works, the lessons learned can be used to build fixed rates into Maker. Yield would support such an effort, and this MIP can be thought of as the first step in that direction. You might even say that Yield is helping Maker to add fixed rates for free, basically. Look, we could have built Yield a lot of different ways. We could have focused on USDC borrowing first, and that probably would have given us faster adoption. We wanted to do Dai first because we believe in decentralization. Decentralization is important. That\u2019s why Yield v1 is fully decentralized, no governance, no upgrade keys, with Maker under the hood. This MIP doesn\u2019t help pump any tokens, and we don\u2019t earn any fees from it. All we get is kudos. I hope that\u2019s a fair trade. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.789718614718615
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#26",
+                    "likes": "1",
+                    "time": "11/02/2021-13:49:37",
+                    "content": "    niemerg:  This MIP doesn\u2019t help pump any tokens, and we don\u2019t earn any fees from it. All we get is kudos. I hope that\u2019s a fair trade.   Thanks man for the nice answer!  Keep up the good work!!! And if it might eventually interest you and Yield, consider proposing a Maker Core Unit (e.g., \u201cFixed Rates Core Unit\u201d) to keep doing amazing things under the umbrella of MakerDAO!   ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.916666666666668
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/twoodward",
+                    "index": "#27",
+                    "likes": "1",
+                    "time": "11/02/2021-14:25:42",
+                    "content": "Hey guys, Have you considered how this could affect Maker\u2019s ability to protect its peg? Right now, when the Maker system needs to contract the supply of DAI it can raise the interest rate knowing that all Dai vaults will immediately start bearing this increased cost. But if you allow people to generate DAI by borrowing fixed, the Maker system loses the ability to impose a cost on those vaults. If, for example, the majority of DAI were created via fixed borrowing, how could Maker incentivize them to close out their loans? Am I missing something or would this put at risk one of Maker\u2019s primary tools to protect its peg? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.321428571428571
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#28",
+                    "likes": "0",
+                    "time": "11/02/2021-14:39:36",
+                    "content": "@twoodward  In theory fixed term loans could potentially limit Maker\u2019s ability to influence the peg through rate changes - you are correct about that. However, one of the lessons learned from handling the peg is that sheer mass of DAI is at least as important as interest rate changes. Other methods such as PSM and soon\u2122 flash loans are probably much more effective means to ensure the peg. So I welcome MIP43 and have zero worries about the peg. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.9875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#29",
+                    "likes": "0",
+                    "time": "11/02/2021-14:55:45",
+                    "content": "    twoodward:  Am I missing something or would this put at risk one of Maker\u2019s primary tools to protect its peg?   Good point to keep in mind. I guess we\u2019ll have to make sure to set the DC and other risks parameters properly, to avoid the situation:     twoodward:  If, for example, the majority of DAI were created via fixed borrowing   you have described. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.982142857142857
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hinchliff",
+                    "index": "#30",
+                    "likes": "1",
+                    "time": "11/02/2021-23:42:43",
+                    "content": "    niemerg:  This MIP doesn\u2019t help pump any tokens, and we don\u2019t earn any fees from it. All we get is kudos. I hope that\u2019s a fair trade.   I respect this and I really value the work you are doing. I should have mentioned so in my previous post.     niemerg:  Before Maker invests a lot of resources trying to add native fixed rate loans, buying loans can help Maker evaluate the market and the technology. If it works, the lessons learned can be used to build fixed rates into Maker. Yield would support such an effort, and this MIP can be thought of as the first step in that direction. You might even say that Yield is helping Maker to add fixed rates for free, basically.   This is a good way of framing it. I agree that Maker will receive many benefits moving this MIP forward. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.3106060606060606
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Akiva",
+                    "index": "#31",
+                    "likes": "0",
+                    "time": "16/02/2021-20:03:44",
+                    "content": "How does this handle the case where the DSR rises very high? Is there a liquidation built in on MKR side or are they just held to expiry (like MIP22)? If its the latter does that limit this to shorter durations? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5200000000000005
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#32",
+                    "likes": "1",
+                    "time": "16/02/2021-20:18:55",
+                    "content": "The fyDai tokens are held to maturity and then can be sold at face value or redeemed for Dai. Liquidations should not be needed, as the TLM permits users to sell it fyDai, not create vaults. The DSR should not impact the TLM in any significant way. Governance can change the interest rate at which it buys fyDai, and so can maintain that interest rate above the DSR, if it so chooses. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Akiva",
+                    "index": "#33",
+                    "likes": "2",
+                    "time": "16/02/2021-21:19:21",
+                    "content": "Thank you If a vault is not created where does the Dai come from? The System Surplus? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/niemerg",
+                    "index": "#35",
+                    "likes": "3",
+                    "time": "23/02/2021-22:42:22",
+                    "content": "I\u2019ve formally submitted this proposal for the March governance cycle. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ejbarraza",
+                    "index": "#36",
+                    "likes": "2",
+                    "time": "24/03/2021-05:34:00",
+                    "content": "I wonder how the term lending module and uniswap v3 can be used together. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/PaperImperium",
+                    "index": "#37",
+                    "likes": "5",
+                    "time": "26/04/2021-19:23:48",
+                    "content": "Late to the party, but just curious where this module was in terms of hoped-for deployment? I think it solves a really important problem for our lack of fixed-term, fixed-rate product, and I\u2019d love to see a deep market for this develop with our help. Edit: In RC was just told a few months when I obnoxiously pressed for a non-binding estimate. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.25
+                }
+            ]
+        }
+    ],
+    "group_index": "3188"
+}

@@ -1,0 +1,183 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip91-defender-contract-against-governance-attacks/18534",
+            "title": "MIP91: Defender Contract Against Governance Attacks ",
+            "index": 18534,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "rfc",
+                "mips",
+                "impact-:-high"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#1",
+                    "likes": "7",
+                    "time": "26/10/2022-23:04:05",
+                    "content": " MIP91: Defender Contract Against Governance Attacks  Preamble MIP#: 91 Title: Defender Contract Against Governance Attacks Author(s): @astronautthis   Contributors: @LongForWisdom, @prose11, @Patrick_J   Tags: emergency, governance, process, technical, smart-contracts, pending-implementation   Type: General   Status: RFC   Date Proposed: 2022-10-26   Date Ratified:   Contract address:   Dependencies:      Forum URL: https://forum.makerdao.com/t/mip91-defender-contract-against-governance-attacks/18534   References  Emergency Shutdown GSM Pause Delay Executive Vote   Sentence Summary This MIP proposes a smart contract that allows a minority of MKR holders to delay executives during an attack where a malicious entity may be in control of the hat.  Paragraph Summary The attack considered here is a governance attack where an entity has access to enough MKR to pass one or more potentially malicious executive spells. This MIP proposes a contract called dss-defender that a minority of MKR holders may activate to delay malicious executives from taking effect without shutting down the protocol. In order of preference, Maker would have the following responses to a governance attack:  Recapture the hat and pass a cancelling executive. Activate dss-defender. Trigger the Emergency Shutdown Module (ESM).   Motivation Consider the situation where a malicious entity (including possible malicious actors within the Maker community) has access to enough MKR to pass executive spells. Given the chaotic environment during such an attack with the potential for trusted entities like Protocol Engineering or GovAlpha to turn malicious, it may be unreasonable to expect honest MKR holders to be able to communicate and coordinate quickly enough to defend the protocol. In particular, it may not be clear if the protocol is genuinely under attack or if there is simply misinformation. The following issues are likely with the current ESM-based defence:  Honest MKR holders only have the GSM Pause Delay period (48 hours at the time of writing) to trigger the ESM, a decision that involves burning their MKR. This is difficult to commit to if information about the attack is unclear. It may be the case that large MKR holders use custodial solutions that would make it difficult to move their MKR to trigger the ESM or try and regain the hat within the GSM Pause Delay period. The act of shutting down the protocol is an extreme step that negatively impacts DAI holders and the wider crypto ecosystem. The only immediate requirement is to block malicious executives while regaining control of governance, not to shut down the entire protocol.  The ideal defence in the face of such an attack should be to prevent the malicious executives from passing so MKR holders can buy time to understand the situation, try to recapture the hat, and decide whether it is necessary to trigger the ESM. The key is to allow a minority of MKR holders to be able to do this without a severe financial penalty but also ensure that this does not become a tactic to stall/overrule regular governance actions. This will be done using a proposed contract called dss-defender.  Component Summary MIP91c1: Parameters and Deployment Defines the parameters of dss-defender, the governance process to set them, and deploying an instance. MIP91c2: Core Logic Defines the core logic of an instance of dss-defender once activated. MIP91c3: Post-activation Permissions and Events Defines what actions are permitted after an instance of dss-defender is activated. MIP91c4: Deploying a New Instance Defines how to deploy a new instance of dss-defender after a potential attack. MIP91c5: Preliminary Work Packages Defines the next phases of work required by various Core Units. MIP91c6: Technical Implementation Defines the smart contract code of dss-defender, test cases, and formal verifcation/audits. MIP91c7: Initialization Defines the governance process to approve the first instance of dss-defender.  Specification / Proposal Details  MIP91c1: Parameters and Deployment dss-defender has three parameters that can be modified by Governance. These are:   threshold amount: This is the amount of MKR that must be deposited into an instance of dss-defender to activate it.  cancel-spells duration: This is the duration for which an instance of dss-defender can cancel executive spells using the mechanism detailed in MIP91c2.  lockup duration: This is the duration for which MKR deposited to an instance of dss-defender is locked by default. This parameter should be significantly larger than the cancel-spells duration to prevent a minority of MKR holders from stalling governance. The lockup period can be overriden by two mechanisms detailed in MIP91c3.  RISK-001 should recommend initial choices and changes to these parameters. They may be changed via weekly governance polls or emergency/weekly executive votes. An instance of dss-defender is then deployed with these parameters. This disables the core logic described in MIP91c2 of any previously deployed instance.  MIP91c2: Core Logic MKR may only be deposited into an instance of dss-defender by MKR holders. Delegates cannot deposit delegated MKR into an instance of dss-defender. Honest MKR holders should only deposit MKR if they suspect one or more malicious executives have been passed and that the hat cannot be recaptured from the attacker by the end of the GSM Pause Delay. If there is more MKR than the threshold amount deposited into an instance of dss-defender, a permissionless parameterized cancel function on the contract is enabled. The cancel function allows anyone to cancel any executive waiting during the GSM Pause Delay. The cancel function would be available for the cancel-spells duration from the moment the threshold amount is exceeded. For each instance of dss-defender, this mechanism can only be triggered once.  To use the cancel function after the cancel-spells duration is over, MKR holders must initialize a new instance dss-defender via an executive vote.  MIP91c3: Post-activation Permissions and Events MKR deposited into an instance of dss-defender will be locked in the contract for the lockup duration from the moment it is deposited except for two cases, namely:  A majority of MKR holders (including depositors) pass an executive vote to allow early withdrawals from an instance of dss-defender. The depositors move the locked-up MKR into the ESM, at which point it will be immediately burned.  In addition to activating the cancel function, every instance of dss-defender moves all MKR deposited into it to support a default executive spell that  Enables an early release of locked-up MKR in that instance. Creates a new instance of dss-defender with the same parameters as the current instance. Can only be cast after the cancel-spells duration is over. This point ensures that if enough MKR supports the default executive before the cancel-spells duration is over, it does not get cast immediately and get cancelled by the attacker.  Regardless of other actions, after the lockup duration is over, MKR in a given instance of dss-defender can be withdrawn by depositors.  MIP91c4: Deploying a New Instance It should be ensured that there is at most one instance of dss-defender available at any time. The deployment of a new instance is done via an Executive Vote and is subject to the GSM Pause Delay. After an instance of dss-defender is activated, there are two expected routes to deploy a new instance:  If MKR holders believe that a genuine attack was thwarted by an instance of dss-defender, then they should take control of the hat by backing the default executive of that instance described in MIP91c3. This executive will pass after the cancel-spells duration and restore the system to the pre-attack state. A new instance will be active and all deposited MKR will have been immediately returned to owners. If MKR holders believe that an instance of dss-defender was triggered unnecessarily or in order to stall legitimate governance, then they may choose to deploy a new instance of dss-defender and enforce the full lockup duration of the previous instance. This would prevent depositors from participating in governance for the lockup duration, except for their ability to trigger the ESM.   MIP91c5: Preliminary Work Packages The following work packages are required before dss-defender can be implemented. Should MIP91c5A or MIP91c5B not be complete or highlight issues with the proposal, this MIP will not be implemented.  MIP91c5A: Formal Modelling Protocol Engineering CU to formally model dss-defender and ensure that the protocol is not opened up to additional attack vectors or griefing attacks. Findings to be linked here.  MIP91c5B: Parameter Choices Risk CU to investigate appropriate choices for threshold amount, cancel-spells duration, and lockup duration, thereby balancing governance security and governance efficiency. Findings to be linked here.  MIP91c6: Technical Implementation Pending a positive outcome of MIP91c5A and MIP91c5B, Protocol Engineering to design a smart contract implementation of dss-defender.  MIP91c6A: Proposed Code To be added/linked here.  MIP91c6B: Test Cases To be added/linked here.  MIP91c6A: Formal Verification/Audit Information To be added/linked here.  MIP91c7: Initialization After MIP91c5 is complete, an on-chain MIP poll will propose the initialization of the first instance of dss-defender. ",
+                    "links": [
+                        "https://makerdao.world/en/learn/governance/param-gsm-pause-delay/",
+                        "https://makerdao.world/en/learn/governance/how-voting-works/#executive-votes",
+                        "https://forum.makerdao.com/t/weekly-mips-update-122/19536",
+                        "https://forum.makerdao.com/t/weekly-mips-update-121/19437",
+                        "https://forum.makerdao.com/t/weekly-mips-update-120/19364",
+                        "https://forum.makerdao.com/t/weekly-mips-update-119/19289",
+                        "https://forum.makerdao.com/t/weekly-mips-update-118/19260",
+                        "https://forum.makerdao.com/t/weekly-mips-update-117/19148",
+                        "https://forum.makerdao.com/t/weekly-mips-update-128/20070",
+                        "https://forum.makerdao.com/t/weekly-mips-update-115/18956",
+                        "https://forum.makerdao.com/t/weekly-mips-update-114/18875",
+                        "https://forum.makerdao.com/t/weekly-mips-update-113/18793",
+                        "https://forum.makerdao.com/t/weekly-makerdao-recap/16382/24",
+                        "https://forum.makerdao.com/t/weekly-mips-update-112/18708",
+                        "https://forum.makerdao.com/t/weekly-mips-update-111/18610",
+                        "https://forum.makerdao.com/t/mip91-contrato-de-defensa-contra-los-ataques-a-la-gobernanza-traduccion/18535",
+                        "https://forum.makerdao.com/t/weekly-mips-update-116/19059",
+                        "https://forum.makerdao.com/t/weekly-mips-update-127/20001",
+                        "https://forum.makerdao.com/t/weekly-mips-update-126/19881",
+                        "https://forum.makerdao.com/t/weekly-mips-update-125/19812",
+                        "https://forum.makerdao.com/t/weekly-mips-update-124/19706",
+                        "https://forum.makerdao.com/t/weekly-mips-update-123/19600"
+                    ],
+                    "GPT-summary": "The post is a proposal for a smart contract called dss-defender that allows a minority of MKR holders to delay executives during a governance attack where a malicious entity may be in control of the hat. The proposal outlines the parameters, core logic, post-activation permissions and events, and deployment of the contract. The post also discusses the motivation behind the proposal and the potential issues with the current Emergency Shutdown Module-based defense. The post does not advertise the proposal, but rather explains it and invites feedback and questions from third parties.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Governance process",
+                        "Technical",
+                        "Risk management",
+                        "Emergency"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.512546976832691
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#2",
+                    "likes": "5",
+                    "time": "26/10/2022-23:09:45",
+                    "content": "Here, I detail some of the benefits and downsides of this proposal. There are also some clarifying examples.  Flowchart dss-defender interacts with governance flow according to the following flowchart. This shows how normal operations resume after it is activated. Note that ESM interactions are not included in this flowchart.  Flowchart2370\u00d71256 206 KB   Benefits Under normal circumstances, there should be little to no MKR deposited into dss-defender. The ability to use this as a stall tactic against normal governance processes is mitigated by the lockup duration and the fact that an executive is delayed only for the cancel-spells duration. During a governance attack, if MKR in dss-defender exceeds the threshold amount, MKR holders get more time to organize and possibly trigger the ESM. Since there is no penalty besides losing access to their MKR for the lockup duration, MKR holders may be more willing to take the first step to defend the protocol. In the event that the hat cannot be taken back after the cancel-spells duration, it becomes clear to all honest MKR holders that the ESM must be activated.  Downsides A malicious minority could block a governance patch fixing some vulnerability using dss-defender to buy themselves more time. It is unclear how high this risk is and whether it is sufficiently mitigated by MIP15. Delegates are unable to use dss-defender. One may wonder if there is a way to allow delegates to interact with dss-defender albeit with different penalties instead of regular holders. Unfortunately, the lockup duration seems incompatible with the principle of liquid delegation.  Example Scenarios This section has some examples explaining how various scenarios may play out. This is meant to be illustrative, not exhaustive. We choose some arbitrary parameters here. The threshold amount is set to 50,000 MKR, the cancel-spells duration is one week and the lockup duration is one month.  Genuine attack A malicious entity gains control of the hat and starts passing executives to steal collateral. It becomes clear within 24 hours of the 48-hour GSM Pause Delay period that the hat cannot be regained and the malicious executives cannot be cancelled. Large MKR holders such as VCs need more time to move their MKR from custodial solutions to help regain the hat.  MKR holders start depositing their MKR into dss-defender until it hits 50,000 MKR. The cancellation of all executives begins and the protocol is locked into its current state for one week. Large MKR holders are now able to mobilize their MKR to regain control of the hat. They join forces with the MKR already in dss-defender by backing the default executive that resets the protocol to the pre-attack state and returns locked up MKR to the owners early. The default executive is ready but can only be passed after dss-defender stops cancelling spells. All other malicious executives that have been passed and are in the GSM Pause Delay period get cancelled. After one week, the protocol returns to its pre-attack state.   Genuine attack - alternate ending This is the same as the previous scenario except that honest MKR holders do not succeed in retaking the hat. A malicious entity gains control of the hat and starts passing executives to steal collateral. It becomes clear within 24 hours of the 48-hour GSM Pause Delay period that the hat cannot be regained and the malicious executives cannot be cancelled. Large MKR holders such as VCs cannot move their MKR from custodial solutions to help regain the hat within the cancel-spells duration.  MKR holders start depositing their MKR into dss-defender until it hits 50,000 MKR. The cancellation of all executives begins and the protocol is locked into its current state for one week. After the one-week period is over, the attacker still holds the hat and starts passing malicious executives again. This is subject to the GSM Pause Delay that starts the moment the one-week period is over. All honest MKR holders, including those who deposited their MKR into dss-defender move their MKR to the ESM. The ESM threshold is reached and the protocol is shut down without loss of collateral.   False alarm A minority of MKR holders believe a recently passed executive is an attack on Maker. They collectively deposit enough MKR to reach the dss-defender threshold.   dss-defender is now able to cancel spells for one week. During this one-week period, the remaining MKR holders examine the situation more closely and conclude that the executive is not malicious. The executive is passed again after the one-week period ends and is now in the GSM Pause Delay period. MKR holders conclude that although the executive was not malicious, the depositors acted in good faith and return their MKR early via the default executive vote and reset the protocol to the pre-attack state.   Disgruntled minority attack A minority of MKR holders use dss-defender to delay an executive they disagree with. The events are identical to the false alarm scenario except for Step 4.   dss-defender is now able to cancel spells for one week. During this one-week period, the remaining MKR holders examine the situation more closely and conclude that the executive is not malicious. The executive is passed again after the one-week period ends and is now in the GSM Pause Delay period. Remaining MKR holders conclude that the depositors tried to stall governance using dss-defender. The depositors must wait one month before they can participate in governance again.   Governance patch exploit attack A minority of MKR holders use dss-defender to delay a patch fixing a vulnerability from passing through an executive vote.   dss-defender is now able to cancel spells for one week. During this one-week period, the vulnerability meant to be patched remains open. In the current state, the attacker would only have the GSM Pause Delay Period of 48 hours to exploit the vulnerability. The executive is passed again after the one-week period ends and is now in the GSM Pause Delay period. Remaining MKR holders conclude that the depositors used dss-defender maliciously. The depositors must wait one month before they can participate in governance again.  The scenarios above are some of the most likely possibilities to consider when implementing dss-defender. The threshold amount, cancel-spells duration, and lockup duration should be chosen with these possibilities in mind. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.678687956664147
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "26/10/2022-23:10:05",
+                    "content": "This is a summary of the contents of this proposal and its impact, from GovAlpha\u2019s perspective:  This is a proposal to create a contract called dss-defender to protect against governance attacks. This proposal aims to give MKR holders more time to either retake the hat or trigger the Emergency Shutdown Module during a governance attack. If a sufficient amount of MKR is deposited into dss-defender by a minority MKR holders, a mechanism will ensure that no executive will pass for a fixed duration called the cancel-spells duration. MKR deposited into dss-defender is locked up for a duration called the lockup-duration to prevent misuse of the contract to block legitimate governance. This lockup can be waived by MKR holders if a legitimate attack was thwarted. The lockup-duration is longer than the cancel-spells duration. MKR in dss-defender can still be moved to the ESM by depositors during the lockup period, thereby not affecting ESM functionality. This proposal requires the following further work from Core Units:  Game-theoretic analysis and formal modelling of various attack scenarios to verify that dss-defender does not create new attack vectors. Determine appropriate parameters for dss-defender. Smart contract implementation of dss-defender.   This proposal has been assigned High-Impact based on the methodology listed here. This proposal is eligible for the January Governance Cycle.  Disclaimer: These summaries are intended to be a guide and not a source of truth. You remain responsible for any actions you take on the grounds of this information. Please note the date when the summary was last updated to judge accuracy. Updated 2022-11-29 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8253246753246755
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/fumoffuXx",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "01/11/2022-05:37:14",
+                    "content": "bringing this topic back to life, I am surprised this topic has not gained traction when it comes to protocol governance security. I think we need to weigh the pros and cons of having such a mechanism in placed, when it will allow the barriers of entry to \u201cstall\u201d exploit remedy  to be lowered. Would like other inputs as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.96875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/fumoffuXx",
+                    "index": "#5",
+                    "likes": "2",
+                    "time": "03/11/2022-07:52:52",
+                    "content": "just to add, what is the proposed MKR to be burnt to utilise the minority system pause? this is a separate function to the existing 15% majority emergency shutdown procedure am i right? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.428571428571428
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "03/11/2022-12:16:35",
+                    "content": "    fumoffuXx:  this is a separate function to the existing 15% majority emergency shutdown procedure am i right?   Correct. The Emergency Shutdown Module (ESM) is the last resort defence. MKR gets burned and the protocol is shutdown completely. This module is separate and does not affect the functionality of the ESM. No MKR is burned by this module but MKR holders who use this module will have their MKR locked up for some period instead. Thus, the penalty for users triggering this module is lower. The power of this module is also correspondingly lower - it does not shut the protocol down but instead can only delay executive votes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.23015873015873
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ultraschuppi",
+                    "index": "#7",
+                    "likes": "4",
+                    "time": "10/11/2022-17:54:13",
+                    "content": "any ideas on the engineering impact if we implement this? it surely is impacting the willingness to support this - @Derek willing to give this a \u201cestimate the effort but don\u2019t take more than 3 minutes to do so kthxbye\u201d shot? not talking about duration, but really about the amount of time that your team cannot work on the other things due to thinking, coding, reviewing, interacting with auditors and what not. i have to admit i am not fully sold on the idea (yet), but this aspect is for sure important to make a decision ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.3125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rspa",
+                    "index": "#8",
+                    "likes": "3",
+                    "time": "30/11/2022-15:07:33",
+                    "content": "Very interesting proposal. Reminds a bit of what @hasu proposed for Lido. I think it\u2019s a good idea but support a clear evaluation of the effort required and prioritizing between other efforts before committing to this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.65625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rspa",
+                    "index": "#9",
+                    "likes": "1",
+                    "time": "30/11/2022-15:26:37",
+                    "content": "I\u2019d also like to compare the effort to the effort necessary to activate a larger MKR holder supply for instance. Something that would also increase the security of the protocol substantially. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Derek",
+                    "index": "#10",
+                    "likes": "6",
+                    "time": "04/01/2023-09:25:27",
+                    "content": "From a Protocol Engineering perspective there is a significant amount of work (+3months), requiring analysis and development work. A big area of this complexity comes from the potential for a griefing attack as mentioned in the opening post which introduces a trade-off against trade-offs situation and is difficult to reason about without an in-depth analysis of the game theory at play, re: lock-up times, ES considerations, default exec spell considerations, and/or risk of protocol in a locked state etc. Governance should also ask themselves whether this is critical for the Endgame vision it has voted to pursue. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.5625
+                }
+            ]
+        }
+    ]
+}

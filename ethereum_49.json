@@ -1,0 +1,103 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5450-eof-stack-validation/10410",
+            "title": "EIP-5450: EOF - Stack Validation ",
+            "index": 10410,
+            "category": [],
+            "tags": [
+                "evm",
+                "evm-object-format",
+                "shanghai-candidate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "17/08/2022-09:14:06",
+                    "content": "This is the discussion topic for EIP-5450: EOF - Stack Validation ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/evm-object-format-eof/5727/37"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "17/08/2022-19:34:21",
+                    "content": "Very nice, thanks! I have of course been working on the same validation constraints since EIP-615 and EIP-2315. So far my only problem reading this is that I could not find a definition of  \u201cstack height\u201d in the EIP.  Eventually I thought to look in EIP-5440, where it is used in code snippets but still not defined. I dug a little further in previous EIPs but gave up for now.  My Python is getting better, but it was too much work trying to find the relevant code.  So I think this problem is deeper than this one EIP.  The concept can be expressed in a sentence or two of English. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.7815972222222225
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "25/08/2022-13:47:20",
+                    "content": "Finally got back to this.  In 4750 I had missed (my emphasis):  A return stack is introduced, separate from the data stack. It is a stack of items representing execution state to return to after function execution is finished. Each item is comprised of: code section index, offset in the code section (PC value), calling function stack height.  Clear enough in the context of 4750\u2019s explicit spec. A reminder that the height is relative to function entry would help here \u2013 which is what confused me. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "25/08/2022-14:39:25",
+                    "content": "These might be more serious issues, but I don\u2019t fully understand the code. I don\u2019t see that you add CALLF to the worklist in the validation loop, which it seems will prevent you from traversing every possible path. I also don\u2019t see that you deprecate JUMP here, or in EIP-5450 or EIP-3670.  And I don\u2019t see that you handle them in the validation code. It seems that if you don\u2019t handle them you can\u2019t traverse every path, but if you do handle them you will suffer a quadratic path explosion. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.277777777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "25/08/2022-15:27:19",
+                    "content": "Thanks for the feedback, I\u2019m adding clarification about stack height in EIP-5450: Add rationale, more clarifications and update authors by gumb0 \u00b7 Pull Request #5535 \u00b7 ethereum/EIPs \u00b7 GitHub I can see how it might be a bit confusing, because stack height of EIP-5450 is a validation-time calculation (and yes, relative to function entry), while in EIP-4750 it refers to actual runtime value.     gcolvin:  I don\u2019t see that you add CALLF to the worklist in the validation loop, which it seems will prevent you from traversing every possible path.   Each function section is validated independently, so validate_function(func_id, code, types) will be called in loop for each section.     gcolvin:  I also don\u2019t see that you deprecate JUMP here, or in EIP-5450 or EIP-3670. And I don\u2019t see that you handle them in the validation code.   This is true, this EIP assumes JUMP* is deprecated. I think it\u2019s better to have a separate tiny EIP for deprecating them, this is not done yet. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "25/08/2022-16:36:05",
+                    "content": "Thanks for clearing that up.  The Yellow Paper mostly assumes the reader knows what a stack is in the text, and uses mathematical notation otherwise.  Eg, ADD is defined as \u03bc\u2032s[0] \u2261 \u03bcs[0] + \u03bcs[1]. I remember now that EIP-615 also validates functions independently.  I now fear that \u2013 because functions can consume stack \u2013 nested calls can cause underflows that won\u2019t be detected that way. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.699999999999999
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "25/08/2022-16:51:40",
+                    "content": "A hunch I haven\u2019t time to follow: I think that since you are validating the use of the return stack you will not need to keep the code_section_index and stack_height on the return stack, only the offset. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "02/11/2022-06:26:28",
+                    "content": " The current validation algorithm ignores unreachable instructions. The algorithm can be extended to reject any code having any unreachable instructions but additional instructions traversal is needed (or more efficient algorithm must be developed).  Start with a bitset of zeros for every byte in the code. For each instruction traversed during validation set the bit(s) in the set corresponding to byte offset(s) of the instruction.  if there are any zero bits remaining in the set there are unreachable instructions ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                }
+            ]
+        }
+    ],
+    "group_index": "49"
+}

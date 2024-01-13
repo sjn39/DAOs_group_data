@@ -1,0 +1,55 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/rwa007-solarx-mip21-token-protocol-engineering-domain-team-assessment/10016",
+            "title": "# [RWA007] SolarX/MIP21 Token Protocol Engineering Domain Team Assessment ",
+            "index": 10016,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "mips",
+                "sc-domain-work"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/brianmcmichael",
+                    "index": "#1",
+                    "likes": "8",
+                    "time": "25/08/2021-14:57:47",
+                    "content": " [RWA007] SolarX/MIP21 Token Protocol Engineering Domain Team Assessment  General Information This assessment deviates from the standard smart contract technical assessment format because of the idiosyncratic nature of the RWA collateral type. This assessment is intended only for the asset-backed lender scenario described in the Relevant MIP links section below, and should not be applied to other Real World Asset contracts. In summary, because of their simplified and constrained nature, these contracts are considered low risk.   Symbol: RWA007  Relevant MIP information:  [SolarX] MIP6 Application: Uprets/SolarX: Industrial Real Estate-Backed Loans MIP21: Real World Assets - Off-Chain Asset Backed Lender    Total supply: 1 WAD (1 * 10 ^ 18)  Github repository:  GitHub - makerdao/MIP21-RWA-Example: MIP21 example    Can use existing MCD collateral type adapter?  This collateral use the MIP21 authed join and exit functions. These functions are similar to other RWA onboarding that uses this framework.     Technical Information   Does the contract implement the ERC20 token standards? Yes.  Decimals: 18.  Overflow checks: No.  Mitigation against allowance race-condition: No.  Upgradeable contract patterns: No.  Access control or restriction lists: No.  Non-standard features or behaviors: No.  Key addresses:  The auth governance address for RwaInputConduit, RwaLiquidationOracle and RwaUrn contracts The operator address that is permitted to operate on the RwaInputConduit and RwaUrn contracts. This can be multiple addresses, however, each address must be approved by governance.    Additional notes:  The RWA code implementation resides within a sandbox-like environment, and any operation not related to locking, freeing, drawing, or wiping in the RwaUrn contract must be voted on by governance. The code itself is lightweight. This implementation uses simplified Flipper, Oracle, and Urn contracts to achieve the functionality required for this specific instance of RWA. While there are no overflow checks, no use of a SafeMath library, and no mitigation against the allowance race-condition, the idiosyncratic nature of the contract does not make them a requirement.     Reviewing the Architecture MIP21 is the component that prevents the borrower from minting more than the Debt Ceiling (line) and provides the ability for Maker Governance to trigger a liquidation. MIP21 by itself does not ensure that enough collateral is present or that the legal agreements underpinning the relationship are sound. The core RWA architecture consists of the following contracts:  RwaLiquidationOracle RwaUrn RwaToken RwaConduit   RwaLiquidationOracle contract Source code The RwaLiquidationOracle contract is shared across all MIP21 collateral types and consists of six state-changing functions (besides the usual DSS rely(address), deny(address)), all protected by the auth modifier and can only be called by governance:  file(bytes32,address) init(bytes32 ilk,bytes32 val,address doc,uint48 tau) bump(bytes32 ilk,uint256 val) tell(bytes32) cure(bytes32) cull(bytes32)  There is one externally accessible view function: good(bytes32) that anyone can use to check the liquidation status of the position. This function does not change state. This is not a typical Maker oracle. It will only report on the liquidation status of the RwaUrn, and can only be acted upon by governance. To state it plainly, this oracle is not vulnerable to flash loan attacks or any manipulation aside from a governance attack. file can be called by governance to change the vow address (used in cull). init is the initialization function. It takes 4 parameters:   ilk: name of the vault, RWA007.  val: estimated value of the collateral. It should be above the Debt Ceiling (line) and include a buffer for some accrued interest (e.g. 2 years of SF).  doc: link to legal documents representing the underlying legal scheme.  tau: minimum delay between the soft-liquidation and the hard-liquidation/write-off. If set to 0, this allows governance to trigger both in the same spell. For this collateral, this should be set to 0 (not impact outside of Maker anyway).  bump can be called by governance to increase (not decrease which can be done only by cull) the estimated value of the collateral. tell can be called by governance to start a soft-liquidation. line should be set to 0 Dai first. cure can be called by governance after a soft-liquidation has been triggered to stop it. cull can be called by governance to start an hard-liquidation/write-off. This will mark all the remaining debt of the vault as bad debt and impact the Surplus Buffer (vow).  RwaUrn Source code The RwaUrn is unique to each MIP21 collateral type.  Aside from the core DSS wards, can, rely(address), deny(address), hope(address), and nope(address) functions, there are five functions:  file(bytes32,address) lock(uint256) free(uint256) draw(uint256) wipe(uint256)  The file function can only be called by governance (via the auth modifier). The rest of the functions can only be called by those who have been given permission (hoped or noped) on the RwaUrn contract. And any Dai drawn by the RwaUrn can only be sent to the outputConduit address defined by governance when deploying the contract.  RwaToken contract Source code A standard implementation of the ERC20 token standard, with the balanceOf(address) of the deployer of the contract being set to 1 WAD at deployment. There are 18 decimals of precision. There are three state changing functions, that are all available to the tokenholder, and are specific to the ERC20 token standard:  transfer(address dst, uint wad) external returns (bool); transferFrom(address src, address dst, uint wad) public returns (bool); approve(address usr, uint wad) external returns (bool);  To reiterate how simple this ERC20 token is, please reference the Surya Description Report section below and compare it against other ERC20 token assessments.  RwaConduit Source code A simple contract with one function: push() that can be called by anyone with a current MKR balance. This function holds transitory funds, that upon being called, are transferred to the to address set using the pick function by those who have been given permission (hoped or noped).  Contract Risk Summary This is a low risk contract. The ERC20 functions of the RwaToken are implemented to industry standard, but do not mitigate the allowance race-condition or use a SafeMath library. This is of minor consequence, as actual usage of the approve(address,uint) function should be constrained. Future, more advanced implementations of RWA that will trade on markets should not use this implementation. The core functions of the contracts are very limited in ability, and are restricted only to governance or the trusted addresses to lock, free, draw, or wipe Dai in the RwaUrn. Compared to a standard ERC20 token with administrative functions and multiple admin/controller addresses, this is a considerably lower risk contract.  Inheritance Diagram The ERC20 token contract does not inherit other contracts.  Surya\u2019s Description Report  Files Description Table     File Name SHA-1 Hash     RwaToken.sol df9d2a7f8f594fced88b457aa003100c347ace31     Contracts Description Table     Contract Type Bases       \u2514 Function Name Visibility Mutability Modifiers          RwaToken Implementation      \u2514 add Internal       \u2514 sub Internal       \u2514  Public    NO\u2757\ufe0f   \u2514 transfer External    NO\u2757\ufe0f   \u2514 transferFrom Public    NO\u2757\ufe0f   \u2514 approve External    NO\u2757\ufe0f     Legend     Symbol Meaning      Function can modify state    Function is payable     ",
+                    "links": [
+                        "https://forum.makerdao.com/t/mip21-real-world-assets-off-chain-asset-backed-lender/3917",
+                        "https://github.com/makerdao/MIP21-RWA-Example/",
+                        "https://github.com/makerdao/dss-gem-joins/blob/c2ba746fd45593136475aa5e308a57db87e7eb7f/src/join-auth.sol",
+                        "https://github.com/makerdao/MIP21-RWA-Example/blob/2355c22db5ddd68a980515d87cfde6e6e132769a/src/RwaLiquidationOracle.sol",
+                        "https://github.com/makerdao/MIP21-RWA-Example/blob/2355c22db5ddd68a980515d87cfde6e6e132769a/src/RwaUrn.sol",
+                        "https://github.com/makerdao/MIP21-RWA-Example/blob/2355c22db5ddd68a980515d87cfde6e6e132769a/src/RwaToken.sol",
+                        "https://github.com/makerdao/MIP21-RWA-Example/blob/2355c22db5ddd68a980515d87cfde6e6e132769a/src/RwaConduit.sol",
+                        "https://forum.makerdao.com/t/maker-relay-ep-61-en-espanol/10376",
+                        "https://forum.makerdao.com/t/protocol-engineering-month-in-review-august-2021/10293",
+                        "https://forum.makerdao.com/t/maker-relay-ep-61/10214",
+                        "https://forum.makerdao.com/t/maker-relay-ep-60/10082",
+                        "https://forum.makerdao.com/t/maker-relay-ep-60-en-espanol/10375"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.236738999397227
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "23/11/2021-14:58:03",
+                    "content": "This topic was automatically closed 90 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

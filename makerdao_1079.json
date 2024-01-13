@@ -1,0 +1,107 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/presentamos-maker-wormhole-traduccion/15112",
+            "title": "Presentamos Maker Wormhole [Traducci\\xc3\\xb3n] ",
+            "index": 15112,
+            "category": [
+                "Latin America"
+            ],
+            "tags": [
+                "translate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/0xRami",
+                    "index": "#1",
+                    "likes": "5",
+                    "time": "11/05/2022-17:52:26",
+                    "content": " f7fa8a529fa1113874e194e1c603f911088aee9f2595\u00d7665 23.4 KB   Introducci\u00f3n La unidad central (Core-Unit) de ingenier\u00eda del protocolo Maker est\u00e1 construyendo una estrategia multicadena (multichain strategy) para presentar DAI Wormholing, habilidad de teletransportaci\u00f3n casi instant\u00e1nea de DAI entre layers 2 compatibles + Ethereum. A medida que el ecosistema de layers 2 evolucione y la liquidez de DAI crezca dentro de estos dominios, ser\u00e1 importante para los usuarios poder mover DAI entre ellos de manera trustless. Esta iniciativa de Wormhole DAI en los ecosistemas de layers 2, comenzando con Optimism y Arbitrum, se convertir\u00e1 en una caracter\u00edstica integral de la fungibilidad de DAI en layers 2. Nuestra propuesta de dise\u00f1o es totalmente confiable y permite a los participantes del sistema unir una liquidez pr\u00e1cticamente ilimitada a trav\u00e9s de la acu\u00f1aci\u00f3n instant\u00e1nea de DAI en el dominio de destino. Esto significa dejar de estar a merced de una contraparte que tenga liquidez disponible.  Ampliando los retiros r\u00e1pidos Una observaci\u00f3n clave es que Maker Wormhole es una versi\u00f3n generalizada de Fast Withdrawals y que permite transferencias de DAI a trav\u00e9s de dominios de layer 2. Despu\u00e9s de algunas discusiones dentro del Equipo de Ingenier\u00eda del Protocolo, qued\u00f3 claro que deber\u00edamos generalizar el concepto antes de implementar el caso especial de L2 \u2192 L1 \u201cRetiros r\u00e1pidos\u201d. Al adoptar este enfoque, podremos implementar Maker Wormhole sin problemas en cualquier L2 despu\u00e9s de que MCD (Multi-Collateral Dai System) est\u00e9 disponible en esa cadena. Ejemplo: L2 \u2192 L1 \u201cRetiro R\u00e1pido\u201d  wormhole-l2-l11920\u00d71423 108 KB  En la imagen de arriba hay 3 usuarios que quieren hacer retiros de DAI a L1. En lugar del enfoque habitual de iniciar un mensaje L2 \u2192 L1, el sistema emitir\u00e1 un evento en L2 de la intenci\u00f3n del usuario. El DAI de la L2 se quemar\u00e1 en este punto, y se marcar\u00e1 una ranura de almacenamiento para el contrato Checkpoint Slow Fallback. Maker Oracle Network ejecutar\u00e1 los nodos L2 que pueden dar fe de la finalidad y validez de las transacciones L2. Los operadores estar\u00e1n atentos a estos eventos de \u201cagujeros de gusano\u201d y proporcionar\u00e1n certificaciones firmadas. Los usuarios podr\u00e1n consultar estas certificaciones y proporcionarlas al contrato Oracle Fast Withdrawal para la autenticaci\u00f3n. En el camino feliz, la autenticaci\u00f3n es exitosa, se acu\u00f1a un nuevo DAI y se env\u00eda al usuario siempre que el adaptador Wormhole tenga suficiente l\u00edmite de deuda disponible. En el caso de que la red de Oracle no est\u00e9 disponible por alg\u00fan motivo, ser\u00e1 necesario proporcionar un respaldo en la cadena. Hacemos esto al permitir que los usuarios env\u00eden una prueba Merkle de que se ha configurado una ranura de almacenamiento en particular en el L2. Si la prueba es v\u00e1lida, garantiza que se ha llamado al initWormhole() correspondiente (suponiendo que la ra\u00edz merkle del estado L2 sea v\u00e1lida). Una sutileza importante aqu\u00ed es que la etapa de liquidaci\u00f3n se ha agrupado en un bloque fungible de DAI. Esto contrasta con algunos otros protocolos populares que deben hacer coincidir cada transferencia r\u00e1pida con una transacci\u00f3n de liquidaci\u00f3n correspondiente despu\u00e9s de la ventana de prueba de fraude de 7 d\u00edas. Esto puede no parecer un gran problema, pero tiene enormes implicaciones para la escalabilidad. Si hay cientos de miles de transacciones por $ 5.00 de DAI, es simplemente demasiado ineficiente en t\u00e9rminos de gas para eliminarlas 1:1. Debido a esta restricci\u00f3n, Maker elige hacer que la deuda emitida por el m\u00f3dulo Wormhole sea completamente fungible. Un problema introducido por la deuda fungible es que, debido al techo de deuda limitado, es posible que los usuarios sean adelantados y se les niegue el acceso a su DAI, posiblemente incluso despu\u00e9s de que hayan transcurrido los 7 d\u00edas. Este problema se puede resolver introduciendo un mercado de tarifas. Los detalles de c\u00f3mo funcionar\u00e1 esto todav\u00eda se est\u00e1n investigando activamente, y agradecemos cualquier idea de la comunidad en general. Creemos que esta compensaci\u00f3n vale la pena. Ser capaz de enrutar una cantidad ilimitada de transacciones individuales es clave para escalar L2. La liquidaci\u00f3n es el principal cuello de botella y creemos que hemos encontrado una soluci\u00f3n s\u00f3lida.  L2 Multi-Collateral DAI (L2-MCD) El caso especial de L2 \u2192 L1 es relativamente sencillo de conectar porque ya tenemos MCD en L1. Para admitir el wormhole de uso general, primero debemos implementar MCD en L2 de destino. Una vez que se implemente MCD, ser\u00e1 trivial agregar soporte para el lado de la acu\u00f1aci\u00f3n. El c\u00f3digo se puede reutilizar casi exactamente desde L1 junto con la misma API de Oracle. La \u00fanica diferencia es durante la liquidaci\u00f3n, as\u00ed como el retroceso lento del punto de control, pero estos son detalles menores. Ejemplo: L2 \u2192 L2 \u201cAgujero de gusano\u201d (Wormholing)  wormhole-l2-l21920\u00d7984 98.4 KB  Como se ve en el diagrama anterior, initWormhole() en L2-A y las atestaciones de Oracle en L2-B son id\u00e9nticas al caso especial L2 \u2192 L1. La liquidaci\u00f3n tambi\u00e9n es m\u00e1s o menos la misma, excepto que debe enviar el reembolso de DAI al puente DAI del dominio de destino en lugar de liquidar la deuda en la entrada de Wormhole en L1. La idea es usar Ethereum como la capa de liquidaci\u00f3n principal, pero los usuarios finales no necesitan tocar L1 para moverse a trav\u00e9s de L2. Generalizando esto a\u00fan m\u00e1s, ya no necesitamos siquiera pensar en t\u00e9rminos de L2 o incluso cadenas de bloques. Hemos optado por utilizar el t\u00e9rmino \u201cdominio\u201d, que se refiere a cualquier lugar donde se implemente una instancia de MCD. Incluso podr\u00eda haber m\u00faltiples implementaciones en la misma cadena. MCD (y Wormhole) podr\u00edan implementarse en otros L1 si la gobernanza as\u00ed lo desea. Por supuesto, se debe tener en cuenta los modelos de seguridad de estos L1, ya que ya no heredamos la seguridad de Ethereum y, por lo tanto, no podemos proporcionar las mismas garant\u00edas del DAI que aparece durante la liquidaci\u00f3n. Creemos que la combinaci\u00f3n de deuda fungible, costo de capital cero y liquidez virtualmente ilimitada consolidar\u00e1 a DAI como la moneda dominante de la cadena cruzada.  L\u00ednea de tiempo Sobre la base del trabajo anterior completado a principios de este a\u00f1o (2021), estimamos la entrega de la funci\u00f3n Retiros r\u00e1pidos (L2 \u2192 L1) en el primer trimestre de 2022. Debido a la capacidad ampliada del equipo y la reducci\u00f3n de los art\u00edculos prioritarios urgentes, podemos avanzar mucho m\u00e1s r\u00e1pido en estos compromisos a m\u00e1s largo plazo. La funci\u00f3n completa de Wormhole llevar\u00e1 m\u00e1s tiempo, ya que existe un requisito previo de MCD en L2, pero cuando se entrega, obtenemos todo de una vez. B\u00f3vedas, Wormhole, D3M, etc. La entrega tentativa para esto es el segundo trimestre de 2022. Inicialmente apuntamos a Optimism y Arbitrum, pero L2-MCD/Wormhole se expandir\u00e1 a otras L2 a medida que est\u00e9n disponibles.   Debate para la implementaci\u00f3n a la propuesta \u2192 MIP69: Retiros R\u00e1pidos de L2 a L1  Votaci\u00f3n a la propuesta \u2192 MIP69 M\u00e1s informaci\u00f3n pueden mirar \u2192 Encuestas de la Semana: 09 de mayo de 2022  Traducci\u00f3n por @0xRami del post original \u2192 Introducing Maker Wormhole  ",
+                    "links": [
+                        "https://makerdao.com/whitepaper/White%20Paper%20-The%20Maker%20Protocol_%20MakerDAO%E2%80%99s%20Multi-Collateral%20Dai%20(MCD)%20System-FINAL-%20021720.pdf",
+                        "https://forum.makerdao.com/t/mip69-l2-to-l1-fast-withdrawals/14041",
+                        "https://vote.makerdao.com/polling/QmWZvSpa",
+                        "https://forum.makerdao.com/t/encuestas-de-la-semana-09-de-mayo-de-2022/15089",
+                        "https://forum.makerdao.com/t/introducing-maker-wormhole/11550",
+                        "https://forum.makerdao.com/t/nuevo-nombre-de-maker-wormhole-maker-teleport-traduccion/15273"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.970833333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Saludiego_201",
+                    "index": "#2",
+                    "likes": "2",
+                    "time": "11/05/2022-19:06:19",
+                    "content": "tremenda traduccion crack!!! felicidades! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/0xRami",
+                    "index": "#3",
+                    "likes": "4",
+                    "time": "12/05/2022-00:06:55",
+                    "content": "Me pic\u00f3 el bicho de la curiosidad e investigu\u00e9 un poco sobre alternativas en las L2s. Muy fascinante esta nueva tecnolog\u00eda, y m\u00e1s con lo que se viene pronto en Buenos Aires. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Alefcripto",
+                    "index": "#4",
+                    "likes": "3",
+                    "time": "13/05/2022-16:31:08",
+                    "content": "Gracias por la traducci\u00f3n, estas contribuciones son lo que necesita la comunidad de latam ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Joserjimz",
+                    "index": "#5",
+                    "likes": "1",
+                    "time": "15/05/2022-23:22:56",
+                    "content": "Definitivamente el Wormhole de Maker le abre muchas oportunidades al sistema ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Gonzalo_Napolitano",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "16/05/2022-15:18:44",
+                    "content": "Excelente laburo @0xRami! Una tem\u00e1tica muy interesante, buscar formas de escalar L2 y permitir mayores alternativas para el usuario, genial. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Lozadaluis12",
+                    "index": "#7",
+                    "likes": "5",
+                    "time": "17/05/2022-15:20:49",
+                    "content": "Gracias por esto @0xRami, dejo constancia tambi\u00e9n de que luego de mucho hablar se cambiar\u00e1 el nombre de Maker Wormhole a Maker Teleport, as\u00ed tenemos un nombre m\u00e1s amigable para hacer PR y causar menos confusiones en el entorno cripto. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Marian",
+                    "index": "#8",
+                    "likes": "2",
+                    "time": "19/05/2022-22:00:30",
+                    "content": "Complementando \u00e9ste topic, hice la traducci\u00f3n del topic donde se anunci\u00f3 el cambio de nombre de Maker Wormhole a Maker Teleport y las razones del porqu\u00e9 ese cambio. Pueden leerlo aqu\u00ed: Nuevo Nombre de Maker Wormhole: Maker Teleport [Traducci\u00f3n] ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ]
+}

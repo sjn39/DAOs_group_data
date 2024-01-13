@@ -1,0 +1,548 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-1087-net-storage-gas-metering-for-the-evm/383",
+            "title": "EIP-1087: Net storage gas metering for the EVM ",
+            "index": 383,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "1",
+                    "likes": "7",
+                    "time": "17/05/2018-13:46:50",
+                    "content": "I\u2019ve written up an EIP proposing a change in the way we do gas metering for storage operations in the EVM, reducing costs in many cases where gas costs don\u2019t reflect actual costs. Draft here. Feedback appreciated! ",
+                    "links": [],
+                    "GPT-summary": "The author has written an EIP proposing a change in the way gas metering is done for storage operations in the EVM. The author is asking for feedback on the draft and welcomes constructive criticism.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Token economics",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AtLeastSignificant",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "17/05/2018-15:13:16",
+                    "content": "For clarity, the proposal aims at doing:   Zero -> zero = 200 * # changes   Zero -> non-zero = 20k + (200 * # of changes)   Non-zero -> different non-zero = 5k + (200 * # of changes)   Non-zero -> zero = 5k + (200 * # changes)   I think that last case is written correctly, though your examples don\u2019t explicitly cover it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "17/05/2018-15:32:21",
+                    "content": "The last case is -5k + (200 * # changes), because it retains the existing refund for deleting a storage slot. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "17/05/2018-15:33:30",
+                    "content": "Perhaps this isn\u2019t the right place to have this discussion, but I have always felt like the last case should be significantly more than a 5k refund. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.309523809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "17/05/2018-15:34:35",
+                    "content": "I kind of agree, but think that a gas refund is going to be an ineffective way to encourage deleting storage elements regardless of its size - especially with the limitation that it can\u2019t be more than half the gas used. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "17/05/2018-15:35:29",
+                    "content": "Agreed.  I\u2019m guessing your argument is to \u201cnot change storage refund here and instead try to solve the storage rent problem elsewhere\u201d? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "7",
+                    "likes": "2",
+                    "time": "17/05/2018-15:38:14",
+                    "content": "Yup, absolutely. All this EIP aims to do is to make gas costs for storage changes more accurately reflect the costs borne by nodes - and make storage practical for a wider variety of use-cases as a result. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AtLeastSignificant",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "17/05/2018-15:56:48",
+                    "content": "Then a negative gas cost transaction is possible? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "9",
+                    "likes": "2",
+                    "time": "17/05/2018-16:06:51",
+                    "content": "No; refunds are limited to half the gas consumed. Gas refunds due to this EIP could be applied separately to the existing refund counter, since they don\u2019t have the same concerns that lead to the above limitation. In that case, negative gas still wouldn\u2019t be possible, since refunds in this EIP are always less than the gas consumed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.481398809523809
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/veox",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "17/05/2018-17:14:46",
+                    "content": "Although somewhat superficial, I think it\u2019s worth mentioning that the current cost for an SLOAD operation is 200 gas. So, there is no condition under which a write-without-read would be cheaper than a read-without-write.  The \u201cA->B->C balance transfer\u201d examples are somewhat difficult to understand at a glance. In particular,  A balance transfer from account A to account B followed by a transfer from B to C, with all accounts having nonzero starting and ending balances, will cost 5000 * 3 + 200 - 4800 = 10400 gas, down from 20000.  implies that the value transferred in A->B and B->C is the same: presence of -4800 means that the value of some slot hasn\u2019t changed. (5000 + 5000) + (200 + 5000) - 4800 seems more accesible to me.  It may be worth including a \u201ccontract clears a single non-zero slot\u201d example. As I understand, currently a refund would be 10000 gas (5000 - 15000 = -10000); per the EIP, the refund would be lowered to 5000 gas (5000 - 10000 = -5000). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.245310245310245
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "18/05/2018-08:48:10",
+                    "content": "    veox:  Although somewhat superficial, I think it\u2019s worth mentioning that the current cost for an SLOAD operation is 200 gas. So, there is no condition under which a write-without-read would be cheaper than a read-without-write.   That\u2019s right. I picked the cost of 200 gas based on SLOAD, because the EVM has to read the data off disk to check if the data being stored differs from the data already there. This could be tweaked a bit - for instance, the refunds could be left as they are, but the cost for \u2018dirty\u2019 writes reduced further, since they don\u2019t each require a disk lookup.     veox:  implies that the value transferred in A->B and B->C is the same: presence of -4800 means that the value of some slot hasn\u2019t changed. (5000 + 5000) + (200 + 5000) - 4800 seems more accesible to me.   Fair enough.     veox:  It may be worth including a \u201ccontract clears a single non-zero slot\u201d example. As I understand, currently a refund would be 10000 gas (5000 - 15000 = -10000); per the EIP, the refund would be lowered to 5000 gas (5000 - 10000 = -5000).   This shouldn\u2019t change - at present, setting a nonzero slot to zero costs the standard 5k gas for the write and returns a 10k refund at the end. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.719387755102041
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "18/05/2018-09:18:04",
+                    "content": "    Arachnid:  This shouldn\u2019t change - at present, setting a nonzero slot to zero costs the standard 5k gas for the write and returns a 10k refund at the end.   According to the yellow paper, the refund for clearing state is 15000, not 10000.  This means that 5000 for the set -15000 for the clear results in a net cost (today) of 10000 gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.1
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "18/05/2018-12:51:25",
+                    "content": "Oops, my mistake. I\u2019ll fix that along with any other feedback from All Core Devs today. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fulldecent",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "20/05/2018-20:33:59",
+                    "content": "I generally endorse this EIP. However, the constant 200 cost for tracking an non-contiguous map of dirty-bits is different than the \u201cmemory cost function\u201d. Maybe the 200 cost should be higher and non-linear. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "22/05/2018-20:31:37",
+                    "content": "Nodes already incur a fixed cost per mutated element - and they can likely rely on this mapping rather than having to maintain a separate mapping of dirty bits. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jbaylina",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "23/05/2018-04:36:08",
+                    "content": "Personally I think this should be: 1.- Normal read/write from the cache: 10 2.- Loading a variable for the first time into the cache: 200 (ether because of a SLOAD or a SSTORE onto a non-cached variable). 3.- 20000/5000 For the first SSTORE different to the initial value. 4.- At the end: if the initial and the last value is the same, refund the 20000/5000 if they were charged previously for this variable. if the initial value!=0 and the final value==0  then refund -15000 As you can see, normal sload/sstore on cached variables should be treated very much as normal memory operations.  Loading a variable into the cache 200 (like an actual SLOAD).  For the SSTORE, it is very much the same idea you propose. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.306862745098039
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mcdee",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "26/05/2018-21:36:48",
+                    "content": "I\u2019m all for this EIP, as it brings gas costs more in line with real server impact, but has there been any thought as to the knock-on effect on block validation times and uncle rates as a result of this change?  With the reduction in \u201cwasted\u201d gas here a block will have more real work going on, and will take longer to transmit and validate (due to holding more transactions).  As a result, might a block gas limit reduction be required at the point that this goes live? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.36525974025974
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "27/05/2018-04:08:06",
+                    "content": "That (block gas limit) is a choice miners can make after the change is live.  I don\u2019t think that the change is catastrophic enough to warrant any special handling in the gas limit. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.822510822510822
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mcdee",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "27/05/2018-14:28:10",
+                    "content": "They can make the change post-hoc but it could have a significant impact in the meantime.  Having some sort of awareness of the impact of net storage gas metering would give an idea of if this is an issue, and if so how much of an issue.  Has there been any attempt to rerun historic blocks with the new metering to gauge the impact of this change? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.711363636363637
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "27/05/2018-17:02:41",
+                    "content": "That wouldn\u2019t give an accurate view of the impact, since people will adapt to this change. However, if this were a problem, we\u2019d already see it - this change reduces the overcharging of gas for no-op storage writes down to something resembling the actual costs; it shouldn\u2019t be any worse than an existing contract that does lots of non-storage ops that are already billed accurately. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.244444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mcdee",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "27/05/2018-19:04:54",
+                    "content": "@Arachnid unless I\u2019m misunderstanding something this change would result in what is today being a full block becoming a block that is only partially full (due to the reduction in gas cost for storage) and as a result means that for a given block gas limit a block after this proposal was implemented will have more transactions, hence take longer to transfer and longer to validate.  this change reduces the overcharging of gas for no-op storage writes down to something resembling the actual costs  which is my point.  If 8 million gas worth of transactions today becomes (for example) 4 million gas worth of transactions after this proposal is implemented it has the same network impact as doubling the block gas limit without implementing this proposal.  I doubt that anyone would consider the latter to be a sensible idea. Again, I\u2019m all for this proposal and have railed against incorrect gas costs for storage in the past.  I just worry that it might have an impact on the network and was wondering if that had been examined/quantified. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.661324786324786
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "27/05/2018-19:22:24",
+                    "content": "    mcdee:  @Arachnid unless I\u2019m misunderstanding something this change would result in what is today being a full block becoming a block that is only partially full (due to the reduction in gas cost for storage) and as a result means that for a given block gas limit a block after this proposal was implemented will have more transactions, hence take longer to transfer and longer to validate.   That\u2019s right. But any block that improves as a result of this change was one that was easier to process than its used gas indicated previously, because the operations being charged for are being overcharged. A block that today costs 8M gas and tomorrow costs 4M gas would take a similar processing time to a block today that contains no SSTORE operations and costs 4M gas. The gas limit matters largely to prevent DoS attacks. If this change doesn\u2019t increase the cost of processing the most expensive possible 8M gas block, then it has no effect on that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.714743589743589
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mcdee",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "28/05/2018-19:57:19",
+                    "content": "@Arachnid all fair enough, but am I then incorrect in thinking that this change will increase transfer and processing time for blocks, and hence increase the uncle rate (assuming that the block gas limit remains the same), for the common (non-pathological) case? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "29/05/2018-03:55:51",
+                    "content": "Higher uncle rates aren\u2019t really that bad, and over time they will self heal due to miners decreasing block gas limits.  All dapps must already be able to handle uncle blocks and reorgs, and uncles already are fairly common. I personally believe that the cost of measuring this and then debating whether we should take action is not worth the benefit.  Even if we did measure, I suspect there would be a lot more \u201cdebate\u201d on whether to actually reduce the block size or not than if we just make this change and let the miners decide via block size voting. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "05/06/2018-11:29:16",
+                    "content": "    mcdee:  all fair enough, but am I then incorrect in thinking that this change will increase transfer and processing time for blocks, and hence increase the uncle rate (assuming that the block gas limit remains the same), for the common (non-pathological) case?   Only for blocks that were previously over-charged for. It\u2019ll reduce the difference between the slowest and fastest block. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.194444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ethernian",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "11/06/2018-18:51:37",
+                    "content": " If the slot was 0 before the transaction and is 0 now, refund 19800 gas. If the slot was nonzero before the transaction and its value has not changed, refund 4800 gas.  Why do you handling these two cases differently? Actually the slot remains unchanged in both cases and needs no write operation. P.S. My intention to support the the EIP is the efficient implementation of Reentrancy Locks. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "11/06/2018-19:31:02",
+                    "content": "In the former case, 20k gas was charged when the slot was first touched. In the latter case, only 5k was charged. In both cases the refund serves to zero that out. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "15/06/2018-08:11:10",
+                    "content": "As far as I understand, the reason why someone would keep changing the same storage position in the middle of a transaction (instead of using memory or stack) is the desire to communicate between different frames of the transaction in a way which is not input/outputs of a CALL. Crucially, it allows such communication across the intermediate invocations of a different, potentially untrusted contract (see example of Reetrancy Locks above). I wonder if this is the best way to handle such communication. Perhaps it is better to have a pair of opcodes like TSTORE and TLOAD that will write Transitent storage, which survives between the frames of one transaction, but does not get persisted? And these opcodes will have flag gas cost? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "15/06/2018-08:33:47",
+                    "content": "I can see value in transaction storage @AlexeyAkhunov, though I still think there is value in this EIP as it stands since there are some situations where you actually do want to work with storage data multiple times in a single contract call. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.8809523809523805
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "30",
+                    "likes": "1",
+                    "time": "15/06/2018-08:43:12",
+                    "content": "@MicahZoltu The reason I am looking for alternatives to this is because I know that gas metering is going to become more complicated with this EIP, especially with the support of pre-EIP and post-EIP logic in the same code. I think if you want to work with storage data multiple times, you can either pay the high cost of SSTORE, or do stuff in transient storage, and then \u201ccommit it\u201d to permanent if you want. Oh, now you gave me the idea for TCOMMIT opcode  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.133333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "31",
+                    "likes": "1",
+                    "time": "15/06/2018-09:00:59",
+                    "content": "    AlexeyAkhunov:  I wonder if this is the best way to handle such communication. Perhaps it is better to have a pair of opcodes like TSTORE and TLOAD that will write Transitent storage, which survives between the frames of one transaction, but does not get persisted? And these opcodes will have flag gas cost?   I did consider something like this, but using sstore/sload has several advantages:  It uses an existing mechanism that is already in use for this purpose. It introduces minimal additional complication to the EVM. It also reduces excess gas costs in other situations where multiple changes are made to storage.  One example is ERC20-based contracts, where you might want to issue an approval that\u2019s then used in the same transaction. I think introducing new opcodes for this would be significantly more complex, particularly given the fact that clients are generally already tracking \u2018dirty\u2019 properties right now. It would also require new language support. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.750036075036075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "15/06/2018-09:09:00",
+                    "content": "    AlexeyAkhunov:  do stuff in transient storage, and then \u201ccommit it\u201d to permanent if you want   Implementing this pattern is quite complex, especially across multiple contracts, and impossible in some cases such as when you don\u2019t know if this will be the last time your contract is called or not within the current transaction. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.30952380952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "15/06/2018-09:33:26",
+                    "content": "    Arachnid:  I think introducing new opcodes for this would be significantly more complex, particularly given the fact that clients are generally already tracking \u2018dirty\u2019 properties right now. It would also require new language support.   I am not very sure of that. It might actually be cleaner to implement this as a new opcode pair, because the current code for storage gas accounting stays the same. And implementation is basically the same as memory, with the difference that it is the same copy for all the frames. Gas cost could be exactly the same as for memory right now, without any refunds and references to transaction boundaries. As for the language support, I can see how it can be done for Solidity, for example, quite easily - you declare variable like storage variable, but use modifier \u201ctransient\u201d or something like that. Generally, I am not for tweaking the existing instructions to be more \u201cversatile\u201d - but instead for having perhaps more instruction with simpler semantics. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.681717092431377
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "34",
+                    "likes": "1",
+                    "time": "15/06/2018-09:39:05",
+                    "content": "I am going to write an EIP for transient storage opcodes and see what happens there ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "15/06/2018-10:26:48",
+                    "content": "    AlexeyAkhunov:  It might actually be cleaner to implement this as a new opcode pair, because the current code for storage gas accounting stays the same.   That doesn\u2019t seem particularly persuasive - instead clients will have to write a whole lot of other, new code.     AlexeyAkhunov:  I am going to write an EIP for transient storage opcodes and see what happens there   Sounds good! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.771885521885522
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ethernian",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "16/06/2018-00:11:37",
+                    "content": "@AlexeyAkhunov, I had discussed very similar proposal with @chriseth and @pirapira as implementation of effective ReentranceLock exact one year ago. Instead of \u2018TSTORE\u2019 I used \u2018CSTORE\u2019 as for context storage (shared context storage for transaction lifetime), but in other aspects it was the similar approach. The access model for the transaction storage had to remain the same as for permanent storage (a contract should be able to write only into own transient variables of the shared storage). Thus the transaction (or context) storage became very similar to current storage model. Finally Yoichi came with the idea to implement effective ReentrancyLock by setting gas costs to zero if there is no actual storage changes made (this proposal). I have asked @pirapira & @chriseth about details of our discussion one year ago. Possibly they will came with details I have already forgot. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.808333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/karalabe",
+                    "index": "37",
+                    "likes": "3",
+                    "time": "19/07/2018-12:45:54",
+                    "content": "Here\u2019s an initial implementation of this EIP for go-ethereum: https://github.com/ethereum/go-ethereum/pull/17208 Note, we\u2019ve hit a few ambiguities, that we resolved in a way that seemed logical, but I\u2019d really like the EIP to be polished up a bit to touch on these issues:  An EVM-global \u2018dirty map\u2019 is maintained, tracking all storage slots in all contracts that have been modified in the current transaction.  If the user attempts to set a clean storage slot (arbitrary value) to the existing value, the dirty flag should not be set. This is important, otherwise the user can game the metering system by setting a clean-empty slot to zero and then to a value (e.g. key = 0; key = 5), avoiding the initial 20K gas cost.  When a storage slot is written to for the first time, the slot is marked as dirty.  Please specify that \u201cunless it\u2019s set to the same value\u201d, see above and below for the problematic part.  If the slot was previously set to 0, and is being set to 0, only 200 gas is deducted.  If this operation also sets the dirty flag, the user can game per the above example. If this operation does not set the dirty flag, then we should allow the same feature for any value (i.e. please change to \u201cIf the slot was previously set to X, and is being set to X, only 200 gas is deducted.\u201d). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.580246913580247
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/karalabe",
+                    "index": "38",
+                    "likes": "2",
+                    "time": "19/07/2018-12:54:35",
+                    "content": "A second important corner case is around dirtiness and revertals. The EIP doesn\u2019t really specify what happens if an inner transaction makes a storage slot dirty, but then reverts. Should the slot be reverted to clean (thus incurring an additional gas hit when modifying it again), or should the slot be kept dirty? Our code currently reverts the dirtiness too but I guess we can change if needed. However this is an important subtlety to emphasize in the spec. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0925925925925934
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "39",
+                    "likes": "1",
+                    "time": "01/08/2018-15:06:18",
+                    "content": "The spec looks pretty solid (but no implementation yet), but I\u2019d like to ask to maybe rephrase it with simpler sentences. Also try not to refer the same action with different English, e.g. \u201ca storage slot is written to with the value\u201d, \u201ca storage slot\u2019s value is changed\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.291666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/androlo",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "03/12/2018-22:24:48",
+                    "content": "    AlexeyAkhunov:  Generally, I am not for tweaking the existing instructions to be more \u201cversatile\u201d - but instead for having perhaps more instruction with simpler semantics.   Gas netting is not really making SLOAD/SSTORE more versatile, it seems more like a fix. Does either of these two changes have to exclude the other? I agree your opcodes have an advantage and that is for runtime enforcement of \u201ctransience\u201d. Seems it would be hard to do without new opcodes. Seems if this pattern starts being encouraged (even in languages), and actual storage is used, it\u2019s still possible for transient values to remain set after the transaction is over, opening up for some pretty weird bugs. Btw, chriseth is thinking about adding mutability flags to Solidity, perhaps this could be thought of as as a kind of mutability \u201cflavor\u201d rather then as its own flag? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.848232323232323
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "41",
+                    "likes": "1",
+                    "time": "03/12/2018-22:33:07",
+                    "content": "    androlo:  Gas netting is not really making SLOAD/SSTORE more versatile, it seems more like a fix. Does either of these two changes have to exclude the other?   No, they don\u2019t exclude each other. However, now I think that any new storage/memory that we introduce, should be linear. So if I were to write the transient storage EIP now, I would call it cross-frame memory, and make it behave like a linear memory and not like a non-linear storage. In the hindsight, the contract storage in Ethereum should have been linear too. And I seem to remember that Nick agrees with that too. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.65530303030303
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Arachnid",
+                    "index": "42",
+                    "likes": "1",
+                    "time": "03/12/2018-22:56:41",
+                    "content": "Not quite; in my opinion it should be page-table based; that fits much better with how real world memory and disk are organised, and has much lower overhead than maps. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adamskrodzki",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "13/09/2019-07:10:22",
+                    "content": "Hi, has this EIP been deployed in Ropsten ? I\u2019ve tested following code, and gas costs seems very strange https://pastebin.com/yDUGrVXV Gas cost for function which uses modifier that sets 3 values and then cleans them is around 52800 gas when cost of function that only sets is around 37000 gas Here is deployed contract on Ropsten https://ropsten.etherscan.io/address/0x15616154B7D9a43E716347E1F0Bb67C725FcB7E2 why dummy2() costs more than double of dummy1b() ? ",
+                    "links": [
+                        "https://ropsten.etherscan.io/address/0x15616154B7D9a43E716347E1F0Bb67C725FcB7E2"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.435
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "44",
+                    "likes": "1",
+                    "time": "13/09/2019-17:10:31",
+                    "content": "Hey @adamskrodzki this EIP is not deployed on Ropsten and it is neither deployed on Mainnet. A variant of this (EIP 1283) was supposed to get deployed in the Constantinople fork but due to security concerns it was removed. The EIP 2200 which is planned for Istanbul has another variant which will get deployed soon on Ropsten (from the top of my head the Ropsten hard fork is scheduled at October 4). Hence the reason that you pay a lot of gas for this cleaning is because you pay the \u201cold\u201d SSTORE cost which in the end nets to 5k SSTORE gas (in case the slot is not zero) which corresponds to what you see on Ropsten - the 52800 transaction is about 15k gas higher (3*5k gas) than the other. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.208333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adamskrodzki",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "16/09/2019-09:37:49",
+                    "content": "just to confirm, so no changes about gas mettering of multiple SSTORE to same location where made during Istambul hard fork? That is quite important information I\u2019've missed - latest OpenZeppelin contracts are written like it was in place. For example has reentrencyGuard which works by setting and cleaning some store variable. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6083333333333325
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jochem-brouwer",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "16/09/2019-16:25:37",
+                    "content": "They were not deployed during Constantinople but are scheduled for Istanbul which is an upcoming hard fork =) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.520833333333334
+                }
+            ]
+        }
+    ],
+    "group_index": "968"
+}

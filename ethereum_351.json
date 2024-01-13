@@ -1,0 +1,377 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-6492-signature-validation-for-pre-deploy-contracts/12903",
+            "title": "EIP-6492: Signature validation for pre-deploy contracts ",
+            "index": 12903,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "10/02/2023-12:57:36",
+                    "content": "EIP 1271 allows contracts to sign messages and works great in tandem with EIP 4337 (account abstraction), but unfortunately contracts (and by extension contract wallets) are not able to sign messages before they\u2019re deployed. At the same time, using counterfactual deployment to defer this step to a later stage of the use cycle (eg when the first transaction is sent) is a de-facto standard for most wallets, creating the issue of those wallets being unable to sign messages before the user sends their first transaction. As a solution, we propose an EIP that extends EIP 1271 that allows this by introducing a new signature wrapper format.   github.com/ethereum/EIPs         Add EIP: Standard Signature Validation Method for Counterfactually Deployed Contracts   ethereum:master \u2190 AmbireTech:master              opened 10:59AM - 10 Feb 23 UTC                 Ivshti               +140 -0       This PR adds an EIP that extends EIP-1271 with an addition that allows counterfa\u2026ctual contracts to sign messages and get them verified. It was initially inspired by this thread in the EIP-4337 implementation: https://github.com/eth-infinitism/account-abstraction/issues/188  btw sorry for assigning a number, I read that this is the editor responsibility later on but figured I'd leave it in as it should make life easier       ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/6492",
+                        "https://github.com/Ivshti",
+                        "https://github.com/ethereum/EIPs/pull/6492/files",
+                        "https://github.com/ethereum/EIPs/pull/6492"
+                    ],
+                    "GPT-summary": "The post proposes an EIP that extends EIP-1271 to allow counterfactually deployed contracts to sign messages and get them verified. The proposal is explained in detail, and a link to the GitHub page is provided. A third party gives constructive criticism by asking questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0621212121212125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "13/02/2023-09:00:17",
+                    "content": "I like it!  An interesting scenario that may be worth considering is if we want these signatures to be usable on-chain. I can think of two approaches:   Manually split creationCode and signature, then using a contract send creationCode once (per wallet) and then all other signatures.   Provide a singleton or library that performs the whole thing (as shown by the example).   For both cases I wonder if it isn\u2019t a better idea to check for magicBytes BEFORE cheking if the wallet is deployed, the rationale is that if you want to validate multiple signatures (on-chain) the wallet will sign them using the universal format, but only the first one will be non-deployed. That way these signatures can be a drop-in replacement for regular signatures, and the consumer never needs to mutate them. It may be required to increase the size of magicBytes to avoid collisions, I also wonder if it doesn\u2019t make some sense to use some 0s for the value to make it cheaper on calldata. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "13/02/2023-09:16:44",
+                    "content": "Yep, one of the EIP reviewers also suggested checking  magicBytes FIRST because otherwise previous signatures will be invalidated when the account is deployed and would need to be mutated. I agree with this and also that magicBytes needs to be longer in this case. Will adapt this change. as for the points:  I\u2019m not quite sure what you\u2019re saying - do you mean that verification can be batched? As for using those sigs on-chain, the main problem is that we force CALL rather than the much safer STATICCALL to allow for the deployment Yep, working on it  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.53125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "08/03/2023-09:02:39",
+                    "content": "hey @Agusx1211, your suggestions have been implemented But rather than a singleton, we went with a contract that doesn\u2019t need to be deployed and can just be eth_call\u2019d - it will return a bool value from it\u2019s constructor. Here\u2019s an overall example of how the verification of all signature types works: ERC-6492 verification by Ivshti \u00b7 Pull Request #3 \u00b7 AmbireTech/signature-validator \u00b7 GitHub and the contract itself: signature-validator/DeploylessUniversalSigValidator.sol at 6492-verification \u00b7 AmbireTech/signature-validator \u00b7 GitHub ",
+                    "links": [
+                        "https://github.com/AmbireTech/signature-validator/blob/6492-verification/contracts/DeploylessUniversalSigValidator.sol"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "08/03/2023-09:59:37",
+                    "content": "Hey, great! Thank you  What is the rationale for using the \u201ccreate new contract\u201d approach? I think this is equivalent to shipping a library, because the verification code needs to be embedded (in order to create the new contract). If that\u2019s the case, doesn\u2019t make more sense to ship a library instead of deploying a new contract? Also I think this may be inefficient, because this approach leaves 2 deployed contracts every time a signature needs to be validated on-chain. These contracts are not reused.  Small piece of feedback, here: bytes memory contractCode = address(_signer).code; Solidity won\u2019t optimize this, even if you only use the length of the code, the whole bytecode will be copied into memory. I think something like this does avoid copying: uint256 codeSize = address(_signer).code.length; But I\u2019m not 100% sure, we should test it and worst case scenario we can just use EXTCODESIZE. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.679545454545454
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "08/03/2023-10:15:50",
+                    "content": "Hey @Agusx1211, thanks for the feedback the approach is meant to be used for off-chain validation, so that signatures can be validated on any chain without needing to have a singleton pre-deployed. As for on-chain validation, the approach should be completely different, but I personally think that 6492 shouldn\u2019t be used for on-chain validation anyway. The reasons are  arguably, most of the cases when you want onchain validation, you already have the contract deployed the security concern of having to use CALL over STATICCALL, and therefore enabling reentrancy attacks  As for the optimization, sure. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.2
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "08/03/2023-10:29:39",
+                    "content": "Thanks for the clarification, I had the impression that 6492 was also meant for on-chain verification. I do think it\u2019s worth the effort to try to find something that works both on-chain and off-chain.     Ivshti:   arguably, most of the cases when you want onchain validation, you already have the contract deployed    I disagree here, with the current heavy usage of the permit I can totally see a future with most of the wallets doing their first transaction because they signed a message. Also if EIP-6492 only works off-chain then the wallet has to \u201cguess\u201d how the signature will be used; and if there is not certainty on that result then the wallet must deploy the wallet \u201cjust in case\u201d. This erodes most of the benefits of the EIP.     Ivshti:   the security concern of having to use CALL over STATICCALL, and therefore enabling reentrancy attacks    This is a real concern, one possibility could be to force a revert and then return if the signature was valid or not (on the revert return), that way we can undo any side-effects of the contract deployment while still retrieving the information we care about. We would do this internally on the singleton/library, and for the caller this would look like a normal CALL (but it acts as a STATICALL). The issue with this is that it\u2019s more expensive, but we can add a parameter on the singleton, if the caller wants it to be \u201cside-effects free\u201d then we use the revert approach, if not then we can just do the regular process of deploying \u2192 validating, without any reverts. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.722222222222221
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "08/03/2023-10:57:50",
+                    "content": "It could be used on-chain but it does add an extra security dimension to it, so it\u2019s a tradeoff. I don\u2019t see any other clean solution that could work on-chain that doesn\u2019t actually require deploying the contract. As for the guessing how the signature will be used, this part completely went over my head, can you elaborate? Do you mean that the wallet doesn\u2019t know if the verifier supports 6492? As for the revert, this is a clever workaround, I\u2019ll think about how to incorporate it. It would require multiple nested calls. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.386574074074074
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "08/03/2023-11:10:27",
+                    "content": "    Ivshti:  As for the guessing how the signature will be used, this part completely went over my head, can you elaborate? Do you mean that the wallet doesn\u2019t know if the verifier supports 6492?   Not just that, even if the wallet knows that 6492 is supported, then it doesn\u2019t know if the signature will be used on-chain or off-chain, so should the wallet deploy and send a regular signature, or should it send a 6492 encoded signature? The only \u201csafe\u201d option is to send a regular signature, only on very specific circumstances you can know that the requested signature is for off-chain usage. If we allow EIP-6492 signatures to be used on-chain then the wallet can always safely encode them that way, and never has to manually deploy a wallet before signing a message.     Ivshti:  As for the revert, this is a clever workaround, I\u2019ll think about how to incorporate it. It would require multiple nested calls.   I haven\u2019t analyzed this completely, but I think this is a solution. The contract is deployed but only temporarily, so any reentrancy, side-effects, etc\u2026 those are all erased. It works like a STATICCALL in practice. The way to implement this is:  Call a singleton with a regular CALL. The singleton calls itself (some other method) using another CALL. The inner method implements the EIP-6492 logic. If noSideEffects == true and the contract had to be deployed then the inner method returns with revert (if not it returns normally). In both cases the return data is a single boolean with true if the signature is valid. The top level call on the singleton ignores the result of the inner CALL (success or revert) and it just reads RETURNDATACOPY. Then the top level returns true if the signature is valid.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.645718864468865
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "08/03/2023-13:34:33",
+                    "content": "That makes a lot of sense. I\u2019ll continue working on a singleton that enables safe on-chain verification ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "08/03/2023-13:48:08",
+                    "content": "@Agusx1211 I forgot that I already thought about permit. The thing with permit is - let\u2019s take the most common use case, Uniswap. In order to call the swap in the first place, the account needs to be deployed. So it\u2019s likely going to exist on-chain. Of course, this creates a minor hell for the wallet providers, as you already pointed out - as they need to be aware of how the sig will be used. The good thing is that the EIP is already 99% there. Here\u2019s the plan:  rather than returning 0x01 or 0x00, always revert - just with a different value; one of the revert values will be \u201cmagic\u201d (meaning successful sig verification) there will be two contracts (as there are now), UniversalSigValidator and ConstructorUniversalSigValidator; UniversalSigValidator.isValidSig always reverts, so UniversalSigValidator can be used as a singleton itself for onchain verification  ConstructorUniversalSigValidator is more of a helper that verifies a sig in it\u2019s constructor, and also always reverts; this will be used for eth_call off-chain verification, but it could be used for on-chain verification as well for any reason (no need for a separate singleton but slightly more expensive) the UniversalSigValidator may have an extra method intended to be used for user-facing on-chain verification, that CALLs itself and handles the revert reason and translates it into a true/false boolean  how does it sound? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.071428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "08/03/2023-16:19:32",
+                    "content": "    Ivshti:  In order to call the swap in the first place, the account needs to be deployed.   This may be true for Uniswap, but it\u2019s not strictly true. There are some other use-cases where the permit is either executed by a relayer or by other user (like Cowswap or Opensea). Nothing stops Uniswap to implementing a similar model.  I think we should leave an easy path for validating EIP-6492 signatures without reverting, at the end of the day reverting is way more expensive, and some architectures may already be \u201chardened\u201d against reentry, so they may not care if validating a signature has side-effects (and could use the savings). If we can put all logic in the same contract it would be even better, it would be cheaper to call (because a single address has to be warmed up) and if we design it correctly then we shouldn\u2019t have to duplicate any code.  Another opinion of mine is that the \u201cconstructor\u201d approach is not worth it, it\u2019s too expensive on-chain and the only advantage that brings is that \u201cit doesn\u2019t have to be deployed\u201d as a singleton for off-chain validations. But the thing is\u2026 the factory has to be deployed already (otherwise the signatures will fail to verify anyway), so a team that implements EIP-6492 has to make sure that both the factory and singleton are deployed. If we use the constructor pattern they don\u2019t need to deploy the singleton, but they still have to go and deploy the factory. So I think is better to avoid using it for 3 reasons:  It\u2019s more expensive on-chain (so we need to build the singleton anyway). It makes the whole process more complex (on-chain and off-chain work differently). The advantage of using the pattern is eroded by the factory problem.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.377480158730159
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "13",
+                    "likes": "1",
+                    "time": "08/03/2023-16:53:09",
+                    "content": "AA wallet providers need to deploy the factory by definiton just to exist. There are exceptions to this ofc but generally speaking it\u2019s true. This is not necessarily true for the singleton - let\u2019s say that someone deploys the singleton to a unified address between all major chains. Now, if a team starts working on an AA wallet on a different chain that\u2019s not in that set, they would have to deploy the singleton themselves. This is not really a big deal though. I agree now that the constructor approach is best left for off-chain validation, and that some projects may be fine with the side-effects so the gas savings could be worth it. new plan:   UniversalSigValidator.validateSigWithSideEffects(signer, hash, signature) returns (bool) (better name suggestions?)  UniversalSigValidator.validateSig(signer, hash, signature) - does a CALL to an additional function (UniversalSigValidator.validateSigWithRevert) that wraps validateSigWithSideEffects but with a revert no matter what happens offchain helper remains the same, calls UniversalSigValidator.validateSigWithRevert directly in the constructor  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.978760822510822
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Agusx1211",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "08/03/2023-17:57:30",
+                    "content": "New plan sounds a lot better to me. I still think that it would be better to use the singleton for the off-chain case too, teams would need to deploy it anyway (to support the on-chain validation) and maybe having an alternative method leads to them not realizing that an extra step is needed to \u201cfully\u201d support EIP-6492 on a given chain (they test it, it works off-chain, and assume that\u2019s it). But if we use the singleton for both cases, then testing one case should be enough to guarantee that it will work in the other case.     Ivshti:  but with a revert no matter what happens   Can we skip the revert if the signature didn\u2019t require a contract to be created? isValidSignature would still be called using STATICCALL so it should be safe. Naming sounds good to me! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.491477272727273
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "09/03/2023-14:54:05",
+                    "content": "Here\u2019s the new version: EIPs/eip-6492.md at c2fba9b28c6c7dd2b83ec5bae482ef24c98d4ea0 \u00b7 ethereum/EIPs \u00b7 GitHub we have  the offhchain helper, doesn\u2019t require singleton deployment the singleton with a method that has no side effects, and one that doesn\u2019t the one that doesn\u2019t only reverts if needed actual exceptions are bubbled up  ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.227272727272727
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "10/03/2023-17:38:08",
+                    "content": "From Solidity\u2019s Contract ABI Specification, we see:  Dynamically-sized types like [\u2026] bytes [\u2026] are encoded without their length field.  In EIP-6492, we have:  abi.encodePacked((create2Factory, factoryCalldata, originalERC1271Signature), (address, bytes32, bytes, bytes, bytes))  I\u2019m not a Solidity developer, so perhaps I\u2019m misinterpreting the syntax, but if the lengths of bytes variables aren\u2019t encoded, how can the verifier know when the factoryCalldata ends and the originalERC1271Signature begins?  The verifier algorithm doesn\u2019t seem as flexible as it should be. What if, for example, a user signs multiple messages before deploying their contract, and some of those messages are verified after? My interpretation of the steps would mean:  Check if the signature ends with the magic bytes (it does.) Call into the multicall+factory (it fails because the contract is already deployed.) Verification failed.  I think the intended behaviour is to fall through each of the bullets? If so, the proposal could make that more clear.   check if there\u2019s contract code at the address. If so perform ERC-1271 verification as usual by invoking isValidSignature  Does the verifier have to unwrap the signature if it\u2019s wrapped? Should mention that in the proposal.   If all this fails, [\u2026]  This is slightly ambiguous. If isValidSignature returns false, the verifier is supposed to try an ecrecover? That would make this proposal incompatible with any upgrade that allows code to be deployed at EOAs (e.g. EIP-5003, other approaches.)  Something you might want to add to your security considerations is using a signature for mainnet on other networks, like L2s. If the wallet is recreated on a different network (perhaps using a universal deployer), the permissions couldn\u2019t have been updated to match the ones on mainnet, so old keys would still have authority there. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-5003",
+                        "https://ethresear.ch/t/a-brief-note-on-the-future-of-accounts/12395"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.475260416666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "10/03/2023-18:42:02",
+                    "content": " I\u2019m not a Solidity developer, so perhaps I\u2019m misinterpreting the syntax, but if the lengths of bytes variables aren\u2019t encoded, how can the verifier know when the factoryCalldata ends and the originalERC1271Signature begins? That\u2019s correct, it should be abi.encode rather than abi.encodePacked. Will fix.   The verifier algorithm doesn\u2019t seem as flexible as it should be. What if, for example, a user signs multiple messages before deploying their contract, and some of those messages are verified after? My interpretation of the steps would mean: That\u2019s not how it works - see line 120 of the EIP - we only try to deploy the contract if it\u2019s non-existent. The use case you\u2019re describing will work without an issue.  I\u2019ll change the first bullet point to add \u201cif it isn\u2019t already deployed\u201d.  Does the verifier have to unwrap the signature if it\u2019s wrapped? Should mention that in the proposal. The bullets are meant to fall through. I\u2019ll add \u201cThen, call contract.isValidSignature as usual with the unwrapped signature\u201d to the first one.   This is slightly ambiguous. If isValidSignature returns false, the verifier is supposed to try an ecrecover? That would make this proposal incompatible with any upgrade that allows code to be deployed at EOAs (e.g. EIP-5003, other approaches.)  nope, if there\u2019s contract code, we end with the result of isValidSignature. I\u2019ll try to rewrite the bullets so that they\u2019re more clear.  Something you might want to add to your security considerations is using a signature for mainnet on other networks, like L2s. If the wallet is recreated on a different network (perhaps using a universal deployer), the permissions couldn\u2019t have been updated to match the ones on mainnet, so old keys would still have authority there. Thiis is intended behavior IMO, and any dapp using signatures should implement it\u2019s own chainId based replay protection. Will add it.  ",
+                    "links": [
+                        "https://ethresear.ch/t/a-brief-note-on-the-future-of-accounts/12395"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.131510416666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "11/03/2023-02:01:16",
+                    "content": "@Ivshti following up on our discussion (and I apologize for the late reply, I\u2019ve been busy with the ERC-4337 launch and ethdenver). I think the order of the checks goes against how users perceive key rotation, and opens attack vectors (as I suggested in the original issue). If the account already has code, it may have also rotated its signing key and no longer wishes to accept the old key that may have been leaked. But a person in possession of the old key can generate a counterfactual signature for it, bypassing the contract\u2019s current sig check. Line 109 says exactly the opposite, trying to keep counterfactual sigs valid after deployment. This constitutes an attack vector. Example:  Alice deploys an account with Key1. Bob steals Alice\u2019s Key1 through a phishing scam. Alice immediately realizes her mistake, rotates her account\u2019s key to Key2 and revokes Key1. Alice goes on with her life, happy about her decision to use a SCW, which made it possible to stop Bob\u2019s attack. Bob signs a counterfactual permit with the revoked Key1, stealing Alice\u2019s tokens (from ERC-20 contracts that use EIP-6492 for the signature check). Bob logs into OpenSea by signing with Key1 (if OpenSea uses EIP-6492 for offchain signature verification) and performs actions on her behalf.  The order of the checks makes it impossible for Alice to revoke her old key, which is one of the primary benefits of account abstraction. The behavior is also inconsistent.  The account\u2019s first key always remains valid and cannot be revoked, but the 2nd key can be revoked.  If we wanted old keys to remain valid forever, we would have to do this for all the keys, not just the first one. Given that the current order causes non-intuitive UX (not being able to revoke the first key but being able to revoke the second), and that it opens an attack vector, what benefit does it bring that makes this trade-off worthwhile?  Are there situations where the user decides to revoke the old key from the account but still wants it to be valid for signing messages? ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/8fdf5706e53abacf5b60a92fcee49fe6977feee7/EIPS/eip-6492.md?plain=1#L109"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.542824074074074
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "11/03/2023-06:00:54",
+                    "content": "Afaik, the comment should be fixed to match the implementation: In case a magic exists but the code is already deployed, it ignores the initcode (since you can\u2019t deploy twice) but still use isValidSignature Also, the eip implementation differ quite a lot from the GitHub version ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "11/03/2023-06:04:37",
+                    "content": "@yoavw this is a misunderstanding, and perhaps the EIP should make it more clear. Counterfactual format signatures remain valid in terms of their format, but they still get validated against the deployed contract if there is one, which means that old signatures will get invalidated upon key rotation regardless of whether they\u2019re in the 6492 wrap format or 1271. So this whole thing is a moot point, but apparently it\u2019s not clear from the EIP text. From the implementation     uint contractCodeLen = address(_signer).code.length;     bytes memory sigToValidate;     // The order here is striclty defined in https://eips.ethereum.org/EIPS/eip-6492     // - ERC-6492 suffix check and verification first, while being permissive in case the contract is already deployed; if the contract is deployed we will check the sig against the deployed version, this allows 6492 signatures to still be validated while taking into account potential key rotation     // - ERC-1271 verification if there's contract code     // - finally, ecrecover     bool isCounterfactual = bytes32(_signature[_signature.length-32:_signature.length]) == ERC6492_DETECTION_SUFFIX;     if (isCounterfactual) {       address create2Factory;       bytes memory factoryCalldata;       (create2Factory, factoryCalldata, sigToValidate) = abi.decode(_signature[0:_signature.length-32], (address, bytes, bytes));        if (contractCodeLen == 0) {         (bool success, bytes memory err) = create2Factory.call(factoryCalldata);         if (!success) revert ERC6492DeployFailed(err);       }     } else {       sigToValidate = _signature;     }      // Try ERC-1271 verification     if (isCounterfactual || contractCodeLen > 0) {       try IERC1271Wallet(_signer).isValidSignature(_hash, sigToValidate) returns (bytes4 magicValue) {         bool isValid = magicValue == ERC1271_SUCCESS;  In fact, the issue that you\u2019re mentioning isn\u2019t even possible with any implementation, because you can\u2019t \u201cdelete\u201d the original contract and deploy the initial version on the same address. This is covered in security considerations:  It must be noted that contract accounts can dynamically change their methods of authentication. This issue is mitigated by design in this EIP - even when validating counterfactual signatures, if the contract is already deployed, we will still call it,   Hey @dror which GitHub version are you referring to? If it\u2019s signature-validator, then the logic is absolutely the same - the implementation there doesn\u2019t need the revert hacks because it\u2019s off-chain (see security considerations), but the order and logic is absolutely identical. This can be tested by copy/pasting the bytecode from the reference implementation - all tests will pass as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.65
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "12/03/2023-14:06:48",
+                    "content": "Right, they seem to match. the only problem was the comment that yoav described. About the code in the ERC: it isn\u2019t executable as it is, at least for small issue:  it truncate to length-4 instead be length-32. Maybe should use the actual tested code from the supporting library - or change the code to a \u201cpseudo-python code\u201d, which is usually shorter, and never expected to be executable\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.866071428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "13/03/2023-05:54:18",
+                    "content": "@yoavw @dror did you guys check my explanation? The issue described by Yoav cannot possibly happen, as evident by the implementation. The text wasn\u2019t clear enough in that regard, but I updated it now: Update EIP-6492: Signature Validation for Predeploy Contracts \u00b7 AmbireTech/EIPs@6e5b593 \u00b7 GitHub @dror can you point to the specific place in the code?I did compile it and test the bytecode with the signature-validation library, so it should be executable ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.3500000000000005
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jay",
+                    "index": "23",
+                    "likes": "1",
+                    "time": "15/03/2023-19:52:51",
+                    "content": "This is a very neat approach! Especially happy to see that off-chain validation was considered and included in the proposal. It seems like there may be a small bug with signature encoding:  If the contract is not deployed yet, wrap the signature as follows: concat(abi.encode((create2Factory, factoryCalldata, originalERC1271Signature), (address, bytes32, bytes, bytes, bytes)), magicBytes)  The arguments to abi.encode look like they should be encoded using (address, bytes, bytes32, bytes) instead of  (address, bytes32, bytes, bytes, bytes). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None"
+                    ],
+                    "Sentiment": 6.666666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Ivshti",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "16/03/2023-06:19:24",
+                    "content": "Thanks!  It seems like there may be a small bug with signature encoding:  fixed . The arguments to abi.encode look like they should be encoded using (address, bytes, bytes32, bytes) instead of  (address, bytes32, bytes, bytes, bytes). also fixed ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ligi",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "18/03/2023-21:08:42",
+                    "content": "Thanks for the effort! I wonder if this could be combined with EIP-2126. Feels a bit messy to just have magic bytes for every special case (guess more will come up in the future) - I think a \u201cproxy EIP\u201d that contains all the cases that could appear when signing could make it cleaner and easier for implementers. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.1726190476190474
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "20/03/2023-04:00:47",
+                    "content": "    Ivshti:  this is a misunderstanding, and perhaps the EIP should make it more clear. Counterfactual format signatures remain valid in terms of their format, but they still get validated against the deployed contract if there is one   Yes, the singleton code handles it correctly.  The text and the comment in the version I reviewed made it seem otherwise: // - ERC-6492 suffix check and verification first, while being permissive in case the contract is already deployed so as to not invalidate old sigs but I see it was clarified now.  Looks good now. There\u2019s still an additional risk due to the multi-chain use case.  The verifier doesn\u2019t know which chain the contract may have been deployed on.  It\u2019s possible that the user deployed the contract on Polygon, rotated the keys there, but the verifier is running the EIP-6492 signature check against an Ethereum node where the contract hasn\u2019t been deployed.  The counterfactual check takes precedence since there\u2019s no deployed contract, so the old key is accepted. Would it make sense to extend ERC-1271 with another interface, homeChainId(), which is always implemented as uint256 public immutable homeChainId set by the constructor?  The EIP-6492 singleton could then require(IERC6492Wallet(_signer).homeChainId()==chainId(), \"verifying on the wrong chain\"). It doesn\u2019t affect normal ERC-1271 checks for deployed contracts, but ensures that counterfactual checks are performed against the chain where the user intends to deploy the account first.  And in the counterfactual signature case, it\u2019ll ensure that if the user rotated keys on the intended chain, the verifier will not mistakenly accept the old keys. In fact, the same risk exists in EIP-1271 regardless of the counterfactual extension.  An attacker who gained access to the old keys that have been revoked, could always deploy the same initcode on a chain where it hasn\u2019t been deployed, and trick verifiers that use that chain.  It makes EIP-1271 more vulnerable in a multi-chain world.  By using the EIP-6492 singleton to verify signatures (including the homeChainId() check), the verifier can mitigate this risk as well.  It would make EIP-6492 the safe way to check for signatures since we already live in this multi-chain world. @Ivshti do you think it makes sense to add this check to the EIP? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.562229437229437
+                }
+            ]
+        }
+    ],
+    "group_index": "351"
+}

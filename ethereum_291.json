@@ -1,0 +1,76 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-add-precompile-for-blake2s-blake3/12407",
+            "title": "EIP #?: add precompile for Blake2s/Blake3 ",
+            "index": 12407,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "opcodes",
+                "precompile"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/laudiacay",
+                    "index": "1",
+                    "likes": "3",
+                    "time": "03/01/2023-21:12:53",
+                    "content": "I\u2019m interested in adding a precompile that adds support for Blake3/Blake2s, similar to this issue discussing adding Blake2b. I left a comment there saying I\u2019m willing to implement this this if people would be willing to help me get the PR merged (this is my first EIP and will be my first geth PR). Opening this up as a space to discuss. My team forked and benchmarked an existing solidity implementation. Image attached, it basically costs $60 to hash something. This is not great! I\u2019m checking out a decompiled version of it, but I\u2019m not super hopeful about the gains that hand-optimizing this is going to get me.  image1016\u00d7342 13.4 KB  Blake3 is a merkle-tree-based hash function with cool features like being super-parallelizable, updateable on the fly, indefinitely extensible for KDF\u2019ing, and (my favorite) allows for verified streaming and log(n) verification of randomly selected chunks from files. My team was originally hoping to use it to build an Ethereum-based decentralized incentive layer for IPFS pinning (we are no longer building this), but I can imagine plenty of other fun optimizations of things like optimistic L2s and data availability that could be enabled with this. Blake2s is also necessary to do Wireguard handshakes\u2026 if for some reason you are attempting to do that on-chain, you\u2019d need it. Zooko has a comment detailing the changes between the existing opcode at 0x09- basically, it\u2019s the same code, with four constants changed, and the word size of the function is halved. See the relevant RFC here. As far as gas fees, the 0x09 Blake2b F function precompile is charged as Each operation will cost GFROUND * rounds gas, where GFROUND = 1. Blake2b is usually run with 12 rounds, whereas Blake2s is usually run with 10, so most calls would take 10 gas. The input size difference is accounted for with CALL gas computations. On modern 64-bit architectures, assuming a negligible amount of weird packing and unpacking the 32-bit words into 64-bit words, I think it\u2019ll be appropriate to go with the same gas pricing for this precompile as with 0x09. I propose that this precompile go at contract 0x0a, which will be compatible with anything that doesn\u2019t assume there\u2019s nothing at that address. I think the only work left to do is to write this up as an EIP, do a PR (where should that go?), and validate my assumptions above about gas costs. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/issues/152#issuecomment-1183674205",
+                        "https://github.com/banyancomputer/blake3-sol",
+                        "https://ethereum-magicians.org/uploads/default/original/2X/2/22a2815aa745f9a36a2cbcafa19b33a0183b95f6.png",
+                        "https://en.wikipedia.org/wiki/BLAKE_(hash_function)#BLAKE3",
+                        "https://github.com/ethereum/EIPs/issues/152#issuecomment-1183824411",
+                        "https://eips.ethereum.org/EIPS/eip-152",
+                        "https://www.rfc-editor.org/rfc/rfc7693"
+                    ],
+                    "GPT-summary": "The author proposes adding a precompile for Blake2s/Blake3 and explains the benefits of using these hash functions. The author also provides information on gas fees and proposes a contract address for the precompile. A third party gives constructive criticism and asks questions about the proposal, while also extending to the proposal by offering to help get the PR merged.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Privacy, Security and risk management",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.497222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/prestwich",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "04/01/2023-22:39:50",
+                    "content": "As one of the people who initially pushed for EIP-152 and helped write it, I think a post-mortem is long overdue. I may write a full one for a blog sometime, but here\u2019s the condensed version: Fundamentally EIP-152 failed for 2 reasons   Politicization of the proposal led to a weird technical design. Implementing the F function instead of the hashfunction was political nonsense. It should never have been done. It led to a bad result for everyone.   Envisioned use cases were not validated before inclusion The authors had specific goals in mind, but we did not have any evidence that users wanted what we (the authors) wanted. And given the extra expense imposed by the f-function design, we could not realize our goals anyway. So we failed to launch any products into a market that (as time has shown) probably didn\u2019t want those products anyway.   I think that EIP-152 is a strong candidate for deletion. Rather than updating it, we should deprecate, evaluate past usage, and deactivate in some post-Shanghai fork. It can be used as a safe & uncontroversial testflight for deprecating and removing EVM features. If we want to add more hash functions to the EVM, we piloted an extensible hash precompile. However, it hasn\u2019t seen much adoption either last I checked. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.939814814814815
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/laudiacay",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "26/01/2023-19:23:03",
+                    "content": "I actually like your proposal quite a bit, and agree that supporting them individually is subpar (with individual function families and the way it\u2019s currently being done with the blakes in practice/in this proposal\u2026 if this continues, it could blow up to people wanting 10 precompiles\u2026 yuck) An extensible hash precompile that properly does blake3 merkle validation without 2^n precompile CALLs would be incredible for building verifiable networking and certain DA primitives and more. Could also get poseidon in here pretty easily. Can you think of anyone else who might be interested in supporting this? I wonder if Filecoin Saturn folks might be into it\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.172161172161172
+                }
+            ]
+        }
+    ],
+    "group_index": "291"
+}

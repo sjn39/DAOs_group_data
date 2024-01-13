@@ -1,0 +1,443 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/almost-self-destructing-selfdestruct-deactivate/11886",
+            "title": "Almost self-destructing SELFDESTRUCT \\xe2\\x86\\x92 DEACTIVATE ",
+            "index": 11886,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "evm",
+                "opcodes"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "1",
+                    "likes": "4",
+                    "time": "25/11/2022-22:21:48",
+                    "content": "TLDR: The selfdestruct\u2194revive pattern stays working, but instead of deleting accounts, we use a special value in the nonce field to distinguish deactivated accounts.   Ethereum Improvement Proposals   EIP-6046: Replace SELFDESTRUCT with DEACTIVATE Change SELFDESTRUCT to not delete storage keys and use a special value in the account nonce to signal deactivation      From the motivation of EIP-4758:  The SELFDESTRUCT opcode requires large changes to the state of an account, in particular removing all code and storage. This will not be possible in the future with Verkle trees: Each account will be stored in many different account keys, which will not be obviously connected to the root account.  EIP-4758 proposes to:   The SELFDESTRUCT opcode is renamed to SENDALL, and now only immediately moves all ETH in the account to the target; it no longer destroys code or storage or alters the nonce All refunds related to SELFDESTRUCT are removed   Concerns have been voiced that a number of contracts depend on a selfdestruct\u2194revive pattern, which would be broken by this change. Here\u2019s an alternative slightly-hackish idea. Haven\u2019t investigated its merits too much, but wanted to float it. Since EIP-2681 it is ensured that the account.nonce field can never exceed 2^64-1. We can use this to our advantage.   SELFDESTRUCT continues to behave almost the same as today, but instead of removing the account, it will leave most properties of the account intact, with the exception of two:   transfer all value and set balance to 0, set nonce to 2^64.   Modify account execution (triggered both via external transactions or CALL*), such that execution fails if the nonce equals 2^64.   Note that the account can still receive non-executable value transfers (such as coinbase transactions). Another option would be to just behave like an account without code upon execution, i.e. return success and no data.    Modify CREATE2 such that it allows account creation if the nonce equals 2^64.   Rename the SELFDESTRUCT instruction to DEACTIVATE, since the semantics of \u201caccount re-creation\u201d are changed: the old storage items will remain, and newly deployed code must be aware of this.   This option I think would accomplish the goal of removing unbounded tree changes, while not breaking existing contracts. Account/storage waste would remain, but that remains in-place with EIP-4758 too. Additionally, for deactivated accounts, the codehash and other inspectable properties would remain the same, just as with EIP-4758. P.S. Doesn\u2019t the nonce of an account-with-code start at 1 and not 0? If it does, could also use 0 as the magic value. Contracts deployed before EIP-161 behave differently. P.P.S. If we want external observability of deactivated accounts, perhaps an EXTNONCE opcode would be useful. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-6046",
+                        "https://eips.ethereum.org/EIPS/eip-4758",
+                        "https://eips.ethereum.org/EIPS/eip-2681",
+                        "https://eips.ethereum.org/EIPS/eip-161",
+                        "https://ethereum-magicians.org/t/eip-4672-nonce-opcode/8171",
+                        "https://ethereum-magicians.org/t/eip-4758-deactivate-selfdestruct/8710/31",
+                        "https://ethereum-magicians.org/t/cancun-eip-consideration/12060/2",
+                        "https://ethereum-magicians.org/t/cancun-network-upgrade-meta-thread/12060"
+                    ],
+                    "GPT-summary": "The post explains a proposal to replace the SELFDESTRUCT opcode with DEACTIVATE in Ethereum Improvement Proposals. The proposal suggests using a special value in the nonce field to distinguish deactivated accounts instead of deleting them. The post also addresses concerns about breaking existing contracts and proposes an alternative solution. The author explains the technical details of the proposal and suggests modifications to the CREATE2 instruction. A 3rd party gives constructive criticism and asks questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Change to proposal pipeline",
+                        "Token economics",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.454156520562771
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "26/11/2022-09:07:14",
+                    "content": " set nonce to 2^64  It seems like this would break the implied invariant that EIP-2681 created which is that nonce can always fit into a 64-bit variable.  While I recognize that the specification didn\u2019t say this explicitly, it was mentioned in the rationale and backward compatibility:  Most clients already consider the nonce field to be 64-bit, such as go-ethereum.    go-ethereum already has this restriction partially in place (state.Account.Nonce and types.txdata.AccountNonce it as a 64-bit number).   To hold 2^64, we would need a 65 bit or larger value type. Alternatively, we could just further constrain valid nonces to 2^63 and use 2^64-1 for this new purpose. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.6688311688311686
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "26/11/2022-11:54:05",
+                    "content": "    MicahZoltu:  It seems like this would break the implied invariant that EIP-2681 created which is that nonce can always fit into a 64-bit variable.   Yes, that was a goal.     MicahZoltu:  To hold 2^64, we would need a 65 bit or larger value type. Alternatively, we could just further constrain valid nonces to 2^63 and use 2^64-1 for this new purpose.   We discussed that it could be restricted to 2^64-2 or anything lower. None of these values are realistically reachable, so we are safe to do so. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 6.036363636363636
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "26/11/2022-12:28:32",
+                    "content": "Drafted a more clear set of instructions here:  github.com/ethereum/EIPs         Add `SELFDESTRUCT` \u2192 `DEACTIVATE`   ethereum:master \u2190 ipsilon:deactivate              opened 12:27PM - 26 Nov 22 UTC                 axic               +62 -0           This mentions the new limit of nonce. Should also consider to clarify the various edge cases of selfdestruct, when does the transfer takes place, when does the deletion/update takes place, etc. The gas cost could also be looked at, and potentially increased. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/6046",
+                        "https://github.com/axic",
+                        "https://github.com/ethereum/EIPs/pull/6046/files"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.736363636363636
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/petertdavies",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "28/11/2022-14:04:21",
+                    "content": "I think the complexity with setting nonces to the special value of 2^64-1 and adding special behaviour if the nonce is 2^64-1 can be avoided by:  Removing EIP-161 state clearing behaviour. Having DEACTIVATE set code to empty and nonce to 0.  We have to remove EIP-161 state clearing to do this because DEACTIVATE will create empty accounts, which will get cleared (along with their storage) by EIP-161, undermining the point of this EIP. The one downside of this is that empty accounts have their own special semantics (for most purposes they are treated as if they don\u2019t exist), but at least those semantics are already implemented by clients rather than the new special semantics added by this EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.938606847697757
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "28/11/2022-16:50:53",
+                    "content": "I am a fan of this approach. It addresses the concerns of the people building the new trie by removing the requirement that storage is cleared, a behavior not needed by those of us using the create2 upgrade pattern. I also like that this approach can make selfdestruct cheap enough to execute it and revert it during the transaction rather than deferring to the end. One other matter for this approach to consider is how EXTCODECOPY and EXTCODEHASH should work. Some are using EXTCODEHASH to detect if a contract is empty or if an account is a contract. I like that this seems to distinguish a self-destructed contract from an EOA. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.3113636363636365
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dankrad",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "28/11/2022-20:11:58",
+                    "content": "It\u2019s an interesting idea, but this introduces another pitfall: Unlike the old behaviour, storage does not get cleared. I guess this could be an option if all the examples we can find do not depend on storage being cleared. BTW, could it be another option to replace the code with a magic value, that marks it as being destroyed? I guess that could be a slightly more natural way of doing it. (We can use the EOF magic bytes to make sure that no code with the magic can be deployed by another means) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/vbuterin",
+                    "index": "8",
+                    "likes": "2",
+                    "time": "28/11/2022-20:18:16",
+                    "content": "The big issue I see with this category of approaches is that it takes away a really nice invariant that we get if we neuter SELFDESTRUCT completely: that if an account has code X, it will always have code X. This has lots of nice use cases in terms of giving users and accounts the ability to trust that a particular contract will work in a certain way. One specific example is that it makes it easy for ERC-4337 wallets to be able to trust libraries (otherwise, someone could make an account that depends on a library, and then SELFDESTRUCT that library to require recalculating an unlimited number of pending ops). The approaches that involve making SELFDESTRUCT only work during the same transaction the contract was created don\u2019t have this problem to nearly the same extent. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.043956043956044
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "28/11/2022-20:18:23",
+                    "content": "    dankrad:  It\u2019s an interesting idea, but this introduces another pitfall: Unlike the old behaviour, storage does not get cleared.   This is listed in the backwards compatibility section of the EIP. Various ideas were discussed to work around this, with causing even more storage use, for example: hash storage keys one more time with the special nonce (in this case a range would need to be allocated), to avoid collisions. This also would make accessing old ones after revival impossible.     dankrad:  BTW, could it be another option to replace the code with a magic value, that marks it as being destroyed? I guess that could be a slightly more natural way of doing it. (We can use the EOF magic bytes to make sure that no code with the magic can be deployed by another means)   I proposed this ~2 years ago on the R&D discord, but the argument against it was that it wouldn\u2019t be as optimal in Verkel trees. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.42517006802721
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wjmelements",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "30/11/2022-03:52:46",
+                    "content": "\\     vbuterin:  This has lots of nice use cases in terms of giving users and accounts the ability to trust that a particular contract will work in a certain way   This property was surrendered via DELEGATECALL proxies. I presume you wish to keep those, but the behavior of a contract can change significantly without changing its code.     vbuterin:  it makes it easy for ERC-4337 wallets to be able to trust libraries   Nobody can trust EVM code without reading it. The same off-chain processes that check for DELEGATECALL upgradeability would need to check for SELFDESTRUCT. Neutering SELFDESTRUCT doesn\u2019t change this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.6352040816326525
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "01/12/2022-11:17:27",
+                    "content": "    wjmelements:  This property was surrendered via DELEGATECALL proxies. I presume you wish to keep those, but the behavior of a contract can change significantly without changing its code.   I believe the word \u201ctrust\u201d here is being used a bit differently than normal.  In this case, it means that things like tooling, consensus, etc. can rely on the set of bytes written to the code at an address not changing. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "01/12/2022-13:57:20",
+                    "content": "    MicahZoltu:  this case, it means that things like tooling, consensus, etc. can rely on the set of bytes written to the code at an address not changing.   @wjmelements  's comment about DELEGATECALL seems to me still hold true in these examples. could you @MicahZoltu could you ellaborate more examples about in what scenarios such tooling, consensus will survive the ability to change behavior without change code enabled by DELEGATECALL.To me behavior immutability is broken by DELEGATECALL regardless of whether SELFDESTRUCT exist. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "13",
+                    "likes": "2",
+                    "time": "01/12/2022-16:15:16",
+                    "content": "Yes, behavior immutability is entirely within the control of the contract author.  Even without delegate call this would still largely be true (just harder).  When we say \u201cthe code cannot change\u201d we mean that it literally cannot change, not that its behavior is not dynamic.  When your building your tree structure of state, for example, you may be able to do some optimizations if you know that a particular bit of data cannot/will not change. I have been out of the verkle tree loop for a while, but I believe whether this assertion can be made has a notable impact on that as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.690104166666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xinbenlv",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "01/12/2022-16:27:02",
+                    "content": "That makes sense, well explained, thank you @MicahZoltu ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "01/12/2022-17:32:51",
+                    "content": "    axic:  the old storage items will remain, and newly deployed code must be aware of this   This is a very subtle change. How do we convince ourselves that this is safe for existing contracts? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.553030303030303
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "03/12/2022-04:11:08",
+                    "content": "    SamWilsn:  This is a very subtle change. How do we convince ourselves that this is safe for existing contracts?   You\u2019re right - we can\u2019t. In fact it\u2019s likely that it isn\u2019t  For example, consider a multisig like Safe, that has signers and modules, with the following flow:  The Safe is initialized with {signer1}. Signer1 adds {signer2,signer3}. A selfdestructing module gets added.  A module can selfdestruct the Safe because Safe supports delegatecall\u2019ing a module. The Safe gets reinitialized with {signer1}.  Before this EIP, the result is that only signer1 is a valid signer.  After this EIP, {signer2,signer3} are also valid signers. Besides, it opens up interesting new ways to rugpull/backdoor.  E.g. deploy a token, mint yourself a large balance, selfdestruct, redeploy.  Now totalSupply is reset, everything looks good, but in fact you still have the large balance (possibly higher than the totalSupply).  Some backdoors would be almost impossible to detect, if delegating to a library that gets selfdestructed and replaced. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.166847041847042
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "04/12/2022-20:32:26",
+                    "content": "    yoavw:  For example, consider a multisig like Safe, that has signers and modules, with the following flow:  The Safe is initialized with {signer1}. Signer1 adds {signer2,signer3}. A selfdestructing module gets added. A module can selfdestruct the Safe because Safe supports delegatecall\u2019ing a module. The Safe gets reinitialized with {signer1}.  Before this EIP, the result is that only signer1 is a valid signer. After this EIP, {signer2,signer3} are also valid signers.   This example is not correct, because the safe initialisation not only sets an array of signers, but also the count. See this code.     yoavw:  Besides, it opens up interesting new ways to rugpull/backdoor. E.g. deploy a token, mint yourself a large balance, selfdestruct, redeploy. Now totalSupply is reset, everything looks good, but in fact you still have the large balance (possibly higher than the totalSupply). Some backdoors would be almost impossible to detect, if delegating to a library that gets selfdestructed and replaced.   This is a more realistic example, unlike the safe above. I personally would not trust any contract which selfdestructs, nor do I trust proxy contracts much. That being said, it is already possible to hide intent in various ways. Besides, there are some other potential options in making the old storage slots shadowed (inaccessible entirely) with hashing the keys with a revival-nonce. Not that I am fond of that approach. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 6.016059833024119
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "04/12/2022-21:26:32",
+                    "content": "    axic:  This example is not correct, because the safe initialisation not only sets an array of signers, but also the count. See this code.   Hmmm, I believe it is correct because the count is not checked when the signer is used.  Neither in isOwner, nor in checkNSignatures. During signatures check, I think the default flow for a normal signature would reach currentOwner = ecrecover(dataHash, v, r, s) in line 299, so currentOwner will be set to the left-over signer (despite the count).  And then it will pass the require(currentOwner > lastOwner && owners[currentOwner] != address(0) && currentOwner != SENTINEL_OWNERS, \"GS026\"); in line 301 because owners[currentOwner] has been set before the DEACTIVATE happened.  Therefore the signature will be counted towards requiredSignatures. If requiredSignatures is set to 3, and there were 3 signers before DEACTIVATE, who are no longer valid signers in the current safe, they\u2019ll be able to pass the signature check without any of the valid signers participating. The count is only used during getOwners() which is never called on-chain. This makes the problem worse, because the \u201cshadow owners\u201d remain hidden when getOwners() is checked in the UI. Am I missing some check that would prevent this?     axic:  I personally would not trust any contract which selfdestructs, nor do I trust proxy contracts much. That being said, it is already possible to hide intent in various ways.   I\u2019m with you on that.     axic:  Besides, there are some other potential options in making the old storage slots shadowed (inaccessible entirely) with hashing the keys with a revival-nonce. Not that I am fond of that approach.   Yes, I was also considering the option of hashing it in the compiler, so that slots are not reused.  But this requires an opcode for accessing the nonce, and also not resetting the nonce to 0 on revival, but to a random number.  I actually think this would be a good addition to the compiler (if we add the EXTNONCE opcode - maybe that\u2019s another good use case for EIP-4672).  It would also prevent similar issues with proxies.  What would be the downside of that approach? To clarify, I don\u2019t mean using EXTNONCE every time a mapping is accessed.  The nonce may change when creating additional contracts.  I mean saving it as immutable during construction, so when a contract is \u201crevived\u201d it\u2019ll have a different storage base.  And maybe instead of hashing it, we would add it, so that it also affects simple variables and arrays, not just mappings. ",
+                    "links": [
+                        "https://github.com/safe-global/safe-contracts/blob/main/contracts/base/OwnerManager.sol#L130-L132",
+                        "https://github.com/safe-global/safe-contracts/blob/c36bcab46578a442862d043e12a83fec41143dec/contracts/GnosisSafe.sol#L301",
+                        "https://github.com/safe-global/safe-contracts/blob/c36bcab46578a442862d043e12a83fec41143dec/contracts/GnosisSafe.sol#LL299C17-L299C60",
+                        "https://github.com/safe-global/safe-contracts/blob/c36bcab46578a442862d043e12a83fec41143dec/contracts/GnosisSafe.sol#L301",
+                        "https://github.com/safe-global/safe-contracts/blob/c36bcab46578a442862d043e12a83fec41143dec/contracts/base/OwnerManager.sol",
+                        "https://ethereum-magicians.org/t/eip-4672-nonce-opcode/8171"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.11030505952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jwasinger",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "08/12/2022-11:32:43",
+                    "content": "The wording of the EIP implies that setting the nonce to 2^64-1 happens immediately upon calling DEACTIVATE.  In my opinion, this should be moved to happen at the end of the transaction similarly to how SELFDESTRUCT works. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "08/12/2022-13:50:34",
+                    "content": "    yoavw:      axic:  This example is not correct, because the safe initialisation not only sets an array of signers, but also the count. See this code.   Hmmm, I believe it is correct because the count is not checked when the signer is used. Neither in isOwner, nor in checkNSignatures . During signatures check, I think the default flow for a normal signature would reach currentOwner = ecrecover(dataHash, v, r, s) in line 299, so currentOwner will be set to the left-over signer (despite the count). And then it will pass the require(currentOwner > lastOwner && owners[currentOwner] != address(0) && currentOwner != SENTINEL_OWNERS, \"GS026\"); in line 301  because owners[currentOwner] has been set before the DEACTIVATE happened. Therefore the signature will be counted towards requiredSignatures. If requiredSignatures is set to 3, and there were 3 signers before DEACTIVATE, who are no longer valid signers in the current safe, they\u2019ll be able to pass the signature check without any of the valid signers participating. The count is only used during getOwners() which is never called on-chain. This makes the problem worse, because the \u201cshadow owners\u201d remain hidden when getOwners() is checked in the UI. Am I missing some check that would prevent this?   The safe uses a \u201csentinel\u201d field to trail the owner array. See SENTINEL_OWNERS here and here. ",
+                    "links": [
+                        "https://github.com/safe-global/safe-contracts/blob/main/contracts/base/OwnerManager.sol#L130-L132",
+                        "https://github.com/safe-global/safe-contracts/blob/c36bcab46578a442862d043e12a83fec41143dec/contracts/GnosisSafe.sol#L301",
+                        "https://github.com/safe-global/safe-contracts/blob/c36bcab46578a442862d043e12a83fec41143dec/contracts/GnosisSafe.sol#LL299C17-L299C60",
+                        "https://github.com/safe-global/safe-contracts/blob/c36bcab46578a442862d043e12a83fec41143dec/contracts/GnosisSafe.sol#L301",
+                        "https://github.com/safe-global/safe-contracts/blob/c36bcab46578a442862d043e12a83fec41143dec/contracts/base/OwnerManager.sol",
+                        "https://github.com/safe-global/safe-contracts/blob/c36bcab46578a442862d043e12a83fec41143dec/contracts/GnosisSafe.sol#L301",
+                        "https://github.com/safe-global/safe-contracts/blob/main/contracts/base/OwnerManager.sol#L41"
+                    ],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.6671401515151505
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "08/12/2022-13:52:40",
+                    "content": "    jwasinger:  The wording of the EIP implies that setting the nonce to 2^64-1 happens immediately upon calling DEACTIVATE. In my opinion, this should be moved to happen at the end of the transaction similarly to how SELFDESTRUCT works.   Good catch! I wonder however if it would make sense changing the behaviour to this, i.e. currently selfdestructed contracts can be called after they are selfdestructed as long as we didn\u2019t exit the transaction frame. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.03125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/dror",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "09/12/2022-09:50:45",
+                    "content": "    axic:  The safe uses a \u201csentinel\u201d field to trail the owner array. See SENTINEL_OWNERS here    The sentinel is only a marker of the \u201cend of the linked list\u201d. An owner is active if its entry in the \u201cowners\u201d is non-zero and non-sentinel The line you quote is inside the loop of checking owners. What it checks is that the current address is unique (above previous one), and that it has SOME value in the owners hash (not zero and not \u201csentinel\u201d). The check does NOT check this entry is indeed in the linked-list of current owners as returned by the getOwners() So you have a safe with (say) 3 owners, and now you \u201cdeactivate\u201d and ressurect it (without clearing the storage), those 3 are now \u201cshaddow\u201d owners of the safe, and can participate in a multisig, even though they are not returned by \u201cgetOwners()\u201d The same is true for modules: if a safe has a module installed before such \u201creset\u201d, this module is still eligible to make calls on safe, even though it is not returned by getModulesPaginated The moral is that it is very unsafe to use \u201cdirty\u201d storage for any purpose, as contracts assume storage is clear when initiated. ",
+                    "links": [
+                        "https://github.com/safe-global/safe-contracts/blob/main/contracts/base/ModuleManager.sol#L68",
+                        "https://github.com/safe-global/safe-contracts/blob/main/contracts/base/ModuleManager.sol#L114"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.895833333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/yoavw",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "12/12/2022-01:26:46",
+                    "content": "    axic:  The safe uses a \u201csentinel\u201d field to trail the owner array. See SENTINEL_OWNERS here  and here .   As @dror wrote below, the SENTINEL is not a security check, just the terminator of the owners linked list. It is only used when traversing the list.  It is used in getOwners() but not during isOwner() or checkNSignatures(). Transactions speak louder than words, so here\u2019s a goerli Safe with some dirty storage.  As you can see, you (axic.eth) are the only owner of this safe.  It\u2019s a perfectly normal GnosisSafeProxy created by GnosisSafeProxyFactory, and the implementation is set to the usual GnosisSafeL2 singleton. Observe the safe\u2019s history.  You can see a successful transaction with the data \u201cHello world!\u201d to axic.eth, which obviously you never signed.  It was sent by one of the shadow-owners from the dirty storage. If anyone wants to try it, this safe has 21 invisible signers, including all the default hardhat accounts (e.g. 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266).  You can\u2019t see any of these signers by observing the Safe, but they can send transactions anyway: >>> bad_safe = Contract.from_abi('BadSafe', '0xD23e1E5F40Cae07E56E30Cdc710d9b107abD60DB', safe_singleton.abi) >>> bad_safe.getOwners() (\"0x068484F7BD2b7D7C5a698d89e75ddcaf3a92B879\") >>> bad_safe.isOwner('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266')    # The 1st hardhat account, a shadow owner. True >>> sig = encode_abi_packed(['bytes12', 'address', 'bytes32', 'uint8'], [web3.toBytes(hexstr='0x0'), '0xA2d74Ff1a49B8f89aC784a524a468b45f114de68', web3.toBytes(hexstr='0x0'), 1]) >>> bad_safe.execTransaction(bad_safe.getOwners()[0], 0, web3.toBytes(text='Hello world!'), 0, 0, 0, 0, '0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000', sig, {'from':'0xA2d74Ff1a49B8f89aC784a524a468b45f114de68'}).info() Transaction sent: 0xb09dcce42c3a6c419eda1a2f9715b87c6f5dd4b73c5a643fe13809509cf91dd5   Gas price: 0.000189426 gwei   Gas limit: 81376   Nonce: 2   BadSafe.execTransaction confirmed   Block: 8119125   Gas used: 73317 (90.10%)  Transaction was Mined  --------------------- Tx Hash: 0xb09dcce42c3a6c419eda1a2f9715b87c6f5dd4b73c5a643fe13809509cf91dd5 From: 0xA2d74Ff1a49B8f89aC784a524a468b45f114de68 To: 0xD23e1E5F40Cae07E56E30Cdc710d9b107abD60DB Value: 0 Function: BadSafe.execTransaction Block: 8119125 Gas Used: 73317 / 81376 (90.1%)  Events In This Transaction -------------------------- \u2514\u2500\u2500 BadSafe (0xD23e1E5F40Cae07E56E30Cdc710d9b107abD60DB)     \u251c\u2500\u2500 SafeMultiSigTransaction     \u2502   \u251c\u2500\u2500 to: 0x068484F7BD2b7D7C5a698d89e75ddcaf3a92B879     \u2502   \u251c\u2500\u2500 value: 0     \u2502   \u251c\u2500\u2500 data: 0x48656c6c6f20776f726c6421     \u2502   \u251c\u2500\u2500 operation: 0     \u2502   \u251c\u2500\u2500 safeTxGas: 0     \u2502   \u251c\u2500\u2500 baseGas: 0     \u2502   \u251c\u2500\u2500 gasPrice: 0     \u2502   \u251c\u2500\u2500 gasToken: 0x0000000000000000000000000000000000000000     \u2502   \u251c\u2500\u2500 refundReceiver: 0x0000000000000000000000000000000000000000     \u2502   \u251c\u2500\u2500 signatures: 0x000000000000000000000000a2d74ff1a49b8f89ac784a524a468b45f114de68000000000000000000000000000000000000000000000000000000000000000001     \u2502   \u2514\u2500\u2500 additionalInfo: 0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a2d74ff1a49b8f89ac784a524a468b45f114de680000000000000000000000000000000000000000000000000000000000000001     \u2514\u2500\u2500 ExecutionSuccess         \u251c\u2500\u2500 txHash: 0x5bd5eedbb6f5c66f781f1ffc22b6ed90c06fdbf124a71f1d07bdaa2e06d8c759         \u2514\u2500\u2500 payment: 0       axic:  This example is not correct, because the safe initialisation not only sets an array of signers, but also the count.   Hopefully I established that it is.  But I think we can make DEACTIVATE (and proxies in general) safer by using the compiler to add an offset to all storage access.  An extension of what I wrote above regarding EXTNONCE.  I\u2019ll write a proposal for it later. ",
+                    "links": [
+                        "https://github.com/safe-global/safe-contracts/blob/main/contracts/base/OwnerManager.sol#L41",
+                        "https://gnosis-safe.io/app/gor:0xD23e1E5F40Cae07E56E30Cdc710d9b107abD60DB/settings/owners",
+                        "https://gnosis-safe.io/app/gor:0xD23e1E5F40Cae07E56E30Cdc710d9b107abD60DB/transactions/history",
+                        "https://goerli.etherscan.io/tx/0xb09dcce42c3a6c419eda1a2f9715b87c6f5dd4b73c5a643fe13809509cf91dd5",
+                        "https://ethereum-magicians.org/t/erc-4337-account-abstraction-via-entry-point-contract-specification/7160/55"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.7272727272727275
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Pandapip1",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "16/12/2022-16:19:23",
+                    "content": "@axic mind reviewing the following?   github.com/ethereum/EIPs         Update EIP-6046: Propose alternative deactivation   ethereum:master \u2190 ethereum:eip-6046-alternative-deactivation              opened 04:15PM - 16 Dec 22 UTC                 Pandapip1               +7 -10       This changes EIP-6046 such that deactivation effectively clears a contract's mem\u2026ory, at the cost of additional gas costs.  This may or may not get used, hence why I am keeping this PR as a draft.  CC @axic       It modifies this EIP to make deactivate effectively clear a contract\u2019s storage. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/pull/6155/files",
+                        "https://github.com/Pandapip1",
+                        "https://github.com/ethereum/EIPs/pull/6155/files",
+                        "https://github.com/ethereum/EIPs/pull/6155"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "17/03/2023-11:23:34",
+                    "content": "@Pandapip1 Sorry I totally missed these notifications. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "26",
+                    "likes": "0",
+                    "time": "17/03/2023-11:26:05",
+                    "content": "    axic:      dankrad:  It\u2019s an interesting idea, but this introduces another pitfall: Unlike the old behaviour, storage does not get cleared.   This is listed in the backwards compatibility section of the EIP. Various ideas were discussed to work around this, with causing even more storage use, for example: hash storage keys one more time with the special nonce (in this case a range would need to be allocated), to avoid collisions. This also would make accessing old ones after revival impossible.   Published a version of this yesterday on the R&D discord: DEACTIVATE (aka SELFDESTRUCT) with old-storage shadowing - HackMD  This fixes the problem of \u201cpre-existing storage\u201d by shadowing old storage. From a users\u2019 perspective there is no change how selfdestruct behaves and so it won\u2019t cause any risk of bricking contracts. This version is mostly made with Verkle trees in mind, it\u2019s goal is to remove this last bottleneck for Verkle trees, and in fact to minimize number of changes one should consider introducing it together with Verkle trees and not before (see the account changes).  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.904761904761905
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "17/03/2023-15:26:29",
+                    "content": "    wjmelements:  One other matter for this approach to consider is how EXTCODECOPY and EXTCODEHASH should work.   This has not been addressed yet, right? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.4017857142857135
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "19/03/2023-12:59:06",
+                    "content": "Not sure what is unclear about this? When the account is \u201cdeactivated\u201d (i.e. high nonce) then it is non-existing, otherwise it exists. For both existing and non-existing accounts the rules of EXTCODE* is well defined. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.7749999999999995
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Pandapip1",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "19/03/2023-12:59:52",
+                    "content": "No worries. Note that I created a competing EIP for it:   Ethereum Improvement Proposals   EIP-6190: Verkle-compatible SELFDESTRUCT Changes SELFDESTRUCT to only cause a finite number of state changes      If you\u2019re interested in pursuing that path, I would be willing to withdraw EIP-6190 if the content of it is merged into EIP-6046. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-6190"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.833333333333334
+                }
+            ]
+        }
+    ],
+    "group_index": "232"
+}

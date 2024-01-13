@@ -1,0 +1,108 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/modeling-dai-maturity-modelado-de-madurez-de-dai-traduccion/16227",
+            "title": "Modeling DAI maturity | Modelado de madurez de DAI [Traducci\\xc3\\xb3n] ",
+            "index": 16227,
+            "category": [
+                "Latin America"
+            ],
+            "tags": [
+                "espa\\xc3\\xb1ol",
+                "core-unit",
+                "strategic-finance",
+                "translate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/FuchoCrypto",
+                    "index": "#1",
+                    "likes": "12",
+                    "time": "29/06/2022-23:37:30",
+                    "content": " Resumen  Este documento modela el vencimiendo del DAI para complementar el  ALM Framework; Comenzamos analizando las metodolog\u00edas de TradFi; Nos decantamos por un modelo simple que utiliza el peor de los casos hist\u00f3ricos para dos categor\u00edas de tenencias de DAI: especulativa (DAI en contratos inteligentes) y org\u00e1nica (DAI en direcciones EOA); Este modelo muestra que:  50% de DAI es estable (vencimiento > 1 a\u00f1o). El vencimiento a corto plazo es m\u00e1s alto de lo esperado inicialmente, al menos 20% (intrad\u00eda) y 40% (dentro de 1 semana).   El hecho de que el 20-40% del DAI circulante tenga un riesgo de vencimiento corto est\u00e1 reduciendo significativamente nuestra capacidad de inversi\u00f3n. Necesitamos explorar:  Desinvertir program\u00e1ticamente en los D3M del mercado monetario cuando la liquidez es baja. Ganar con los activos de PSM. Tener algunos activos transferibles, la capacidad de generar liquidez a partir de activos (es decir, pedir prestado USDC de Aave usando ETH como garant\u00eda).     Introducci\u00f3n Como se discuti\u00f3 en el ALM Framework, sobre la liquidez, la capacidad de mantener el PEG de DAI, es una restricci\u00f3n clave que tenemos en la asignaci\u00f3n del balance. No podemos bloquear los activos durante un per\u00edodo prolongado de tiempo y quedarnos atrapados por no tener liquidez para sostener las salidas de DAI. Actualmente, tenemos una posici\u00f3n con mucha liquidez con un PSM desbordado. Sin embargo, a medida que comencemos a asignar m\u00e1s de nuestro balance general, esto evolucionar\u00e1. Necesitamos entender el perfil de salida de DAI (perfil de vencimiento de liquidez de DAI). Si bien proporcionamos un perfil de vencimiento de liquidez de ALM para DAI (ilustrado a continuaci\u00f3n), solo fue un marcador de posici\u00f3n. Dado que nuestras reservas de PSM han disminuido \u00faltimamente y que pronto estaremos listos para implementar nuestro balance en instrumentos con vencimiento fuera del bloque (como bonos a corto plazo, RWA), ha llegado el momento de ser m\u00e1s precisos.  2190\u00d71135 80.6 KB  En este documento, comenzaremos explicando c\u00f3mo se definir\u00eda el perfil de liquidez de DAI en TradFi, luego propondremos una metodolog\u00eda on-chain para DAI.  \u00bfC\u00f3mo modelar\u00eda TradFi el vencimiento del pasivo DAI? En TradFi, el instrumento m\u00e1s cercano a una moneda estable es un dep\u00f3sito bancario. En Bank Asset and Liability Management Strategy, Trading, Analysis (publicado en 2007), Moraad Choudry sugiere cuatro m\u00e9todos para modelar dep\u00f3sitos bancarios (copiado):  agrupar todos los saldos pendientes en una categor\u00eda de vencimiento con fecha futura acorde al plazo preferido por el banco, o una fecha posterior. Esto los excluir\u00eda del balance de la brecha. Aunque se considera poco realista porque excluye los saldos de las cuentas corrientes del balance de la deuda, es un enfoque bastante com\u00fan; confiar en una tasa de amortizaci\u00f3n estimada para los saldos, digamos 5% o 10% cada a\u00f1o; dividir los dep\u00f3sitos en saldos estables e inestables, de los cuales los dep\u00f3sitos b\u00e1sicos se establecen como saldo permanente. El monto del saldo principal lo establece el banco en funci\u00f3n de un estudio del patr\u00f3n de volatilidad del saldo total a lo largo del tiempo. El exceso sobre el saldo b\u00e1sico se considera entonces como deuda a muy corto plazo. Este m\u00e9todo se acerca razonablemente a la realidad ya que se basa en observaciones hist\u00f3ricas; hacer proyecciones con base en variables observables que se correlacionen con los saldos de dep\u00f3sitos vigentes. Por ejemplo, dichas variables podr\u00edan basarse en el nivel de crecimiento econ\u00f3mico m\u00e1s un factor de error fundamentado en las fluctuaciones a corto plazo del patr\u00f3n de crecimiento.  En estos casos, el #1 no tiene mucho sentido. #2 es bastante arbitrario y demasiado simplista. #3 est\u00e1 cerca de lo que usaremos m\u00e1s adelante (pero seremos m\u00e1s precisos en los vencimientos). # 4 no es aplicable al rendimiento de las criptomonedas ya que el \u00e1mbito es demasiado reciente. Basel III tambi\u00e9n proporciona un enfoque de liquidez cercano al #3 con el LCR (que es un indicador de liquidez de 30 d\u00edas). Se basa en la identidad del depositante que generalmente no tenemos en DeFi (un contraejemplo, ser\u00edan los bonos del Tesoro DAO, como OlympusDAO, pero a\u00fan no representa una gran cantidad). A continuaci\u00f3n se puede ver la clasificaci\u00f3n de algunos dep\u00f3sitos y la correspondiente ponderaci\u00f3n del LCR (ratio de los dep\u00f3sitos que podr\u00edan ser redimidos dentro de un mes).  934\u00d7577 75.6 KB   Modelado de madurez de DAI propuesto  \u00bfQu\u00e9 ser\u00eda lo mejor? Como se observa en la literatura de ALM y hablando con profesionales en dicha \u00e1rea, la mejor pr\u00e1ctica ser\u00eda modelar el comportamiento del cliente utilizando datos de comportamiento on-chain informados por factores macroecon\u00f3micos (mercados alcistas/bajistas, tasas de inter\u00e9s, \u2026). Si bien este es ciertamente el objetivo final, optar por un modelo de este tipo ser\u00eda muy costoso y poco confiable en esta etapa. En primer lugar, no tenemos una distinci\u00f3n para los clientes de DAI. Cada cliente podr\u00eda tener muchas direcciones y aunque probablemente podr\u00edamos desarrollar algunas heur\u00edsticas para agruparlas, no ser\u00eda algo totalmente preciso. Adem\u00e1s, al ser DAI componible, los clientes pueden enviar DAI a otros productos, sin dejar de ser el propietario final de DAI. Un ejemplo es Aave, cuando un cliente deposita DAI en Aave, el DAI se mueve de la direcci\u00f3n de la billetera del cliente a la direcci\u00f3n de Aave y se mezcla con todos los dem\u00e1s depositantes. Si bien es posible descifrar eso, la cantidad de trabajo necesaria ser\u00eda extrema, ya que tendr\u00edamos que administrar todos (o la mayor\u00eda) de los protocolos DeFi existentes. Si eso no fuera suficiente, la situaci\u00f3n se vuelve m\u00e1s compleja en un mundo L2/multicadena. En segundo lugar, DeFi es bastante joven y el comportamiento de los clientes de 2021 podr\u00eda no proporcionar mucho aprendizaje sobre el comportamiento de los clientes en 2023. Construir un modelo elaborado sobre el comportamiento pasado no predictivo, solo nos dar\u00eda una confianza equivocada. Por esas razones, tiene sentido comenzar con un modelo m\u00e1s simple, m\u00e1s f\u00e1cil de entender y m\u00e1s replicable por la comunidad.  Intuici\u00f3n de una ca\u00edda del mercado Durante el desplome de las criptomonedas de mayo de 2022, la mayor parte de la reducci\u00f3n de tenencia de DAI se debi\u00f3 a las posiciones de contratos inteligentes, mientras que la m\u00e9trica EOA (Direcciones de propiedad externa) se mantuvo constante (en p\u00farpura en el cuadro a continuaci\u00f3n). Se pueden encontrar m\u00e1s detalles en el informe de liquidez de ALM de mayo de 2022.  809\u00d7486 29.8 KB  Si bien es dif\u00edcil saber qui\u00e9n es el propietario final de DAI, es bastante f\u00e1cil etiquetar las direcciones donde se encuentran algunos DAI. Algunas son plataformas de pr\u00e9stamo, otras son intercambios descentralizados, \u2026 Se aplica la Ley de Pareto, lo que significa que etiquetar algunas direcciones permite cubrir la mayor parte del valor de DAI en circulaci\u00f3n. Por lo tanto, la idea es crear bloques de direcciones en cadena y luego generar el peor escenario de salida basado en datos hist\u00f3ricos.  El modelo Dividimos todas las direcciones que poseen DAI en dos grupos:  Org\u00e1nica: contiene todas las Direcciones de Propiedad Externa, consideraremos que, para ellas, mantener DAI es una decisi\u00f3n anticipada que debe permanecer constante. Especulativo: todos los contratos inteligentes y el DSR.  A continuaci\u00f3n, para cada uno de estos grupos, calcularemos la reducci\u00f3n m\u00e1xima durante los per\u00edodos de 1 d\u00eda, 1 semana, 1 mes y 3 meses. La disposici\u00f3n m\u00e1xima del per\u00edodo de 1 d\u00eda se asignar\u00e1 en un 50% al vencimiento de 1 bloque y al vencer 1 d\u00eda. Luego, para cada grupo de vencimiento posterior, utilizamos la reducci\u00f3n m\u00e1xima, deducida de los n\u00fameros de vencimiento m\u00e1s cortos. Vamos a explicar con datos reales. Encontramos los siguientes n\u00fameros para la reducci\u00f3n m\u00e1xima. Para el DAI especulativo, la reducci\u00f3n m\u00e1xima de 1 d\u00eda es del 24%, mientras que la reducci\u00f3n m\u00e1xima de 1 semana es del 48%. Esto no significa que el retiro haya comenzado el mismo d\u00eda para ambos, ni que dicho retiro de 1 d\u00eda est\u00e9 incluido dentro de la operaci\u00f3n de 1 semana.  765\u00d7110 12.4 KB  Esto condujo al siguiente perfil de vencimiento de liquidez para DAI. En el caso de DAI especulativo, la reducci\u00f3n m\u00e1xima de 1 d\u00eda se divide en partes iguales entre el perfil de vencimiento de 1 bloque y el de 1 d\u00eda. Luego, el perfil de vencimiento de 1 semana es del 48 % (reducci\u00f3n m\u00e1xima de 1 semana), en el que eliminamos las disposiciones de vencimientos m\u00e1s cortas (la reducci\u00f3n del 24 % de 1 d\u00eda), lo que nos da un 23 % (diferencia debido al redondeo).  905\u00d7122 15 KB  Como se puede ver, el DAI especulativo tiende a tener un vencimiento m\u00e1s corto con un 48% que sale del sistema luego de una semana. Por otro lado, el DAI org\u00e1nico tiende a ser m\u00e1s estable. Tener una combinaci\u00f3n de DAI sesgada hacia DAI org\u00e1nico nos permitir\u00e1 asumir un mayor riesgo de vencimiento en el lado de los activos.  Simulaci\u00f3n sobre datos pasados Al utilizar estas cifras para extrapolar las posiciones pasadas (15 de febrero de 2022 y 12 de mayo de 2022), encontramos los siguientes resultados. Para el 15 de febrero, las salidas esperadas son bastante significativas, con un 38% a 1 semana y un 48% a 3 meses. La mayor parte se debe al DAI especulativo.  1823\u00d71043 71.9 KB  Para el 12 de mayo, es decir, despu\u00e9s de una salida significativa de DAI y el colapso de Terra, la cantidad de DAI en circulaci\u00f3n se redujo de 10B a 6B (-40%). Adem\u00e1s, el perfil de liquidez fue bastante diferente con solo un 30% (frente al 38%) en la semana posterior y del 37% (frente al 48%) en los siguientes 3 meses. Dado que se elimin\u00f3 una buena parte del DAI especulativo, el resto se inclin\u00f3 m\u00e1s hacia el DAI org\u00e1nico.  1808\u00d71004 72.8 KB  Al ejecutar el modelo en toda la historia (desde julio de 2020 y el verano de DeFi), podemos ver que el vencimiento de los DAI (seg\u00fan el modelo propuesto) se acorta cuando el mercado es alcista (verano de DeFi). Sin embargo, siempre hubo > 50% de DAI con un vencimiento superior a 3 meses. Puedes consultar el contenido aqu\u00ed en Dune.  1549\u00d7776 82.5 KB   Aprendizajes Utilizando este modelo, podemos ver que el 50% de los DAI pendientes de pago tienen un vencimiento \u201clargo\u201d (m\u00e1s de 3 meses). Esto se encuentra en concordancia con la suposici\u00f3n anterior de que siempre deber\u00edamos mantener un 50% de pr\u00e9stamos f\u00e1cilmente revocables (que incluyen total o parcialmente pr\u00e9stamos respaldados en criptomonedas, dependiendo de nuestra opini\u00f3n sobre la relaci\u00f3n con el prestatario). Un hallazgo es que el frente a corto plazo del vencimiento de DAI es bastante vol\u00e1til con m\u00e1s del 20%, un vencimiento inferior a un d\u00eda y hasta un 40% a m\u00e1s de 1 semana. Hasta ahora, nuestras \u00fanicas formas de gestionar esas posibles fluctuaciones era mantener un s\u00f3lido colch\u00f3n en los PSM. Esto no es muy eficiente actualmente. Hay muchas posibilidades de mejorar este problema. En primer lugar, podemos automatizar la retirada de los mercados monetarios D3M cuando la liquidez sea baja. Esto aumentar\u00e1 la tasa de pr\u00e9stamo de DAI y crear\u00e1 un arbitraje de USDC a DAI (llenando el PSM). En segundo lugar, si planeamos mantener ETH (u otros criptoactivos importantes) en el futuro, esos activos podr\u00edan utilizarse para obtener liquidez en los mercados monetarios. En tercer lugar, podemos encontrar formas de generar rendimiento a partir de los activos del PSM. En cuarto lugar, las asociaciones con otros emisores de monedas estables podr\u00edan ayudar en el frente de la liquidez proporcionando l\u00edneas de cr\u00e9dito bilaterales (v\u00e9ase ClearingDAO). Finalmente, esperamos que los Bonos del Tesoro tokenizados se conviertan en una realidad pronto, ya que proporcionar\u00e1n una fuente de liquidez en la cadena (pr\u00e9stamo o venta directa).  Limitaciones conocidas Todos los modelos son err\u00f3neos, pero algunos son \u00fatiles. En esta secci\u00f3n describiremos las limitaciones conocidas del modelo que la comunidad debe considerar.  El modelo no tiene en cuenta el DAI circular. Por ejemplo, la vault DAI-USDC LP es una posici\u00f3n altamente apalancada en la que se acu\u00f1a DAI pero la mitad se pone simplemente como garant\u00eda en la vault. Cerca de la mitad de esos pr\u00e9stamos respaldados por LP no corren riesgo de salida, ya que la reversi\u00f3n anular\u00eda el impacto. Este es/era el caso en el pasado, cuando la mayor\u00eda de los pr\u00e9stamos se utilizaban para producir granjas. El prestatario tiene un pr\u00e9stamo DAI pero a la vez  se queda con el activo DAI. El reembolso de esos DAI se har\u00e1 mediante la devoluci\u00f3n del pr\u00e9stamo. Un modelo futuro deber\u00eda utilizar el DAI neto pendiente (DAI menos DAI prestado por la misma cuenta). No modelarlo es a\u00f1adir una precauci\u00f3n extra. No todos los DAI bloqueados en los contratos inteligentes son iguales. El riesgo de salida es m\u00e1s pronunciado en los esquemas de inyecci\u00f3n de liquidez donde al final se anula la asignaci\u00f3n. Si el DAI est\u00e1 en un LP de ETH-DAI, entonces el flujo de salida ser\u00e1 condicionado a una fuerte disminuci\u00f3n del precio de ETH. Las billeteras inteligentes (incluyendo las multifirmas) son consideradas como contratos inteligentes pero podr\u00edan estar comport\u00e1ndose como EOA. Gnosis Safes tiene actualmente 240M DAI, por lo que el impacto es bastante limitado. Una salida de DAI especulativo podr\u00eda ser una entrada de DAI org\u00e1nico. Esto no es aparentemente una gran preocupaci\u00f3n aqu\u00ed, pero esto generar\u00eda m\u00e1s errores al a\u00f1adir la subdivisi\u00f3n de las categor\u00edas. El modelo asume un contexto de negocios como de costumbre, incluyendo algunas ca\u00eddas graves del mercado. No hay una historia de fuerte desaf\u00edo al DAI que deba ser modelada.   Conclusi\u00f3n En este documento hemos propuesto una metodolog\u00eda de perfil de madurez del DAI que es transparente y sencilla de reproducir. Necesitamos mantener al menos el 50% del DAI en circulaci\u00f3n en activos de vencimiento a mediano plazo (que no se puedan liquidar en el plazo de un a\u00f1o), el 40% que se puedan liquidar en el plazo de una semana y el 20% que se puedan liquidar en el plazo de un d\u00eda. P.D: El modelo se basa en datos hist\u00f3ricos \u201camables\u201d, por lo que deber\u00edamos verlo como un escenario com\u00fan (incluyendo el habitual auge/ca\u00edda de las criptomonedas). Tambi\u00e9n debemos pensar en un escenario de emergencia, en el que necesitemos liquidar nuestro activo pero asumiendo una p\u00e9rdida. Esta es una traducci\u00f3n libre del post \u201cModeling DAI maturity\u201d de @SebVentures Cr\u00e9ditos: Traducci\u00f3n @FuchoCrypto - Revisi\u00f3n @Gonzalo_Napolitano ",
+                    "links": [
+                        "https://forum.makerdao.com/t/alm-framework-for-makerdao/12994",
+                        "https://etherscan.io/address/0x31f8cc382c9898b273eff4e0b7626a6987c846e8",
+                        "https://dune.com/queries/907852",
+                        "https://forum.makerdao.com/t/modeling-dai-maturity/15961"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.979166666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Leandro",
+                    "index": "#2",
+                    "likes": "5",
+                    "time": "30/06/2022-00:30:03",
+                    "content": "Super interesante. Mucha data para analizar. Gran laburo con la traducci\u00f3n y revisi\u00f3n @FuchoCrypto y @Gonzalo_Napolitano ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Gonzalo_Napolitano",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "30/06/2022-01:34:06",
+                    "content": "Es un muy buen tema! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Gonzalo_Napolitano",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "30/06/2022-01:35:11",
+                    "content": "Gran trabajo @FuchoCrypto  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FuchoCrypto",
+                    "index": "#5",
+                    "likes": "4",
+                    "time": "30/06/2022-01:38:05",
+                    "content": "Gracias @Leandro, as\u00ed es. Bastante data para analizar y aprender. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FuchoCrypto",
+                    "index": "#6",
+                    "likes": "4",
+                    "time": "30/06/2022-01:39:18",
+                    "content": "Igualmente @Gonzalo_Napolitano, gran trabajo  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/One_Pastrami",
+                    "index": "#7",
+                    "likes": "4",
+                    "time": "03/07/2022-13:25:14",
+                    "content": "    FuchoCrypto:  Necesitamos mantener al menos el 50% del DAI en circulaci\u00f3n en activos de vencimiento a mediano plazo (que no se puedan liquidar en el plazo de un a\u00f1o), el 40% que se puedan liquidar en el plazo de una semana y el 20% que se puedan liquidar en el plazo de un d\u00eda   El grafico y esta conclusion demuestran un punto muy importante, el protocolo tiene muchos activos/efectivo no invertido creando una oportunidad de generar retorno en inversiones seguras. Esta semana paso un voto de gobernanza para invertir en ETFs una parte del PSM.  Que les parece la decision de invertir un porcentaje en activos del mundo real (RWA)? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/0xRami",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "03/07/2022-19:15:40",
+                    "content": "Excelente traducci\u00f3n @FuchoCrypto ! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ]
+}

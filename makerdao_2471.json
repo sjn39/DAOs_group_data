@@ -1,0 +1,124 @@
+{
+    "poll_list": [
+        {
+            "title": "Inclusion Poll for MIP19: Liquidations System 1.1 Upgrade - July 13, 2020",
+            "index": "3098",
+            "option": "Yes",
+            "supporting_mkr": "22,436",
+            "highest_fraction": 1.0
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip19-liquidations-system-1-1-upgrade/3098",
+            "title": "MIP19: Liquidations System 1.1 Upgrade ",
+            "index": 3098,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "mips",
+                "mip-accepted"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Mariano_Conti",
+                    "index": "#1",
+                    "likes": "8",
+                    "time": "07/07/2020-01:52:10",
+                    "content": "MIP19: Liquidations System 1.1 Upgrade Preamble MIP#: 19 Title: Liquidations System 1.1 Upgrade Author(s): Mariano Conti (@nanexcool), Charles St.Louis (@CPSTL)  Contributors: Kurt Barry (@kmbarry1) Type: Technical Status: Formal Submission (FS) Date Proposed: 2020-07-06 Date Ratified: <yyyy-mm-dd> Dependencies: n/a Replaces: n/a License: AGPL v3.0  References  Executive Vote: Unblock the remaining Debt Auctions Blog Post  Debt Auction Blocking in the Dai Credit System Presentation by Kurt Barry  Video recording of the presenation   Formal Verification Run  Sentence Summary MIP19 proposes an upgrade to the Maker Protocol\u2019s auction contracts to avoid the need for extra funds when a bidder modifies a bid they have already made (\u201cdouble liquidity\u201d issue) as well as to fix the \u201cstuck debt auctions\u201d bug. Paragraph Summary This proposal defines an implementation to improve the current liquidation system of the Maker Protocol. The new implementation will make changes to the collateral (flip), surplus (flap), and debt (flop) auction contracts to fix this \u201cdouble liquidity\u201d requirement by only taking the necessary amount for the new bid when the bidder is the same as the previous bidder. Additionally, there is a fix for the debt auction contract, where on the first bid (\u201cdent\u201d), the system tries to clear as much Ash (on-auction debt) as possible. This prevents any further debt auctions from becoming stuck. Component Summary MIP19c1: Definitions Defines terms that relate to the liquidations system fix. MIP19c2: Proposed Code Proposed code for both the double liquidity fix and the stuck debt (flop) auctions. MIP19c3: Test Cases References the tested code and how to run the test suite. MIP19c4: Security Considerations Defines any security-relevant design information and potential failure modes related to the proposed change. MIP19c5: Formal Verification / Audit Information Describes relevant information regarding the auditing / formal verification of the proposed code. MIP19c6: Licensing States the license used for the proposed code. Motivation As of today, the collateral, surplus, and debt auction contracts expect bidders to have the full amount of their bid in their wallet. Thus, if they are increasing a bid they already made (i.e. they were the most recent bidder on the auction), they cannot simply supply the additional amount over their previous bid. Instead, they must have the full amount of the previous bid plus the additional amount in their wallet; after supplying this, their previous bid is refunded. Example   Current implementation: If someone is bidding 5k DAI and wants to up their bid to 6k DAI, the system would first take 6k DAI from their account and then return 5k DAI to their account, requiring a total of 11k DAI.  Proposed implementation: If someone is bidding 5k DAI and wants to up their bid to 6k DAI, the system knows it is the same bidder and only takes 1k DAI from their account, requiring a total of 6k DAI.  Additionally, the possibility of stuck debt (flop) auctions occurring is a bug. While auctions can be \u201cunstuck\u201d via a governance action (ex: March 26 Executive Vote), this requires time and effort from the Maker community. With the implementation change proposed here, stuck debt auctions would be prevented entirely, reducing the work needed to manage the system. As for the double liquidity issue, the proposed implementation is more efficient and accessible because it requires less total capital for certain bidding strategies. Specification MIP19c1: Proposed Code Double Liquidity Fix For example, in the Flipper contracts, instead of first taking an amount of Dai from a bidder and then returning the previous bid, the following code checks if the new bidder is different than the current bidder: if (msg.sender != bids[id].guy) {     vat.move(msg.sender, bids[id].guy, bids[id].bid);     bids[id].guy = msg.sender; }  The same checks are done in the Flapper and Flopper contracts. Stuck Debt Auctions (Flops) Fix If this is the first bid on a Flop auction, the following code will try to clear as much Ash (current on-auction debt) as possible: // on first dent, clear as much Ash as possible if (bids[id].tic == 0) {     uint Ash = VowLike(bids[id].guy).Ash();     VowLike(bids[id].guy).kiss(min(bid, Ash)); }   MIP19c2: Test Cases The Smart Contracts team added tests to check the above code changes and we can say they cover 100% of the new functionality. Tests for the Double Liquidity Fix Added tests in flip.t.sol:  test_tend_dent_same_bidder  Added tests in flap.t.sol:  test_tend_same_bidder  Added tests in flop.t.sol:  test_dent_same_bidder  Tests for the Stuck Debt Auctions (Flops) Fix Modified tests in flop.t.sol:  test_kick test_dent test_dent_same_bidder test_tick test_no_deal_after_end test_yank test_yank_no_bids  Modified tests in vat.t.sol:  test_floppy_bite  Added test in flop.t.sol:  test_dent_Ash_less_than_bid  To run the test suite, follow the instructions in the following README here.  MIP19c3: Security Considerations This is a small upgrade to the Auction Contracts; thus, the implementation risks are minimal. Due to this, any security-relevant design information, decisions, or potential failure modes can be found in the already existing Maker Protocol documentation. More specifically:   System Stabilizer Module Documentation  Flopper Documentation Flapper Documentation    Collateral Module Documentation  Flipper Documenation     MIP19c4: Formal Verification / Audit Information The Smart Contracts Domain Team updated the Formal Verification specifications for the DSS system with the following implementations here. Specifications added:  behaviour tend-guy-same of Flipper behaviour dent-guy-same of Flipper behaviour tend-guy-diff of Flapper behaviour tend-guy-same of Flapper behaviour dent-guy-diff of Flopper behaviour dent-guy-same of Flopper  A full run of the Formal Verification process can be explored here. Note: All specification proofs are passing on the Flipper, Flapper and Flopper with the proposed changes.  MIP19c5: Licensing GNU Affero General Public License v3.0  ",
+                    "links": [
+                        "https://www.youtube.com/watch?v=erh25lnaIo0",
+                        "https://reports.makerfoundation.com/k-dss/dcc4d3a8fcab50a5af6f/",
+                        "https://github.com/makerdao/dss/blob/master/src/flip.sol",
+                        "https://github.com/makerdao/dss/blob/master/src/flap.sol",
+                        "https://github.com/makerdao/dss/blob/master/src/flop.sol",
+                        "https://github.com/makerdao/dss/commit/881f331fa790188c6e7941ee7033c4809e89d21e",
+                        "https://github.com/makerdao/dss/commit/5b2dec8a26db5e5e837848c4d8b16575abf0a110",
+                        "https://github.com/makerdao/dss/commit/881f331fa790188c6e7941ee7033c4809e89d21e",
+                        "https://github.com/makerdao/dss/commit/5b2dec8a26db5e5e837848c4d8b16575abf0a110",
+                        "https://github.com/makerdao/dss",
+                        "https://docs.makerdao.com/smart-contract-modules/system-stabilizer-module#4-gotchas-potential-sources-of-user-error",
+                        "https://docs.makerdao.com/smart-contract-modules/system-stabilizer-module/flop-detailed-documentation#4-gotchas-potential-source-of-user-error",
+                        "https://docs.makerdao.com/smart-contract-modules/system-stabilizer-module/flap-detailed-documentation#4-gotchas-potential-source-of-user-error",
+                        "https://docs.makerdao.com/smart-contract-modules/collateral-module#4-gotchas-potential-sources-of-user-error",
+                        "https://docs.makerdao.com/smart-contract-modules/collateral-module/flipper-detailed-documentation#4-gotchas-potential-source-of-user-error",
+                        "https://github.com/makerdao/k-dss/tree/staging",
+                        "https://reports.makerfoundation.com/k-dss/dcc4d3a8fcab50a5af6f/",
+                        "https://github.com/makerdao/dss/blob/staging/COPYING",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-100-thursday-july-9-9am-pst-4-00-pm-utc/3023/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-101-thursday-july-16-9am-pst-4-00-pm-utc/3145/5",
+                        "https://forum.makerdao.com/t/maker-relay-ep-5/3406",
+                        "https://forum.makerdao.com/t/maker-relay-ep-6/3517",
+                        "https://forum.makerdao.com/t/bidding-costs-for-liquidation-auctions/3577/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-100-thursday-july-9-9am-pst-4-00-pm-utc/3023/4",
+                        "https://forum.makerdao.com/t/maker-relay-episode-3/3199"
+                    ],
+                    "GPT-summary": "MIP19 proposes an upgrade to the Maker Protocol\u2019s auction contracts to fix the \u201cdouble liquidity\u201d issue and the \u201cstuck debt auctions\u201d bug. The proposal defines an implementation to improve the current liquidation system of the Maker Protocol. The new implementation will make changes to the collateral (flip), surplus (flap), and debt (flop) auction contracts. The post also includes the proposed code, test cases, security considerations, and licensing information. The post is not advertising the proposal, nor is it a discussion.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Grants, Funding and resource allocation",
+                        "Privacy, Security and risk management",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.336727058949281
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "07/07/2020-13:38:32",
+                    "content": "A minor thing that came out of my own liqjuidaiton analysis and I will only give one example here is the idea of flip (or any) auctions that for whatever reason don\u2019t get dealt that can end up stuck in the system permanently. This is primarily due to people having access to auctions and making mistakes but there can be other reasons an auction that has closed lays undealt. One example was a small liquidation where the bidder mistakenly put a 0ETH bid in the dent phase and decided that they didn\u2019t want to pay the tx fee to deal the auction for 0 ETH that sat for months stuck in the system.   Eventually that one was dealt (I don\u2019t know why, but it was) but there are still a few undealt auctions just sitting there in the system stuck.   Other examples are high bids that the keeper waited until it was profitable to clear them before dealing them at a much later date. What I am wondering is if we can just apply a global fix regarding applying some time limit for an auction to deal and once this expires then \u2018do something\u2019.   What I am unclear about is what to do.   Do we just yank and re-tend the auction and free the DAI offered or do something else?  Maybe claim an undealt auction fee from the DAI offered and then return the remaining DAI and re-kick the auction again? Since I saw this with the massive liquidations during BT and the overhang on some undealt auctions I wondered if we needed to do something so these undealt auctions don\u2019t accumulate in the system over time. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.095
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "07/07/2020-16:48:08",
+                    "content": "The easiest off-chain solution here is just to make a Keeper that would deal() auctions as that function is not authorized.  The only problem is, there is no incentive for a keeper to perform this action outside of protocol altruism.  It\u2019s odd that winners would even allow their auctions to be undealt, as they are the ones will all the incentive to call deal(). I should mention that the current auction-keeper already has a --deal-only mode.  With little modification, this could be turned into an altruistic --deal-only. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.788194444444445
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "07/07/2020-17:55:53",
+                    "content": "Yeah but in my example above this had nothing to do with keeper software but more related to interface access by human users. We have more access points to the liquidation system now and probably shouldn\u2019t assume everyone will do the same things.   (i.e. deal an auction that was accidentally bid at 0 ETH or someone who overbids).   Ultimately the question is what to do with these. You remember why I am bringing this up right @cmooney .   Given we are making some other minorish changes I wonder if we can use this as an opportunity to (1) clear the undealt slate and (2) keep it clear permanently in the future\u2026 RIght now this is minor in terms of amount of DAI and ETH locked up in the system.  Better now to nip this in the bud so we don\u2019t accumulate oddish undealt auctions generally.   Assuming everyone is using a keeper to access the auction system I think is the issue here.  In fact I am pretty sure bids after liquidation auction access was provided by secondary parties actually improved bids on a number of auction lots.   Even though it allows a number of mistakes and people not claiming the collateral on a winning bid. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-9/3269",
+                        "https://forum.makerdao.com/t/maker-relay-episode-3/3199",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-101-thursday-july-16-9am-pst-4-00-pm-utc/3145/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-100-thursday-july-9-9am-pst-4-00-pm-utc/3023/2"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.774107142857144
+                }
+            ]
+        }
+    ],
+    "group_index": "2471"
+}

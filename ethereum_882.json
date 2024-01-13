@@ -1,0 +1,498 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-615-subroutines-and-static-jumps-for-the-evm-last-call/3472",
+            "title": "EIP-615: Subroutines and Static Jumps for the EVM -- Last Call ",
+            "index": 3472,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "12/07/2019-08:34:09",
+                    "content": "This proposal is about significantly increasing the formal tractability of the EVM.  We deprecate dynamic jumps, which play hell with formal specs, proofs of correctness, static analysis, fast compilation, and more. And being rid of them, introduce subroutines and other facilities to replace them.  People doing auditing and build tools for analyzing EVM code intend to take advantage of the formal tractability if they can, and the eWasm team is investigating the possibilities for near-linear-time compilation of well-structured EVM and eWasm code.   github.com/ethereum/EIPs       Ready for last call.      by gcolvin   on 08:23AM - 12 Jul 19 UTC   1 commits   changed 1 files   with 36 additions   and 35 deletions.       Much previous discussion was here. ",
+                    "links": [
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/pull/2189",
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/pull/2189",
+                        "https://ethereum-magicians.org/t/eip-615-subroutines-and-static-jumps-for-the-evm/2728",
+                        "https://ethereum-magicians.org/t/eip-615-subroutines-and-static-jumps-for-the-evm/2728/151",
+                        "https://ethereum-magicians.org/t/eip-615-subroutines-and-static-jumps-for-the-evm/2728/152"
+                    ],
+                    "GPT-summary": "The author of the proposal is explaining how they plan to increase the formal tractability of the EVM by deprecating dynamic jumps and introducing subroutines and other facilities to replace them. They mention that people doing auditing and build tools for analyzing EVM code intend to take advantage of the formal tractability if they can, and the eWasm team is investigating the possibilities for near-linear-time compilation of well-structured EVM and eWasm code. The post is ready for last call.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Change to proposal pipeline",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.901515151515152
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "16/07/2019-02:51:38",
+                    "content": "Merged draft is now ready for discussion.  Previous discussions over the years can be found here, here, and here.   Ethereum Improvement Proposals   Subroutines and Static Jumps for the EVM Ethereum Improvement Proposals (EIPs) describe standards for the Ethereum platform, including core protocol specifications, client APIs, and contract standards.      ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-615-subroutines-and-static-jumps-for-the-evm/2728",
+                        "https://github.com/ethereum/EIPs/issues/615",
+                        "https://github.com/ethereum/EIPs/issues/184",
+                        "http://eips.ethereum.org/EIPS/eip-615",
+                        "http://eips.ethereum.org/EIPS/eip-615"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.888888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fulldecent",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "16/07/2019-22:00:12",
+                    "content": "Following is my review of EIP-615. This includes all issues past and present which apply to the current text. This includes technical problems which warrant cancelling/extending this Last Call, specific recommendations to improve the EIP (I will supply PR if invited), and arguments on theoretical and practical topics. Dependency is missing In the text it states  Dependencies EIP-1702. Generalized Account Versioning Scheme.  This proposal needs a versioning scheme to allow for its bytecode (and eventually eWasm bytecode) to be deployed with existing bytecode on the same blockchain.  However, such a dependency is missing in the front matter header. EIP-1702 DRAFT is not a finalized document. Therefore I believe EIP-615 is prematurely in Last Call status. For precedent, please see ERC-721 where ERC-165 was a prerequisite and the latter was finalized before the former entered Last Call. There will be no benefit, and much cost, in finalizing EIP-1720 if it cannot be used. The prerequisites are not met and so it can\u2019t be used. The cost is that it cannot continue to be edited. So again, Last Call should be aborted. Another dependency. The instruction arguments are specified to use \u201cMSB-first, two\u2019s-complement, two-byte positive integers\u201d. This puts an upper bound on the non-data part (and non-JUMPDEST part) of contract sizes at 0x7fff. This depends on contract sizes being limited, which is currently specified by EIP-170 to be limited to 0x6000, so this is good. This dependency on EIP-170 can please be included in the front matter for cross reference purposes, and referenced in text. Test cases are missing EIP-1 states:  Test Cases - Test cases for an implementation are mandatory for EIPs that are affecting consensus changes. Other EIPs can choose to include links to test cases if applicable.  However this EIP fails to include test cases. Backwards compatibility is incomplete This EIP introduces a backwards compatibility against a finalized EIP, specifically EIP-1167. Requesting please that this be added as a note for cross-reference. Formal verification is not shown to provide any practical benefit The first line in the EIP states:  \u2026formal specification and verification are an essential tool against loss.  However this claim is not substantiated sufficiently. Only references are made under the heading \u201csome papers\u201d at bottom. I have raised this topic before, but that wasn\u2019t Last Call, so I\u2019ll do it again here. Has anybody translated any deployed contract to the proposed byte code and successfully detected any actual problem using formal verification? Would EIP-615 have prevented this week\u2019s exploit on 0x Exchange 2.0? Notes on complexity are misleading The paper hypothesizes a vulnerability where contract authors can evade formal analysis by introducing quadratic complexity against a static analyzer.  Otherwise, Contracts can be crafted or discovered with quadratic complexity to use as denial of service attack vectors against validations and optimizations.  This is entirely impractical because no serious projects publish using EVM, they all use a higher level language. Everybody knows that a contract which does not publish its higher-level source code is suspect. And since Solidity is advertised here to be able to target EIP-615 as easily as current EVM, now therefore all the formal analysis benefits of EIP-615 already exist today against Solidity source code. Separately, there is a note on complexity at:  All of the instructions are O(1) with a small constant, requiring just a few machine operations each, whereas a JUMP or JUMPI typically does an O(log n) binary search of an array of JUMPDESToffsets before every jump.  This is an implementation detail. Anybody that cared to implement JUMPDEST lookup in O(1) time would simply store all bytecode in 9-bit bytes where the extra bit denotes valid jump destinations. Dynamic jumps are rarely used I have provided a method to analyze existing contracts to find if they are actually using dynamic jumps or if instead there is a trick to immediately (O(1)) find jump destinations. This analysis is performed here:   github.com/ethereum/EIPs      Issue: EIP-615: Subroutines and Static Jumps for the EVM  \t \topened by gcolvin \ton 2017-04-27 \t \t \tclosed by gcolvin \ton 2019-07-16 \t  The current PR is here: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-615.md Working draft is below: eip: 615 title: Subroutines and Static Jumps for the EVM status: Last Call type: Standards Track category: Core author:...        It demonstrates that the vast majority of JUMPs on EVM are not actually dynamic. This puts into question the underlying motivation of this EIP which is to remove dynamic jumps. This relevant analysis is not referenced from the EIP. Other notes/corrections  (Negative values are reserved for extensions.)  At current, zero is also unused and could be reserved. ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/issues/615#issuecomment-467230869",
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/issues/615#issuecomment-467230869",
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/issues/615#issuecomment-467230869",
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/issues/615#issuecomment-467230869"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.211837342984884
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "17/07/2019-03:01:40",
+                    "content": "Thanks for the feedback @fulldecent.     fulldecent:  EIP-1702 DRAFT is not a finalized document. Therefore I believe EIP-615 is prematurely in Last Call status   This draft doesn\u2019t much care what versioning scheme is provided, so long as there is one.  If necessary the core devs can hold off on assigning this EIP to a fork until such a scheme is available.  But this proposal has been languishing since December of 2016 and my availability to work on it is rapidly dwindling, so I think it\u2019s past time to move it forward.     fulldecent:  This EIP introduces a backwards compatibility against a finalized EIP, specifically EIP-1167. Requesting please that this be added as a note for cross-reference.   I\u2019m sorry, but I don\u2019t understand the compatibility issue here.     fulldecent:  dependency on EIP-170 can please be included in the front matter for cross reference purposes, and referenced in text.   Will do.     fulldecent:  this EIP fails to include test cases.   True.  This proposal was written long before this requirement was imposed.  I\u2019ll let the core devs decide whether to grandfather it in, or ask for somebody else to prepare a new draft with test cases.     fulldecent:  Has anybody translated any deployed contract to the proposed byte code and successfully detected any actual problem using formal verification?   Not that I know of.  I think they are waiting on the proposal to be accepted.     fulldecent:  The paper hypothesizes a vulnerability where contract authors can evade formal analysis by introducing quadratic complexity against a static analyzer. \u2026 This is entirely impractical because no serious projects publish using EVM, they all use a higher level language.   What gets deployed on the blockchain is EVM code.  An attacker can generate vulnerable EVM contracts by design, by fuzzing, or by scanning the blockchain looking for them.     fulldecent:  all the formal analysis benefits of EIP-615 already exist today against Solidity source code   There is no formal specification for Solidity.  There are at least two for the EVM.  So if you want to be certain of what of an EVM contract does you have to analyze the bytecode.     fulldecent:  \u2026 the vast majority of JUMP s on EVM are not actually dynamic.   Solidity uses dynamic jumps to implement function calls. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.195637695637696
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "17/07/2019-06:22:17",
+                    "content": "    gcolvin:   this EIP fails to include test cases.  True. This proposal was written long before this requirement was imposed. I\u2019ll let the core devs decide whether to grandfather it in, or ask for somebody else to prepare a new draft with test cases.   I do not consider grandfathering out test cases for consensus critical code to be a good idea, especially with such a large change as this one.  There are 10 new opcodes, as many opcodes that has been added to the EVM since frontier, combined. While I feel that what is in this EIP to be a good idea asking a non-specific \u201csomebody else\u201d to prepare the tests does not make me confident this EIP is ready for inclusion in any hard fork. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.86511544011544
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "17/07/2019-13:49:11",
+                    "content": "It\u2019s a practical matter @shemnon. Last year we applied for an EF grant for @expede and I to work on this proposal. For months we never got either an acceptance or a rejection. So we both took on other work. If the core devs reject this proposal it will be dead until I leave my job, @expede and @boris business fails, or somebody else decides to champion it. I think it would be a shame to reject years of work because I didn\u2019t do something that was not required until years after the proposal was first written. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.425
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "17/07/2019-14:02:53",
+                    "content": "    gcolvin:  I think it would be a shame to reject years of work because I didn\u2019t do something that was not required until years after the proposal was first written.   That\u2019s not the point. This proposal / Working Group was not funded even though all the other ETH1x ones were because \u201csomebody at the EF doesn\u2019t like Boris\u201d. At least, that\u2019s the only feedback we got. Thus can\u2019t afford to spend time building tests etc. That\u2019s the core issue for all \u201cthird party\u201d EIPs: if you aren\u2019t employed by the EF or Parity or Pegasys, you\u2019ve got volunteer time only. Greg\u2019s wording is weird, but \u201cour business failing\u201d seems to mean that we might circle back around and volunteer to work on this if we have nothing else to do. That is not the case. The way we were treated by the EF means we are unlikely to volunteer on core going forward. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.173611111111112
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "17/07/2019-14:43:43",
+                    "content": "EIP requirement or not, a fully worked sample is something that would have been an aid in understanding how the opcodes work.  This EIP covers a lot of ground and contains at least three distinct categories of opcodes that may have been better served as separate EIPs. It doesn\u2019t need to be as exhaustive as the the reference tests but something as simple as including some of the unit tests from your proof of concept implementation and making them normative is what is needed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "17/07/2019-17:45:33",
+                    "content": "@boris All I meant is that so long as you and @expede are starting up a business Brooke will not have time to champion this EIP.  If your business fails (and I pray it succeeds) then she might, given EF or other support.  Same goes for me and my current employment.  The point remains that it would be a shame to see years of work lost because the primary author could no longer afford to go without funding. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.265625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "17/07/2019-18:07:17",
+                    "content": "@shemnon  I\u2019ll see what I can do.  What is there now is a section laying out the effects of the primitive instructions on the stack.  From a conversation with Dimitry writing test vectors for this EIP should not be very difficult for someone who knows how to do it.  I don\u2019t think I can reconstruct the testing I did in 2017. We discussed breaking up the EIP earlier. If we remove dynamic jumps these are the minimal set of opcodes needed to replace them.  They are also the minimal set needed to map one-to-one to Wasm opcodes.  It would be a lot of work at this point to spit the EIP up, and we would have to start the process over for each resulting new EIP.  Which, given the constraints on my future time, would have the same effect as withdrawing this EIP completely. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.659090909090909
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "17/07/2019-20:45:29",
+                    "content": "Have the Vyper and Solidity projects had a look at these opcodes?  How would they impact their tooling?  Would they use it or ignore it? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "17/07/2019-21:52:07",
+                    "content": "@fubuloubu tells me the Vyper project (or at least he) is in support.  As I recall it the Solidity team added hooks for at least the primitive opcodes into Yul.  I think some degree of support was added to Solidity as well.  @axic would know. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving information related to proposal"
+                    ],
+                    "Sentiment": 3.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "18/07/2019-03:38:09",
+                    "content": "@shemnon  I just checked the source.  Yul and Solidity have hooks (defined opcodes and empty code generation functions) for the eventual implementation of this proposal.  @axic or @chriseth would know how much work remains. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "18/07/2019-04:47:17",
+                    "content": "We moved from internal calls to dynamic jumps for gas savings within our contracts and have had nothing but problems with it. This proposal would be very helpful, as it would allow us to get the safety we need while saving gas, which is what lead us to make that decision. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.333333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "16",
+                    "likes": "1",
+                    "time": "18/07/2019-08:00:58",
+                    "content": "    fubuloubu:  We moved from internal calls to dynamic jumps for gas savings within our contracts and have had nothing but problems with it. This proposal would be very helpful, as it would allow us to get the safety we need while saving gas, which is what lead us to make that decision.   A quick note here: https://eips.ethereum.org/EIPS/eip-1380 would also help achieving that by using the old system for calls in Vyper. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.633333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "18/07/2019-08:02:42",
+                    "content": "    gcolvin:  Yul and Solidity have hooks (defined opcodes and empty code generation functions) for the eventual implementation of this proposal. @axic or @chriseth would know how much work remains.   The Yul assembler has support for a version of EIP615 from 2 years ago. No recent changes are applied. Back when it was implemented there were no decision on the size of the immediate. The output of the assembler was never tested given there is no testing environment for it. Solidity to Yul is still progress, so there is no complete support for Solidity to EVM615. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.05
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "18",
+                    "likes": "1",
+                    "time": "18/07/2019-09:39:45",
+                    "content": "Solidity has zero support for this. Many internal routines of the code generator would have to be rewritten or at least modified. There is support for compiling Yul to something like this proposal, but it is completely untested. Furthermore, we are currently working on a full rewrite of the code generator to target Yul. Once that is finished, we can compile to both web assembly and execution environments that require static jumps, but this will still take several months. In general, I strongly oppose this proposal in its current form. I think the introduction of multi-byte opcodes is dangerous and in general, it is a big change to EVM implementations. The proposal was initially written with speedup in mind and not with easy of verification. The speedup turned out to be not really present, Pawel\u2019s evmone implementation seems to be a much better solution. I do not see the benefit of ease of verification worthwhile when compared to the risk of radical changes to the EVM, especially as implementations still need to keep both implementations. If code is analyzed, symbolic execution has to be performed in any case. In most situations, this can easily resolve the jump targets even when they are taken from the stack. At least when compiled from Solidity, the situations where this is difficult will still remain: The only situation where the jump target is not directly available on the stack is when function types are used. These function types would still need a dispatch table, so the problem is not really solved. The benefit of a dispatch table over dynamic jumps is of course that the set of potential targets is smaller. I would say that this set can already be restricted in the current EVM by analyzing how many elements on the stack are accessed by a routine, how many elements are returned and similar techniques. Furthermore, additional output from the compiler can also be used to improve the analysis - the compiler knows which jumpdest is dynamic and which is not. Unless when jump targets are read from storage (and maybe even then!), a formal system should be able to verify the correctness of this information to guard against compiler bugs. In closing, I think this is a problem that should be solved above the EVM. It is a big risk to modify the EVM implementations and also the Solidity code generator to conform to it. Even when this proposal is implemented, malicious code can still run the old way, so this can only be a protection against bugs and not against bad intent. If it is just about finding bugs, we should have access to the source code and can use the help of the compiler and other tools. Furthermore, instead of adapting Solidity\u2019s \u201clegacy\u201d code generator, I would prefer to focus on the re-implementation that uses Yul. The code that is generated from Yul will already use a dispatch table instead of dynamic jumps and it should be rather straightforward to resolve all jump destinations. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.397727272727273
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "18/07/2019-17:18:46",
+                    "content": "Thanks for the feedback @chriseth. Most of it would have been more helpful when you co-authored this proposal in 2016.  By now it is simply too late to change the form of this proposal\u2013it would amount to abandoning the proposal, probably permanently.  The best I can do now to simplify it would be to stick to the primitive operations and eliminate JUMPV, JUMPSUBV, GETLOCAL, and PUTLOCAL. Improving the tractability of formal analysis of EVM code was a desiderata from the start. (See link to original proposal below.)  The performance gains were to be had by facilitating near-linear-time compilation, in the same way that Wasm compilers like Lightbeam take advantage of its clean control flow to that end.  My measurements indicate that evmone is about twice as fast as aleth, and my study of the code indicates that this is primarily because it implements optimizations that you decided not to pay me to implement for aleth back in 2017.  It\u2019s true that those optimizations do not depend on this proposal.   github.com/ethereum/EIPs      Issue: Subroutines and Static Jumps for the EVM  \t \topened by gcolvin \ton 2016-12-13 \t \t \tclosed by gcolvin \ton 2017-08-28 \t  EIP: TBD Title: Subroutines and Static Jumps for the EVM Status: Draft Type: Core Author: Greg Colvin, Pawe\u0142 Bylica, Christian Reitwiessner  Created: 2016-12-10 Edited: 2016-29-12 Abstract This EIP...         ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/issues/184",
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/issues/184",
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/issues/184",
+                        "https://github.com/gcolvin",
+                        "https://github.com/ethereum/EIPs/issues/184"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.434895833333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "18/07/2019-19:18:26",
+                    "content": "    gcolvin:  and my study of the code indicates that this is primarily because it implements optimizations that you decided not to pay me to implement for aleth back in 2017.   Please, let\u2019s keep the discussion technical and not personal. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "19/07/2019-01:12:20",
+                    "content": "Thank you, @shemnon.  And my apologies, @chriseth. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "22",
+                    "likes": "1",
+                    "time": "20/07/2019-17:17:52",
+                    "content": "@chriseth has expressed very belated but very strong and reasoned objections to EIP-615.  Being as he is a core developer and coauthor of the proposal I must take it that there is not consensus to move forward.  I am withdrawing the proposal from further consideration. ",
+                    "links": [
+                        "http://eips.ethereum.org/EIPS/eip-615"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party giving negative feedback on proposal"
+                    ],
+                    "Sentiment": 6.272222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AFDudley",
+                    "index": "23",
+                    "likes": "1",
+                    "time": "22/07/2019-13:21:34",
+                    "content": "Given the open and egalitarian nature of the community, I don\u2019t see a problem with people explaining that lack of payment results in lack of implementation. No one is mocking anyone. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "24",
+                    "likes": "1",
+                    "time": "23/07/2019-20:10:51",
+                    "content": "I\u2019de spend more time on this but I am involved in putting a bow on what is finally in the Istanbul so my priorities lie elsewhere.  I think that the ideas in this EIP are worth working on and if things go as planned I may come back to this by the end of the year, possibly in several smaller EIPs. To that end two things are worth pointing out.  First: my advocacy for getting EIP-1702 was preparatory for EVM upgrades like in this EIP.  The radical changes would not leak into older versions of contracts.  There is also some recommended methods to allow for multiple versions on the chain at the same time. Second the argument that multi-byte instructions don\u2019t already exist is not entirely accurate.  All of the push instructions keep immediate mode values in the code.  While they do not directly impact EVM execution they often do in the next instruction, when a jump is called.  We can split hairs over the semantics but push <x> jump isn\u2019t much different from jumpto <x>, whereas with the latter we can deprecate dynamic jumps (and then get linear time native compilation, and then eliminate the need for random precompiles for performance reasons). @chriseth proposed that \u201cadditional output\u201d and \u201ca formal system\u201d can be used to to gain the same benefits.  Saying there are better ways to do without a concrete implementation is letting perfect be the enemy of better.  If there are better solutions they should be proposed so they can be implemented.  Until then this is the best solution that I\u2019ve seen proposed to get the EVM to adopt modern VM technologies and thus reap the benefits (such as linear time native compilation). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.824404761904763
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "23/07/2019-21:35:24",
+                    "content": "My snark was out of line by my own standards, @AFDudley, and I\u2019m glad that @shemnon called me out on it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "23/07/2019-22:18:08",
+                    "content": "    shemnon:  I may come back to this by the end of the year, possibly in several smaller EIPs.   I\u2019ll be happy to help with this, but it unlikely I can be a champion again.  I will likely be editing the EIP soon to lay out a better backwards compatibility plan to implement this in stages\u2013amounting perhaps to a few EIPs, but better maintaining conceptual integrity and a clear path forward.  So we should stay in touch on this, @shemnon. I think a successful reintroduction of this proposal would take a more up-to-date reference implementation, test vectors, support by at least one high level language, and an explicit push from the formalists, auditors, and tool makers who have expressed private support.  @expede, @boris, and myself attempted to get EF funding for that work, but were denied for reasons unknown.     shemnon:  Until then this is the best solution that I\u2019ve seen proposed to get the EVM to adopt modern VM technologies and thus reap the benefits (such as linear time native compilation).   I was trying to get the EVM architecture up to the standards of 1950\u2019s era stack machines, so not all that modern. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author is advertising proposal"
+                    ],
+                    "Sentiment": 5.902500000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "27",
+                    "likes": "1",
+                    "time": "23/07/2019-23:01:39",
+                    "content": "@boris, I should add that like you and Brooke I would be loathe to work with the Ethereum Foundation on any future project.  Their grants process is dysfunctional, unprofessional, and unfair to proposers.  They also offer about 1/2 to 1/4 of the going rate for senior American engineers, or less.  Volunteering what time I can I will do. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 4.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/boris",
+                    "index": "28",
+                    "likes": "2",
+                    "time": "23/07/2019-23:19:53",
+                    "content": "I don\u2019t have much issue with their rates. It\u2019s a \u201cbreak even\u201d level of compensation that won\u2019t build sustainable teams but does compensate engineers that want to do some public service. Wasting 7 months of our time without clear feedback and then having the EVM Working Group being the only funding not approved with the personal attack of \u201csomeone at the EF doesn\u2019t like Boris\u201d is the issue. The EVM evolution roadmap is there if people care about making a better VM today that leads to a better / easier transition to a future WASM EE is there if people want to follow it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "29",
+                    "likes": "1",
+                    "time": "24/07/2019-09:51:20",
+                    "content": "The rate issue depends a lot on where you live and what you could otherwise earn.  Ethereum is not a charity, though I\u2019ve treated it like one.  Ethereum is a community, but not yet a self-sustaining one.   So now I need to earn what I\u2019m worth as as senior VM architect, and get my R&D back on the cutting edge. And yes, \u201cdysfunctional, unprofessional, and unfair to proposers.\u201d  You were treated shabbily. I think things will be picked up again, but the need will have to be more apparent.  The test will be whether we can write an EVM compiler that can\u2019t go quadratic in the face of adversarial code. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.9188311688311686
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fulldecent",
+                    "index": "30",
+                    "likes": "2",
+                    "time": "29/07/2019-14:36:33",
+                    "content": "The lead author here has confirmed to withdraw the proposal from further consideration in this round. So now wanted to add non-technical notes. On the human side. I consider this review/discussion to be a success. Having just some of the attention of the great people in this room is value enough for me to get involved in these reviews and bring my a-game. Private support is a real thing. Many of the use cases (people that want to use the new things that get invented here) will reach out privately. If you spend a lot of time on GitHub and have never put your phone number/email directly in an issue then you might not know really how many not-GitHub people are reading along. These are great relationships, they lead to good, profitable client relationships. Now is a good time to regroup and follow up on any new contacts we made along the way in this journey. Wishing all the best. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.568181818181818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "03/08/2019-14:47:40",
+                    "content": "Thank you @fulldecent.  We sometimes disagree technically, but always in a civilized manner.  My Magicians, Github, and Twitter profiles include my email  address, so I\u2019m easy to find, and have done good work with people who have found me.  It is unfortunate that many of the people supporting this proposal did not make their needs more clear in our public forums.  It\u2019s also unfortunate that I withdrew the proposal not for technical reasons, but because @chriseth\u2013a major coauthor\u2013objected.  I have asked him to remove his name from the proposal so that any future attempt to introduce this proposal by @shemnon or others can be judged mainly on technical grounds. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.648611111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "03/08/2019-14:59:11",
+                    "content": "    shemnon:  a fully worked sample is something that would have been an aid in understanding how the opcodes work   Actually, the proposal points at nearly complete C++ code for an earlier version of the proposal,  in the aleth repo.  Not that much has changed, so it still serves as useful example. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.6000000000000005
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shemnon",
+                    "index": "33",
+                    "likes": "1",
+                    "time": "03/08/2019-19:45:11",
+                    "content": "Per EIP-1 normative information should be in the public domain, typically via a CC0 designation. Aleth is GPL. As a reference implementation it is fine, but it can only be considered informative and not normative. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.3125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "12/08/2019-22:48:57",
+                    "content": "I\u2019m only pointing at the Aleth code as \u201can aid in understanding how the opcodes work.\u201d  Given a normative spec I don\u2019t know that we need a public-domain normative implementation.  If we do,  Geth is LGPL and Parity is GPL. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "882"
+}

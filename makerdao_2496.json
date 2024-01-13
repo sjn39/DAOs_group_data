@@ -1,0 +1,1062 @@
+{
+    "poll_list": [
+        {
+            "title": "Inclusion Poll for Target Price Adjustment Module (Vox) (MIP20)- October 12, 2020",
+            "index": "3196",
+            "option": "Yes",
+            "supporting_mkr": "29,626",
+            "highest_fraction": 0.53
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip20-target-price-adjustment-module-vox/3196",
+            "title": "MIP20: Target Price Adjustment Module (Vox) ",
+            "index": 3196,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "negative-rates",
+                "mips",
+                "mip-accepted"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#1",
+                    "likes": "16",
+                    "time": "13/07/2020-23:08:44",
+                    "content": "MIP20: Target Price Adjustment Module (Vox) Preamble MIP#: 20 Title: Target Price Adjustment Module (`Vox`) Author(s): Lev Livnev (@equivrel), \ufffc\ud83c\udf27\ufe0f McRainface Contributors: n/a Type: Technical Status: Accepted Date Proposed: 2020-07-08 Date Ratified: 2020-10-27 Dependencies: n/a Replaces: n/a License: AGPL3+  References  The proposed dss-vox implementation target price adjustment in purple paper target price adjustment in sai The Target Rate Feedback Mechanism: An Introduction  Sentence summary This proposal provides a smart contract implementation of Vox, a module which adjusts the target price of DAI according to a governance defined rate, allowing the institution of negative effective interest rates. Paragraph summary The Dai Stablecoin System is intended to reliably maintain dai\u2019s exchange rate with respect to a reference asset (USD). Certain parameters of the System, such as the Stability Fee, are administered by Maker governance on an ongoing basis in response to evolving market conditions. This MIP implements the Vox module, which allows Maker governance to institute negative effective interest rates. In contrast to the Target Rate Feedback Mechanism (TRFM), the mechanism in this proposal does not adjust rates algorithmically using a DAI price oracle. Instead, the target rate is set directly by governance, similary to how the Stability Fees and Dai Savings Rate are set today. Component summary MIP20c1: Definitions: defines Target Price, Target Rate, Target Price Adjustment Module, and Target Price Cap. MIP20c2: Desired properties: lists important properties that the Vox implementation must satisfy. MIP20c3: Proposed code: contains snippet of proposed implementation. MIP20c4: Test cases: lists existing test cases, including integration test MIP20c5: Security considerations: comments on the limited nature of the security implications of adding the Vox. MIP20c6: Other considerations: describes the changes to governance of monetary policy, and contrasts the proposal in this MIP with the TRFM. MIP20c7: Formal verification/audit information: comments on the amenability of the proposed code to formal verification, even though formal specification, audit, or code review have yet to be conducted. MIP20c8: Licensing: states the license under which the proposal and code are distributed. Motivation In an environment where the supply of DAI is too low to meet demand, monetary policy might find itself at the \u201czero lower bound\u201d where stimulus can no longer be effected through lowering interest rates. In this case, it may necessary to purseu a policy of negative interest rates, in which the direction of the cashflow is reversed, with savers possibly paying borrowers. In the system as it exists today, the combination of the CDP Stability Fee and Dai Savings Rate serves as a cash flow from borrowers (CDP users) to savers (DAI holders), or in other words, an interest rate. However, that interest rate is effectively constrained to be positive: though it is technically possible to accrue a negative interest rate to CDPs, depositing DAI into the Savings Contract is optional so savers would be able to avoid negative rates simply by not using it, leaving a deficit on MakerDAO\u2019s balance sheet. A crucial requirement in the implementation of this policy is for all DAI holders to be exposed to the negative rate. For technical reasons, it is not feasible to continuously manipulate on-chain user token balances, since this behaviour would undermine the implicit assumptions of well-behaved token semantics and could break integrations into other smart contract systems. A more compliant way of implementing negative interest rates is to manipulate the target price of DAI itself: this MIP implements such a system. Adjusting the target price of DAI up or down causes an implicit value transfer from DAI borrowers to DAI holders, or from DAI holders to DAI borrowers, respectively, meaning that Target Price adjustment at a fixed rate of change acts like an effective interest rate, with a negative Target Rate corresponding to a negative effective interest rate. Specification MIP20c1: Definitions   Target Price: the system accounting price of 1 DAI in USD. This is currently represented as spot.par(), and is set to $1.00. Multi-collateral dai uses the Target Price in two places: when measuring the collateral ratio of a CDP, and when calculating the redemption value of DAI after Emergency Shutdown. The governance community may also use the Target Price as the price target for DAI/USD when setting interest rates and other risk parameters.  Target Rate: the annualised compounding rate of change of the Target Price (short for Target Price Adjustment Rate).  Target Price Adjustment Module: the smart contract which periodically adjusts the Target Price by the Target Rate.  Target Price Cap: the maximum Target Price that the Target Price Adjustment Module is able to set.  MIP20c2: Desired properties  At every call to vox.prod(), spot.par() should change by the target rate accrued over the period of time since the last call to vox.prod(). The Target Rate should be initialised at 0% per year, which results in no change to the Target Price. The Target Price should not be adjusted after Emergency Shutdown, regardless of the value of the Target Rate prior to Emergency Shutdown. The Target Price should not be adjusted above the Target Price Cap. When the Target Price Cap is reached, the Target Price should be set to exactly the Target Price Cap and further upward adjustments should have no effect.  MIP20c3: Proposed code see vox.sol. The core price adjustment functionality is simple: function prod() external {     uint256 age = sub(now, tau);     tau = now;      if (age == 0) return;          // optimised     if (way == ONE) return;        // optimised     if (spot.live() == 0) return;  // no adjustment after cage      uint256 par = min(cap, rmul(rpow(way, age, ONE), spot.par()));     spot.file(\"par\", par); }  MIP20c4: Test cases see vox.t.sol  test_prod_noop test_prod_basic test_prod_cap  test_mainnet_target_adjustment (this one is an integration test using the mainnet deployment of dss)  MIP20c5: Security considerations The proposed solution is simple and non-invasive, interacting with only one other component of the system (the Spotter) through an existing method for adjusting the par price. Even though the core system was designed with the possibility of a changing par in mind, peripheral components and integrations should be carefully inspected for reliance on a fixed par. MIP20c6: Other considerations Upon adoption of this MIP, the Target Rate parameter can be adjusted by governance as an additional monetary policy lever, similar to the current notion of \u201cBase Rate\u201d. Monetary policy processes may have to be amended in order to leverage this facility, and this MIP may be expanded in order to specify them. This MIP can be compared with the folkloric Target Rate Feedback Mechanism (TRFM), an unused implementation of which was present in single-collateral dai. The TRFM relies on the same notion of adjusting the target price of DAI as a monetary policy tool. The crucial difference between the TRFM and the mechananism proposed in this MIP is that while the TRFM algorithm sets the Target Rate automatically and continuously depending on a DAI price oracle, this MIP does not propose for the Target Rate to be set algorithmically. MIP20c7: Formal verification/audit information The proposed contract is written in a way which is amenable to formal specification and verification, in accordance with the style and practices of the core multi-collateral DAI contracts, though it has not been formally specified. No audit or code review has taken place yet. MIP20c8: Licensing  AGPL3+  ",
+                    "links": [
+                        "https://makerdao.com/purple/#sec-4-3",
+                        "https://github.com/makerdao/sai/blob/master/src/vox.sol#L63",
+                        "https://forum.makerdao.com/t/the-target-rate-feedback-mechanism-an-introduction/2319",
+                        "https://github.com/livnev/dss-vox/blob/master/src/vox.sol",
+                        "https://github.com/livnev/dss-vox/blob/master/src/vox.t.sol",
+                        "https://www.gnu.org/licenses/agpl-3.0.en.html",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-en-espanol/4882",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18/4881",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-pt-br-portugues/4810",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17-en-espanol/4804",
+                        "https://forum.makerdao.com/t/maker-relay-ep-17/4798",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-113-thursday-october-8-16-00-utc/4505/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-pt-br-portugues/4722",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16-en-espanol/4719",
+                        "https://forum.makerdao.com/t/maker-relay-ep-16/4710",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15-pt-br-portugues/4597",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15-en-espanol/4576",
+                        "https://forum.makerdao.com/t/maker-relay-ep-15/4574",
+                        "https://forum.makerdao.com/t/relay-ep-14-en-espanol/4457",
+                        "https://forum.makerdao.com/t/maker-relay-ep-14/4450",
+                        "https://forum.makerdao.com/t/maker-relay-ep-13-en-espanol/4313",
+                        "https://forum.makerdao.com/t/maker-relay-ep-13/4310",
+                        "https://forum.makerdao.com/t/maker-relay-ep-11/4041",
+                        "https://forum.makerdao.com/t/signal-request-quantitative-easing-to-fix-the-peg-aka-manual-psm/3902",
+                        "https://forum.makerdao.com/t/different-approach-to-rate-setting/3889/11",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-105-thursday-august-13-4-00-pm-utc/3570/5",
+                        "https://forum.makerdao.com/t/subreddit-repost-reducing-dai-redemption-value-to-fix-peg/3525/26",
+                        "https://forum.makerdao.com/t/maker-relay-ep-6/3517",
+                        "https://forum.makerdao.com/t/weekly-mips-update-10/3429",
+                        "https://forum.makerdao.com/t/maker-relay-ep-5/3406",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-101-thursday-july-16-9am-pst-4-00-pm-utc/3145/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-4/3282",
+                        "https://forum.makerdao.com/t/week-7-dai-distributions-sourcecred-trial/3281",
+                        "https://forum.makerdao.com/t/weekly-mips-update-9/3269",
+                        "https://forum.makerdao.com/t/negative-dsr-trfm/3175/23",
+                        "https://forum.makerdao.com/t/prioritization-framework-sentiment-polling/15554",
+                        "https://forum.makerdao.com/t/mip30-adaptador-de-cusdc-farmeable-cropjoin/5226",
+                        "https://forum.makerdao.com/t/mip30-farmable-cusdc-adapter-cropjoin/5163",
+                        "https://forum.makerdao.com/t/ideas-on-dai-peg-usdc-a-vault-fees-etc-a-basic-analysis-suggestions/5147",
+                        "https://forum.makerdao.com/t/maker-relay-ep-19-en-espanol/4981",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-117-thursday-november-5-16-00-utc/4929/2",
+                        "https://forum.makerdao.com/t/maker-relay-ep-19/4975",
+                        "https://forum.makerdao.com/t/maker-relay-ep-18-pt-br-portugues/4891"
+                    ],
+                    "GPT-summary": "The post is a proposal for a smart contract implementation of Vox, a module which adjusts the target price of DAI according to a governance defined rate, allowing the institution of negative effective interest rates. The proposal provides definitions, desired properties, proposed code, test cases, security considerations, other considerations, and licensing information. The post does not ask for feedback, collaboration, or advertising, nor does it answer any questions about the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.168549332611833
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "13/07/2020-23:57:59",
+                    "content": "I like new ideas that can easily give us moremonetary levers/tools. It is not entirely clear to me how the above would incentivize creation of DAI to provide liquidity to markets and help with the PEG.  Could you give us an example of how the above would help manage the PEG either from a vault owner or new opener perspective or from a market participant perspective. Thanks in advance. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.611471861471862
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "14/07/2020-02:04:58",
+                    "content": "@MakerMan there\u2019s a discussion of the incentives induced by a changing par in this older post:     The Target Rate Feedback Mechanism: An Introduction Governance       Background The Target Rate Feedback Mechanism (TRFM) has been mentioned a few times in recent memory, for example during governance calls or in forum posts like this one. However, the TRFM is not widely understood, so I\u2019m making this post to provide the community with an easy introduction to the concept. There\u2019s no intent here to suggest implementing this mechanism; rather, I merely want to clearly explain what the TRFM is so that everyone can understand and participate in any discussions into w\u2026     (see \u201cmarket price > target price\u201d section for the current scenario) ",
+                    "links": [
+                        "https://forum.makerdao.com/t/target-rate-feedback-mechanism-trfm-not-easy-to-understand/1872"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.03125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "14/07/2020-02:21:46",
+                    "content": "Thanks for reminding me of that since I had already read it and there was good examples. Everytime I read the market low side here we have more than ample tools to bring the PEG back up but when I read the market high price example in the above it really looks weak again to me.    The Target Rate Feedback Mechanism: An Introduction   Market Price > Target Price If DAI is trading above its target, the target rate will be set to a negative value. This implies a decreasing target price. Vault user viewpoint As the target price decreases, Vault collateralization levels increase (i.e. the same amount of DAI debt is regarded as a lesser dollar amount by the system). This frees up Vault holders to mint more DAI without increasing their liquidation risk, incentivizing a DAI supply increase, which should lower the market price. This is functionally similar to a negative stability fee, but note that the system can still collect non-zero fees (albeit in an inflating currency) even with a negative target rate.   This incremental change in CR I don\u2019t see as eliciting a lot of extra DAI.  It is an incremental change. Frees up vault holders to mint some more DAI but even if we assume ALL vault holders take advantage of this or even an average amount using this model basically would only at best mint the TRFM rate difference.  If this is 1% it would be 1% on say current 160M or 1.6M DAI.   The question becomes what happens in this mechanism if there is a constant demand for DAI as some fixed price point (say 1.01 or 1.015).   Eats up the 1% TRFM change and the PEG doesn\u2019t change.   From what I see this TRFM will continue to change the target price until enough DAI is minted to finally drive the PEG down but then we end up with a target that is quite low. So here the 1:1 redemption value is kept because on ES the vaults will redeem their collateral based on the targetDAI price used in the vaults and the whole 1:1 is kept intact throughout this whole process simply because CR against LR valuation mechanics is kept intact. What is unclear to me is the rate this kind of system acts at.   Since it may simply not be able to respond quickly enough or provide enough liquidity to deal with something like this comp issue. The other thing this model doesn\u2019t consider is the nominal fee percentage as a change against the TRFM value change.  If I have a 10K vault and get a 1% boost in CR (for a whopping $100) but tx fees cost me $2 to do anything with that vault am I going to do this or not?   I already am dealing with this in all of my DeFI activities - considering that doing anything is going to cost me not $2 but more like $10 and so I better be moving something north of 5K at a minimum to make more than that $10 it cost me.  This may drive an incremental change but what if this system due to comp would end up pushing the target off by more than 20%.   In most normal market circumstance I think this is a great system to push gently that retains the 1:1 DAI collateral backing.  But I think the TRFM or variant might itself create new stresses as well as take significant amount of time to react especially when there are really big constant drivers affecting the PEG. Don\u2019t get me wrong.   The more tools the better here.   I think we do need to classify these tools in terms of real practical applicability towards various real situations.   I think this comp issue is probably one of the most powerful and difficult issues to deal with since the amount of liquidity to bring the PEG back isn\u2019t probably 1% but more like 25-50% or more of the current outstanding supply which is going to take any normally operating mechanism right out of whatever normal operating ranges are\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.751950174008997
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Kurt_Barry",
+                    "index": "#5",
+                    "likes": "8",
+                    "time": "14/07/2020-02:31:55",
+                    "content": "I agree that the incentives lack empirical validation \u201cin the wild\u201d. Many things work differently in practice. One thing we know\u2013under current conditions, the system is recognizing a price of 1 USD / 1 DAI, yet the market stubbornly sits above that. I think there\u2019s an argument to be made that this module is something we\u2019d rather have than not have\u2013if the peg gets so bad that the only choices are 1) try negative rates or 2) ES, having this ready to go will be something we\u2019re glad for. It can be another tool in the toolbox\u2013which there\u2019s no obligation to ever use. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 5.15
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#6",
+                    "likes": "3",
+                    "time": "14/07/2020-02:45:28",
+                    "content": "I am for MakerDao preparing and testing an implementation of this so that if it was ever necessary, it would be ready to deploy swiftly. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#7",
+                    "likes": "6",
+                    "time": "14/07/2020-11:32:30",
+                    "content": "@MakerMan @Kurt_Barry Kurt\u2019s TRFM Introduction covers the essentials on Target Price adjustment very well. However it is missing one important angle: the use of Target Price as the monetary policy target for future parameter adjustments (i.e. replacing our current target of $1.00). The effect of this is actually crucial, since it aims to create the credible expectation that the negative interest rate \u201con paper\u201d is eventually realised into an effective negative interest rate. It\u2019s important to understand what this would mean in practice: suppose that because of a supply/demand imbalance that persists near the zero lower bound, with DAI/USD trading at $1.02 as a result, a target rate of -4% is set by governance. Suppose that some time later, the Target Price has come down to $0.99 (from the initial level of $1.00), and that DAI is now trading at $1.00. With the Target Price used as the monetary policy target, it is of utmost importance that the price is not considered to be \u201cat the peg\u201d (the new \u201cpeg\u201d is $0.99!): instead, doveish monetary policy (like low SFs and negative TR) must continue until the price of DAI has reached the new (lower) price target. Indeed, with the TP at $0.99, $1.00 is the new $1.01, $0.99 is the new $1.00, etc. Once we have credibly commited to pursuing the new Target Price as the monetary policy price target, only then will Target Rate Adjustment serve as an effective negative real interest rate. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/week-7-dai-distributions-sourcecred-trial/3281"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.383545274170274
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/swakya",
+                    "index": "#8",
+                    "likes": "2",
+                    "time": "14/07/2020-12:42:43",
+                    "content": " With the Target Price used as the monetary policy target, it is of utmost importance that the price is not considered to be \u201cat the peg\u201d (the new \u201cpeg\u201d is $0.99!) \u2026 doveish monetary policy \u2026 must continue.  I\u2019m not sure I follow. You mean that the borrower should know that they will be able to repurchase DAI at a lower price that the one in effect when governance set -4%? Wouldn\u2019t that already be the case with the price going from $1.02 to $1? \u201c-4%\u201d doesn\u2019t have to be the expectation-setting negative rate. Another kind of credible commitment would be to a $1 market price. Having 1DAI!=$1 internally would be a means to that end by adjusting expectations in case of ES and increasing borrowing ability. If we acknowledge that the internal and the market price can legitimately deviate, I don\u2019t see why the target market price couldn\u2019t be $1 forever and the target internal price be variable. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.403977272727273
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#9",
+                    "likes": "2",
+                    "time": "14/07/2020-13:11:59",
+                    "content": " I\u2019m not sure I follow. You mean that the borrower should know that they will be able to repurchase DAI at a lower price that the on in effect when governance set -4%? Wouldn\u2019t that already be the case with the price going from $1.02 to $1? \u201c-4%\u201d doesn\u2019t have to be the expectation-setting negative rate.  In a world where the Target Price is $0.99, i.e.  the system\u2019s accounting value for collateral ratios settlement value for global settlement current monetary policy target  are all $0.99, a DAI price of $1.00 represents a 1% premium in the same way that $1.01 is a 1% premium in today\u2019s world. The three factors above are the only places in the system where \u201c1 DAI = $1.00\u201d is present as an assumption: changing this is what gives Target Price adjustment teeth as a monetary policy tool. If we credibly commit to using the Target Price as the monetary policy target, then a DAI saver or borrower should anticipate that in the long run, the price of DAI should follow the Target Price, for exactly the same reason that their expectations currently are anchored to $1.00, and therefore should perceive the continuous adjustment of the Target Price as an effective interest rate. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.26171875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/swakya",
+                    "index": "#10",
+                    "likes": "1",
+                    "time": "14/07/2020-14:39:46",
+                    "content": "    equivrel:   the system\u2019s accounting value for collateral ratios settlement value for global settlement current monetary policy target    (numbered your list for clarity) What I had in mind was decoupling 1&2 from 3. Take this hypothetical scenario: market price is $1.02. Internal price is $1. Governance sets a $0.99 Target Price. At this moment, the expectation is that if market price hasn\u2019t reached $1 when the Target Price of $0.99 is reached, a lower Target Price ($0.98, $0.97\u2026) will be set. As the market price reaches $1, governance immediately starts raising the Target Price and behaves like a human PID controller. In effect, that would be accepting the premium that the market seems to be placing on DAI on top of its intrinsic properties and adjusting those properties until, combined with the premium, a market price of $1 is reached. I don\u2019t see a need for targeting any market price other than $1. That is: it seems unnecessary to promise that the market price will ever reach the Target Price. It seems good enough to promise that the value of 1 and 2 (from the quoted list) will always decrease until market $1 is reached. edit: I am of course for the proposal itself. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "14/07/2020-14:58:04",
+                    "content": "    equivrel:  In a world where the Target Price is $0.99, i.e.  the system\u2019s accounting value for collateral ratios settlement value for global settlement current monetary policy target    Thank you so much for additional helpful info on this.     equivrel:  It\u2019s important to understand what this would mean in practice: suppose that because of a supply/demand imbalance that persists near the zero lower bound, with DAI/USD trading at $1.02 as a result, a target rate of -4% is set by governance. Suppose that some time later, the Target Price has come down to $0.99 (from the initial level of $1.00), and that DAI is now trading at $1.00. With the Target Price used as the monetary policy target, it is of utmost importance that the price is not considered to be \u201cat the peg\u201d (the new \u201cpeg\u201d is $0.99!): instead, doveish monetary policy (like low SFs and negative TR) must continue until the price of DAI has reached the new (lower) price target. Indeed, with the TP at $0.99, $1.00 is the new $1.01, $0.99 is the new $1.00, etc. Once we have credibly commited to pursuing the new Target Price as the monetary policy price target, only then will Target Rate Adjustment serve as an effective negative real interest rate.   So lets use your example.   In an ES how much collateral value will 1 DAI recieve if the target price is .99 in the system?   If it is .99 USD worth of collateral then in effect we are using this to do exactly what I was suggesting in terms of running with a negative surplus.  It is just a different approach to effectively diluting the value of DAI in terms of backing collateral received during an ES. What I am trying to wrap my head around is the delay cycle time in this PID loop since we have to take a measurement of the DAI market price and then re-adjust the DAI target price in the system.   How often does this module - take a measurement - and then adjust the target rate? Also what would you expect to be a normal working range on such a feature?   How far would you be willing to allow the target rate to change before you would consider the system in danger either for DAI holders or vault owners (either the low or high side of the DAI target price). Thanks again Lev always appreciate your intelligent thoughtful inputs.   I like that the code change for this looks pretty simple too btw.   I just think given fees and incremental changes that the real working rate and range will be of limited use in circumstances like this comp farming. So if you would please address first what the system rate of change is, what you consider nominal working ranges for the target price, and whether you think these would address the comp farming issue or not. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.644685971210361
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#12",
+                    "likes": "1",
+                    "time": "14/07/2020-15:00:12",
+                    "content": " What I had in mind was decoupling 1&2 from 3.  Yes, I understand your position, and I have thought about this option too. I think it could possibly work, since indeed there must be a discount for (1) and (2) at which the market price of DAI starts to be affected. My concern is that under this monetary policy regime, the Target Rate wouldn\u2019t have enough \u201cteeth\u201d, and that decoupling (3) from (1) and (2) introduces too much dissonance to monetary policy signaling. In practical terms, it would probably require a steeper Target Price adjustment than under the Target Price targeting regime, so we could end up in a scenario where DAI is only partially \u201cbacked\u201d w.r.t. the monetary policy target of $1.00, making this scheme similar to the proposals of minting unbacked DAI. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.083333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#13",
+                    "likes": "2",
+                    "time": "14/07/2020-15:09:40",
+                    "content": "    MakerMan:  So lets use your example. In an ES how much collateral value will 1 DAI recieve if the target price is .99 in the system?   $0.99\u2019s worth. The effect of this would have some similarities to proposals to create a system deficit, but the difference is that there will be no deficit, since the new price target will be $0.99 too. I believe this should also make the price adjustment effect much more effective (i.e. have a greater impact on supply and demand per $0.01 adjustment), since it\u2019s not only the vague threat of lower redemption in ES which \u201crealises\u201d the price adjustment, but also the full force of all future monetary policy.  What I am trying to wrap my head around is the delay cycle time in this PID loop since we have to take a measurement of the DAI market price and then re-adjust the DAI target price in the system. How often does this module - take a measurement - and then adjust the target rate?  Unlike the TRFM, this module does not take any measurements, it simply adjusts the Target Price continuously using the Target Rate. It is up to governance to set the Target Rate, just like we set the Base Rate today. For example, if the Target Rate is -2% per year, then the Target Price will be adjusted downwards by about $0.00005 every day (in practice the adjustment happens whenever the module is prodded, similarly to how DSR and Stability Fees are accumulated).  Also what would you expect to be a normal working range on such a feature? How far would you be willing to allow the target rate to change before you would consider the system in danger either for DAI holders or vault owners (either the low or high side of the DAI target price).  I don\u2019t think there\u2019s any obvious range here outside of which the mechanism doesn\u2019t make sense, just as with positive Base Rates. Last year when there was a lot of SAI supply we had to go as +19.5% to try to keep things under control (though we did not have the DSR back then to push from the other side). If the price remains above the target, then we probably have to keep adjust the Target Rate down. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.195193001443002
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#14",
+                    "likes": "2",
+                    "time": "14/07/2020-15:13:12",
+                    "content": "In this model balance is achieved in a demand heavy market for Dai by:   Dai supply side - Vault owners supplying more Dai to the market as the target price falls in the system (they do so for various reasons).   Dai demand side - Demand for Dai falling to a balanced level with supply over time as the value of Dai decreases in the market as a result of increased Dai being supplied, a higher risk to holding Dai as a result of the potential global settlement being under $1.00 and over time getting lower and lower until balance is achieved.   This would scale infinitely because as long as there was any collateral in the system whatsoever a target price of approaching zero would be able to balance demand to supply.  The idea is that just the knowledge of this system actually being able to balance the system properly is fear enough for Dai holders that they keep the price close to $1.00 in the markets.  Anytime they choose to pay more than the target price for Dai they should expect to take a loss. As far as I understand the incentives still work in this model because Dai holders still get the expectation of stability of Dai moving towards $1.00 in the market at all times.  On the vault side the vault collateral should in theory increase as the target price gets lower because it is now more profitable and less risk to produce Dai. The current issue is Vault owners are not willing to risk producing Dai knowing that the price can keep rising and producing Dai at $1.015 or $1.02 is not worth the risk of having to buy Dai back higher than they sold it for or risk liquidation costing them potentially $1.13.  This would alleviate this fear over the long term.  However, there is still short term liquidity risk of the collateral falling sharply and Dai price rising in the short term.  Once this final issue is addressed and corrected in the system I expect MakerDao will be able to finally achieve proper stability in the system and price of Dai in the markets. One last note:  This solution is a good one, but MakerDao should also look for ways to increase the collateral in the system in other ways because even with balanced supply and demand for Dai the maximum value of all Dai in the market (viewed from the perspective of a global settlement) is still limited by the collateral backing Dai rather than the actual market demand for Dai at a $1.00 price.  Ideally the target price of Dai is simply $1.00 and demand can be met at this target price.  Anything less is stunting the growth and demand for Dai.  If demand is too high and there is no other way though, I fully support this as a way to balance market forces because it balances them nicely. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5572951273532665
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/swakya",
+                    "index": "#15",
+                    "likes": "0",
+                    "time": "14/07/2020-16:43:05",
+                    "content": "Any DAI is partially backed once the settlement price becomes <$1. As a side note, if for some reason the market persistently puts a premium on DAI such that the internal price is <$1, the market price is $1 and Target Rate is 0, it will be simple to have only (2) (lower settlement value), not (1) (riskier collateral ratios): adjust those CRs upward so that they are effectively calculated against a price of $1. If the market is long-term happy with partially backed DAI this would be an interesting policy to follow. (For clarity, by (3) I will mean: a governance commitment to try to actually reach its set Target Price in the market and not use it as a purely nominal adjustment knob). I am confused by your model of (3) being able to bring down DAI price faster / with a higher Target Price. Why would the commitment to keep going after the market price has crossed $1 make that very event happen at a higher Target Price than in the world where the commitment is only to keep un-backing DAI until $1 has been reached? Supposing that it is easier to to bring the price down with (3), is that worth it? Leaving out (3) means the $1=1DAI meme can be kept alive in market terms. In your model the cost to that seems to be a more unbacked DAI, relative to using (3). How bad is that compared to the good of keeping $1=1DAI? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.575129731379731
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#16",
+                    "likes": "1",
+                    "time": "14/07/2020-17:57:59",
+                    "content": "    equivrel:  $0.99\u2019s worth. The effect of this would have some similarities to proposals to create a system deficit, but the difference is that there will be no deficit, since the new price target will be $0.99 too. I believe this should also make the price adjustment effect much more effective (i.e. have a greater impact on supply and demand per $0.01 adjustment), since it\u2019s not only the vague threat of lower redemption in ES which \u201crealises\u201d the price adjustment, but also the full force of all future monetary policy.   Thanks for clarifying.   I am sure you and a lot of other people know this system way better than I do.  I am just looking at this from a monetary policy perspective and what it means to stake holders.   I agree there are two factors that play on this.  The psychological idea of \u2018threatening\u2019 a move, then actually doing it.  Both should have some effect.     equivrel:  Unlike the TRFM, this module does not take any measurements, it simply adjusts the Target Price continuously using the Target Rate. It is up to governance to set the Target Rate, just like we set the Base Rate today. For example, if the Target Rate is -2% per year, then the Target Price will be adjusted downwards by about $0.00005 every day (in practice the adjustment happens whenever the module is prod ded, similarly to how DSR and Stability Fees are accumulated).   So the Target Rate is a governance thing so it would be a rather slow change unless we set a target rate pretty high here.    This is a pretty slow response tool then and will only make incremental changes.  One could say the same of the SF but in terms of making a change that is significant for a vault holder to take the tx cost hit to mint more DAI or not I think is a valid issue with this approach simply not having enough meat to really move the PEG.    Even so I like it as a general monetary policy tool.   It would be nice to have governance decide a working range and to code this up as something that changes periodically when someone takes out a DAI loan or repays DAI to update the TR based on what the PEG is telling us.   This way your Vox idea becomes an actual PEG management mechanism that governance simply would have to monitor if it hits the end of actual working range (say 1.05 and .95 or whatever governance set on it).     equivrel:  I don\u2019t think there\u2019s any obvious range here outside of which the mechanism doesn\u2019t make sense, just as with positive Base Rates. Last year when there was a lot of SAI supply we had to go as +19.5% to try to keep things under control (though we did not have the DSR back then to push from the other side). If the price remains above the target, then we probably have to keep adjust the Target Rate down.   Well I think as a DAI holder I would start getting concerned if the target price was < .9 above I only care about as a vault holder borrowing.   But I as a DAI holder and vault borrower DAI PEG being off doesn\u2019t really bother me much.   I think I get more concerned if the PEG is like .98 than 1.02 but that is just me. One thing I guess you are still mulling over is a response to whether you think this mechanism has enough teeth to manage something like this comp problem.    Each time I am turning a response to PEG management when I think comp is driving this so far off I wonder no matter what tools we come up with.   How far is governance going to have to go in terms of either \u2018growing the system\u2019 or \u2018taking on risk\u2019 to provide the kind of liquidity growth that could still manage the PEG.    I really don\u2019t think anyone other than myself and perhaps yourself has even tried to engage the community on this question. We definitely want to explore monetary policy tools, implications for PEG stability, system risk, and growth but then we really have to come to grips with what comp has thrown at us.   Do we even want to  use all of these tools to drive the system to attempt to compensate for this massive driver, or do we allow other forces to drive Maker here via PEG, DAI demand etc.   I think it is interesting @cmooney pointing out we have a good problem - high DAI demand - which everyone appreciated.   Left out of this comment is the possible fact the only reason there is high DAI demand is because of compound and comp farming is most efficient with DAI - and perhaps no other.    Without this driver - today we might have had a PEG close to 1 and then we would all feel less pressure to come up with new monetary policy tools and deal with the additional issues of risk, demand growth etc. So I think this whole comp thing may end up being a blessing in disguise since it has caused the community to identify new tools, and implications to system as well as system participants causing a lot of work to be done on this issue.   Where I think the discussion has not really matured on this is an understanding of what, in the future, if we experience more of these crazy secondary drivers messing with DAI demand what is governance guidance on how to proceed to deal with these things. Do we consider devaluing DAI off the 1:1 ES guarantee.  Do we have one or more PSMs (I am working on a post regarding my general concept of an ideal PSM system operation just to have as a example to work off of while constructing the first and later versions of the PSM tool should governance decide to push forward on this tool as well as others).  Do we have a secondary reserve fund that governance uses to buy and sell assets to inject or remove DAI liquidity directly from markets.   Do we allow MKR in governance to have access to MKR vaults with very conservative operating values (DC, LR, SF) to allow MKR in governance to be used not just to vote, but also to help manage monetary policy directly?  etc. I really want to hear from others on whether we would have to drive this system to extreme points to even have any hope of managing the PEG in the face of this comp problem.   As a note.  I watch carefully the uniswap comp/ETH paid and this ratio has consistently been coming down at something like a few percent a day.   My rough estimate is that if this decay continues at this rate comp mining should ease off in about 2 months.   This is mostly due to the fact people are using pretty high cash leverage here to access this COMP and from what I can see the total deposits are growing as well further diluting the return against real cash invested.   WIth BAT and ZRX there was at least pricing risk by holding any of those coins long or short depending on the position.  With DAI the pricing risk is significantly less. Anyway.   Really appreciate you putting MIP20 forward in detail Lev and I would support using this as an additional monetary policy tool generally.  I think governance may need stronger tools that can bring DAI liquidity to bear directly for PEG management but we need to get a real direction from governance and the entire community as to how far we should go with these tools, and/or how far off of 1 the PEG can be for how long before it affects various players adversly in the DAI ecosystem. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.41015129167784
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#17",
+                    "likes": "1",
+                    "time": "14/07/2020-19:22:03",
+                    "content": "I support the proposal. The current tools do not work. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#18",
+                    "likes": "0",
+                    "time": "14/07/2020-20:03:41",
+                    "content": "@rune, @cyrus, @g_dip, @monet-supply I would greatly appreciate if you could weigh in on this.  I feel like this is the proper solution to the demand imbalance that is causing the peg to drift.  MakerDao could implement this to solve the root problem and still have a PSM for the added liquidity it can provide.  This is the first time in several months I have felt at peace over the peg drifting.  This solution is comforting because it would actually work (as far as I understand).  Thank you in advance for your time to weigh in on this everyone! Sure, it breaks the 1 Dai is $1.00 promise (temporarily), but not in the markets which is what the average Dai holder is likely most concerned with.  I feel like most people would be OK with this solution because it will keep Dai stable in the long term and as a result in the short term as well as the forward looking expectations play out. I feel like for things to truly be comfortable in the ecosystem there needs to be a massive short term liquidity of Dai available for emergency type situations when collateral is falling fast in price and Dai rising do to deleveraging and panic.  After the \u201cTarget Price Adjustment Module\u201d and also a short term liquidity solution has been put in place I feel like MakerDao\u2019s Dai will be in a really good place. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.113095238095239
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jtathmann",
+                    "index": "#19",
+                    "likes": "2",
+                    "time": "14/07/2020-21:13:03",
+                    "content": "@brianmcmichael Thanks for the explanation of the MIP on the community call! One follow up question\u2026 If the Vox functionally adjusts the collateral ratio to allow people to mint more dai, do you think people who choose \u201csafe\u201d ratios (eg 200-300%) would be enticed enough to mint more dai and cause a meaningful change to the PEG? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#20",
+                    "likes": "0",
+                    "time": "14/07/2020-22:12:08",
+                    "content": "That depends on each individual vault owner and how they perceive and interact with the system.  I will say that it shouldn\u2019t too much matter because anyone can open up a vault and create Dai, so it doesn\u2019t have to be the safe holders it can be instead a new owner who is looking to take advantage of the profit opportunity. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.836363636363636
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#21",
+                    "likes": "9",
+                    "time": "14/07/2020-23:21:51",
+                    "content": "I think it\u2019s great to consider this as a thought experiment to illustrate the decisive action that is needed to deal with the current imbalance of the protocol. But obviously actually implementing this would be suicide. I thought this would be apparent and I\u2019m a bit surprised nobody seems to have even mentioned the real world adoption consequences of doing something like this. Effectively all credibility of the project would be lost - especially with actual users, but also more broadly with anyone who has ever heard about the project. Effectively all existing real world network effects and adoption would be reversed. Maker would have pivoted into becoming a niche accessory that services COMP farmers. I\u2019m not saying that doing nothing and just keeping the peg broken wouldn\u2019t lead to a slow death, because it absolutely would. But negative rates means choosing immediate death. The goal of Maker is to create an unbiased world currency that can level the economic playing field and create financial inclusion for people all over the world. Serving real people and providing real value as a new currency. Maybe people here aren\u2019t aware but the project already has some levels of success with this mission, specifically in South America - this tweet by Mariano from the foundation is a good example: https://twitter.com/Mariandipietra/status/1282827104732827648 These are real, regular people from the real world that are using Dai, through various integration partners and distribution channels that originally chose to trust the project and Maker governance with their money and value rails. If that trust is betrayed, it would mean irreversibly destroying virtually all of the organic adoption that has been achieved so far. (Again, it IS already slowly going in that direction with the broken peg, so something has to be done) It\u2019s not all whale COMP farmers or algorithmic bots. In fact the bots and the whales wouldn\u2019t be using Dai at all if it wasn\u2019t for the organic adoption. Now lets explore the COMP farming pivot for a second. It is very likely that it wouldn\u2019t be long run sustainable, because the Maker protocol needs to generate significant amount of fees in order to fund its own technical security and continued growth. If it fails to grow big enough to be able to fund this, it cannot safely continue to operate, and will eventually have to shut down. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.581334175084175
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#22",
+                    "likes": "2",
+                    "time": "14/07/2020-23:29:21",
+                    "content": "The alternative you are proposing is to onboard hundreds of millions of dollars worth of USDC as collateral?  What are the other options you are seeing?  Leaving the peg broken is not a good one I think we can agree on that. Could this USDC at least be loaned out for something (likely Dai) by the system?  Rates are well above 0% right now for USDC loans. How is the system supposed to deal with a demand imbalance long term without a counterbalance in place? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.64484126984127
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#23",
+                    "likes": "1",
+                    "time": "14/07/2020-23:47:54",
+                    "content": "Something that had crossed my mind with this idea was that in the extreme case should the par value of Dai ever get lower than $.67 in the system (yes I know it is absurd as it would mean Dai still over $1.00 in the markets with insane levels of profit potential for new vault owners available).  Follow the thought nonetheless please as it leads somewhere. Liquidation is now not a possibility on vaults to repurchase Dai because the system would always be unable to repurchase as much Dai as was loaned.  For example: $1,500 worth of ETH is 1,000 Dai.  At .67 it can be nearly 1,500 Dai.  If Dai is still over $1.00 at the time of liquidation the system can no longer repurchase the Dai.  Would the system in such an extreme case be the lender of last resort unto itself? I have been arguing that it needs to be.  In extreme cases like the one given above the system could easily mint Dai.  Buy collateral with it whether it is a stable coin or whatever collateral makes the most sense and then use that to back the Dai.  If the alternative is to buy Dai above \u201cpar\u201d value from the market it seems to make more sense to me.  The system should be designed to not have to ever buy Dai over par value as doing so is in direct violation with the effort to decrease Dai demand! I have yet to come across a way that the system can balance vault demand with Dai demand in the market indefinitely without being holder of the collateral itself in the most extreme of cases.  Eventually it always ends up in all thought experiments that if Dai is being devalued to lower demand that the collateral not be sold and instead simply assumed by the system until stability is reached and Dai trades at or below $1.00 again.  Why buy something MakerDao can issue cheaper than buy for a price higher than it \u201cshould\u201d be worth.  MakerDao is becoming part of the problem by doing such things. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.238309822361547
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hongbiao_li",
+                    "index": "#24",
+                    "likes": "1",
+                    "time": "14/07/2020-23:56:20",
+                    "content": "I agree with @run. DAI holders will not likenegative tax rate, their only choice is to give up owning DAI. This is suicide. We should not implement a negative tax rate method. We should study how to reasonably print some unsupported DAI. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.833333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#25",
+                    "likes": "1",
+                    "time": "15/07/2020-00:14:02",
+                    "content": "If they give up holding Dai demand falls for Dai in the market and so do prices.  At that point the negative interest rates are no longer required.  Demand has to balance for a stable system to be stable\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#26",
+                    "likes": "1",
+                    "time": "15/07/2020-00:19:23",
+                    "content": "The promise MakerDao made was for the coin to move towards $1.00 in the market.  That is the one promise that should above all else be kept. As far as all this negative interest rate, devaluation of Dai, inflating or making un-backed Dai. backing Dai with centralized stable coins that can be blacklisted or banned by government drama goes: I say balance the system in a sustainable fashion such that it leads to the market price converging at $1.00 while also being fully permission-less and decentralized.  That is all that can be reasonably asked for, and that is something MakerDao can do. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#27",
+                    "likes": "2",
+                    "time": "15/07/2020-00:20:34",
+                    "content": "    rune:  I thought this would be apparent and I\u2019m a bit surprised nobody seems to have even mentioned the real world adoption consequences of doing something like this. Effectively all credibility of the project would be lost - especially with actual users, but also more broadly with anyone who has ever heard about the project. Effectively all existing real world network effects and adoption would be reversed.   Humor me here a bit.   What is the issue with doing something like this.   That the backing value of DAI is no longer 1DAI = 1USD of collateral? If this is the real issue regarding \u2018credibility\u2019 then basically pretty much every kind of PEG management tool we are talking about gets basically tossed in the trash because the ONLY allowed way to manage DAI liquidity is by increasing backing collateral which in extreme cases here like this comp situation literally may mean the system assuming a huge amount of collateral by itself based on a one time fee. I just want to be clear here which is why I have now been asking. What are the system constraints that have to be constantly satisfied because if we can\u2019t give up at all on the backing value to DAI to help manage the PEG on the high side the number of tools we potentially could have available to manage the PEG drops pretty dramatically.   I also want to be clear here as @LongForWisdom points out - once the DC on the PSM runs out - that facility is done managing the PEG and the system is stuck both with collateral and new DAI generating no fees no matter what happens with the SF.   Literally if we have as system value.  decentralization PEG 1:1 value What did I miss?/Other  One will have to give to satisfy another.   You have opted with PSM only here to give up on (1) to keep 2 and 3. Realize I am not married to anything here.  I am really just trying to understand first what various people in the community consider important to maintain, and what they don\u2019t consider important.   The above 3 points are key ones everyone brings up and they are not ordered in any order of importance. I really think we should run both a forum poll as well as an on-chain poll to get a feeling for what people in forums think on the above 3 and any other things I missed as 4,5 etc as determining order of importance on 1-3 above is going to constrain DAI liquidity management tools/options as well as ability to manage 2 - the PEG. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.816841491841492
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#28",
+                    "likes": "2",
+                    "time": "15/07/2020-00:34:16",
+                    "content": "I like the VOX (or a system that adapts to Dai demand in the market by reducing demand and supports further supply) coupled with never re-purchasing Dai over \u201cpar\u201d from the market. It satisfies the following:  decentralization/permission-less Peg A price that from the markets\u2019 perspective is always approaching a 1:1 value which is what most market participants actually care about.  A 1:1 true value I personally would love to keep.  I just don\u2019t see how it is possible.  If demand is greater than supply there is no long term way to fix that without  actually addressing the imbalance.  I am open to alternatives, but have not heard one that would actually work.  As soon as I apply the idea to any kind of mental model it immediately falters.  Centralization is probably the least safe of the options as it makes MakerDao vulnerable to a host of problems while also not directly addressing the demand imbalance in a way that scales well. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5062500000000005
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#29",
+                    "likes": "4",
+                    "time": "15/07/2020-02:11:58",
+                    "content": "This is an interesting proposal, but it seems a little extreme at this stage. Especially when we still have other tools available such as the PSM and higher stablecoin debt ceilings. I don\u2019t really understand the objection to using centralized stablecoins to fix the peg during times of excessive demand. Do the people arguing against USDC backing expect \u201cpure\u201d cryptocurrencies to always be the primary source of collateral? I think if you take a hard look at how much Dai can be generated via \u201cpure\u201d crypto, this will not scale to meet upcoming demand. We have to deal with messy, real-world assets to grow the system - USDC being the big one available to us right now. Ideally it would have been nice to have a more diversified basket of stablecoins available to us before having to meet this recent COMP demand, but we are dealt the hand we are dealt and we need to grow or die. So I think for the question of \u201cdo we want to just become a wrapper for centralized stablecoins\u201d? I say in this moment yes. Absolutely. We need to defend the peg at whatever cost and scale to meet demand. All the while maintaining the core promise of an asset that is worth $1 USD. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.907614087301587
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#30",
+                    "likes": "0",
+                    "time": "15/07/2020-02:24:02",
+                    "content": "What debt ceiling are you proposing so it is clear? No ceiling? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#31",
+                    "likes": "1",
+                    "time": "15/07/2020-02:25:41",
+                    "content": "I really do not understand your strong aversion to negative rates here. Many countries use negative rates, and their currencies do just fine. Sure, we aren\u2019t a country, and in many ways that is the system we are trying to be an alternative to. However, our value proposition has to do with accountability and an alternative to fractional reserve banking. I don\u2019t see how negative rates break this value proposition. In fact isn\u2019t this module just a sub piece of the TRFM? I was of the understanding that the TRFM was a reasonably agreed upon long term vision of what dai could be. It seems like a large number of community members don\u2019t feel very good about the PSM. I for one don\u2019t like it very much not just because of the open questions about holding large amounts of usdc, and how much collateral would actually be needed to compensate for COMP farming, but also because the PSM is a deviation from our other peg stabilizing methods which are more market driven. The PSM is much less of a market driven tool. Can you elaborate on your views on this a little? You seem to have very strong feelings, but it\u2019s not entirely clear where your opinions are coming from that \u201cEffectively all credibility of the project would be lost\u201d, or \u201call existing real world network effects and adoption would be reversed\u201d. I really think negative rates would be much more benign than this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.850472085385878
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#32",
+                    "likes": "1",
+                    "time": "15/07/2020-02:29:33",
+                    "content": "Not everyone cares as much about the true 1:1 value so long as the market value is always chasing $1 and is on Peg often.  If demand were to fall as a result of this decision, the market price for Dai falls, peg is reached, and the \u201cpar\u201d value goes back to being a true 1.00 again. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.85
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#33",
+                    "likes": "0",
+                    "time": "15/07/2020-02:29:54",
+                    "content": "    FourthStreet:  What debt ceiling are you proposing so it is clear? No ceiling?   Are you asking me? If so then whatever total debt ceiling will get us to meet the demand is my answer. We cannot stay primarily backed by ETH forever. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#34",
+                    "likes": "0",
+                    "time": "15/07/2020-02:32:53",
+                    "content": "Yes, and your answer as I was guessing is \u201cunlimited\u201d.  This is the only answer that actually can make sense because this is what it might take.  This is not a balanced market approach, it is essentially just manhandling the peg where MakerDao wants it.  The risk as a result could be (it may not have to be right away, but it could be) massive. \u201cWhere do we stop?\u201d - \u201cWe never stop!\u201d ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving negative feedback on proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.404761904761904
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#35",
+                    "likes": "1",
+                    "time": "15/07/2020-02:43:03",
+                    "content": "Would you be making this argument if the demand was being met by ETH though? \u201cWhere should we stop?\u201d. Im guessing not. My guess is we would grow the supply as much as we could without debate. My impression is that there are those who think USDC should never become higher than X% of the ETH debt ceiling. Be it 20%, 30%, etc. Personally I held this view as well until recently. What I\u2019ve come to realize is this is not a productive view point to have if you want to scale the system. The risk of custodial providers is something I\u2019m fully on board with if the alternative is to break the core value proposition of the system. So the debt ceiling shouldn\u2019t have a limit if we want to grow to meet demand. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.5625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#36",
+                    "likes": "0",
+                    "time": "15/07/2020-02:53:00",
+                    "content": "I wrote this awhile ago when I was on the PSM train.  See Here It is not fair to make that argument for ETH because ETH is not centralized and able to be blacklisted due to regulatory pressure from the US Gov. My issue more so is one of creating system balance.  If there is excess demand for Dai over the supply we both agree supply needs to increase, we just differ in views on how that can be done in a practical, sustainable, and safe way. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/maker-relay-ep-10/3907"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.025
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#37",
+                    "likes": "0",
+                    "time": "15/07/2020-02:59:05",
+                    "content": "I hear you. I personally fall on the side of not being too worried about this US Gov seizure scenario anytime soon. In any case, I think we would both agree a geographically and politically diverse set of real world assets would be better, but we just aren\u2019t there yet. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/FourthStreet",
+                    "index": "#38",
+                    "likes": "0",
+                    "time": "15/07/2020-03:02:51",
+                    "content": "This situation is definitely only going to get easier over time as more and more assets become available across the crypto-sphere. Are you in support of lending the USDC out at least so that MakerDao can still earn interest over time with those funds rather than just the 1 time trade profit for the Dai?  These USDC could sit in the system for 20 years and may never be unwound. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.1
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#39",
+                    "likes": "0",
+                    "time": "15/07/2020-03:05:47",
+                    "content": "My understanding is that these pools will unwind themselves naturally as the supply once again overtakes the demand. So I think the one time fees are fine. We are getting a bit off topic though. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 6.291666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hongbiao_li",
+                    "index": "#40",
+                    "likes": "1",
+                    "time": "15/07/2020-03:09:02",
+                    "content": "(1) The purpose of negative tax rate is to make people abandon the use of DAI to achieve system balance, which will cause the DAI market to shrink. (2) The implementation of PSM is to increase the supply of DAI and meet the needs of DAI (the purpose of printing unsupported DAI is the same as PSM) to achieve system balance, and the DAI market will continue to develop. (3) There is no precedent for the implementation of negative tax rate in the cryptocurrency market, and the negative impact cannot be controlled. (4) Printing a certain percentage of unsupported DAI, we can refer to USDT\u2019s successful case in the cryptocurrency market, and we can control the risk. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.053571428571429
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#41",
+                    "likes": "0",
+                    "time": "15/07/2020-07:24:09",
+                    "content": "    hexonaut:  \u201cdo we want to just become a wrapper for centralized stablecoins\u201d? I say in this moment yes.   The \u201cdecentralization\u201d and \u201c1 DAI=$1\u201d are equally important. Since USDC is not decentralized, DAI backed mostly by USDC\u2026 is also not decentralized and breaking the main MakerDAO promise. It might be OK to use temporary solutions that will decrease decentralization a bit, but in our case we have no clue about the permanent solution to the peg problem, so that \u201ctemporary\u201d could go for years. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.958333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#42",
+                    "likes": "6",
+                    "time": "15/07/2020-11:56:30",
+                    "content": " Effectively all credibility of the project would be lost - especially with actual users, but also more broadly with anyone who has ever heard about the project.  @rune Why is this obvious? Why are negative interest rates so harmful, if they approximate the market\u2019s state of equilibrium between supply and demand? There is an implication that negative rates are harmful to holders of DAI, which is true, but the converse is that they make DAI borrowing even more attractive (potentially some are even paid to borrow), helping adoption on the supply side, which is precisely what we need to prioritise. Savers, hoarders, and those who are speculatively long DAI will be discouraged from holding it, which is the same outcome that we sought to achieve when we lowered the DSR all the way down to zero. Why stop there? The ability to implement negative rates makes monetary policy effective again on the \u201cabove peg side\u201d, hopefully in a similar way to the effectiveness of increasing Base Rate and DSR on the \u201cbelow peg side\u201d. This new power will make it much more likely that we can deliver on our mandate of keeping the price of DAI near its target. Won\u2019t increasing the stability and predictability of DAI purchasing power be a great win for adoption, for all users of DAI? n.b. this proposal is not about compensating for \u201cupward\u201d volatility by adding \u201cdownward\u201d volatility. Instead, the claim is that the overall volatility can be reduced by approaching an equilibrium rate at which the price of DAI stays near a predictable target. We currently do not seem to have the tools available to find the equilibrium rate in all circumstances. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.627773951637588
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/bit",
+                    "index": "#43",
+                    "likes": "1",
+                    "time": "15/07/2020-12:25:41",
+                    "content": "    rune:  I\u2019m not saying that doing nothing and just keeping the peg broken wouldn\u2019t lead to a slow death, because it absolutely would. But negative rates means choosing immediate death.   The negative rates in the worst scenario also mean slow death. We can assume USDT is not fully backed and it is stronger than ever. I don\u2019t trust USDT but I would trust DAI if it was temporarily not fully backed. I would also trust DAI if it turned ETH liquidations off until ETH is i.e. $500 (betting on ETH success). It seems that there is no easy solution to the peg problem and that solving the peg problem will require taking more risk than MakerDAO is comfortable with. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.279513888888888
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#44",
+                    "likes": "11",
+                    "time": "15/07/2020-14:00:21",
+                    "content": " It might be OK to use temporary solutions that will decrease decentralization a bit, but in our case we have no clue about the permanent solution to the peg problem, so that \u201ctemporary\u201d could go for years.  There is a realistic solution to the long run problem of imbalance, which is to stick to the MCD plan of moving towards scalable onboarding of diversified real world assets as collateral. In particular lines of credit to loan originators, for example trade finance revolvers could easily provide much more supply of Dai than there\u2019s currently demand for, even with all of the COMP farming. Trade finance was a 70 billion USD market in 2019, thought of course it would take some time for Maker to be able to capture a part of it. It can\u2019t be predicted exactly when this will become possible to do at scale, but we already have some MIP6 proposals that actually are realistic to implement, such as the centrifuge assets. And then even when Maker has the ability to onboard real world assets at scale, the next bottleneck will be capturing market share. So it will be a slow and steady process, but most likely it will also be exponential once the ball actually starts rolling. That\u2019s where PSMs and other short term measures that can keep the peg afloat (such as negative stability fees) are incredibly useful and the timing is right for them, since they can be the bridge between the short term and the long term, and then be unwound naturally as the real world asset collateral onboarding picks up steam .  Why is this obvious? Why are negative interest rates so harmful, if they approximate the market\u2019s state of equilibrium between supply and demand? There is an implication that negative rates are harmful to holders of DAI, which is true, but the converse is that they make DAI borrowing even more attractive (potentially some are even paid to borrow), helping adoption on the supply side, which is precisely what we need to prioritise. Savers, hoarders, and those who are speculatively long DAI will be discouraged from holding it, which is the same outcome that we sought to achieve when we lowered the DSR all the way down to zero. Why stop there?  It\u2019s hard to actually argue about this in theory, because from a hyper rational, homo economicus perspective it\u2019s obviously the right thing to just impose negative rates. One factor that I think is very important and somewhat objective is that vault users are more sophisticated than Dai users, so it is a lot easier to scale the supply side and impact the supply side through rates once you have distribution channels. So to the point about real world assets, once you actually have that link set up with the real world, it is trivial to onboard any amount of assets as long as the rates are right - in fact collateral will likely flow into the protocol until the rates are naturally driven up to the point where they are no longer competitive. The same is not true on the demand side, as rates aren\u2019t nearly as important as trust, liquidity and familiarity when it comes to what is used as money. So while right now in the short run, focusing on the supply side is what\u2019s most critical, but in the longer term it might very well be Dai demand that becomes the bottleneck for growth of the protocol. And organically network effect and entrenchment is everything when it comes to building Dai demand, since the foundation of it comes from regular people using it as money. The problem is that for regular people, and businesses that target regular people, negative rates or changing the peg doesn\u2019t just mean losing a bit of money instead of gaining a bit of money, it means fundamentally changing what Dai is, to no longer being something that can be compared to USD cash (to better understand this point, consider that many of these users were the ones not even getting the DSR back when rates were at 8%). Rather than continue to argue the theory of this I think the right step forward for those who want to understand what the Dai users in e.g. Argentina actually think, is to do market research and gather data directly from them. I\u2019m not the right person to relay this information, all I can do is share the anecdotal evidence I have from the founders of businesses that try to offer Dai services to regular people. Considering that the mission of Maker is financial inclusion I think it would be very valueable if the governance community had a deeper understanding of what that entails and a deeper familiarity with the users of the protocol that governance is supposed to serve. One last point I want to make is that I do think in the long run the protocol and community should be ready and able to depeg from the US Dollar in case it loses its status as the global reserve currency. But doing something like that is a major decision that ideally should have years of preparation and a much more entrenched economy than Dai currently has. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.585325994196962
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#45",
+                    "likes": "0",
+                    "time": "15/07/2020-14:48:44",
+                    "content": "We could do negative stability fees without a negative DSR, but it seems like mkr holders are not very keen on subsidizing dai supply in this way. Thank you though, your post clears up your views somewhat. I still disagree and think we should implement a module that allows us to use negative rates, especially if we can get away with it without depegging from the US dollar on the market side. If we can maintain the peg, dai users should never really have to worry about negative interest rates if they just know that 1 dai=$1. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#46",
+                    "likes": "2",
+                    "time": "21/07/2020-13:59:57",
+                    "content": "Going to just run through and make comments, hope some of them are useful. I\u2019ve seen a couple of typos. I\u2019d recommend running this through grammarly or somesuch      equivrel:  A crucial requirement in the implementation of this policy is for all DAI holders to be exposed to the negative rate.   Can you support this statement more clearly in the motivation section? In general I think most people here will understand why, but we should be trying to make the MIPs as self-explanatory as possible.     equivrel:  Target Rate : the annualised compounding rate of change of the Target Price (short for Target Price Adjustment Rate).   It bothers me that this is referred to as \u2018Target Rate.\u2019 It\u2019s slightly misleading in that the rate itself isn\u2019t a target in any way. It\u2019s the rate at which the target price changes. Wouldn\u2019t \u2018Adjustment Rate\u2019 be a better representation of the concept?     equivrel:  Target Price Cap : the maximum Target Price that the Target Price Adjustment Module is able to set.   Is there a minimum to this too? Is this a upper and lower bound? Or just an upper bound? Seems like just an upper bound from elaboration in the desired properties section.     equivrel:  The Target Price should not be adjusted after Emergency Shutdown, regardless of the value of the Target Rate prior to Emergency Shutdown.   Why is this important?     equivrel:  MIP20c4: Test cases   What are these test cases testing? Are the tests successful? Do you feel that these tests sufficiently cover the changes?     equivrel:  Even though the core system was designed with the possibility of a changing par in mind, peripheral components and integrations should be carefully inspected for reliance on a fixed par .   This sounds like the sort of thing that needs to be done prior to this MIP being formally submitted, no? It could be dangerous to turn this on if those inspections haven\u2019t taken place?     equivrel:  Monetary policy processes may have to be amended in order to leverage this facility, and this MIP may be expanded in order to specify them.   I\u2019d actually suggest that those processes live somewhere else, though I\u2019m not sure where as this point. I think it makes sense to separate governance processes from technical implementations where possible.     equivrel:  MIP20c7: Formal verification/audit information The proposed contract is written in a way which is amenable to formal specification and verification, in accordance with the style and practices of the core multi-collateral DAI contracts, though it has not been formally specified. No audit or code review has taken place yet.   Would audits or formal verification take place prior to this MIP being Formally Submitted? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.451671891327063
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#48",
+                    "likes": "0",
+                    "time": "21/07/2020-14:45:34",
+                    "content": "What do you suggest? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#49",
+                    "likes": "3",
+                    "time": "21/07/2020-14:49:26",
+                    "content": "To clarify, this proposal does not suggest MKR printing and in general has little to do with MKR. A negative rate is implemented here by adjusting the target price of DAI: i.e. DAI holders pay borrowers, not MKR holders pay borrowers. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.270833333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#50",
+                    "likes": "0",
+                    "time": "21/07/2020-15:01:37",
+                    "content": "Sorry, I ranted in the wrong thread. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#51",
+                    "likes": "2",
+                    "time": "21/07/2020-15:30:11",
+                    "content": "The discussions around Dai interest rates are very much influenced by the discussion around fiat central banks and their power to set interest rates for a particular currency. However, the similarities end rather quickly. Maker can set the Dai savings rate, but this is in not the same as the Federal Reserve or European Central Bank setting the interest rate for USD or EUR, respectively. This is because USD and EUR have little real competition in their home markets, a position Dai does not have. If the EUR rate is negative - so what? There is no alternative to EUR in much of Europe. If the Dai savings rate is negative however, the only thing we would accomplish is to see we hard gained market share evaporate as Dai competes with a whole range of stablecoins in the cryptospace. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.087760416666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lix",
+                    "index": "#52",
+                    "likes": "3",
+                    "time": "22/07/2020-02:30:27",
+                    "content": "After a brief black Thursday induced sabbatical, it took me a week to absorb all of what\u2019s going on in the maker governance space right now. There are so many moving parts these days! It takes some time to let all of this new information cure. It\u2019s clear that farmers are running this show. What wasn\u2019t so clear to me was the best way to combat them. After weighing the pros and cons of the PSMs, TPAM, and minting unbacked DAI I\u2019ve finally accepted that the only solution to the insatiable demand from farmers is a negative rate. We need to take their money. It\u2019s the only thing they care about. This is a huge pivot for the project; we\u2019ve only ever given money to DAI holders. Now we\u2019re going to take some away and kill the 1 DAI = 1 USD meme forever? Absolutely. The TPAM has more teeth than any other solution I\u2019ve seen put forward. It demonstrates that MKR is the most powerful governance token in the entire defi space. We can, and will, take your money. We\u2019re even willing to kill our meme to do it. Not even the government can take your property without just cause. We can do it with two votes. That is powerful. That\u2019s why the TPAM will work. Implementing the TPAM signals to farmers - sell your DAI now. We\u2019re done with your tomfoolery. We\u2019ll take par as low as we need to. You don\u2019t think the moon boys will go long? Bet. We\u2019re going to take your yield and effectively give it to shitcoiners. Sure, it is entirely theoretical, but I\u2019m certain farmers are going to pay attention to this. It\u2019s simple, beautiful, and powerful. I love it. Thanks for putting this forward, Lev. I would like some clarification one important point @MakerMan made here:     equivrel:   What I am trying to wrap my head around is the delay cycle time in this PID loop since we have to take a measurement of the DAI market price and then re-adjust the DAI target price in the system. How often does this module - take a measurement - and then adjust the target rate?  Unlike the TRFM, this module does not take any measurements, it simply adjusts the Target Price continuously using the Target Rate. It is up to governance to set the Target Rate, just like we set the Base Rate today. For example, if the Target Rate is -2% per year, then the Target Price will be adjusted downwards by about $0.00005 every day (in practice the adjustment happens whenever the module is prod ded, similarly to how DSR and Stability Fees are accumulated).   I think what he means by \u201cdelay cycle time\u201d is how will governance react some time in the future when DAI trades lower than par. Will we raise the base rate first? Will we go straight to the TPAM, or wait a delay cycle amount of time before adjusting par? I think it is important for governance to commit to a certain amount of time before raising par in this situation. Having a longer delay cycle would reinforce the idea that borrowers are being paid now, but won\u2019t be in the future. This makes it even more lucrative to borrow now, knowing that the pain (high base rates instead of par changes) is coming eventually. One other thing I\u2019d like to close with: the TPAM is brutal. We\u2019ll be taking from the poor and giving it to the rich. I\u2019m okay with living with this because the alternative is taking money from farmers and giving it to ourselves (burning MKR with unbacked DAI). We\u2019re better than that. This has nothing to do with short term gains for MKR holders, and it never should. What it will reveal is that MKR governance is the dominant force in all of defi. Bring it on, farmers. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.640646544813212
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lix",
+                    "index": "#53",
+                    "likes": "3",
+                    "time": "22/07/2020-02:32:56",
+                    "content": "    rune:  Maker would have pivoted into becoming a niche accessory that services COMP farmers.   I prefer to think of this as rewarding DAI minters.     rune:  That\u2019s where PSMs\u2026   Implementing any PSM instead of the TPAM is admitting that you prefer communist price fixing over capitalism. We\u2019re a defi central bank. Central bank goes brrrrrr.     rune:  negative rates means choosing immediate death.   Rewarding/punishing vault holder greed is life blood of makerDAO. We (you) givETH and takETH away. I can understand why you see this as taking from the poor and giving to the rich - that\u2019s exactly what it is. Tough position to be in. This is what you wanted, right?     hongbiao_li:  We should study how to reasonably print some unsupported DAI.   that\u2019s suicide. We can do better than USDT - we don\u2019t brrrrr money and give it to ourselves; we take it from farmers and give it to the moon boys.     bit:  turned ETH liquidations off until ETH is i.e. $500 (betting on ETH success).   number \u2260 success     Planet_X:  this is in not the same as the Federal Reserve or European Central Bank   I agree - we\u2019re going to have much better savings yields than either of those shitcoins after we get the peg back. Oh, and our assets are actually backed by something (literal shitcoins), because shitcoins are better than nothing. Hopefully meaningful amounts of less volatile collateral soon\u2122 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.740251897860594
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#54",
+                    "likes": "1",
+                    "time": "22/07/2020-03:27:08",
+                    "content": "Hahaha, @lix I like your spunk ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/monet-supply",
+                    "index": "#55",
+                    "likes": "4",
+                    "time": "22/07/2020-03:32:43",
+                    "content": "If we implemented this, right off the bat DAI would be ejected from all of the curve pools which represents the vast majority of DAI liquidity. DAI demand would go down, but so would supply because it would be tougher to get DAI into a useful, real world asset (like USD). I think DAI needs billions in circulating supply and a self-sustaining, circular economy before it can safely transition to a free floating currency. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.09297052154195
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#56",
+                    "likes": "0",
+                    "time": "22/07/2020-04:49:55",
+                    "content": "I mean, AMPL is starting to be used by defi\u2026 would this really hurt our reputation that much? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.109375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/OliverNChalk",
+                    "index": "#57",
+                    "likes": "1",
+                    "time": "22/07/2020-16:11:03",
+                    "content": "Is there any scenario where the Target Price Cap wouldn\u2019t be set to 1USD? This is not really a technical question because I would prefer it configurable, so I\u2019m more so just asking from a governance and clarity standpoint. My understanding for why there is a cap and not a floor, is that we would use the cap to return to 1DAI == 1USD and then move to a DSR from then onwards. So DAI would ideally only temporarily trade 1USD, limiting the damage to the social contract around 1DAI == 1USD ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#58",
+                    "likes": "4",
+                    "time": "22/07/2020-17:03:02",
+                    "content": "@OliverNChalk The reason for having the Target Price Cap is exactly as you say: in the future it is very likely that we will have positive interest rates again, and then we will have the option of returning the Target Price to $1.00 by running a positive Target Rate for a while until $1.00 is reached, switching to DSR thereafter. Technically speaking, the cap allows us to target an exact number, since otherwise timing the rate change to fix the price at an exact level will be impossible. It seems unlikely that we would want to return to a fixed price other than $1.00, which is also why there is no price floor in the suggested implementation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.005366161616162
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#59",
+                    "likes": "0",
+                    "time": "04/08/2020-16:21:52",
+                    "content": "Hi, it\u2019s been awhile since anyone talked about this, and personally I am very excited about this MIP! Is there a planned date for when this will get an onchain vote? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 8.046875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Planet_X",
+                    "index": "#60",
+                    "likes": "2",
+                    "time": "04/08/2020-18:47:20",
+                    "content": "There is IMHO no point in even discussing a negative interest rate. You can\u2019t cure a craze like DeFi with some \u201crational\u201d tweeks to the stability fee. The two do not even remotely compare. You will just end up damaging Dai instead. With regards to the peg the Maker community will just have to onboard more collateral. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving negative feedback on proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.166666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#61",
+                    "likes": "4",
+                    "time": "04/08/2020-18:50:54",
+                    "content": "Honestly, a new liquidation/auction system and lower CR/LR will solve a LOT of Maker\u2019s current problems. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/OliverNChalk",
+                    "index": "#62",
+                    "likes": "3",
+                    "time": "05/08/2020-16:14:54",
+                    "content": "Negative interest rates are natural, you are advocating for the unnatural by artificially subsidizing DAI holders. I would like your thoughts on the damaging effects of negative interest rates, compared to DAI\u2019s current inability to return to the peg. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/octobers-monthly-mips-governance-poll-is-live-go-vote/2842",
+                        "https://forum.makerdao.com/t/weekly-mips-update-17/4746",
+                        "https://forum.makerdao.com/t/weekly-mips-update-16/4536",
+                        "https://forum.makerdao.com/t/weekly-mips-update-15/4243",
+                        "https://forum.makerdao.com/t/weekly-mips-update-14/4028",
+                        "https://forum.makerdao.com/t/weekly-mips-update-13/3906",
+                        "https://forum.makerdao.com/t/weekly-mips-update-12/3710",
+                        "https://forum.makerdao.com/t/maker-relay-ep-7/3630",
+                        "https://forum.makerdao.com/t/weekly-mips-update-11/3618",
+                        "https://forum.makerdao.com/t/weekly-mips-update-19/4935"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.9000000000000004
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#63",
+                    "likes": "6",
+                    "time": "31/08/2020-14:59:30",
+                    "content": "Going to revive this thread, since I was thinking about it earlier today. If I understand this correctly, it\u2019s important to realise that slowly reducing par has an influence on the market price of DAI (which is why we\u2019d want to modify it.) But it doesn\u2019t instantly change the market price. The only way this breaks the peg in practice is if we leave it turned on after DAI reaches $1. For most users of DAI, this should be positive, as it will help keep DAI at peg. The only DAI users that wouldn\u2019t want this are DAI holders that purchased DAI above peg, and that\u2019s kind of the point, we want those holders to sell to push the market price down. Users of DAI aren\u2019t harmed by this unless DAI falls under the peg, in which case we turn it off or reverse it. In practice turning this on is exactly the same as minting unbacked DAI (except that system technically supports changing par, so it\u2019s actually possible). DAI is no longer worth $1 of collateral at shutdown, but it is worth whatever the market will pay for it, which is still currently >$1. The more I think about this, the more the meme of \u2018this is suicide\u2019 makes less sense to me. The only real downside to this is that it (hopefully temporarily) makes DAI not fully backed by collateral, and that this is potentially damaging from a PR perspective. In practice this only affects users in the event of global shutdown, in the meantime, DAI is worth whatever the market will pay for it.     monet-supply:  If we implemented this, right off the bat DAI would be ejected from all of the curve pools which represents the vast majority of DAI liquidity.   I don\u2019t think this is true. From a governance perspective, the aim is still to peg DAI to $1. If the market prices it below a dollar, we\u2019d reverse course and push it back towards $1. This is no different from Tether. General opinion is that Tether is not fully backed, but it\u2019s still widely used, and it trades for $1. Regardless of whether we ever turn this on though, this MIP just gives us more options, it\u2019s hard to see the downside to that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.59015251723585
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cmooney",
+                    "index": "#64",
+                    "likes": "11",
+                    "time": "30/09/2020-17:46:40",
+                    "content": "    LongForWisdom:  Regardless of whether we ever turn this on though, this MIP just gives us more options, it\u2019s hard to see the downside to that.   I think we should add the Vox for this exact reason.  I don\u2019t think we should turn it on at this stage, as that could carry heavy implications about what DAI is or how it\u2019s perceived, but it gives us options down the road. Since we last had this debate, the yield farming craze and other macro economic conditions have lead to even more demand.  We seem to have now stalled that demand with the 101% CR stablecoin regime around 900 million DAI and a $1.01 peg.  This is obviously a high risk solution that can only compensate the protocol for a short period of time so long as fees are above 0%.  So we have a small high-risk window where we\u2019ve put the peg on rails at 1.01, and we can probably continue this regime for the peg until we exhaust all available stablecoin supply, but this will increase risk exposure for the protocol and, as fees go to 0%, leave the protocol starving. But don\u2019t despair!  There are a number of irons in the fire that will drastically increase the supply side and possibly get us back to that $1.00 peg.  Many of these ideas are a few months out, which is about the same timeframe where rates for stablecoins will need to go to 0%.  And this make-or-break moment for this strategy is where I would like us to consider getting this tool ready. To be clear, I am not suggesting we use the Vox when we get to this point.  I am simply suggesting that governance hedge all possible peg management solutions so that we have as many tools available should we need them.  I suggest we move forward with this tool\u2019s deployment into the protocol, but don\u2019t turn it on.  This thread is full of examples where just the threat of possibly using this tool to defend the peg may cause markets to adjust.  And, if all our other paths to fix the peg by growing supply in real world assets, stablecoin collaterals, and [REDACTED] bear fruit, then we won\u2019t need to use the Vox. As for the smart contracts domain team.  A number of us have reviewed this proposal, and the code, and think it is technically sound enough for inclusion in the protocol. I would suggest we move forward with this MIP.  This is the moment if we want to move forward with this for October. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-112-thursday-october-1-16-00-utc/4391/5"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.526038748832867
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#65",
+                    "likes": "4",
+                    "time": "30/09/2020-18:50:24",
+                    "content": "    cmooney:      LongForWisdom:  Regardless of whether we ever turn this on though, this MIP just gives us more options, it\u2019s hard to see the downside to that.   I think we should add the Vox for this exact reason. I don\u2019t think we should turn it on at this stage, as that could carry heavy implications about what DAI is or how it\u2019s perceived, but it gives us options down the road.   This was the same exact reason I proposed the protocol just mint DAI with no backing and set it aside (do nothing with it).   See if the markets even react to the idea of us doing this much less freeing the DAI. I will say what I heard from the community was an emphatic NO do NOT break the 1:1 DAI:1USDcollateral value here. Yet every day the PEG is at 1.01 is a day of stablecoin stablity fees that are worthless promises to the system. I am coming to believe that 6 months down the road we are going to be looking at a much bigger problem and all we will have left is devaluing the PEG to have any hope of getting it to 1.   We don\u2019t even know how the markets are going to react not just if we threaten it, but if we really use it. For a whole week the markets ignored a 7% dent in the 1:1 DAI:collateral backing after Black Thursday.  I could only speculate why as most efficient markets should have put the DAI price below 1 vs. above it. Rather than go on.  I agree with @LongForWisdom and @cmooney It is time to get this warmed up and ready to go because it might be the only tool we have left at some point to even try to bring the PEG to 1. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.039021164021164
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/NikKunkel",
+                    "index": "#66",
+                    "likes": "11",
+                    "time": "30/09/2020-19:31:50",
+                    "content": "I support adding more tools to our monetary policy toolbox, even if we don\u2019t utilize the Vox right away. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.9642857142857135
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#67",
+                    "likes": "8",
+                    "time": "05/10/2020-15:19:24",
+                    "content": "Thank you to all who provided their thoughts, questions, and feedback. I am formally submitting this MIP for the October governance cycle. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cnoyes",
+                    "index": "#68",
+                    "likes": "15",
+                    "time": "20/10/2020-19:03:03",
+                    "content": "Chiming in briefly on this thread to say that Paradigm supports implementing MIP20 to make VOX available to governance. We view this as a separate discussion from when/how negative interest rates should actually be enacted. We think it is valuable for governance to have VOX as an option that could help avoid emergency shutdown in certain edge cases \u2013 such as some actor cornering the market for DAI, or stablecoins becoming suddenly unavailable as collateral. Just the credible ability to enact negative rates may make scenarios like the former less likely. One concern we have with MIP20 is that its implementation potentially lowers the social activation energy for governance to enact negative rates. This could make it more likely that they are used outside of true corner cases (fundamentally altering the user\u2019s relationship to DAI as a $1 asset in the process). This is essentially the point Rune made here. Actually, in our view, the empirical ability of other monetary policy tools to get us through the recent period of instability and back to a positive rate equilibrium should raise the bar to using VOX in the future. We also hope that the implementation of VOX will not preclude governance\u2019s exploration of alternative/additional policy tools to address situations where negative rates may be a solution, but not necessarily the best or only one. To recap, Paradigm supports implementing MIP20 to make VOX available to governance, and we think that activation is a separate discussion which should not be conflated with this vote. Thanks @equivrel for all of your work on this! ",
+                    "links": [
+                        "https://forum.makerdao.com/t/week-21-dai-distributions-sourcecred-funding-mip13c3-sp6/4883"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.416650751209575
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lollike",
+                    "index": "#69",
+                    "likes": "9",
+                    "time": "27/11/2020-14:48:52",
+                    "content": "Since the vote to implement Vox passed in the October MIP Bundle, the Maker Foundation Integration team has been in touch with numerous integration partners to gauge the impact of changing par through Vox on existing integrations. Our findings is that par is not a well understood concept of the Maker Protocol, mainly because it has never changed in the past, why many integrations in the ecosystem do not account for the fact that it is an important variable in the system, that can in fact be changed. Consequently I would advise that if Maker Governance was to ever change par, whether it being through Vox or in general, that it provides the ecosystem ample time to carry out upgrades to ensure integrations do not break. At least 2 weeks heads up would be necessary for integrators to update their systems, but even longer would be preferred. The Integrations team is already actively working with partners to ensure that all integrations support a changing par and that this concept is well understood in general. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.241666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#70",
+                    "likes": "0",
+                    "time": "28/11/2020-00:16:24",
+                    "content": "Thank you for the update @lollike \u2013 really appreciate you keeping the Maker Community posted. With regards to the reaction of our integration partners\u2013would you say their reaction is positive, okay, lukewarm, or not so welcoming? Not sure if you can disclose\u2013but I would imagine they will adjust\u2013even if its a learning curve and a time-consuming process. As someone who voted for such (it was against my better judgement)\u2013I\u2019m getting a little bit of \u201cbuyers remorse\u201d, but maybe I\u2019m just overthinking it.  Not that my pleb vote would have changed the outcome  I guess when I think of the possible outcomes\u2013I always think of the Japanese stagnation era\u2026 not sure why. But you gotta have faith\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.369886363636364
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Doo",
+                    "index": "#71",
+                    "likes": "0",
+                    "time": "28/11/2020-04:30:08",
+                    "content": "To be honest, most don\u2019t know about Vox. Their primary interest is in Dai peg and liquidity, and many are much more curious about RWA, other upcoming collateral, and PSM. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving feedback on proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.625
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#72",
+                    "likes": "1",
+                    "time": "12/01/2021-01:06:53",
+                    "content": "Following up here for the MIP tracker, is there any work that needs to be done to make the use of Vox possible? Obviously to actually use this parameter would require an extreme market situation, but should such a situation occur imminently would we be able to change the \u201cpar\u201d or is there work on GitHub that would be required first? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 5.446428571428571
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Davidutro",
+                    "index": "#73",
+                    "likes": "0",
+                    "time": "21/01/2021-10:23:18",
+                    "content": "    lollike:  Since the vote to implement Vox passed in the October MIP Bundle, the Maker Foundation Integration team has been in touch with numerous integration partners to gauge the impact of changing par through Vox on existing integrations.   Although it was accepted in the October MIPs bundle, I don\u2019t know if it\u2019s actually implemented yet, or if it\u2019s something on the SC team to-do list. @brianmcmichael do you know? Also, given Lolike\u2019s comment, I think a process MIP for proposing vox would be appropriate. @equivrel, thoughts? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.833333333333334
+                }
+            ]
+        }
+    ],
+    "group_index": "2496"
+}

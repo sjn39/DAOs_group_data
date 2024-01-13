@@ -1,0 +1,193 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/trying-to-get-an-estimate-for-loss-given-default/1343",
+            "title": "Trying to get an estimate for \"Loss Given Default\" ",
+            "index": 1343,
+            "category": [
+                "Core Units",
+                "Risk"
+            ],
+            "tags": [
+                "risk-model"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#1",
+                    "likes": "2",
+                    "time": "23/02/2020-06:46:29",
+                    "content": "I am trying to get an estimate for the LGD in the maker system, and I\u2019m a little confused on how loss is realized by the protocol. LGD is a financial term that describes how much a bank loses when a borrower defaults on a loan expressed as a % of the loan itself. As best i can tell vault liquidations seem to be the most analogous thing to \u201cdefault events\u201d in the maker world. On daiauctions.com it shows a \u201cLoss/Win\u201d percentage of each flip auction that seems to be on average about ~2%. It calculates this number by comparing the price paid per ETH of the winning bid vs the actual price of ETH as determined by the OSM. However this doesn\u2019t really feel like \u201crealized loss\u201d to me. When the kick event happens there is a variable tab that is supposed to represent \u201ctotal dai wanted from the auction\u201d well in all of the auctions I\u2019ve looked at the bid i.e. the amount of dai paid is always  equal to the tab, so is the LGD == 0%? My guess is no. Is the realized loss lot * gemPrice - bid ? Is there a better way to calculate it? I THINK what i really want to know is how the FLIP auctions ultimately end up influencing the debt buffer, but I could also be off on that point as well. Can anyone explain to me how the protocol ends up incurring losses? Any help would be greatly appreciated. ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.665441176470588
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/jernejml",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "23/02/2020-19:59:22",
+                    "content": "First disclaimer: i don\u2019t really know what i am talking about  I believe analogy breaks since you are equating \u201cdefault event\u201d with \u201crealized loss\u201d, which is not necessary the case (at least not in an accounting sense), since vaults are overcollateralized. MKR owners, i.e. \u201cbank owners\u201d benefit from a single liquidation (all other things being equal: collateral price not affected, future loan demand etc\u2026) because there is 13% penalty going to mkr owners for every liquidation. Realized loss would happen if suddenly whole collateral type collapses. Example would be if BAT price would quickly drop to 5 dollar cents. Again, i am using the term \u201closs\u201d as a nominal loss, not in an opportunistic sense, like inefficient auction, which reduces mkr burn. Or future demand for loans being lower, etc\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.221320346320346
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "23/02/2020-20:45:09",
+                    "content": " hmm that may make sense. The more i think about it the more the number expressed on daiauctions.com seems somewhat like the loss given default for the CDP owner, but not necessarily the protocol as a whole. As the cdp owner basically ends up auctioning off his collateral to cover obligations at a discounted rate, and given that as best i can tell it is unprecedented for the tend phase of the auction to raise the tab maybe it is possible the LGD has to date been 0% That said there does seem to be actual realized losses happening within the protocol currently. The debt buffer is constantly growing and I believe that debt does end up getting paid by the system buffer on a fairly regular basis. Although it is not 100% related to my original question, what are the main contributing factors that are driving up that system debt? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.193452380952381
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/jernejml",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "23/02/2020-20:53:05",
+                    "content": "Dai Savings Rate. https://community-development.makerdao.com/makerdao-mcd-faqs/faqs/dsr#what-is-the-dai-savings-rate I would also suggest reading slides: https://docs.makerdao.com/maker-protocol-101 ",
+                    "links": [
+                        "https://docs.makerdao.com/maker-protocol-101"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "23/02/2020-21:14:01",
+                    "content": "Yeah that makes sense. Well given that i don\u2019t really have a better number to go off of i may just use the average discount rate of the flip auctions as a proxy for now for my purposes. That said, if anyone has a better idea on getting how to get an estimate here I would be really interested in hearing what you have to say. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.3
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "25/02/2020-06:59:20",
+                    "content": "First I think you have to consider what the LGD actually means.   It means an actual loss is booked to the bank on the loan as a % of the total loan.   As far as I know since Maker loans are \u2018over collateralized\u2019 an actual loss to the protocol can only happen if the excess collateral can\u2019t cover the DAI borrowed. What you need to ask is how many liquidations occured that did not retrieve the about of DAI borrowed.  To date I don\u2019t think there have been any liquidations that could not cover the outstanding DAI hence there is no LGD. Also as @jernejml points out there is a difference between a borrower realized loss and a system (i.e. the bank) default event that leads to a system(bank) realized loss. One also has to be careful here.   I think if there were actual realized losses on loans these would be met and covered with the incoming stability fees (thank you @jernejml surplus) until a certain debt (sin?!) level is reached where MKR would then be auctioned off to cover the growing deficit in the system. So in Maker your LGD is pretty much 0, as to what borrower realized losses are - that is something entirely different and more related to market value of collateral auctioned - realized auction value to borrower to cover debt = borrower realized loss. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.725840336134453
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/jernejml",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "25/02/2020-08:16:59",
+                    "content": "    MakerMan:  One also has to be careful here. I think if there were actual realized losses on loans these would be met and covered with the incoming stability fees until a certain debt (sin?!) level is reached where MKR would then be auctioned off to cover the growing deficit in the system.   I believe you are talking about, not the incoming stability fees, but past collected fees (minus DSR cost etc) buffered in so called \u201cSurplus Buffer\u201d, currently set to 500k. In short, small loses can be absorbed by \u201creserve\u201d and no new MKR would be minted. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.772579693034238
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "25/02/2020-08:34:45",
+                    "content": "Yep changed that - thanks. We are pretty much saying the same thing - that it is possible for the system surplus buffer to absorb a chunk of these losses and not see any MKR auctions. Whether there have been any events where the system did not have enough collateral to cover the needed amount of DAI and took a loss in the system surplus I am not sure.   I would think these kinds of losses would be compete liquidation of all collateral with no return and don\u2019t think I have seen any of those types of liquidations (virtually all of the liquidations have returned some collateral to the borrower). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.285714285714286
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "07/03/2020-03:41:15",
+                    "content": "So as an update it this topic was sort of touched on as part of the the most recent governance and risk call. Based on @cyrus presentation it seems that the main factors that are going to be a driver here are \u201cjump risk\u201d and what he calls \u201cslippage\u201d which based on what he was saying in that presentation seems to deal with auction inefficiency. Will be very interesting to see how the foundation is modeling this over the next few weeks. It seems to me that we MIGHT be able to come up with a historical number for the slippage value there by looking at how the auctions end up playing out for the vault holders. I.E the aforementioned 2% discount the vault holder is giving to the auction participants for his collateral. So going from that value to LGD for a Vault seems to me like we want need to know the probability that the collateralization ratio ends up going below 1. As mentioned in that presentation this is the point at which the protocol ends up losing money.  Assuming i had was able to calculate that probability it seems to me that LGD ~ slippage * p where p is the probability that the vault falls below a CR of 1. Jump risk seems to be a real tricky thing to model. It gets left out by default from the credit risk 101 models I\u2019ve seen, and the few academic papers I\u2019ve read about it end up being written in very esoteric language. Can often end up flying over my head. Can\u2019t wait for @cyrus to do my homework and tell me how to calculate it. At any rate wanted to check in to see if people think I am on the right track here for figuring out an estimate for this value. Thoughts? Concerns? All critiques welcome. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.000700280112045
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "07/03/2020-04:34:06",
+                    "content": "    Andy_McCall:  Jump risk seems to be a real tricky thing to model. It gets left out by default from the credit risk 101 models I\u2019ve seen, and the few academic papers I\u2019ve read about it end up being written in very esoteric language.   Consider the Pareto distribution which is used to model the \u201cseverity of large losses for certain lines of business such as general liability, commercial auto, and workers compensation\u201d ? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.339285714285714
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cyrus",
+                    "index": "#11",
+                    "likes": "8",
+                    "time": "07/03/2020-05:02:20",
+                    "content": "Hey, sorry I missed this topic earlier. Yeah, jump risks and slippage are the two main source of losses. Just to reiterate what I was saying on the call, imagine if the asset price moved continuously (no jumps), and at the liquidation price you could auction off infinite collateral. It would be impossible (I hope) to construct a loss in such a scenario. In reality, we know (and observe) that asset prices do make sudden moves, and that auctions can lead to slippage. The high level approach to the risk model is a Monte Carlo Value at Risk. Using a MC simulation is nice because you\u2019d like to incorporate some path dependency (concepts such as user behavior, i.e., dynamic exposure amounts), but more importantly, historical sampling is just terrible in the space. Every asset looks amazing at 150% LR, even the shitcoins. Using MC allows you to be a bit more flexible. (I\u2019m referring to historical sampling of the asset price, but same with the auction history, which is extremely short and unusable.) Honestly, modeling both jump risk and slippage are extremely tricky. In many ways, our approach should be viewed as an MVP, a tool to get us through the early days. The \u201cright\u201d approach would require significantly more resources than we have at our disposal (just consider the fact that major institutions of thousands of risk analysts). But I digress. For jump risks, we\u2019ve taken a look at as much history as possible (looking at ETH prices from pre-SCD) as well as looking at Bitcoin. We\u2019ve also done analysis on looking at some shitcoins that have succumbed to event risk. Our insight with jump risk is that, at least some (although I will argue a majority) of jumps are event-driven and can be profiled. So we began to categorize the causes (exchange hacks, regulation, major hard forks, protocol hacks) and tried to characterize a) how frequently they occur, and b) how severe they are. So we can look at an asset and say \u201chey, this thing is really likely to get hacked because we know its been engineered terribly\u201d and from other similar hacks we know that the token is likely to drop 50% in such a scenario. We tie the fundamental analysis of an asset directly to its likelihood and severity of its jump. Now, this is of course highly subjective, which is where we\u2019ll be leaning on community input (ultimately they have to be OK with the risk parameters). But our model can help reflect the community\u2019s viewpoints. At the technical level, I agree there isn\u2019t a lot of good literature on stochastic modeling of jump risks (you really have to be a super-quant to have a nuanced understanding of the differences between various approaches). I would argue that at this early stage, with the limited amount of data we have, it doesn\u2019t really make a difference. Much of this will be practical sense. We spent some time exploring other models, and would love to have some other knowledgable people participate here. Check out this paper, for example. This is probably the best paper that most closely represents our approach https://arxiv.org/pdf/1604.05404.pdf He uses a pretty sophisticated stochastic model with jumps, one that is probably more than we need. Hope this gives some good context for now. Would love some comments / feedback. I\u2019ll try to share some data around the jumps tomorrow (cc @Primoz ). Will also try to do another post on slippage. Lastly, please don\u2019t expect us to do anyone\u2019s homework for them haha! We\u2019re hoping this will be a community effort, there is ample room for improvements and iterations. Thanks for all the discussions you\u2019ve sparked! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.604572940287226
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Rich_Cuellar-Lopez",
+                    "index": "#12",
+                    "likes": "1",
+                    "time": "08/03/2020-13:36:44",
+                    "content": "Based on the Collateral Risk model discussed, the jump risk is based on the collateral asset prices, correct @cyrus? Mainly ETH right now and not MKR? I am interested into what happens if there is a correlation (positive or negative) between MKR and the collateral asset before any vault activity happens like the surplus buffer being affected or liquidated. My goal is not to make this equation more complicated, just trying to get a sense for whether correlation of asset prices would speed up or slow down the MakerDAO risk model. This kind of fits into a larger idea I\u2019ve been batting around re: tracking the GINI coefficient based on voting rights and MKR accounts. I can talk about this in a different thread, or maybe it plays into parts of the collateral risk model. Still at the fact-finding stage. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.322540885040885
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/cyrus",
+                    "index": "#13",
+                    "likes": "2",
+                    "time": "09/03/2020-00:41:11",
+                    "content": "There\u2019s of course a massive correlation, and it\u2019s a big issue. First off, it\u2019s hard to say how much Dai can be recovered through MKR dilution under normal circumstances. But furthermore, it\u2019s of course 10x more difficult to say how much is possible to raise when ETH has already crashed through the floor given that a) the spot MKR price has likely fallen, and b) the investment outlook of MKR has some hysteria / panic built in (affecting investor appetite). Our approach is as follows. First off, the community should consider beefing up the surplus buffer so that it becomes less reliant on MKR dilution. Based on what might be some reasonable expectations of tail risk losses, this can be set accordingly. It\u2019s unclear to me if we should just accumulate Dai or preemptively issue MKR (this would be a very politically contentious move, especially given the community just burned a good chunk of MKR during the migration). But inevitably in some cases we will be forced to resort to MKR dilution. Our idea was to consider what might be a reasonable price point at which investors would step in and recapitalize the system. This could be achieved by undergoing a valuation model for MKR and then applying an additional discount for good measure. Does that answer your question? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.472916666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#14",
+                    "likes": "1",
+                    "time": "09/03/2020-14:51:01",
+                    "content": "    cyrus:  It\u2019s unclear to me if we should just accumulate Dai or preemptively issue MKR    Really interesting idea there. Seems like it would depend on how 1) How large the VaR is currently 2) how likely likely we think we are to incur > $500k in losses in the next year or so. There certainly are some scary things happening in the financial markets right now, so personally i could see the argument for going ahead and trying to sure things by minting MKR. On the other hand if we were only talking about beefing it up by say $25k, seems like we would be able  to pretty much be able to count on the DSR spread to provide the funds over the course of the 12 months unless the likelihood of losing > $500k was something crazy high like say 40%. P.S: still reading through that paper trying to formulate my thoughts around that before posting on it. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.499812030075189
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Rich_Cuellar-Lopez",
+                    "index": "#15",
+                    "likes": "1",
+                    "time": "09/03/2020-19:54:09",
+                    "content": "@cyrus This does answer my question about separating the collateral asset price from the MKR price (and not relying on MKR dilution to your larger point). Thanks. I agree that the calculation gets too complex when you have to estimate multiple asset correlations. Re:  First off, the community should consider beefing up the surplus buffer so that it becomes less reliant on MKR dilution  Could you explain the mechanism of how this would this be done? Would this be raising the system surplus through changing parameters of auctions or changes in stability fee? Would this be through the foundation or altruistic members of the community? #askingforafriend ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.986111111111111
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Andy_McCall",
+                    "index": "#16",
+                    "likes": "4",
+                    "time": "09/03/2020-20:06:13",
+                    "content": "    Rich_Cuellar-Lopez:  Could you explain the mechanism of how this would this be done? Would this be raising the system surplus through changing parameters of auctions or changes in stability fee?   Obviously cyrus is going to know better, but I think this can just be done by an executive vote to change the size of the surplus buffer. If you voted to raise it to say 600k (i believe) what ends up happening is flap auctions would stop until you hit the 600k mark, so over time the amount in the buffer would go up until the new limit is hit. Cyrus also hints at the possibility of minting new mkr to raise the amount of money in the system buffer. Seems very similar to offering new stock to fund expansion.You might prefer that option if you were in a hurry to raise the amount of money in you war chest. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.757575757575758
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Rich_Cuellar-Lopez",
+                    "index": "#17",
+                    "likes": "1",
+                    "time": "09/03/2020-20:49:39",
+                    "content": "Thanks @Andy_McCall Correct me if I am wrong, but the debt buffer is denominated in DAI and not directly affected by collateral prices, right? So if one specific collateral crashes through the floor, the strength of auctions from other collateral could keep sustaining the overall Maker Buffer (unless the collateral is correlated, of course). To return to the broader point, the beefed up buffer could just give more time before an eventual MKR dilution. Inevitably the case for:  Our idea was to consider what might be a reasonable price point at which investors would step in and recapitalize the system. This could be achieved by undergoing a valuation model for MKR and then applying an additional discount for good measure.  remains compelling. It\u2019ll be interesting to see if others in the community deem this a significant enough risk to include in the Collateral Risk model. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.795238095238096
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,117 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/rfc-signer-feature-detection-over-json-rpc/5773",
+            "title": "RFC: Signer feature detection over JSON-RPC ",
+            "index": 5773,
+            "category": [
+                "Interfaces"
+            ],
+            "tags": [
+                "wallet",
+                "json-rpc",
+                "eip-1559"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "20/03/2021-01:49:52",
+                    "content": "We\u2019re quickly entering a multichain world, and the average wallet is connecting to several evm-compatible blockchains at once. However, with EIP-1559, we\u2019re also creating a wider gap between the behaviors of different EVM chains. It would be nice if Ethereum wallets maintained \u201cplug and play\u201d interoperability with a trusted node if possible, but since a node may require (or at least support) signatures of different formats, it\u2019s important that nodes provide wallets a method to learn about their varying requirements. There are lots of ways this could be done, so I\u2019m opening this thread to gather opinions on how, before we present & promote an approach across the client teams. I\u2019ll note initially that the current pattern is to have one method per variable parameter. We see this with eth_chainId, for example. Maybe that\u2019s fine! I\u2019m actually not completely against the one-feature-one-method approach. Maybe the right answer is to add a eth_1559SupportBlock method that returns the activation block number for that feature (null for unplanned). Alternatively, we could provide \u201call the info a signer should need\u201d under a single method. Maybe eth_getSignerInfo could return relevant state: {   chainId: 1,   1559SupportBlock: 155_BLOCK }  Or maybe some of you will feel that if we\u2019re going to batch data on the RPC, maybe we should batch it all, and have some super-metadata method, like eth_getNodeInfo. I don\u2019t have a strong opinion at all, but hoping with a period of open discussion we\u2019ll get any ideas for improvements integrated into the eventual proposal. Pinging @MicahZoltu because I know he has some opinions on this and I want to get the record started. ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.412946428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "2",
+                    "likes": "2",
+                    "time": "21/03/2021-12:11:10",
+                    "content": "I would like to see a capabilities system where you can tell the provider the set of methods you want available (and perhaps versions you need) and the provider can reply letting you know which of those it has and what version it uses. This would make it so that as a dapp, I can query when the provider is first connected to find out what capabilities I have access to and then alter my usage or fail fast for the user as appropriate depending on what is available. I\u2019m not a fan of coupling with EIPs because there may be features available on one chain that has nothing to do with an EIP but it is equivalent to the same feature on another chain with an EIP.  EIP-1559 is a great example of this because some blockchains have it natively, or have included it under a different change control process thus don\u2019t have it named EIP-1559. You bring up an interesting point about features that \u201care not available now but will become available in the future\u201d.  Personally, I feel like that is a feature that won\u2019t end up getting used much so I would prefer to not dedicate engineering effort toward supporting something like that.  When you connect you get the feature set and you should be able to have confidence that that feature set will be available at least for the full session. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.083333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shanejonas",
+                    "index": "3",
+                    "likes": "1",
+                    "time": "22/03/2021-19:34:04",
+                    "content": "rpc.discover from OpenRPC could handle the supported methods part. For which EIPs are supported, a new method like getSupportedEIPs would be great, for clients or wallets to support. Another example of that would be returning if a client supports EIP155 or not. In geth most, if not all the EIPs are implemented as \u201cForks\u201d, so if (BYZANTIUM) then xxx, but ideally they are articulated as EIPs not forks (see https://github.com/ethereum/go-ethereum/pull/18401 for more inspriation) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.836363636363637
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "22/03/2021-20:26:03",
+                    "content": "Linking for the lazy:   spec    OpenRPC Specification The OpenRPC specification      I could definitely see that being a great addition for method detection.  For which EIPs are supported, a new method like getSupportedEIPs would be great  I\u2019ll also take Micah\u2019s point though that these EIPs are effectively \u201cfeatures\u201d and should probably be identified as features, since different chains might introduce the same features under different proposal IDs. The MVP goal of this thread for me is to provide RPCs a way of self-declaring EIP-1559 support (though the flag doesn\u2019t need that name), something like usesMovingBaseFeeMinimumGasPrice could do. This motivation is so that wallets can begin providing responsive interfaces for any chains that support the new tx format as soon as possible. Features may need to standardize around a feature identifying string in that case, and we might want that to be a common expectation of EIPs that add consumer-affecting features. ",
+                    "links": [
+                        "https://spec.open-rpc.org/#service-discovery-method"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.801136363636363
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "23/03/2021-18:51:48",
+                    "content": "Noting that EIP-2930 is another example of a transaction format that a signer might want to be made aware of:   Ethereum Improvement Proposals    EIP-2930: Optional access lists Details on Ethereum Improvement Proposal 2930 (EIP-2930): Optional access lists      ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-2930"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ryanschneider",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "23/03/2021-19:03:08",
+                    "content": "Agree that having some sort of RPC to inspect the capabilities of an RPC endpoint is desirable.  I think it needs to be in addition to OpenRPC\u2019s rpc.discover since it\u2019d be tricky to parse the discover response to really determine if a endpoint supports -1559 or -2930. I think we have a tendency to try to solve too many problems at once though and then things get bogged down in details etc, so maybe for this particular case it\u2019d make sense to keep the RPC focused to just \u201cwhat transaction formats does this endpoint support\u201d? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.511111111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "7",
+                    "likes": "1",
+                    "time": "24/03/2021-00:13:00",
+                    "content": "    ryanschneider:  maybe for this particular case it\u2019d make sense to keep the RPC focused to just \u201cwhat transaction formats does this endpoint support\u201d?   This was also suggested by @timbeiko. I\u2019m fine with it, and it solves my current motivations. YAGNI! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.972222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/shanejonas",
+                    "index": "8",
+                    "likes": "1",
+                    "time": "25/03/2021-01:39:12",
+                    "content": "Maybe something like: eth_getSupportedFeatures => {   \"EIP1159\": true,   \"EIP2930\": true,   \"EIP155\": true }  or maybe [\"EIP1159\", \"EIP2930\", \"EIP155\"]  This requires clients to expose features, and less focus on which \u201cFork\u201d (Byantium/London/etc) its part of. That being said, is there an API call right now to get which fork a client supports? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.1690476190476184
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/danfinlay",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "25/03/2021-18:55:23",
+                    "content": "    shanejonas:  That being said, is there an API call right now to get which fork a client supports?   I don\u2019t think so. For detecting ETC, we\u2019d had to do things like query state that was known to have differed per fork. I think your above example is totally adequate for this purpose, the array seems sufficient since all of these known features are binary (either adopted or not), we don\u2019t need future-feature-detection. If I were going to extend it at all it\u2019d just to be for the response to be a map where the value is the activation block, just because it provides the \u201cinstant activation\u201d ability. It\u2019s not a deal breaker to not have that, but I don\u2019t know why we\u2019d exclude it when it\u2019s information that every node is going to embed related to any optional features they activate. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.619047619047619
+                }
+            ]
+        }
+    ],
+    "group_index": "1282"
+}

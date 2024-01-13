@@ -1,0 +1,42 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/technical-overview-of-the-sushiswap-variant-of-the-cropjoin-adapter-sushijoin/8122",
+            "title": "Technical Overview of the SushiSwap Variant of the CropJoin Adapter (SushiJoin) ",
+            "index": 8122,
+            "category": [
+                "Collateral Onboarding"
+            ],
+            "tags": [
+                "sushiswap"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#1",
+                    "likes": "14",
+                    "time": "17/05/2021-16:17:17",
+                    "content": " Technical Overview of the SushiSwap Variant of the CropJoin Adapter (SushiJoin) MIP30: Farmable cUSDC Adapter (CropJoin) has passed the governance inclusion process. This proposal includes two components:  The generic CropJoin contract which defines reward behaviour within the Maker ecosystem. Rewards (bonus) are defined as any ERC20 (or similar) token which is \u201cawarded\u201d on top of the collateral (gem) being provided to the adapter. The bonus tokens are usually different than the gem tokens, but this doesn\u2019t necessarily have to be the case. The Compound-specific USDCJoin  contract which defines a strategy for farming cUSDC inside Compound.  While governance has provided mandates for both sections, the Protocol Engineering team thinks the safer strategy is to first test the CropJoin against a simpler rewards structure - the SushiSwap MasterChefV2 contract. The decreased smart contract risk along with the very high rewards program in Sushi is why we have built the SushiJoin adapter. Currently the SushiJoin adapter is finalized on the MasterChef contract located here, but they will be upgrading to V2 soon. Both implementations are similar, so the amount of code changes on our end is minimal.  An overview of the SushiSwap ecosystem The core swap part of SushiSwap is a nearly identical fork of Uniswap V2 at the smart contract layer. Users supply individual token liquidity and get back an ERC20 LP token representing their share of the pool. To enable rewards users can deposit those LP tokens into the MasterChef rewards program which distributes SUSHI tokens at pre-set rates for some of the pools. Within the pool SUSHI tokens are allocated on a prorate basis. The MasterChef contract is based off the Uniswap UNI rewards program that ended last year. It has been modified to account for multiple LP tokens in one contract, but the bulk of the logic remains the same. The V2 contract makes some superficial changes, but overall the rewards logic remains the same. The biggest smart contract danger to LP tokens which have deposited into the Masterchef is the administrative multi-sig which has the power to steal the collateral via the migration process. This multi-sig is behind a Timelock which gives us 2 days where we can see a potentially dangerous operation coming through.  MasterChef Potential Attack Vectors As part of routine due diligence, the Protocol Engineering team has identified two potentially dangerous operations which puts the SushiJoin collateral at risk in the V1 of MasterChef, along with an additional attack vector which is in V2. I will outline the potential attack vectors along with our mitigation strategy below. These will be pointing to the second version of the contract, but the code is analogous in V1.  transferOwnership()  This function allows the Timelock to change the owner of the contract to a new address. This is a very powerful operation which if executed can remove the assumption of the 2 day Timelock for all future administrative operations.  setMigrator()  This is the most powerful function which allows a new migrator to be set. The migrator contract can remove LP tokens from the pool with no restrictions.  set()  The risk from this function is more minor, and may be called during normal operation to update the rewards amount. In particular the risk comes from the ability to update the _rewarder address. This address is called during every public action which allows for potentially some re-entrancy attacks. We have not found any obvious re-entrancy attacks, but they could be there none-the-less.  SushiJoin Mitigations A permissionless cage() has been added which can be triggered by anyone whenever a potentially dangerous operation is present in the Timelock contract. These operations include any of the situations outlined above. Calling cage() immediately removes all the LP tokens from the MasterChef contract and freezes any new collateral coming into the adapter. We have designed this system to allow for false positives. It\u2019s possible (but unlikely) these methods get triggered during normal operation. The Sushi team has told us they have no plans to switch either the owner or the migration contract anytime soon. In the unlikely case of a planned upgrade, the adapter can be reset by governance through the weekly spell and at worst we lose a few days of rewards. This is a reasonable price to pay in our view for the added security of not losing all the collateral tokens in the event of a malicious attack.  Audits ABDK has performed 2 rounds of audits. You can view the results here. ",
+                    "links": [
+                        "https://github.com/hexonaut/crop/blob/main/src/sushi.sol",
+                        "https://etherscan.io/address/0xc2EdaD668740f1aA35E4D8f227fB8E17dcA888Cd#code",
+                        "https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol",
+                        "https://github.com/boringcrypto/BoringSolidity/blob/master/contracts/BoringOwnable.sol#L27",
+                        "https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol#L140",
+                        "https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol#L134",
+                        "https://github.com/hexonaut/crop/blob/main/src/sushi.sol#L154",
+                        "https://github.com/hexonaut/crop/tree/main/audits",
+                        "https://forum.makerdao.com/t/maker-relay-ep-46/8312",
+                        "https://forum.makerdao.com/t/maker-relay-ep-46-en-espanol/8358",
+                        "https://forum.makerdao.com/t/maker-relay-ep-47/8491"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.918894171304886
+                }
+            ]
+        }
+    ]
+}

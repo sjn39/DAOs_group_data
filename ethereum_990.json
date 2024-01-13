@@ -1,0 +1,1933 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-2315-simple-subroutines-for-the-evm/3941",
+            "title": "EIP-2315 Simple Subroutines for the EVM ",
+            "index": 3941,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "evm",
+                "opcodes",
+                "core-eips",
+                "eip-2315",
+                "shanghai-candidate"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "1",
+                    "likes": "5",
+                    "time": "22/01/2020-04:37:52",
+                    "content": " Abstract This proposal provides a complete, efficient, safe and static control-flow facility. It introduces two new opcodes to support calling and returning from subroutines:   RJUMPSUB relative_offset \u2013 relative jump to subroutine  RETURNSUB \u2013 return to PC after most recent RJUMPSUB.  It depends on the two new opcodes proposed by EIP-4200 to support static jumps:   RJUMP relative_offset \u2014 relative jump to PC + relative_offset   RJUMPI relative_offset \u2014 conditional relative jump  It deprecates JUMP and JUMPI, allowing valid code to support streaming, one-pass, and other near-linear compilers. In concert with EIP-3540 and EIP-3670 it ensures, at initialization time, that valid code will not execute invalid instructions or jump to invalid locations, will not underflow stack, will maintain consistent numbers of inputs and outputs for subroutines, and will have bounded stack height in the absence of recursion. This is among the simplest possible proposals that meets these requirements.   Ethereum Improvement Proposals   EIP-2315: Simple Subroutines for the EVM Two opcodes for efficient, safe, and static subroutines.       September 9, 2022:  The world keeps turning, and this proposal evolves with it.  We can now have immediate data, relative jumps, and no more JUMP, JUMPI or JUMPDEST.  So this draft removes BEGINSUB and returns to the original design of just two new opcodes, but with immediate data.  It retains the validity constraints and algorithm adapted from EIP-615.  Which means we can at long last write one-pass compilers.  ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-2315",
+                        "https://ethereum-magicians.org/t/shanghai-core-eip-consideration/10777/26"
+                    ],
+                    "GPT-summary": "The post is a proposal for EIP-2315, which introduces two new opcodes to support calling and returning from subroutines. It also deprecates JUMP and JUMPI, allowing valid code to support streaming, one-pass, and other near-linear compilers. The proposal has evolved with time and now includes immediate data, relative jumps, and no more JUMP, JUMPI, or JUMPDEST. The proposal retains the validity constraints and algorithm adapted from EIP-615. The post does not advertise the proposal, but rather explains it and provides updates on its evolution.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.739318181818182
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lithp",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "22/01/2020-22:06:23",
+                    "content": "I\u2019m probably just being slow but I don\u2019t understand why this should be adopted, and the provided rationale doesn\u2019t clear anything up for me. If it\u2019s already possible to implement subroutines then as inelegant as the current situation might be why introduce a native subroutine mechanism? It can be implemented more efficiently, letting contracts have a lower gas cost? It makes static analysis on the resulting contracts easier? It unlocks other future changes with cool benefits? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.569444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "3",
+                    "likes": "3",
+                    "time": "22/01/2020-23:25:05",
+                    "content": "Yes, lower gas costs.  And yes, easier static analysis - you can know that the code is a subroutine call or return, rather than try to work it out by pattern matching Solidity or other conventions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party giving positive feedback on proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "02/02/2020-17:33:41",
+                    "content": "Pulling over from AllCoreDevs. Tomasz Kajetan Sta\u0144czak @tkstanczak 06:22 @gcolvin would be good to have a test for nested JUMPSUB and a JUMPSUB nested in a CALL invoked from inside the subtoutine ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "02/02/2020-22:11:27",
+                    "content": "@tkstanczak @holiman  Here are a couple more test cases, probably wrong as I hurry to get out in the sun. offset step op        stack 0      0    PUSH1 3   [] 1      1    JUMPSUB   [3] 2      8    STOP      [] 3      2    JUMPDEST  [] 4      3    PUSH1 7   [] 5      4    JUMPSUB   [7] 6      7    RETURNSUB [] 7      5    JUMPDEST  [] 8      6    RETURNSUB []  Program should STOP with an empty stack after 8 steps. offset step op        stack 0      0    PUSH1 3   [] 1      1    JUMPSUB   [3] 2      2    JUMPDEST  [] 3      3    RETURNSUB [] 1      4    JUMPSUB   []  Program should STOP with an empty stack after 4 steps, due to virtual zero at end of code. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.675000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "02/02/2020-23:16:51",
+                    "content": "I think the second one will cause InvalidJumpDestination exception (which is a good test case too). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tkstanczak",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "02/02/2020-23:22:21",
+                    "content": "offset step op        stack 0      0    PUSH1 3   [] 1      1    JUMPSUB   [2] 2      2    JUMPDEST  [] 3      3    RETURNSUB [] 4      4    STOP   [] ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "02/02/2020-23:24:02",
+                    "content": "The idea here is to demand nothing, but simply provide a mechanism.  For this EIP such demands will need to be made by other tools. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "02/02/2020-23:58:59",
+                    "content": "    tkstanczak:  offset step op stack 0 0 PUSH1 3 [] 1 1 JUMPSUB [2] 2 2 JUMPDEST [] 3 3 RETURNSUB [] 4 4 STOP []   PUSH1 2 I assume.  The second time this hits RETURNSUB it will pop the codesize left on the call stack and jump to the implicit 0 past the end of the code (at offset 5) and stop.  It will never get to the STOP at offset 4. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 4.583333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "10",
+                    "likes": "1",
+                    "time": "14/02/2020-02:22:37",
+                    "content": "contract fun {     function multiply(uint x, uint y) returns (uint) {         return x * y;     }     function test() returns (uint) {         return multiply(2,3);     } }  Solidity:    MULTIPLY:       0x0       dup2       dup4       mul       swap1       pop       swap3       swap2       pop       pop       jump    TEST:       0x0       RTN       0x2       0x3       MULTIPLY       jump    RTN:       swap1       pop       swap1       jump  Comparable EIP-2315 or EIP-615:    MULTIPLY:        mul        returnsub       TEST:        0x2        0x3        MULTIPLY        jumpsub        returnsub  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.300000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lialan",
+                    "index": "11",
+                    "likes": "1",
+                    "time": "17/02/2020-06:34:36",
+                    "content": "Pros:  Less gas consumption much easier for static analysis better readability: concise and clear syntax easier to maintain less error prone no hard fork needed  Cons:  nothing.This is how a machine should work.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.7578125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "12",
+                    "likes": "1",
+                    "time": "17/02/2020-07:09:59",
+                    "content": "Optimized code from the latest solc does a better job with the multiply() function, which is a leaf.  Non-leaf functions remain costly to get out of, as shown by adding a layer to the test. contract fun {     function multiply(uint x, uint y) public returns (uint) {         return x * y;     }     function test_mul(uint x, uint y) public returns (uint) {         return multiply(x,y);     }     function test(uint x, uint y) public returns (uint) {         return test_mul(2,3);     } }  Here is what solc can do now with just jump: 1  MULTIPLY:    5     mul 3     swap1 8     jump = 17 gas  1  TEST_MUL: 5     0x00 5     RTN 5     dup4 5     dup4 5     MULTIPLY 8     jump = 34 gas  1  RTN: 3     swap4 3     swap3 2     pop 2     pop 2     pop 8     jump = 21 gas (twice)     TEST: 5     0x00 5     RTN 5     0x02 5     0x03 5     TEST_MUL 5     jump = 30 gas  123 gas TOTAL  But with jumpsub and returnsub only a third as much gas is needed. 1  MULTIPLY: 5     mul 3     returnsub = 9 gas  1  TEST_MUL: 3     MULTIPLY 5     jumpsub 3     returnsub = 12 gas  1  TEST: 3     0x02 3     0x03 3     TEST_MUL 5     jumpsub 3     returnsub = 18 gas  39 gas TOTAL  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.7894736842105265
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lialan",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "17/02/2020-21:07:02",
+                    "content": "    gcolvin:  contract fun { function multiply(uint x, uint y) public returns (uint) { return x * y; } function test_mul(uint x, uint y) public returns (uint) { return multiply(x,y); } function test(uint x, uint y) public returns (uint) { return test_mul(2,3); } }   Surprised to see the optimizer doing such a bad job. But yeah this test case shows exactly how the subroutine features would benefit sophisticated situations like this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "24/02/2020-00:05:34",
+                    "content": "I haven\u2019t tried to hand-optimize the Solidity output, but I don\u2019t think that it could do much better.  It\u2019s intrinsically difficult to handle subroutines without instructions for the purpose, as the history of CPU development pretty clearly shows. I\u2019m not sure what\u2019s sophisticated here \u2013 just two function calls and one multiplication. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/lialan",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "25/02/2020-21:58:27",
+                    "content": "Some diggings: On Remix it is using Solidity compiler\u2019s legacy optimizer, which cannot handle functions with calls to other functions, hence the non-optimized TEST_MUL function. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "25/02/2020-23:25:55",
+                    "content": "Hi @lialan The output above is from the latest solc. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "26/02/2020-17:57:17",
+                    "content": "    gcolvin:  And yes, easier static analysis - you can know that the code is a subroutine call or return, rather than try to work it out by pattern matching Solidity or other conventions.   Is static analysis that much easier if all the subroutine offsets are still dynamic (e.g. not an immediate on JUMPSUB)? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "26/02/2020-23:14:29",
+                    "content": "Better to say, some kinds of static analysis, @axic, as I\u2019ve heard complaints about the problem of deciphering subroutines in EVM code, and the EIP gives a good example.  Other kinds analysis don\u2019t care. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.96875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "28/02/2020-17:42:01",
+                    "content": "The reason none of this optimised is that all functions are marked public. That means all of them need to made available externally. In a more realistic example, most of those would not be marked public and then they become inlined or better optimised. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.259259259259259
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "28/02/2020-18:12:06",
+                    "content": "@axic  Thanks, I\u2019ll try that.  The public case is still relevant, but I also want to see what the limits are. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "01/03/2020-10:41:03",
+                    "content": "@axic, @lialan, @holiman. @karalabe.  This program should be more optimizable. test() must be public or else the optimizer tries to eliminate everything. pragma solidity >0.6.2; contract fun {     function test(uint x, uint y) pure public returns (uint) {         return test_mul(x, y);     }     function test_mul(uint x, uint y) pure private returns (uint) {         return multiply(x, y);     }     function multiply(uint x, uint y) pure private returns (uint) {         return x * y;     } }  Compiling with solc --asm --optimize fun.sol gives this.  I don\u2019t fully understand what it is doing.    TEST:       0x00       OUT       dup4       dup4       MULTIPLY       jump    OUT:       swap4       swap3       pop       pop       pop       jump    MULTIPLY:       0x00       dup2       dup4       mul       OUT       jump  Code generation with JUMPSUB should also optimize away test_mul.   TEST:      MULTIPLY      jumpsub      returnsub    MULTIPLY:      mul      returnsub  I think in both cases the multiply() function could be inlined, but then there would be no test. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.447619047619048
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "07/03/2020-14:05:52",
+                    "content": "Arguing with example code is not too helpful, in my opinion. This proposals allows to eliminate moving up the return address in the stack prior to returning and that\u2019s it. If we just want to optimize for fewer swap operations on return, we could also introduce a \u201crotate stack\u201d opcode. If we also want to improve static analysis capabilities, then I would propose the EIP to be strengthened (or maybe just clarified) by the following rule: If a BEGINSUB is reached in any way except a JUMPSUB, it causes an out-of-gas failure. This includes:  directly jumping to the beginsub using jump or jumpi reaching the BEGINSUB by continuing execution from the one prior to it without jumping BEGINSUB being the first opcode  An even bigger improvement would be to disallow regular jumps into and out of subroutines, but I\u2019m not sure if that would be a too drastic change. I cannot elaborate on whether this change is worth it, since Solidity neither benefits much from it nor is it a big cost to switch to using these opcodes in the code generator (as long as dynamic jumps are still allowed). People working on debuggers (remix, truffle, etc), static analysis tools and VM implementations should answer that question. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.509803921568627
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "07/03/2020-18:38:50",
+                    "content": "    chriseth:  This proposals allows to eliminate moving up the return address in the stack prior to returning and that\u2019s it.   I don\u2019t understand.  Doesn\u2019t this proposal allow for remove the return address from the stack entirely? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "07/03/2020-18:42:11",
+                    "content": "    chriseth:  An even bigger improvement would be to disallow regular jumps into and out of subroutines, but I\u2019m not sure if that would be a too drastic change.   Of course if we keep making improvements we could end up back at EIP-615, so I want to keep this minimal.  Last we talked @holiman wasn\u2019t even sure BEGINSUB was worth it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.28125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "13/03/2020-10:52:04",
+                    "content": "I think the pre-population of \u201ccode_len\u201d on the return stack is a bit of a hack. Why not just check if the stack is empty, and fail if so? That would be more in line with how the existing data-stack is handled \u2013 if we try to pop an empty stack it results in an error. Whereas with this EIP, we rely on a second-level check to ensure that we jump to an invalid location and thus never have to deal with empty return-stack. Feels like an unnecessary hacky workaround to some problem I don\u2019t quite see\u2026 ? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "18/03/2020-15:07:52",
+                    "content": "Regarding the EIP, I pushed a commit on the geth - PR, to repro the last testcase that is in the EIP. The code is thus: \t\tbyte(vm.PUSH1), 0x4, \t\tbyte(vm.JUMPSUB), \t\tbyte(vm.STOP), \t\tbyte(vm.BEGINSUB), \t\tbyte(vm.PUSH1), 0x9, \t\tbyte(vm.JUMPSUB), \t\tbyte(vm.RETURNSUB), \t\tbyte(vm.BEGINSUB), \t\tbyte(vm.RETURNSUB),  And the trace from running it is:     Pc Op Cost Stack RStack     0 PUSH1 3 [] [11]   2 JUMPSUB 8 [4] [11]   4 BEGINSUB 1 [] [11, 2]   5 PUSH1 3 [] [11, 2]   7 JUMPSUB 8 [9] [11, 2]   9 BEGINSUB 1 [] [11, 2, 7]   10 RETURNSUB 2 [] [11, 2, 7]   8 RETURNSUB 2 [] [11, 2]   3 STOP 0 [] [11]    Your example traces are not quite correct, some offsets are wrong, and you consistently forget about that hack which adds an out-of-bounds entry to the return stack. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.583333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "18/03/2020-20:21:02",
+                    "content": "Thanks, Martin!  As we discussed, the hack probably needs to be made invisible so far as the spec goes.  Whether it\u2019s worth it in an implementation is another story.  And whether it should show up in this trace is still another story.  The hack causes a STOP to be actually executed, without the hack the program just stops. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "19/03/2020-08:09:58",
+                    "content": "    gcolvin:  As we discussed, the hack probably needs to be made invisible so far as the spec goes. Whether it\u2019s worth it in an implementation is another story. And whether it should show up in this trace is still another story.   I think you should remove it from the EIP. Leave it up to client implementations how they want to implement it, I\u2019d personally prefer to check emptyness of returnstack. If it\u2019s mandated by the EIP, it should be in the trace and count towards the 1024 limit. If not in the EIP, it obviously should not.     gcolvin:  The hack causes a STOP to be actually executed, without the hack the program just stops.   I don\u2019t agree, and this is actually not just a details. So as currently specced, and implemented in geth, the hack causes an out-of-bounds \u201cjump\u201d, which causes an error. Thus, doing RETSUB without a prior JUMPSUB causes same type of error as invalid jump \u2013 an all-gas-consuming revert. So there are two questions here, and my pref is within brackets:  Should \u201cunbalanced\u201d RETSUB cause error? (my pref: YES) Should we pre-fill the stack with out-of-bounds? (my pref: NO)  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.222222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "19/03/2020-08:41:03",
+                    "content": "On a more high-level, I\u2019d be curious to hear from @axic or @chriseth what they think about this EIP. Chris wrote above some suggestions which would prevent \u201cwalking\u201d into a subroutine or jumping into one. IMO that would be a mistake, but I\u2019m curious to hear why it would be beneficial. As it is now, consider the following code, in pseudo-code; func formula(a, b int) int{     return add(a * a, b*b) } func add(a, b, int) int{     return a + b }  When translated to the evm, this could be implemented a tail return, LABEL_FORMULA:    // code to put `a*a` and `b*b` on stack    ...    JUMP LABEL_ADD  LABEL_ADD:   BEGINSUB   add   RETSUB  For a perhaps better example, see https://dr-knz.net/go-calling-convention-x86-64.html#call-sequence-how-a-function-gets-called , where a c compiler generates similar code  Compare how DoCallAdd works in C or C++:  DoCallAdd:      movl    $3, %edx      movl    $2, %esi      movl    $1, %edi      jmp     FuncAdd   In short, allowing jumps into subroutines enables infinite (tail-) recursion. ",
+                    "links": [
+                        "https://ethereum-magicians.org/t/eip-2315-simple-subroutines-for-the-evm-analysis/4229"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "19/03/2020-09:13:43",
+                    "content": "As I explained above: We should be clear about the obective of this EIP. If it concerns static analysis, then it does not go far enough. If it concerns efficiency, then it is only marginally better than introducing stack-rotating opcodes and those would have more use-cases than merely returning from subroutines. Concerning optimizing tail recursion: While I see that this saves a jumpsub, I do not think that tail recursion is something common on smart contracts on EVM especially due to the fact that recursion itself is not recommended due to the stack limit. Even if tail calls could be optimized so that they do not exhaust the stack, there is no guarantee to the developer that this actually happened. I\u2019m not an expert on static analysis, but I would assume that knowing that a \u2018BEGINSUB\u2019 can only be visited by a coming from a JUMPSUB and thus ensuring a proper balance on the return pc stack is nice to have. Furthermore, if there is a guarantee that there are no cross-subroutine jumps, then you can analyze a subroutine in isolation which should reduce the complexity of static program analysis. If there is a certain aspect of the program that cannot really be analyzed (for whatever reason), then this fact spreads to the whole program, while it could be limited to a specific subroutine if cross-subroutine jumps are disallowed. But to sum up again: My personal take on this is that the Solidity compiler can benefit from it by reducing the bytecode size (eliminating the stack rotations on return and the explicit return PC push for calls), but the EIP also does not force the use of JUMPSUB, so it is a very light burden on us. The people we should ask for their opinion is those who are writing debuggers and bytecode analyzers. Also @gcolvin - somehow my reply to your question above did not get saved here, sorry about that: You are right, the proposal eliminates pushing the return PC as well as rotating the stack upon return. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.549630541871922
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "19/03/2020-17:22:37",
+                    "content": "It would be pretty simple to implement the \u201cno walking into a subroutine\u201d (i.e: you need to JUMPSUB to a BEGINSUB, if you hit it while just incrementing the PC, it\u2019s an error). So that\u2019s definitely doable, if people think it\u2019s a good thing. However, implementing the \u201cno jumping into a subroutine\u201d (i.e: prevent JUMP to land on a JUMPDEST) would be extremely hairy. No can do, without a rigorous validation scheme. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.825
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "20/03/2020-18:23:14",
+                    "content": "Thanks for the explanation, Christian.  This proposal only provides a little help to static analysis, but it\u2019s intended to be, in combination with forbidding dynamic jumps, just enough.  The consequences of RETURNSUB after walking into a BEGINSUB would be undefined, and it\u2019s easy to check that they  should go into the spec. Forbidding dynamic jumps is easy enough, but they also have legitimate uses, and we don\u2019t want to go the route of EIP-615 and provide safe alternative opcodes for those.  But if they are allowed I\u2019m not sure how to easily ensure that code doesn\u2019t jump into a subroutine.  So this proposal leaves it to compiler and tool writers to enforce appropriate rules. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.854166666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "20/03/2020-18:30:14",
+                    "content": "I\u2019m confused enough here that I need to study things and then we can talk, @holiman.  I don\u2019t think the geth code matches the proposal, but I\u2019m not sure the proposal is coherent either.  Since the code works the spec should probably be changed to match it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.8125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "30/03/2020-13:59:56",
+                    "content": "I have proposed some changes to the spec: https://github.com/ethereum/EIPs/pull/2576 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "03/04/2020-20:59:24",
+                    "content": "For reference to anyone new, the original PR contained a lot of discussions too: https://github.com/ethereum/EIPs/pull/2484 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.278409090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "03/04/2020-21:07:26",
+                    "content": "I have asked this on the gitter channel a while ago, but it seems it was never recorded anywhere. EIP-615 had a static version of JUMPSUB, e.g. the destination is an immediate. This posed a problem, to which versioning was proposed, and ultimately led to the then-rejection of EIP-615. EIP-2315 has a dynamic version of JUMPSUB, e.g. takes the destination from the stack. I would like to see a static version of this in the future and hence asked to consider that here and design the proposal with that in mind (to be consistent), that is to have both the static and the dynamic version of JUMPSUB, but not implement the static version of the opcode now.     gcolvin:  This proposal only provides a little help to static analysis, but it\u2019s intended to be, in combination with forbidding dynamic jumps, just enough.   If subroutines are dynamic jump themselves how is disabling other kinds of dynamic jumps helping? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.716911764705882
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "03/04/2020-21:33:23",
+                    "content": "What are the proposed gas costs of the new opcodes? The current version doesn\u2019t seem to contain them. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.340909090909091
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "04/04/2020-01:12:06",
+                    "content": "I wasn\u2019t clear hear, @axic, sorry.  It would be up to external tools to enforce stronger guarantees, such as only constants being pushed before all kinds of jumps. This proposal is not directly compatible with EIP-615 because without a version change arguments have to go on the stack.  But given that EIP-615 will require a version change that shouldn\u2019t be difficult to deal with in a few different ways, including changing how arguments are passed to the JUMPSUB and BEGINSUB opcodes, or adding new opcodes, or having the validation phase enforce guarantees rather than restrict the opcodes themselves. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.493181818181818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "04/04/2020-01:17:05",
+                    "content": "They are there, under the Implementations section.  We suggest that the cost of  BEGINSUB  be  base ,  JUMPSUB  be  low , and  RETURNSUB  be  verylow . Measurement will tell. \u2026  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 3.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "04/04/2020-12:20:23",
+                    "content": "    axic:  EIP-615 had a static version of JUMPSUB , e.g. the destination is an immediate. This posed a problem, to which versioning was proposed, and ultimately led to the then-rejection of EIP-615.   I slightly disagree. Introducing a new multibyte opcode is IMO not a huge problem. However, EIP-615 included a lot of assumptions about code, such that a runtime jump analysis should not be needed (because of deploy time validation), or a double-pass of a much more complicated analysis would have to be made during runtime. If we were to introduce e.g. JUMPSUB 0x00ff  (defining it as in total three bytes), I don\u2019t see any huge problems with that \u2026  ? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.334848484848484
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "05/04/2020-12:27:40",
+                    "content": "    holiman:  I slightly disagree. Introducing a new multibyte opcode is IMO not a huge problem.   I thought one of the main reasons (apart from the complexity of the EIP \u2013 to which one solution offered was to split it up) was exactly the multi-byte opcode problem, description starts here (also check the example from @gumb0): EIP-663: Unlimited SWAP and DUP instructions ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.1863636363636365
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "42",
+                    "likes": "0",
+                    "time": "05/04/2020-12:28:41",
+                    "content": "    gcolvin:  They are there, under the Implementations section.  We suggest that the cost of BEGINSUB be base , JUMPSUB be low , and RETURNSUB be verylow . Measurement will tell. \u2026    Thanks! I think that definitely doesn\u2019t belong under the Implementation section, but rather Specification. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.3125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "05/04/2020-14:31:54",
+                    "content": "    axic:  I thought one of the main reasons (apart from the complexity of the EIP \u2013 to which one solution offered was to split it up) was exactly the multi-byte opcode problem, description starts here (also check the example from @gumb0): EIP-663: Unlimited SWAP and DUP instructions    Right \u2013 so it\u2019s definitely the case, that old jumpdest analysis will no longer be valid, and the execution flow of a contract may change. I expect that to not actually be an issue for any real-world usecase, maybe with the exception of people use an on-chain \u201cpurity\u201d verifier to attest that \u201cthis code will never do a DELEGATECALL\u201d. It might be argued that such a verifier should reasonably exit on an opcode which it does not recognize. EIP-615 contained statements about what was allowed and what was not allowed: the validity of code, and jumps. Whereas 2315 does not make any assumptions/certifications on the validity of code, so from that perspective it does not require versioning. The only reason some might think versioning is a good thing, would be if we believe that it would cause problems for existing contracts. And I have yet to be convinced that a new multibyte instruction would cause be a problem in practice. I\u2019m not particularly advocating for it, though, just speculating. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.7314213564213565
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matkt",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "10/04/2020-16:28:47",
+                    "content": "Hi Looking at the description of the (eip-2315) it seem that there is a contradiction between the test cases and the algorithm. It is said that during the JUMPSUB we store PC + 1 in the RStack. And this is confirmed in Note 2 (A value popped from return_stack may be outside of the code length, if the last JUMPSUB was the last byte of the code). But in the test cases (for example 0x6004b300b2b7) we can see that it is PC which is stored in the stack (and not PC + 1) 2 - JUMPSUB\t - 8  -  [4] -[] 4 - BEGINSUB - 1 - [] - [2] For me with the algorithm we should have 3 in RStack and not 2. 2 - JUMPSUB\t - 8  -  [4] -[] 4 - BEGINSUB - 1 - [] - [3] Can you tell me if it is an issue or if I missed something ? Thanks ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.6000000000000005
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "13/04/2020-10:41:59",
+                    "content": "    matkt:  But in the test cases (for example 0x6004b300b2b7 ) we can see that it is PC which is stored in the stack (and not PC + 1) 2 - JUMPSUB - 8 - [4] -[] 4 - BEGINSUB - 1 - [] - [ 2 ] For me with the algorithm we should have 3 in RStack and not 2 . 2 - JUMPSUB - 8 - [4] -[] 4 - BEGINSUB - 1 - [] - [ 3 ] Can you tell me if it is an issue or if I missed something ?   You are technically correct,but it\u2019s not an issue. In geth, I implemented it differently than the spec states: instead of adding PC+1, I put PC there. And later on, the actual jump goes to PC+1. Unfortunately, this little implementation detail leaks out in the example traces. However, the important thing is that the behaviour of the code is consistent with the semantics of the EIP. I realize that the example traces are \u201cwrong\u201d, and I will update either the EIP or the go-ethereum repo. In essence, the EIP should specify exactly the observable behaviour  of the EVM, and leave the internal represenation up to node implementors. So in that sense, the return_stack is not necessarily represented by an actual stack in reality. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.088541666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "46",
+                    "likes": "1",
+                    "time": "13/04/2020-10:59:59",
+                    "content": "Please see https://github.com/ethereum/EIPs/pull/2599 my proposed update ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "20/04/2020-11:11:35",
+                    "content": "Can any JUMP* go into any subroutine? Also can JUMP from within a subroutine go into another subroutine? What happens in the case of: JUMPSUB JUMP (and jumping into another subroutine) RETURNSUB  One would assume RETURNSUB picks up the last item from the return_stack. However from an analysis point of view in this case a RETURNSUB within a subroutine block may not only mean returning from that block, but returning from within some other block. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.453125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "21/04/2020-19:58:50",
+                    "content": "Yes, RETURNSUB must always return to the address last pushed on the stack and pop it @axic, regardless of the block it\u2019s in. So in your example the RETURNSUB is unreachable, and the code will return to the JUMPSUB when and if it hits some other RETURNSUB.  I think that will amount to a loop until the code jumped to stops somehow. This proposal doesn\u2019t constrain the structure of the code much at all, it just provides an efficient mechanism. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "21/04/2020-20:04:28",
+                    "content": " If subroutines are dynamic jump themselves how is disabling other kinds of dynamic jumps helping?  Other kinds of dynamic jumps aren\u2019t disabled by this proposal.  It only provides a more efficient alternative way to implement subroutines. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.03125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "21/04/2020-20:11:29",
+                    "content": "Sorry I had a typo in my example. I meant: BEGINSUB JUMP <next> RETURNSUB (1)  next: JUMPDEST RETURNSUB (2)  And then (2) returns to where BEGINSUB was first invoked. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.583333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "22/04/2020-15:07:36",
+                    "content": "Yes. So in that way, it\u2019s possible to implement the type of tail recursion I talked about here: EIP-2315 Simple Subroutines for the EVM ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "52",
+                    "likes": "1",
+                    "time": "29/04/2020-11:26:42",
+                    "content": "The analysis of the EIP with two proposed changes: EIP-2315 \"Simple Subroutines for the EVM\" analysis. By @chfast, @gumb0 and @axic. We decided to publish in separately because of the length of it and wish to receive direct responses to the proposed changes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "53",
+                    "likes": "1",
+                    "time": "06/05/2020-12:14:10",
+                    "content": "Here is a preliminary implementation to use subroutines for yul functions:   github.com/ethereum/solidity         Implement subroutines for yul functions.   ethereum:develop \u2190 ethereum:subroutines            opened 02:17PM - 30 Apr 20 UTC               chriseth             +104 -53            It needs much more work to get it properly working, but maybe you can already use the generated bytecode for testing. Here is the asm.js binary: https://313936-40892817-gh.circle-artifacts.com/0/soljson.js ",
+                    "links": [
+                        "https://github.com/ethereum/solidity/pull/8809",
+                        "https://github.com/chriseth",
+                        "https://github.com/ethereum/solidity/pull/8809/files",
+                        "https://313936-40892817-gh.circle-artifacts.com/0/soljson.js"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "54",
+                    "likes": "0",
+                    "time": "07/05/2020-20:09:07",
+                    "content": "Thanks, Christian. (20must20) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "08/05/2020-15:52:24",
+                    "content": "If I see correctly this kind of relies/follows the recommendations from EIP-2315 \"Simple Subroutines for the EVM\" - Analysis, because it relies on not-flowing into beginsub (at least in one place in the assembler) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "56",
+                    "likes": "0",
+                    "time": "08/05/2020-15:54:05",
+                    "content": "Currently the following opcodes are proposed: 0xb2 BEGINSUB 0xb3 JUMPSUB 0xb7 RETURNSUB  I propose to use these instead: 0x5c BEGINSUB 0x5d RETURNSUB 0x5e JUMPSUB  The reason: there are 4 opcodes free between 0x5b and 0x60, and in the same block we have JUMPDEST. Placing it randomly after LOG would mean we have more holes in the opcode table. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "57",
+                    "likes": "0",
+                    "time": "09/05/2020-07:18:10",
+                    "content": "Much better. (\u202620) ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "58",
+                    "likes": "0",
+                    "time": "11/05/2020-14:27:34",
+                    "content": "    axic:  If I see correctly this kind of relies/follows the recommendations from EIP-2315 \u201cSimple Subroutines for the EVM\u201d - Analysis , because it relies on not-flowing into beginsub (at least in one place in the assembler)   Indeed! As the linked analysis article correctly states, flowing into a subroutine is not a feature a code generator would use. So I did not really follow the recommendations, I just did it in a clean way which is the same as what is recommended in the analysis  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.491666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "59",
+                    "likes": "0",
+                    "time": "11/05/2020-19:46:50",
+                    "content": "Optimizing code generators can do some very strange things.  Subroutines here need not be contiguous regions of code. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.675000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/adriamb",
+                    "index": "60",
+                    "likes": "1",
+                    "time": "14/05/2020-14:07:13",
+                    "content": "In openethereum, we implemented this EIP in https://github.com/openethereum/openethereum/pull/11629, also added a test for checking the recursion stack limit:    PUSH <recursion_limit> s: BEGINSUB    DUP1    JUMPI :c    STOP c: JUMPDEST    PUSH1 1    SWAP    SUB    JUMPSUB :s  with recursion_limit=1024 stops, with recursion_limit=1025 reverts ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fanlong",
+                    "index": "61",
+                    "likes": "2",
+                    "time": "18/05/2020-20:50:49",
+                    "content": "There is some inconsistency between the test case and the spec in EIP-2315. The spec says that BEGINSUB is not supposed to be executed and its execution will cause error. JUMPSUB will land on the next instruction after BEGINSUB. However, the test case (and the current open-ethereum implementation) assumes BEGINSUB can be executed as a noop. JUMPSUB will land on the BEGINSUB instead of the next. Note that I believe the spec makes more sense from the security perspective. It prevents unintended control flow behavior in EVM crossing routine boundaries. List of issues:   BEGINSUB should not be executed (or return OUT_OF_GAS). But the last test case in the EIP spec (Subroutine at end of code)  counts it executed with gas 1.   The test case in openthereum also assumes BEGINSUB can be executed. If following the spec, it should be something like this: //    PUSH2 <recursion_limit> //    PUSH1 //    JUMP :b // :s BEGINSUB // :b JUMPDEST //    DUP1 //    JUMPI :c //    STOP // :c JUMPDEST //    PUSH1 1 //    SWAP //    SUB //    JUMPSUB :s   The gas cost of JUMPSUB sets to low, but in the test case table, it is 8 (mid).   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "63",
+                    "likes": "0",
+                    "time": "26/05/2020-17:12:36",
+                    "content": "A further comment on this: I think there is some logic behind putting Cost and Codes under Implementation in https://eips.ethereum.org/EIPS/eip-2315, but usually EIPs put these definitions into the Specification and that is where most people expect to find them. (Cost and Codes currently contains the opcode numbers and the gas costs.) I suggest to do the same here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "64",
+                    "likes": "0",
+                    "time": "26/05/2020-17:17:02",
+                    "content": "Furthermore there is a discussion about gas costs here: https://github.com/ethereum/EIPs/pull/2669#discussion_r430053819 To briefly summarise:   Current costs are defined as \"BEGINSUB  be  base (2) ,  JUMPSUB  be  mid (8) , and  RETURNSUB  be  verylow (3)\"   @holiman suggests: \"I don\u2019t see why  RETURNSUB  should be so cheap. I\u2019d actually prefer it to be same as  JUMPSUB  \u2013 or, more specifically, that  cost of(JUMPSUB+RETURNSUB) == cost of (JUMP + JUMP) . Which currently would put it at  mid == 8\"   I suggest that since JUMPSUB and RETURNSUB both need to push to/pop from the return_stack, they should be more expensive than JUMP (mid). Maybe the difference is not measurable too much, but still they should not be the same. I suggest mid + 1 or mid + 2 as a hunch.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.222222222222222
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "65",
+                    "likes": "0",
+                    "time": "26/05/2020-17:41:57",
+                    "content": "    axic:  I suggest that since JUMPSUB and RETURNSUB both need to push to/pop from the return_stack , they should be more expensive than JUMP ( mid ). Maybe the difference is not measurable too much, but still they should not be the same. I suggest mid + 1 or mid + 2 as a hunch.   I would argue that a RETURNSUB is inherently cheaper, since it doesn\u2019t have to validate the destination. It just needs to pop a stack  and set PC. I mean POP is cheap (pops one). So my hunch is 10 for JUMPSUB and maybe 3 or 5 for RETURNSUB. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.159722222222223
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "66",
+                    "likes": "0",
+                    "time": "26/05/2020-19:56:02",
+                    "content": "True, jumpdest analysis is not stipulated/charged for prior to execution \u2013 we should consider addressing that another time. Do you think there would be a reasonable benchmark establishing the overhead of JUMPSUB vs. JUMP or should we stay with our hunches only? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "67",
+                    "likes": "0",
+                    "time": "27/05/2020-07:02:06",
+                    "content": "I\u2019d say go with our hunches for now, at least if there are more than a few of us involved in \u201chunching it\u201d. cc @adriamb @karalabe ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "68",
+                    "likes": "0",
+                    "time": "28/05/2020-09:25:36",
+                    "content": "I\u2019m going to PR the following :   JUMPSUB 10 (same as JUMPI, 2 more than JUMP )  RETURNSUB 5.  That means JUMSUB+RETURNSUB == 15, slighlty advantageous over JUMP+JUMP=16. If the proposal from @chriseth et al goes through, maybe we need to adjust something. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/matkt",
+                    "index": "69",
+                    "likes": "0",
+                    "time": "28/05/2020-12:19:12",
+                    "content": "I updated the references tests https://github.com/ethereum/tests/pull/693 following this proposal and Besu has a draft https://github.com/hyperledger/besu/pull/995 ",
+                    "links": [
+                        "https://github.com/hyperledger/besu/pull/995"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xwvvvvwx",
+                    "index": "70",
+                    "likes": "1",
+                    "time": "16/06/2020-10:47:31",
+                    "content": "Unless I\u2019m missing something the existing spec allows jumps via JUMPSUB into subroutines where BEGINSUB is part of the data of some PUSH operation. Geth, Besu, and OpenEthereum treat these as invalid destinations for JUMPSUB. Should the spec be ammended to include such a restriction? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "71",
+                    "likes": "0",
+                    "time": "17/06/2020-23:32:31",
+                    "content": "@xwvvvvwx @holiman  The spec takes it to be implied by the Yellow Paper, but on a closer read it isn\u2019t.  Not sure whether the Yellow Paper should change to make it clear that no instructions - not just JUMPDEST - are valid inside of PUSH data, or whether this spec (and eventually the Yellow Paper) should make that clear that BEGINSUB is not valid there. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.958333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/xwvvvvwx",
+                    "index": "72",
+                    "likes": "1",
+                    "time": "18/06/2020-10:56:48",
+                    "content": "@gcolvin  I would say it\u2019s worth a test case at the very least, I missed this at first pass when implementing subroutines for hevm. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.266666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/holiman",
+                    "index": "73",
+                    "likes": "0",
+                    "time": "22/06/2020-15:41:48",
+                    "content": "Well, I agree that it\u2019s at least extremely implicit that PUSHDATA is not executable code, in any way shape or form. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.9375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "74",
+                    "likes": "2",
+                    "time": "01/03/2021-17:06:35",
+                    "content": "I\u2019m not really convinced by this EIP. I identified three supposed arguments for it in the discussion:  This is supposed to be some kind of standard and other architectures have this, thus it is worth reproducing. This is supposed to make static analysis easier. This is supposed to save gas.  With regards to these I would say:   This point seems a bit questionable to me. I don\u2019t know of any actively used modern architecture that has and actually uses native low level subroutines. x86 may look like it has them, but in fact it just has opcodes that implicitly push return addresses on the stack, so effectively it doesn\u2019t. ARM doesn\u2019t, RISC-V doesn\u2019t, etc. Actually I rather find the absence of native subroutine support in all modern architectures noteworthy. So I\u2019m not sure where the idea of all architectures converging on some consensus that this is a good thing is coming from. But I generally find it rather mute to argue this point. If it was generally beneficial to have them, it should be possible to argue the merits directly.   I\u2019m not an expert, but I neither think that reading subroutines using any calling convention like the one solidity uses in the absence of dynamic jumps is particularly hard and I don\u2019t think this EIP will really help. It\u2019s not like we will end up with plain straight opcode blocks starting with BEGINSUB ending in RETURNSUB, all of which clearly belonging to a function, anyways. In practice first of all optimized code will have deduplicated blocks, i.e. tails of functions or branches will be shared, etc. Secondly, one would still need to verify the stack layout before a RETURNSUB  to make sure it matches across returns and fits the expectations on the call site anyways. But as I said, I\u2019m not an expert on this, so if people doing a lot of static analysis agree that this is beneficial, I won\u2019t argue with it. Do they?   This is the main point I have concerns about. Solidity code generation and optimization has maybe been a bit lacking in this area, but I don\u2019t think that\u2019s a good basis for a premature change to the EVM. That being said, we for example recently introduced a jump-based inliner as part of the solidity optimizer (https://github.com/ethereum/solidity/pull/10761 as a base version with the plan to extend it further) that can move code blocks behind known jump destinations. This can yield quite some gas savings, but can actually be made harder by this EIP in some cases.   For example, consider a function jumping to another function at the beginning.   MAIN_CONT // return address   F1   JUMP // jump to F1  F2:   ...   JUMP // return from F2  F1:   0x42 // potential function argument of F2   F1_CONT // return address   F2   JUMP // call to F2 F1_CONT:   ...   JUMP // return from F1  MAIN_CONT:   STOP  // This is basically the following situation in Yul // // function f1() { //   f2(42) //   ... // } // function f2(a) { ... } // f1() // // And the optimization has the call to f1 directly jump to f2. // Situations like these for example occur in the ABIEncoderV2 code in nearly every contract.     We can inline the head call and transform this to:   MAIN_CONT // return address   0x42 // potential function argument of F2   F1_CONT // return address   F2   JUMP // call to F2  F2:   ...   JUMP // return from F2  F1_CONT:   ...   JUMP // return from F1   MAIN_CONT:   STOP  From this stage there are further optimization opportunities (like removing the jump to F2 and instead falling through), which again will become impossible if subroutines were used. That\u2019s one (and maybe not the best) example of an optimization that wouldn\u2019t be possible if we used subroutines and I don\u2019t think it\u2019s the only case. In other cases, of course, avoiding having to rotate the return address up in the stack using subroutines may of course also save gas cost, but I don\u2019t think it is easy to say which weighs more heavily in practice without extensive analysis. I\u2019m also not sure that subroutines are really the easiest way to avoid this shuffling cost (For example, opcodes for stack rotations were proposed earlier as a comment here. Or if we had just one or two general purpose registers, none of this would be necessary - and those really are standard and consensus among architectures for decades, if an argument like that amounts to anything\u2026). I would have loved to look into this further before posting, but since this EIP is considered for Berlin I found it worthwhile to share some concerns now. I\u2019m not necessarily saying that subroutines and this EIP are definitively a bad thing - but I find the argument for it to be a bit lacking so far and am not convinced that it\u2019s readily apparent that this will bring sufficient merits to justify the change at this point. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.354931972789116
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "75",
+                    "likes": "0",
+                    "time": "02/03/2021-15:43:00",
+                    "content": "Thanks for you critique.  I\u2019m not too concerned with physical machines.  The EVM is a virtual machine.  This proposal models the Forth subroutine mechanism. which has seen fifty years of success.  Other standard VMs support subroutine calls, including JVM and Wasm.  And regardless, this proposal is going into Berlin now. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "76",
+                    "likes": "0",
+                    "time": "02/03/2021-16:16:40",
+                    "content": "Well, given that in its current form the EIP has extremely limited practical use, if any at all, and, if used at all, has limited value, while it on the other hand proactively complicates other optimization opportunities, as far as I\u2019m concerned, this should never have been accepted to Berlin in the first place, especially on such a thin basis. In fact it makes me seriously question the process of acceptance, even more so if there appears to be a tendency to dogmatically stick to it after the fact. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving negative feedback on proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.874458874458875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "77",
+                    "likes": "0",
+                    "time": "02/03/2021-16:35:04",
+                    "content": "    ekpyron:  In practice first of all optimized code will have deduplicated blocks, i.e. tails of functions or branches will be shared, etc.   Slightly off-topic, but also sort of on-topic since it is part of your opposition: I don\u2019t know any contract authors that optimize for deployment cost over runtime cost, so this seems like a bad optimization (adds a JMP+RET instruction at runtime in order to save some deployment bytes). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.9722222222222223
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "78",
+                    "likes": "0",
+                    "time": "02/03/2021-16:40:22",
+                    "content": "Clearly, I disagree with your harsh assessment of the proposal, as have many others.  And I don\u2019t see following through on previous commitments as dogmatism.  After months of discussion we decided to accept, clients have implemented it, it has been running on test nets, and it\u2019s scheduled for Berlin. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None"
+                    ],
+                    "Sentiment": 5.233333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "79",
+                    "likes": "0",
+                    "time": "02/03/2021-16:44:00",
+                    "content": "I don\u2019t understand your point Micah.  You can use these opcodes to substantially reduce the gas burned calling subroutines.  Anyway, it\u2019s done.  Discussions of how to use it, when (not) to use it, and EIPs to increase its usefulness are more productive at this point. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "80",
+                    "likes": "0",
+                    "time": "02/03/2021-16:55:20",
+                    "content": "Well, maybe my assessment was indeed (at least formulated) a bit overly harsh, sorry about that, I didn\u2019t mean to offend. Still, it is unfortunate that there hasn\u2019t been more real-world use case deliberations about this in the discussion so far. To be honest I have seen this EIP earlier than now, but never thought it to be ready or a likely candidate for inclusion at all in its current form and was rather shocked when I realized that it was staged for Berlin. There was clearly some communication errors involved here. And if we really have to go through with it now, it at the very least creates a rather unfortunate situation for us, because while there is some reason for using it in Solidity, there is sufficient reason for not using it outweighing the benefits as far as I can judge so far, so this is of course some source of frustration. E.g. I may save some swapping, but I pay for it by potentially not getting rid of entire jumps. It\u2019s not only deploy time cost savings, but very much runtime code savings that are at stake here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.729891304347826
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/timbeiko",
+                    "index": "81",
+                    "likes": "0",
+                    "time": "02/03/2021-16:56:36",
+                    "content": "Are any of your concerns about \u201cpractical use\u201d addressed by https://eips.ethereum.org/EIPS/eip-2327, which is being proposed for the fork after Berlin? 2315 was the result of \u201cstripping down\u201d an earlier proposal, 615, because it was deemed too complex. I suspect that adding complexity back to it 2315 may result in us re-hashing the entire debate we had around 615.  There was clearly some communication errors involved here.  Agreed, working on improving this for the next upgrade. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.833333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "82",
+                    "likes": "0",
+                    "time": "02/03/2021-17:10:45",
+                    "content": "EIP-2327 as far as I\u2019m concerned is a good thing, but it\u2019s pretty much independent of the issues with this EIP (and also doesn\u2019t depend on this EIP), so it won\u2019t help, unfortunately. So far I don\u2019t see a way to change much in this EIP in the future to that end - defining subroutines as a low-level feature just makes certain low-level jump optimizations impossible (unless one just doesn\u2019t use them of course). So we will have to evaluate, if it still makes sense to use them in some cases, but not in others, but that may be too complicated, so it may also happen that we won\u2019t be using them at all. There may of course be some magic hidden way to have the benefits of subroutines as suggested here that still allows the optimizations I am concerned about, but unfortunately I don\u2019t see it so far at least. In its entirety EIP-615 or generally moving towards a more wasm-like style would maybe be a different story, but I wasn\u2019t under the impression that that was on the table even in the foreseeable future on top of this. Also the de facto benefits that this EIP can bring (i.e. avoiding some stack shuffling) could have potentially been achieved by different means that would have been less restrictive otherwise and I\u2019m not sure, if the existence of subroutines will make it less likely for such alternative mechanisms to be introduced in the future\u2026 but all of this would require a lot of research and analysis in general. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.0977891156462585
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "83",
+                    "likes": "1",
+                    "time": "02/03/2021-17:14:21",
+                    "content": "The main point being that it\u2019s not like this EIP will just save you some gas, so it\u2019s useful and beneficial and that\u2019s it. It\u2019s more complicated than that and ideally, of course, that would have been considered earlier. Whether it can or cannot be adjusted in the future to mitigate the downsides is hard to tell out of my hat, but I\u2019m not overly optimistic. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.671875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "84",
+                    "likes": "1",
+                    "time": "02/03/2021-17:26:11",
+                    "content": "Our process can always be improved, but this EIP (like others) was submitted for review here.  In January of last year.  It has been listed on the Agenda for most every ACD call since February as up for discussion, EFI, accepted, or scheduled for Berlin. Anyone interested in the development of Ethereum has had plenty of time to contribute to this discussion (and others) in well-known forums.  But it seems to be a tradition to wait until just before deployment to notice that EIPs are going in. And a meta point \u2013 if we can\u2019t get from proposal to deployment in over a year\u2019s time then we are moving way too slowly to compete in the 21st century. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback",
+                        "None"
+                    ],
+                    "Sentiment": 5.45
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "85",
+                    "likes": "1",
+                    "time": "02/03/2021-17:41:09",
+                    "content": "    ekpyron:  In its entirety EIP-615 or generally moving towards a more wasm-like style would maybe be a different story, but I wasn\u2019t under the impression that that was on the table even in the foreseeable future on top of this.   I would agree that in case this EIP is really not a thing of itself, but paves the way for future changes, it would be very helpful to clearly communicate that, if not as formal future EIPs, but at least as some informal writeup. It feels like its benefits are percieved differently because of some miscommunication of its value. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.395833333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chfast",
+                    "index": "86",
+                    "likes": "0",
+                    "time": "03/03/2021-07:55:37",
+                    "content": "I have benchmarked the EIP-2315 overhead in evmone. I used the EIP-2315 implementation proposed by @yperbasis from Silkworm. The implementation adds EIP-2315 support to both evmone\u2019s interpreters: advanced and baseline. This is not the final version (aka \u201cnot merged yet\u201d). Partly aggregated data from Haswell CPU 4.0 GHz, Clang 11 are available in this spreadsheet. In summary, for \u201cmain\u201d benchmark set:  advanced analysis time has increased by +2.3%, advanced total execution time (including analysis) has increased by +1.4%, baseline total execution time (including jumpdest analysis) has increased by +4.1%.  The aggregation uses arithmetic average instead of geometric one - there are not such option in pivot table in Google Spreadsheet. ",
+                    "links": [
+                        "https://github.com/torquem-ch/evmone/tree/eip-2315",
+                        "https://github.com/torquem-ch/silkworm",
+                        "https://docs.google.com/spreadsheets/d/1yTBsaUzX9rwNCnBfeml96Q07fgyZ01gcO6otNFuNKB0/edit?usp=sharing"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.805555555555556
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "87",
+                    "likes": "1",
+                    "time": "03/03/2021-10:49:56",
+                    "content": "Just to strengthen my point a bit. After having another quick look at the \" Appendix: Comparative costs.\" example in the EIP. The proposed version after the EIP, annotated with gas costs as specified by the IP is the following: TEST:      beginsub      0x02\t\t\t3      0x03\t\t\t3      TEST_MUL\t\t3      jumpsub\t\t10      returnsub\t\t5 TEST_MUL:      beginsub      MULTIPLY\t\t3      jumpsub\t\t10      returnsub\t\t5 MULTIPLY:      beginsub      mul\t\t\t(5)      returnsub\t\t5  It claims that calling this will cost 32 gas plus 5 for the multiplication. If I add this up I get 47 plus 5, though. Now it compares this to some solidity code which has way more guarantees like function arguments are alive until the function exit at fixed stack slots for easier debugging, etc. (we will probably optimize this further eventually, but hunting down a few swaps and dups is not the priority compared to for example reducing storage loads and writes, if possible). So this is comparing apples and oranges. If I write the same code myself optimally using jumps without subroutines I get the following instead: TEST:      jumpdest       0x02\t\t3      0x03\t\t3      TEST_MUL\t3      jump\t\t8 TEST_MUL:      jumpdest\t      MULTIPLY\t3      jump\t\t8 MULTIPLY:      mul\t\t(5)      swap1\t\t3      jump\t\t8  This is 39 gas plus 5 for the multiplication. To be fair there is an additional hidden 3 gas outside the function pushing the return address of the whole thing making it 42 plus 5. Or put differently: jumping to the whole thing once costs 3+3+8 gas without subroutines giving a total of 53+5 gas. In the subroutine version jumping to it is 3+10 gas, so in total 60+5 gas. So if I see this correctly, the example of the gas savings of this EIP, if analysed correctly, actually has the subroutine version be more expensive. And this case does not even hit any of the cases I couldn\u2019t optimize anymore, if using subroutines, that I was mainly concerned about earlier. Of course this will skew if I assume different amounts of calls to functions, etc. But the gas difference is minimal in general. It\u2019s easy to construct artificial cases in which one or the other will be cheaper by some small margin, but I\u2019d argue that gas savings are not suitable to arguing for this EIP. Without saying that there may not be other merits, if the plan is to extend this in the future to something else, or if static analysis experts were to agree that this is hugely beneficial to them or anything like that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.221856725146199
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "88",
+                    "likes": "0",
+                    "time": "03/03/2021-16:12:18",
+                    "content": "A very quick take. With this proposal, calling a subroutine looks like this:  get arguments onto stack push subroutine address JUMPSUB  And writing a subroutine looks like this:  use arguments on stack leave return value(s) on stack RETURNSUB.  Without them, calling a subroutine can look like this:  get arguments onto stack push return address push subroutine address JUMP  And writing a subroutine would look like this:  move arguments over return address on stack use arguments on stack leave return value(s) on stack move return address over return value(s) JUMP  Other calling conventions are possible.  I think they all have the overhead of dealing with the return address explicitly.  The exact gas cost differences will of course depend on the calling conventions and the subroutine called.  But it seems there must be some cost in complexity and gas. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.697916666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "89",
+                    "likes": "0",
+                    "time": "03/03/2021-16:56:21",
+                    "content": "The interesting question is really looking at optimal calling conventions. I can of course push the return address after the arguments to create the need to then move the arguments over the return address, but why would one do that (solidity currently doesn\u2019t handle calls optimally, but this for example it doesn\u2019t do even now :-)). I can also define weird calling conventions when using the subroutine opcodes, so yeah: the optimal case is the interesting one. A more optimal version for calls without subroutines to consider is this:  push return address push arguments push subroutine address JUMP  And writing a subroutine looks like:  use arguments on stack produce return values in a clever order (i.e. the first/deepest return value is on the stack top) Use one swap (independently of the number of return values. Granted solidity is currently lacking some cleverness here, but that\u2019s besides the point) to swap the first return value and the return address. JUMP  So the additional complexity in the worst case boils down to one swap. Three gas. On the other hand there\u2019s an abundance of cases, in which not using subroutines allows for head-call or tail-call optimizations which may eliminate the need for this swap, etc, resulting in cheaper code (that\u2019s what makes the example given in the EIP actually more expensive with subroutines compared to without them using optimal calling conventions). In general, it will depend on the case, but I don\u2019t see much reason to believe that this will tip in favor of subroutines without hard analysis over a large array of actual real world cases. In fact if I were to dare a guess, I\u2019d expect the opposite in practice. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.355985449735449
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "90",
+                    "likes": "0",
+                    "time": "03/03/2021-17:19:29",
+                    "content": "I\u2019m mainly coming from the Forth point of view - as the archetypal stack machine.  It has a separate return stack because that swap really is a PITA.  The idiom there is to arrange things so that most all calculations leave the stack ready for function calls, and all function calls leave the stack with results in place for easy use. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "91",
+                    "likes": "0",
+                    "time": "03/03/2021-17:35:13",
+                    "content": "Well, I\u2019d never disagree that that swap is far from aesthetically pleasing ;-). But it\u2019s not a significant cost. Cleverly arranging things is needed to get optimal results and is desirable in either case, with and without subroutines, there\u2019s not much difference there. On the other hand the second stack for the return addresses is a burden on the clients and this needs to be reflected in the gas cost of the opcodes manipulating it (as of course done in the EIP), which already pretty much levels out the plain gas costs. And then tail call optimizations alone are really powerful and can be used all over the place. So if one really wants to push for gas, I\u2019m pretty sure that\u2019s the way to do it. And then on top of that there\u2019s even more advanced stuff like partially inlining functions with head calls, etc. But I may be repeating myself a bit there. I\u2019m just saying that the argument that this EIP allows gas savings in general does not hold up to scrutiny from where I\u2019m standing and I think I have quite a solid basis for saying so. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.734970238095238
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "92",
+                    "likes": "1",
+                    "time": "03/03/2021-17:38:09",
+                    "content": "Yes, I understand you now.  I will probably remove the Appendix, but it doesn\u2019t much change my motivation, and doesn\u2019t change anything for implementors. I will ask - how much do such optimizations defeat Alexey\u2019s arguments that EVM code is already statically analyzable? And for Forth-style code it\u2019s not just aesthetics - it\u2019s a major performance obstacle. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4375
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexeyAkhunov",
+                    "index": "93",
+                    "likes": "0",
+                    "time": "03/03/2021-17:50:53",
+                    "content": "    gcolvin:  I will ask - how much do such optimizations defeat Alexey\u2019s arguments that EVM code is already statically analyzable?   It is not EVM code that is statically analysable, but Solidity-generated EVM code (without using assembly tricks to compute jump destinations) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "94",
+                    "likes": "0",
+                    "time": "03/03/2021-17:55:29",
+                    "content": "Ok, thank you, that\u2019s already some weight lifted from my heart ;-). With regards to static analyzability, I must say I\u2019m not an expert. But on the one hand this EIP is not really statically analyzable in general either. I could jump dynamically as long as I make sure that I hit an BEGINSUB, just as I may jump dynamically now, as long as I still make sure I hit a JUMPDEST. So being able to statically analyze still relies on \u201cgood will\u201d and good practice of generated code. I\u2019m not saying that this couldn\u2019t be restricted in the future in some way, but I\u2019m not precisely aware of a rigorous and thought through plan of moving towards that that has general support. In fact I was under the impression that the rejection of EIP-615 means that this is not on the table (don\u2019t get me wrong, I actually liked EIP-615, but that\u2019s a whole different topic and I haven\u2019t looked into it in all detail) - if that\u2019s on the general agenda it might be nice to document that in an accessible manner (if it is and I\u2019m just not aware, I\u2019d be thankful for being pointed in the right direction). So the big question is the return address in the case without subroutines. But since we\u2019re assuming benevolent code anyways, the code will have some important properties:  Any jump will be of the form PUSH(addr) JUMP, except jumps returning from subroutines. From any jump that isn\u2019t immediately preceded by a push, there will only be code paths (moving backwards) with traceable stack balance culminating in all call sites of the subroutine and specifically in a PUSH(returnaddress).  Doing the analysis needed for 2 is of course a burden. It\u2019s complex and nobody will be excited to have to do that, but I would expect it to be possible in all cases (don\u2019t shoot me if I\u2019m wrong with that, though, as I said, I\u2019m not an expert and this also wasn\u2019t the focus of my attention so far). But it would appear to me that statically analyzing is still theoretically possible in both cases (assuming \u201cbenevolently generated code without trickery\u201d that is of course - but in both cases). So without further arguments and a thorough plan for the future that shifts things, I would say that saving cost and complexity on the EVM and on client implementations weighs greater than saving complexity in off-chain static analysis (even though I agree that that may hurt). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.803571428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "95",
+                    "likes": "0",
+                    "time": "03/03/2021-17:55:41",
+                    "content": "Right.  I think we are speaking of highly optimized Solidity output. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.114285714285714
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "96",
+                    "likes": "0",
+                    "time": "03/03/2021-18:04:57",
+                    "content": "My question is - can we do the optimizations you mention while maintaining these invariants? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "97",
+                    "likes": "0",
+                    "time": "03/03/2021-18:11:08",
+                    "content": "Yes, I would think so. It may for example fuse a function tail-calling another function into one function in the analysis, but I don\u2019t see that being a problem, it will still remain static. There\u2019s probably crazy things one can do optimization wise that really breaks static analysis, but it\u2019s possible to avoid these (as part of \u201cbenevolent code generation\u201d). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/extcodecopy",
+                    "index": "98",
+                    "likes": "5",
+                    "time": "03/03/2021-21:51:22",
+                    "content": "What I see is a solution looking for a problem. I think changes to the EVM should be a last resort, for things that can not effectively be addressed by software, which I cannot see at all to be the case here. Maybe Forth is great, maybe it\u2019s not, I don\u2019t really care, what problem is this solving? It sounds like the problem it is solving is the EVM not being like Forth enough. Or is it about saving a few gas at call sites? Let\u2019s be honest if we were to make a prioritized list of ways we could save gas on mainnet this would basically come last. In general I find this conversation pretty fascinating, it involves both EVM and compiler developers raising concerns about a change in the Ethereum protocol, and then someone basically replying \u201ctoo bad so sad what\u2019s done is done\u201d. As far as I am aware Berlin has not happened. Hardforks are a process exactly for this reason. Not everyone has to time to implement every single proposal, but then things are slated to get into a hardfork and everyone starts looking at it, implementors start implementing it, people start making realizations about it. The compiler people might realize \u201chmmm maybe this isn\u2019t so useful after all\u201d. The EVM people realize \u201cwow this actually makes the code a lot more complicated and we can no longer do an optimization we used to be able to do\u201d. The only answers I have seen to that is \u201csorry not sorry you should have spoken up earlier\u201d. So how exactly do we change this hardfork process in order that it\u2019s not always \u201ctoo late\u201d to incorporate the feedback from the people actually doing the work of implementing the hardforks? This proposal seems to raise a ton of valid issues and if I had veto powers it would be a clear no. It also seems like if we took the politics of the process out of this, I see very few technical arguments about why this is important or even desired for Berlin. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.494761904761905
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CryptoBlockchainTech",
+                    "index": "99",
+                    "likes": "0",
+                    "time": "03/03/2021-23:03:25",
+                    "content": "We are now entering a very slippery slope of stopping EIPs without legitimate concerns that have already been approved and implemented in clients ready for a fork. Claiming it should not be included because nobody will use it has been proven wrong. This is not the first time a small group of people have hijacked the implementation of an EIP. Both times the same community has orchestrated these interventions. Going forward we need to more quickly recognized the application of special interests in hijacking EIPs. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.605820105820106
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/extcodecopy",
+                    "index": "100",
+                    "likes": "3",
+                    "time": "04/03/2021-08:08:39",
+                    "content": "Without legitimate concerns? Technical debt and performance regressions seem like pretty real concerns to me. This \u201csmall group of people\u201d \u201chijacking\u201d the EIP as far as I can tell, are the developers working on the thing that EIP is about\u2026 Interesting perspective. Is the standard organization some like more elite class of contributor that delivers down EIPs from the sky as Truth and the peasant developers should be very careful about having any opinions about it or rising up against bad ideas, aka \u201chijacking\u201d. Seems like there are clearly some tension here by the people who think they know how things should be delivering down orders to people who don\u2019t see it the same way, and now a whole lot of politics about this is now somehow \u201chijacking\u201d by expressing clearly legitimate technical concerns. We are on a very slippery slope if we just dogmatically accept bad ideas because we have previously agreed to and even with new information we will just cover our ear and stick to the plan for the reason of some sort of moral concept of sticking to plans being the priority over outcome. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.066329966329967
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "101",
+                    "likes": "0",
+                    "time": "06/03/2021-01:37:25",
+                    "content": "As a heads up more discussion took place here: https://github.com/ethereum/pm/issues/263 And on the AllCoreDevs channels and call of today. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "102",
+                    "likes": "0",
+                    "time": "07/03/2021-21:08:17",
+                    "content": "We are also setting bad precedents.  Don\u2019t bother authoring core EIPs - your work may be in vain. Don\u2019t bother implementing core EIPs - your work may be in vain. If you wish to stop an EIP - make your blocking objections known as late as possible.  In this way you can maximize the amount of time and resources you waste and the amount of discouragement you create for authors and developers.  Thank you. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 3.5000000000000004
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "103",
+                    "likes": "0",
+                    "time": "07/03/2021-21:23:48",
+                    "content": "    ekpyron:  A more optimal version for calls without subroutines to consider is this:  push return address push arguments push subroutine address JUMP  And writing a subroutine looks like:  use arguments on stack produce return values in a clever order (i.e. the first/deepest return value is on the stack top) Use one swap (independently of the number of return values. Granted solidity is currently lacking some cleverness here, but that\u2019s besides the point) to swap the first return value and the return address. JUMP    In the Forth model arguments other than constants are not generally pushed on the stack: expression evaluation up to the subroutine call leaves arguments on the stack, ready for evaluation by the called subroutine, which again leaves its results on the stack as return values.  I\u2019m not sure how to have the return address on the data stack without it interfering - Forth has a return stack for this reason.  There is a safety benefit as well - it is not possible to modify the return address. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.553030303030303
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "104",
+                    "likes": "0",
+                    "time": "08/03/2021-06:20:55",
+                    "content": "I reply here to some of the detailed points made by @AlexeyAkhunov at https://github.com/ethereum/pm/issues/263#issuecomment-790423785  I think from what @lightclient posted above (great work, BTW), it is clear that there were 2 points of contention with regards to the properties of the subroutines:  Whether the JUMPSUB uses jump location from the stack, or from the immediate as a part of the opcode. Eventually the stack solution was used, and I agree with Chris (after my own analysis) that this effectively made this variant of subroutines non beneficial for one of initially stated goals - ease of static analysis due to lack of dynamic jumps. It actually makes that stated goal harder to achieve because to do so, JUMPSUB opcode will need to be deprecated as well as JUMP and JUMPI.   Ease of static analysis was never a stated goal of EIP-2315.  The goal was to make \u201calmost the smallest change that provides native subroutines without breaking backwards compatibility.\u201d More on deprecation below.   Whether the jumping from the middle of one subroutine into the middle of another subroutine is allowed. Eventually this was allowed, I believe to simplify the implementation and therefore expedite the acceptance of EIP. I believe (after my own analysis) that this decision has unfortunately mostly eroded another stated benefit of the subroutines - strict \u201cfirst in/first out\u201d behaviour of subroutines calling each other (as we are used as programmers). As a result, simple emulation of the implemented behaviour by using combination of PUSH and JUMP opcodes seems to suffice.   Again, this was never a stated benefit of EIP-2315. EIP-615 imposed syntax on the bytecode to enforce safety. EIP-2315 is pure mechanism \u2013 the core mechanism of EIP-615. (I don\u2019t think \u201cjumping in and out\u201d is the real issue anyway.  It\u2019s whether the stack is always aligned at the JUMPs, and the JUMPSUBs and RETURNSUBs balance.)  There were other observations made after my analysis:  The claim (now apparently retracted) by the EIP author that subroutines are present in every modern virtual machine   My claim was, \u201cThese are provided in some form by most all physical and virtual machines going back at least 50 years.\u201d  I stand by it, though \u201csome form\u201d, and \u201cmost all\u201d leaves room for disagreement. I chose a simple form for EIP-2315 \u2013 I state that, \u201cOur design is modeled on the original Forth two-stack machine of 1970. The data stack is supplemented with a return stack to provide simple support for subroutines, as specified below.\u201d There are of course other models, both more simple and more complex.  These include the JVM method invocation and Wasm function table models. EIP-2315 is also compatible with Nick Johnson\u2019s EIP-3337: Frame pointer support for memory load and store operations. Together they can be used to provide a richer model of subroutine more similar to EIP-615 and to Vax, Intel, and other CPUs. Much of the rest of your critique seems to be details of your disagreement as to what should count as a subroutine.   \u2026 I find the argument for still using subroutines in the current EIP-2315 form (without cross-jump restriction) as a safety feature, much weaker and perhaps non-existent.   Again, such safety was not a goal or a promise. The only safety directly provided by EIP-2315 is that it is impossible to overwrite the return address for a subroutine call. Future EIPs might impose stricter requirements, but by now I do not think that deprecating opcodes is an option \u2013 too many years have passed, and backwards-compatibility is too important. At best we can restrict the JUMP* opcodes to constant arguments or some form of restricted arguments, such as loading them from a data table. (per EIP-2327: BEGINDATA opcode)   Reference implementation of the currently proposed form of this EIP was done in go-ethererum. After the review of the implementation, I concluded that it does not incur extra performance overhead on other opcodes. However, in evmone implementation, EIP-2315 seems to be introducing overhead to all the execution \u2026 \u2026 this issue has not been flagged until the evmone implementation was benchmarked.   I have not seen a full report of this testing.  My impression was that the performance hit was small, that some of it was just the increased code size of adding any new opcodes at all, and that work was still underway to see whether it could be reduced.  It\u2019s unfortunate that the evmone implementation was so delayed I don\u2019t know whether a slight performance hit in one implementation is a showstopper for this proposal. ",
+                    "links": [
+                        "https://github.com/lightclient",
+                        "https://eips.ethereum.org/EIPS/eip-3337",
+                        "https://eips.ethereum.org/EIPS/eip-2327"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.644541614299678
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "105",
+                    "likes": "2",
+                    "time": "11/03/2021-16:33:52",
+                    "content": "A new Draft of this EIP is up at  https://eips.ethereum.org/EIPS/eip-2315  It lays out a few simple rules and a validation algorithm for safe, statically analyzable code using the EVM with this EIP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.545454545454546
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "106",
+                    "likes": "0",
+                    "time": "29/03/2021-06:27:07",
+                    "content": "Thanks, @ekpyron.  I stand corrected.  In your example it looks like most of the problem is just that JUMPSUB costs more than JUMP, and all the extra gas buys is readability.  How would your optimized MULTIPLY look if was to be called in multiple places?  And we should use a more realistic leaf routine. In the current draft I\u2019ve removed the appendix for now, as what is needed is a more complete analysis of the current Solidity calling conventions compared to what is possible with this EIP, (For Solidity and other languages) and I\u2019ll need help with that. For what it\u2019s worth this EIP intentionally does not force you to use subroutines at all, so they don\u2019t prevent you from optimizing your code in the ways you have. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8805555555555555
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "107",
+                    "likes": "0",
+                    "time": "29/03/2021-06:39:18",
+                    "content": "A good summary of the history of subroutines, from Lovelace and Turing onward  https://people.cs.clemson.edu/~mark/subroutines.html  and the subroutine facilities provided by many CPUs  https://people.cs.clemson.edu/~mark/subroutines/  including the following:  704 709x alpha amd29k b5000 cdc6600 i960 itanium m68k m88k mips pdp8 pdp11 ppc s360 sparc vax x86  ",
+                    "links": [
+                        "https://people.cs.clemson.edu/~mark/subroutines/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "108",
+                    "likes": "0",
+                    "time": "06/04/2021-02:09:02",
+                    "content": "@ekpyron @chriseth @holiman @AlexeyAkhunov I\u2019ve been working through this basic example more carefully, writing hand optimized code for all cases. I\u2019m finding that JUMPSUB-based code simplifies calling conventions and saves gas compared to JUMP-based code in the general and optimized cases. Please do check my work. TEST_DIV: beginsub 0x02        3 0x03        3 DIVIDE      3 jumpsub    10 returnsub   5  DIVIDE: beginsub div         5 returnsub   5   Total 34 gas. The same code, using JUMP. TEST_DIV:    jumpdest    1    RTN_DIV     3    0x02        3    0x03        3    DIVIDE      3    jump        8 RTN_DIV:    jumpdest    1    swap1       3    jump        8  DIVIDE:    jumpdest    1    div         5    swap1       3    jump        8   50 gas total.  Both approaches need to push two arguments and divide = 11 gas, so control flow gas is 39 using JUMP versus 23 using JUMPSUB.  That\u2019s (39-23)/39 = 41% savings in control flow cost. That\u2019s (50-34)/50 = 32% savings in total cost.  In the general case of one routine calling another I don\u2019t think the JUMP version can do better.  Of course we can optimize the tail call, so that the final jump in DIVIDE actually returns from TEST_DIV. TEST_DIV:    jumpdest  1    0x02      3    0x03      3    DIVIDE    3    jump      8  DIVIDE:    div       5    swap1     3    jump      8  Total 35 gas, which is still worse than with JUMPSUB. We could even take advantage of DIVIDE happening to directly follow TEST_DIV: TEST_DIV:    jumpdest  1    0x02      3    0x03      3 DIVIDE:    jumpdest  1    div       5    swap1     3    jump      8  Total 24. A savings of 10 gas in an atypical case. However, JUMPSUB can do better with the same optimizations. TEST_DIV:    beginsub    0x02      3    0x03      3    DIV_DEST  3    jump      8  DIV_DEST    jumpdest  1 DIVIDE:    beginsub  1    div       5    returnsub 5  Total 29. TEST_DIV:    beginsub    0x02      3    0x03      3 DIVIDE:    beginsub  1    div       5    returnsub 5  Total 17. And of course these would all do better if JUMPs and JUMPSUBs could take an immediate. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.386363636363636
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/chriseth",
+                    "index": "109",
+                    "likes": "0",
+                    "time": "06/04/2021-09:34:00",
+                    "content": "So is saving gas the main goal of this EIP? Would it make sense to make such an analysis on real-world code instead of 2-3 hand-crafted examples? If gas saving is the main goal, then please note that there are still tons of places to optimize existing code without the need to change the EVM. Furthermore, unless this saves more than 10% gas on real-world examples, I would prefer our workforce to be directed at scaling solutions instead which allow a factor of 10 to 100 in gas savings. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 6.041666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "110",
+                    "likes": "0",
+                    "time": "06/04/2021-10:53:37",
+                    "content": "I haven\u2019t looked through those examples in all detail, but: shouldn\u2019t JUMPDEST only cost gas if walked over, not if jumped to? If so, the tail call optimized version has equal gas cost already. The other more optimized examples now seem to assume that it\u2019s possible to walk into subroutines and to JUMP to BEGINSUB, do I read that correctly? I guess also the opcode order e.g. in the 35 and 29 gas examples is garbled a bit? In any case those two implicit changes to the spec would indeed allow more optimizations (not considering any other implications they might have). The 21 gas example I find rather confusing - I guess that\u2019s meant to be a BEGINSUB, not a JUMPDEST in the beginning? And it probaly shouldn\u2019t push DIVIDE? That might make more sense. In any case with those modifications to the spec that are implicit in those examples (I don\u2019t see them reflected in the spec, though), the situation definitely changes a bit and subroutines would probably indeed save some gas on average - but I tend to agree with @chriseth that a big picture view might be more beneficial than arguing about saving a handful of gas or not in hand-crafted examples. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "111",
+                    "likes": "0",
+                    "time": "06/04/2021-22:36:10",
+                    "content": "Simpler calling conventions and gas savings have always been the primary goals of this EIP. Two safety properties result.  Since return addresses are not on the stack it is not possible to overwrite them or use the wrong one, and it is not necessary to use jumps dynamically for subroutine returns. I am trying to compare estimates of the best that compilers can do, which is what @ekpyron was trying to do.  Furthermore, unless this saves more than 10% gas on real-world examples, I would prefer our workforce to be directed at scaling solutions instead which allow a factor of 10 to 100 in gas savings.  For this example we get a 32% performance improvement for routines that are not tail calls. (For tail calls it\u2019s better.)  Obviously the percentage improvement would be less as the amount of actual computation gets larger.  To get from 32% to 10% the actual computation in this example would have to increase from 11 gas to 120 gas. I\u2019m not sure what \u201cscaling solutions\u201d you have in mind - please explain.  10X to 100X improvements don\u2019t sound possible just by improved optimization. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.627777777777778
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "112",
+                    "likes": "0",
+                    "time": "06/04/2021-23:50:19",
+                    "content": "Thanks for catching the opcodes out of order.  I\u2019ve fixed them and some other things.  The overall results don\u2019t change much. JUMPDEST costs 1 gas regardless.  It should probably be 0, but that only means that a tail-optimized JUMP-based routine is as cheap as an un-optimized JUMPSUB-based routine. Yes, the current draft allows for walking into subroutines.  Preventing it didn\u2019t seem to provide safety worth sacrificing tail-call elimination.  It doesn\u2019t (yet?) allow jumping to subroutines, so I\u2019ve fixed my example to use an extra gas for a leading JUMPDEST.  I\u2019m not sure that I can optimize things much more, but would be glad to be proven wrong. More realistic examples would be good, but I don\u2019t know the details of the Solidity code generator, and comparing maximally-optimized examples is a close to apples-to-apples as I know how to get. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.892543859649123
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "113",
+                    "likes": "0",
+                    "time": "07/04/2021-08:43:58",
+                    "content": "Ok, allowing back tail call optimizations definitely means that this does less harm to optimization than before. There is still head call optimizations, but I\u2019m not sure how significant they are. Still to account for actual real world gas saving one has to consider that of course all of these toy functions are generally inlined in practice, because the call overhead far exceeds the cost of executing them in-place. For that matter even a single sstore would still be inlined, for which - if not - the savings would already only be (20045-20029)/20045 = 0.08% I.e. control flow is only a fraction of the actual gas cost of a contract, so a fractional saving in control flow is minimal gain in practice. So even if with allowing back tail call optimizations this might in fact save a few gas on average, I\u2019d still say that that alone doesn\u2019t warrant changing the evm for it. And allowing walking into or jumping to subroutines seems to me like it\u2019s moving away from the independent goal of better analyzability (even though I\u2019d still argue that none of this really makes a difference in analyzing anything anyways). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.234977324263038
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "114",
+                    "likes": "0",
+                    "time": "07/04/2021-16:40:28",
+                    "content": "One more quick note about the tail call optimized example: I think 1+3+3+3+8+5+3+8 is 34 not 35 ;-). Ah, no, 35 is correct, but it\u2019s now missing a JUMPDEST. But yeah, in general, I\u2019d say, there is a few more cases that one might want to look at, but given the change to the spec, I would no longer say that this EIP breaking optimization opportunities is a strong argument against it anymore. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.041666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "115",
+                    "likes": "0",
+                    "time": "07/04/2021-16:46:18",
+                    "content": "@ekpyron I\u2019m using a non-tail-call \u201ctoy function\u201d that uses only 11 gas for computation to isolate the overhead of making calls from the overhead of making computations - I show that RETURNSUB improves gas use by 32%, and that an example that uses over 120 gas for computation is still 10% better.  I also show that RETURNSUB gives superior tail call optimization.  I don\u2019t know if that is \u201crealistic.\u201d Not all calls are tail calls, and not all tail-calls can be inlined without increasing contract size.  So I don\u2019t see that improving normal calls with a fairly easy (and already implemented) change to the EVM - adding a common facility - is a waste. I\u2019m not hard-set on making BEGINSUB execution invalid - tail-call optimization can be done either way - but code generators wouldn\u2019t execute it by mistake, and humans hand-coding assembly should also be that skillful.  And my analysis is that it doesn\u2019t provide any extra safety, and neither does restricting \u201cjumping into functions.\u201d I have in mind some of the same safety characteristics as EIP-615 \u2013 no stack underflows, no invalid jumps or invalid instructions, and linear-time, acyclic traversal of the control-flow graph.  EIP-615 makes it makes it difficult to violate and easy to enforce these guarantees by eliminating dynamic jumps.  EIP-2315 only makes it possible to avoid the use of dynamic jumps.  Currently they are necessary because returns must be implemented by jumping dynamically to an address on the stack (or in memory), which RETURNSUB renders unnecessary. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.226851851851851
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "116",
+                    "likes": "0",
+                    "time": "07/04/2021-17:51:20",
+                    "content": "Just to argue the point: you can still have calls like this: function F(a) {   G(a)   ...[F]... } function G(a) {   H(a)   ...[G]... } function H(a) {   ...[H]... }  F(42) ...  in which I can pull out the heads, i.e. generate ret\t\t\t\t\t3 42\t\t\t\t\t3 F\t\t\t\t\t3 G\t\t\t\t\t3 H\t\t\t\t\t3 jump\t\t\t\t8 ret: ...  F: \tjumpdest\t\t1 \t...[F]... \tjump\t\t\t8 G: \tjumpdest\t\t1 \t...[G]... \tjump\t\t\t8 H: \tjumpdest\t\t1 \t...[H]... \tjump\t\t\t8  50 gas compared to: 42\t\t\t\t\t3 F\t\t\t\t\t3 jumpsub\t\t\t\t10 ...  F: \tbeginsub \tG\t\t\t\t3 \tjumpsub\t\t\t10 \t...[F]... \treturnsub\t\t5 G: \tbeginsub \tH\t\t\t\t3 \tjumpsub\t\t\t10 \t...[G]... \treturnsub\t\t5 H: \tbeginsub \t...[H]... \treturnsub\t\t5  57 gas and this I\u2019m pretty sure you cannot beat using the subroutines, since it actually relies on the \u201cdynamic\u201d return jumps (which I\u2019d not call dynamic, since they still always have fixed values for each call - they are just on the normal stack instead of hidden in the return stack). That\u2019s of course also highly artificial and other cases will behave differently. It\u2019s possible to construct artificial cases that tip either way, if one really wants to. But I still maintain that gas savings alone are not a strong argument here. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.818452380952381
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "117",
+                    "likes": "1",
+                    "time": "07/04/2021-20:15:07",
+                    "content": "EIP-2315 doesn\u2019t prevent you from using JUMP in the way that you have.  But indeed it is a highly artificial example, not likely to be generated by Solidity or most any other compiler.  (I don\u2019t think you could write it that way in Wasm either.)  So I\u2019m trying to use examples that are not artificial - just one routine calling another. The raw improvement in gas cost and the complexity of calling conventions seem obvious to me.  47 gas, 11 instructions reduced to 31 gas, 8 instructions \u2013 for an optimal ordinary routine. 32 gas, 7 instructions reduced to 29 gas, 7 instructions \u2013 for a tail-optimized routine.  Whether that is enough of a difference to make a difference depends on the program being compiled and how well it is optimized, which is not just a matter of the \u201ctypical\u201d Solidity program. Anyway, given the schedule of upcoming upgrades this EIP has no hope of going in for many months, and would be most valuable as part of a more integrated set of EIPs.  Thus I\u2019ve opened discussions at EVM evolution Working Group Formation - #3 by gcolvin. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.455929487179487
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "118",
+                    "likes": "0",
+                    "time": "07/04/2021-20:36:16",
+                    "content": "It\u2019s not that artificial actually - it wouldn\u2019t be directly generated nor handwritten like that, but an optimizer can easily recognize the patterns of \u201cPUSH(F) JUMP\u201d and \u201cF: [something cheap] JUMP\u201d and partially inline it depending on the precise cost of \u201csomething cheap\u201d, the number of such patterns occurring, etc. (which becomes more complicated with several competing calling conventions). The artificial part is rather that I specifically chose one such example that actually has the gas cost tip this way, while others will not :-). But yeah, if this EIP has additional merit as natural part of an integrated set of EIPs things can easily look quite different in general! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0947916666666675
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "119",
+                    "likes": "0",
+                    "time": "08/04/2021-12:44:44",
+                    "content": "    holiman:  I slightly disagree. Introducing a new multibyte opcode is IMO not a huge problem   It seems everyone has been assuming otherwise.  Why are they wrong?     holiman:  If we were to introduce e.g. JUMPSUB 0x00ff (defining it as in total three bytes), I don\u2019t see any huge problems with that \u2026 ?   Why the 0x00ff? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.724747474747475
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "120",
+                    "likes": "0",
+                    "time": "14/04/2021-16:48:11",
+                    "content": "Taking my own bait.  Extending the turbo-geth code to handle JUMPSUB (original spec - to JUMPDESTs) I get the following sketch.  I can\u2019t see any problem \u2013 this jumpdest analysis should find and mark all of the immediate data for the PUSH* opcodes and any others we introduce, so at runtime these will not be considered valid destinations. \tfor pc := 0; pc < len(code); { \t\top := OpCode(code[pc]) \t\tpc++ \t\tif op >= PUSH1 && op <= PUSH32 { \t\t\tnumbits := int(op - PUSH1 + 1) \t\t\t// ... set bits \t\t\tpc += numbits \t\t} else if op == JUMPSUB { \t\t\t// ... set bits \t\t\tpc += 2 \t\t} // else if op == any other op taking immediate data \t}  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.0625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "121",
+                    "likes": "0",
+                    "time": "17/04/2021-19:20:05",
+                    "content": "But way back over here I find an example of the problem I don\u2019t really understand, from @gumb0     EIP-663: Unlimited SWAP and DUP instructions Core EIPs       ^ Here\u2019s simple test demonstating this problem      Bytecode there is  600456b35b600060005260206000f3     @chriseth put it as:  If the argument to a newly-introduced multi-byte opcode is the byte value of JUMPDEST, then this was a valid jump destination before the hard fork, but it is no longer a valid jump destination after the hard fork.  I think this can happen only where code preceding the JUMPDEST wasn\u2019t executabl \u2013 at some point I could scan the blockchain to see if the danger has ever manifested.  This danger could be eliminated going forward by demanding that unreachable code be 0 (or INVALID, or something) so that new opcodes will never occur outside of immediate data. And this is the problem with my analysis algorithm - it can\u2019t tell whether it\u2019s seeing old data or a new bytecode.  Perhaps it can do better. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.222451790633609
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "122",
+                    "likes": "0",
+                    "time": "19/04/2021-15:16:52",
+                    "content": "    holiman:  If we were to introduce e.g. JUMPSUB 0x00ff (defining it as in total three bytes), I don\u2019t see any huge problems with that \u2026 ?   Not sure exactly what you are suggesting or how it helps. What strikes me this morning is that if the problem is that the immediate data might look like a JUMPDEST the answer is just to never use 0x5b == 0x01011011 as immediate data.  That could be fixed by always setting the high bit of immediate data to 1 and masking it away before use.  That does reduce the number of bits for specifying immediate jumps to 14, and 2^14 is only 16384 \u2013 not enough to span an entire code array.  We can either live with this restriction, use three bytes of immediate data, or use a UTF-8 style bit-ladder. The remaining problem would be a JUMPDEST occurring before the new opcode, which in the past would have aborted with an error, but instead would execute.  I think this is just another case of the fact that adding a bytecode always risks causing an invalid program to become valid - a risk we have taken many times before. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.454895104895105
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "123",
+                    "likes": "0",
+                    "time": "28/07/2021-00:02:23",
+                    "content": "A few months down the road and I still like this idea.  I suspect some base-64 variation on VLQ Variable-length quantity - Wikipedia would be best, setting bit 7 on to mark immediate data bytes (and prevent collisions with JUMPDEST), using bit 6 as a continuation bit, and the remaining 6 bits for data.  (Various schemes can be used for negative  numbers, including using the leading data bit as a sign bit and using 2\u2019s complement.)  It\u2019s backwards-compatible, not needing any sort of versioning.  And it\u2019s future-proof, allowing for the size of the bytecode addressed to increase over time.  It does require more decoding time than a fixed two-byte offset.  It may use more or less space, depending on whether the offset requires more than 12 or less than 7 bits to represent. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.732323232323232
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "124",
+                    "likes": "0",
+                    "time": "30/08/2021-14:08:34",
+                    "content": "And a little further down the line and I\u2019ve moved the validation code to it\u2019s own PR, as I realized it does not depend on these new opcodes, only deprecating dynamic use of JUMP and JUMPI.    EIP-3779: Safe Control Flow for the EVM Core EIPs   Abstract This EIP specifies validation rules for some important safety properties, including   valid jump destinations, valid instructions, no stack underflows, and no stack overflows without recursion.  Valid contracts will not halt with an exception unless they either run out of gas or overflow stack during a recursive subroutine call.  Code is validated at contract creation time \u2013 not runtime \u2013 by the provided algorithm.  This is a one-pass algorithm, linear in the size of the bytecode, so a\u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.718504489337822
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "125",
+                    "likes": "0",
+                    "time": "03/02/2022-19:19:44",
+                    "content": "Since this EIP is up for discussion for Shanghai again, maybe it\u2019s good to clarify the following to avoid misunderstandings: It is still my position (and I suspect this is shared by the solidity team in general), that gas savings cannot serve as justification for this EIP and the gas analysis in the EIP is a bit misleading (for example, the subroutine examples use RJUMP, which is per se independent of this EIP and would also reduce the gas costs of the non-subroutine versions, if used there; the swap for the return address can be nicely integrated in the overall stack layout of more complex functions, in which most of the time a globally swap-free stack layout cannot be achieved anyways, so this is no major issue for us; etc. - but I actually don\u2019t think there is a lot of merit in arguing these points in detail). More importantly, any gas savings this EIP may theoretically bring will be insignificant in practice, since internal function calls only occur at very low frequency in real world Solidity-generated bytecode (among others due to inlining, etc.). So the overall real-world gas advantage of subroutines (for Solidity generated bytecode) will be negligible in practice. That is not to say that I oppose this EIP. I just want to make sure that if it is considered, that it is considered for the right reasons. In combination with EIP 4200, the subroutines of this EIP can serve to completely eliminate the need for dynamic jumps, which may have significant merit independently of gas savings - but this merit has to be argued for independently and different approaches like EIP 4750 have to be considered. And such arguments and considerations will be largely independent of the use in Solidity (resp. of any theoretical gas savings). And also: sorry, if I have missed or misunderstood any particular developments - we have quite a high workload these days and I did not find the time to review the updated EIP in all detail, but maybe the general sentiment expressed above is helpful. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.558260939510939
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "126",
+                    "likes": "1",
+                    "time": "03/02/2022-22:28:32",
+                    "content": "Thanks for your helpful review. The gas savings I show are very large for low level code, and I don\u2019t think it\u2019s at all irrelevant or misleading to show that.  Quite the opposite. And I don\u2019t think the tail-optimization example I give is at all misleading.  I\u2019m properly comparing using the subroutines and static jumps that I require here \u2013 both RJUMP and RJUMPSUB \u2013  to the current practice of using dynamic JUMP.    (Note that EIP-2315 requires EIP-4200). It\u2019s good that inlining Solidity code helps.  And it\u2019s interesting that Solidity does not usually generate many small routines from the code it\u2019s usually given. (That may change given these instructions.)  But Solidity is not the only compiler,  and people do hand-code assembly when performance is critical - even when mostly writing Solidity. As this proposal states, it\u2019s the whole package of EIP-2315, EIP-4200, and EIP-3779 that provides for a complete, static, and verifiably safe control-flow facility. But even without EIP-3779 I do think my arguments for performance improvements are valid, and that improvements as large as I report are well worth it for the sort of code that needs them.  It\u2019s the critical code I\u2019m targeting here. Note: EIP-4750 is a very new PR that I just now took a glance at.  Off-hand it looks to have excess runtime overhead \u2013  larger return-stack slots to support runtime checks for stack height \u2013 that EIP-2315 moves to validation time.  And by restricting code sections to a single function it makes optimizations more difficult. I might be misreading, will study it more later. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.738078327922079
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "127",
+                    "likes": "0",
+                    "time": "04/02/2022-01:27:59",
+                    "content": "I would not expect that looking at hand-written assembly code for performance-critical situations will yield significantly different results in that regard. Any function call - no matter the calling convention - will incur overhead and especially in hand-optimized performance-critical code I would very rarely expect to find dense calls, since especially in such situations inlining (whether done by automatic optimization or by hand) will in general result in the lower overall gas cost. But yeah: really all I want to say is that I suggest to put more focus on the other aspects of this EIP (and its combination with the others) rather than the gas savings for its evaluation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.563888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "128",
+                    "likes": "1",
+                    "time": "04/02/2022-03:12:02",
+                    "content": "I don\u2019t fully follow you here, I agree performance is not the only argument, but I do think it\u2019s a stronger one than you give it credit for  Turing designed his calling convention to be cheap enough that inlining was less often necessary \u2013  inlining to avoid an RJUMPSUB/RETURNSUB would save 8 gas, compared to saving about 26 gas for the current approach.  That moves the line for the speed/space tradeoff a fair distance. It\u2019s generally good software engineering to keep subroutines small and reusable, so making them a lot cheaper to call has to be a win. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.091666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/ekpyron",
+                    "index": "129",
+                    "likes": "0",
+                    "time": "04/02/2022-10:09:33",
+                    "content": "Of course you always want to have small and reusable subroutines initially. That\u2019s why even low-level code is not written directly as opcodes, but rather e.g. in Yul, in which you still have functions you can subject to inlining by optimization. In case you don\u2019t want to run any optimization, but optimize solely by hand, you usually optimize for every single piece of gas, so the size of the function call overhead won\u2019t matter, you will still inline by hand. What I\u2019m saying is that the usual case is to have few and relatively large functions in deployed bytecode. If somebody wants to refute that: solidity will annotate jumps into and out of functions, so in any deployed contract with sources available it should be straightforward to calculate (a good approximation of) the ratio of overall gas cost to function calls (this applies to both solidity generated code and inline assembly code, i.e. \u201chand-optimized cases\u201d). Or to put it differently: most meaningful transactions will involve at least one state change, so 20000 gas. Even if you save 20 gas per function call, you need hundreds of calls to make a difference that comes even close to the percentages in the EIP\u2019s gas analysis. Also the main advantage of inlining itself often is not really saving the function call overhead, but rather allowing to fuse and optimize the code further based on the concrete arguments and surroundings. So I\u2019m rather worried about gas savings being an exaggeration rather than not giving it too much credit :-). But yeah, I think I made my point about this now, so I\u2019ll leave it at that for the time being. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.525621118012422
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "130",
+                    "likes": "0",
+                    "time": "04/02/2022-17:16:52",
+                    "content": "I think I see your point of view as a Solidity compiler writer.  (E.g. inlining isn\u2019t just about pulling small routines in line to avoid call overhead, it\u2019s also about pulling in large routines to subject them to further optimization.  We went down that road 100% in C++ \u2013 many libraries exist entirely as inline code.)  I still think that if you had these operations you could make good use of them, and would appreciate it if you could think on that a little. My point of view is that of a machine designer who is relatively agnostic about where the code is coming from \u2013 it\u2019s hard to fully anticipate all of the ways a general-purpose machine will be used.  So I look at the history of computing machines and find that most of them provide subroutine operations going all the way back to Turing, 1946.  And I look at the history of virtual machines going back to Forth, 1970 and farther and find they are mostly stack machines that use Turing\u2019s design: a stack of return addresses.  And I can\u2019t see any good reason for our VM not to do the same. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.606734360410831
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "131",
+                    "likes": "0",
+                    "time": "04/02/2022-17:52:43",
+                    "content": "So\u2026  I\u2019m proposing two opcodes that follow an industry-standard design and provide the most efficient call/return mechanism I know of.  Calling takes 5 gas for an  RJUMPSUB, returning takes 3 gas for aRETURNSUB.  8 gas total. By contrast, currently:  Calling takes 14 gas for a PUSH <return address> PUSH <destination> JUMP. Returning takes 11 gas for a SWAP JUMP.   25 gas total. So, 25 - 8 = 17 gas, and 17 \u00f7 25 = 68% savings. YMMV. That seems to me to be too large of a difference to ignore, even if maximally efficient subroutines aren\u2019t on the critical path for Solidity. (Yes, sometimes the SWAP isn\u2019t needed:  22-8=14, 14/22=64%.  And if we also had RJUMP then calling could only take PUSH <return address> RJUMP <destination>. 17-8=9,  9/17=53%.  The savings are still substantial.) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.5102040816326525
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "132",
+                    "likes": "1",
+                    "time": "04/02/2022-18:40:10",
+                    "content": "    gcolvin:  By contrast, currently: Calling takes 14 gas for a PUSH <return address> PUSH <destination> JUMP. Returning takes 11 gas for a SWAP JUMP. 25 gas total.   I think what @ekpyron refers to is that with EIP-4200 this would look like as PUSH <return address> RJUMP <destination> for calling in and JUMP for returning (swaps are only needed during returning when there are return parameters). The prices depend on what prices are decided for RJUMP. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "133",
+                    "likes": "0",
+                    "time": "04/02/2022-19:35:23",
+                    "content": "I think I covered the cases you mention?  (Yes, sometimes the SWAP isn\u2019t needed: 22-8=14, 14/22=64%. And if we also had RJUMP then calling could only take PUSH <return address> RJUMP <destination>. 17-8=9, 9/17=53%. The savings are still substantial.)  So yes, the exact savings depend on the exact gas costs, but I think the savings would remain substantial.  In the proposal I also examine an alternative that combines the PUSH/RJUMP into one 6-gas operation.  That saves 5 more gas \u2013  12-8=4, 4/12=33% \u2013 which is the best I think we can do without a return stack. Note: I neglected to count the JUMPDEST needed by each JUMP, so all of the savings are slightly better than shown. But I\u2019m wondering if JUMP really needs a JUMPDEST now \u2013 it seems all the jumpdest analysis needs to do is mark all immediate data as invalid destinations so JUMP can check for that at runtime. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.928571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gumb0",
+                    "index": "134",
+                    "likes": "0",
+                    "time": "21/03/2022-16:01:31",
+                    "content": "Some suggestions for improving current EIP text.  Mention how EOF validation procedure is changed. It shoud check that each argument of RJUMPSUB is within code section bounds and doesn\u2019t point to push data or another RJUMPSUB immediate. Compare to similaar paragraph in EIP-4200:   We also extend the validation algorithm of EIP-3670 to verify that each RJUMP /RJUMPI has a relative_offset pointing to an instruction. This means it cannot point to an immediate data of PUSHn /RJUMP /RJUMPI . It cannot point outside of code bounds. It is allowed to point to a JUMPDEST , but is not required to.    It would be best to provide python code for new validation procedure, as in EIP-4200 Reference Implementation section. In fact I think validation for this EIP will be very much similar.       If a resulting PC to be executed is beyond the last instruction then the opcode is implicitly a STOP, which is not an error.   This shouldn\u2019t happen at all thanks to validation of all RJUMPSUBs, so I think this note can be removed.   Specify what happens when RETURNSUB is called with empty return stack.   Paragraphs with justification of costs in the end of Specification should be moved to Rationale.   ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-3670",
+                        "https://eips.ethereum.org/EIPS/eip-4200#reference-implementation"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.7727272727272725
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "135",
+                    "likes": "1",
+                    "time": "05/05/2022-15:55:56",
+                    "content": "NOTE:  An apology,  I wrote most of this many days ago and left it unfinished\u2026 Thanks for the careful review, Andrei.  Pretty much all your points I agree with, and will work them into the spec when I can. The harder part is the validation algorithm in EIP-3379, which provides safety rules for this EIP and others.  I currently think it\u2019s wrong, or at least can no longer convince myself it\u2019s right for subroutines.  Am working with a mathematician friend on that.  We think we have a correct algorithm, but so far it\u2019s more complex than I would like. From a discussion with Pawel in Amsterdam I am OK with leaving this proposal as a draft in favor EIP-4750: EOF - Functions.  I\u2019ll comment there later, but my concerns are that \u2013 being very close to EIP-615: Subroutines and Static Jumps for the EVM \u2013  it needs to include comparable safety constraints and an algorithm for validating them.  In general the only runtime checks needed should be for stack overflow and OOG. Also, I\u2019d prefer that 4750 be specified in such a way that this EIP can be seamlessly introduced later as a performance optimization.  I think that is already the case. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4750",
+                        "https://eips.ethereum.org/EIPS/eip-615"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.538690476190476
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "136",
+                    "likes": "1",
+                    "time": "09/09/2022-19:24:50",
+                    "content": "Ready for Review: Proposal: EIP-2315 Simple Subroutines for the EVM Requires:  EIP-4200: Static relative jumps  This proposal  introduces two opcodes to support calling and returning from subroutines:   RJUMPSUB relative_offset \u2013 relative jump to subroutine  RETURNSUB \u2013 return to PC after most recent RJUMPSUB.  It deprecates JUMP and JUMPI and ensures, at initialization time, that valid code will not execute invalid instructions or jump to invalid locations, will not underflow stack, will maintain consistent numbers of inputs and outputs for subroutines, and will have bounded stack height in the absence of recursion.  These are very nearly the same guarantees as EIP-615 and EIP-4750 with less complexity and better opportunities for optimized code. This proposal does not impose any syntax \u2013 a subroutine is not a contiguous sequence of bytecode, it is a subgraph of the control-flow graph. This provides more opportunities for optimization, especially for compact layout of code.  Since we wish to support one-pass compilers of EVM code to machine code it is crucial that the EVM code be as well optimized as possible. I still prefer that EOF code sections represent Modules containing multiple procedures rather than being a single Function.  This allows for low-level optimizations within a module, but no control flow between modules except via defined interfaces.  But this is a discussion for elsewhere My priorities are:  EIP-4200 EIP-2315 EIP-4750  I will certainly support whatever kind of subroutines we can get.  We cannot write one-pass compilers without them. ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4200",
+                        "https://eips.ethereum.org/EIPS/eip-615",
+                        "https://eips.ethereum.org/EIPS/eip-4750",
+                        "https://github.com/ethereum/EIPs/pull/4919",
+                        "https://eips.ethereum.org/EIPS/eip-4750",
+                        "https://ethereum-magicians.org/t/eip-4750-eof-functions/8195/13"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.748497732426304
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/radek",
+                    "index": "137",
+                    "likes": "0",
+                    "time": "26/09/2022-11:26:47",
+                    "content": "I would like to raise a few points:      It deprecates JUMP and JUMPI.  Can you please clarify?      RJUMPSUB (0x5f) relative_offest: uint16  I assume it should be signed 16-bit? ( as it is \u201cpartially\u201d demonstrated in the example case: 0xe5ff = RJUMPSUB -1 )     The test cases seams to be inconsistent (bytecode vs tables). Would you like to have some cleanup PRs? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "138",
+                    "likes": "0",
+                    "time": "27/09/2022-05:44:35",
+                    "content": "I see there is a PR for fixing points 2 and 3, thanks. Yes, as explained in the motivation, dynamic jumps make traversal of code vulnerable to quadratic-time attack. Anything we want to do at initialization time can\u2019t take time and space more than linear in the size of the initialization code.  That includes validating the code and compiling it to machine code.  And I didn\u2019t go into it, but they can also make it impossible to validate that stack doesn\u2019t underflow.  So dynamic jumps must go. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.611111111111112
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/radek",
+                    "index": "139",
+                    "likes": "0",
+                    "time": "03/10/2022-12:02:09",
+                    "content": "    gcolvin:  So dynamic jumps must go.   The motivation is clear. The deprecation procedure is not clear. Are you proposing to remove JUMP and JUMPI opcodes? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.083333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "140",
+                    "likes": "0",
+                    "time": "03/10/2022-14:52:55",
+                    "content": "Sorry to misunderstand. If we decide to go with this then I think we simply state that after the chosen block number for the upgrade the opcodes are invalid in new EOF code. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.393939393939394
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/radek",
+                    "index": "141",
+                    "likes": "0",
+                    "time": "03/10/2022-19:01:25",
+                    "content": "I would put the potential removal into separate EIP / upgrade in order to see some stats of the newly deployed code before the decision. So my proposal is to document here in 2315 JUMP and JUMPI as candidate opcodes for the consideration of the future removal. And by this not blocking this EIP with such decision. note, I am not much in favor of opcode removals due to the inconsistencies with an already spread knowledge (tutorials, docs, \u2026). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.865259740259741
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/gcolvin",
+                    "index": "142",
+                    "likes": "0",
+                    "time": "03/10/2022-20:55:42",
+                    "content": "I\u2019m not sure what stats you are wanting.  I worked hard with eip-3779 to find a validation algorithm that let us keep JUMP and JUMPI. I failed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.2638888888888884
+                }
+            ]
+        }
+    ],
+    "group_index": "990"
+}

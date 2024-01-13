@@ -1,0 +1,124 @@
+{
+    "poll_list": [
+        {
+            "title": "ETH-B Debt Ceiling Instant Access Module - December 7, 2020",
+            "index": "5512",
+            "option": "Yes",
+            "supporting_mkr": "52,238",
+            "highest_fraction": 1.0
+        }
+    ],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/eth-b-dc-iam-initial-parameters/5512",
+            "title": "ETH-B DC-IAM: Initial Parameters ",
+            "index": 5512,
+            "category": [
+                "Updates"
+            ],
+            "tags": [
+                "eth-b",
+                "iam",
+                "dc-iam"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#1",
+                    "likes": "13",
+                    "time": "06/12/2020-14:31:04",
+                    "content": "Based on assessment from @Protocol-Engineering and our findings, we believe that implementing a \u201ctest run\u201d DC IAM for ETH-B vault type makes sense at this stage. Below is our thought process when we were deciding on three key parameters (line, gap, ttl) and later proposing potential parameters to be implemented for ETH-B. line Definition: \u201cThe maximum debt ceiling limit can always be increased or decreased through a governance action. The maximum debt ceiling is a hard limit that prevents any further incremental debt ceiling increases through the module.\u201d Max Debt Ceiling (line) defined by our models is based on three key inputs for each collateral asset: CEX+DEX liquidity, Collateralization Ratio distribution and Price volatility. It assumes a predetermined Liquidation Ratio and looks for highest DC value where Risk Premiums start reaching 10% or higher. These levels aren\u2019t necessarily Debt Ceilings that governance would want to have fully utilized from a business standpoint since SF would start rising above 10% and grow exponentially, unless something structurally changes for collateral assets (lower volatility, better CR distribution, better liquidity). It is up to the community to tolerate debt exposure equal to line parameter proposed below and be aware that a much higher SF will be needed to compensate for risk taken. At that point the question becomes if it makes sense to have high debt exposure by charging high rates versus limiting debt exposure and still offering competitive rates. Still, for the purposes of MIP27 we thought this might offer good guidance.     Vault Type Debt Exposure Maximum DC (line)     ETH-A 428,365,261 944,000,000   USDC-A 405,342,819 485,000,000   WBTC-A 122,839,843 780,000,000   TUSD-A 51,230,939 135,000,000   YFI-A 19,412,614 46,000,000   PAX-A 18,075,288 100,000,000   ETH-B 9,612,172 51,000,000   LINK-A 5,706,203 124,000,000   BAT-A 2,934,488 2,000,000   LRC-A 607,541 4,000,000   MANA-A 372,129 0   ZRX-A 125,266 4,000,000   KNC-A 92,547 4,000,000   BAL-A 53,168 4,000,000   COMP-A 16,399 5,000,000   USDT-A 1,088 3,000,000   GUSD-A 550 5,000,000   USDC-B 333 30,000,000    gap: Definition: \u201cAbsolute number which is the distance between the current debt (Dai supply) and the debt ceiling\u201d Based on historical data, daily DAI supply increases for particular vault type were on average as such:     Collateral type Avg daily increase 2x st.dev largest incr.     ETH-A 2,627,052 8,566,835 29,246,128   ETH-B 369,165 1,392,583 3,578,215   BAT-A 41,443 467,219 2,681,618   WBTC.A 1,351,226 7,711,935 29,681,683   LINK-A 139,745 871,565 2,376,661   LRC-A 37,688 110,626 272,154   MANA-A 9,047 49,416 125,212   ZRX-A 3,499 33,476 158,009   KNC-A 13,601 49,830 108,446   COMP-A 324 1,462 3,500    Another breakdown on daily mints and repayments for ETH-A & WBTC-A only     Activity ETH-A WBTC-A     largest daily draw 50,441,832.7 29,829,285.2   largest daily wipe 43,988,180.7 18,410,833.6        average daily draw 4,467,456 668,921   average daily wipes 3,530,596 330,035        stdev daily draw 6,096,975.5 2,509,733.8   stdev daily wipe 6,183,382.2 1,487,887.6    If governance wants to allow highest daily increases as were observed in the past, the proposed 24h gap should equal the highest DAI supply increase observed in the past (30m for either ETH-A and WBTC-A) or even equal largest DAI daily draw observed in the past (50m for ETH-A and 30m for WBTC-B). If it wants much more protection (lower gap), but still aims to cover average daily increases observed in the past, 24h gap proposed in such case would be much lower or 4m for ETH-A or and only about 1m for WBTC-A. ttl: Definition: \u201cAmount of time required to pass before a new increase to the debt ceiling can be made\u201d In our view, the idea is to either use a combination of low gap and short ttl or high gap and long ttl. You don\u2019t want to be making large increases too frequently and you don\u2019t want to be making small increases with a low frequency. Whatever combination is used, the limit should be somehow set and compared to what amount of DAI can be minted until governance can react and stop additional minting due to GSM delay. For instance, if we use combinations such as 25m gap and 12hour ttl, this means that 24 hour mints are limited to 50m, but at the same time, we need to be aware such vault type might have 100m+ DAI minted before governance can reach and disable minting. As already @cmooney mentioned above, longer ttl versus shorter ttl is preferred, which means higher gap would be preferably applied. Pros for high gap long ttl:  More flexibility Better UX, less limiting to users and larger vaults  Cons for high gap long ttl:  Risk of governance reacting too late on rapidly increasing debt exposure  Conclusion and proposed parameters for ETH-B We believe governance should use higher gap and longer ttl to protect against fast increasing debt exposure but still allow enough flexibility for users. gap values can be benchmarked on past debt increases or draws observed, whereas ttl needs to make sure that DC increases aren\u2019t too frequent to hit line in a short time or too infrequent to damage user experience. The line parameter on the other hand could be in our view set more relaxed and higher if a) governance is aware that higher debt exposure will lead to higher SF and b) combination of gap and ttl is still conservative enough to prevent from line being hit before governance can react. Therefore the proposed parameters for test run on ETH-B would be the following: gap = 5.000.000 ttl = 12 hours line = 50.000.000 This implies that a maximum 20m increased debt exposure is allowed before governance can react and vote to reduce it due to 48h GSM delay. However we could still use OSM freeze module as an alternative line of defence, which would me much faster than waiting for GSM delay. gap of 5m means that such vault type should allow larger whales to perform one time mint of 5m. Observed maximum daily debt increase for ETH-B in the past was 3.5m. The core protection DC IAM enables for ETH-B vaults specifically is OSM attack protection. Having a maximum 5m of unutilized debt on ETH-B means that if we have a very severe 25% hourly ETH price drop and OSM attack is performed, this could lead to a maximum of 125k losses for Maker (excluding auction slippage). ",
+                    "links": [
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-121-thursday-december-10-16-00-utc/5468/2",
+                        "https://forum.makerdao.com/t/weekly-sourcecred-distribution-work-reaches-ath/5670",
+                        "https://forum.makerdao.com/t/signal-request-rolling-out-the-debt-ceiling-instant-access-module-dc-iam/6008",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24/5534",
+                        "https://forum.makerdao.com/t/mip27-debt-ceiling-instant-access-module/4625/27",
+                        "https://forum.makerdao.com/t/maker-relay-ep-24-en-espanol/5574"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": [
+                        "Change to proposal pipeline",
+                        "Board composition",
+                        "Grants, Funding and resource allocation",
+                        "Smart contract updates",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.277849213492778
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "06/12/2020-17:15:26",
+                    "content": "Great work @Primoz. Let\u2019s give it a shot! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "06/12/2020-18:22:09",
+                    "content": "    Primoz:  or even equal largest DAI daily draw observed in the past (50m for ETH-A and 30m for WBTC-B).   I think you meant WBTC-A @primoz \u2013 but it\u2019s good to see you\u2019re thinking WBTC-B already      Primoz:  Having a maximum 5m of unutilized debt on ETH-B means that if we have a very severe 25% hourly ETH price drop and OSM attack is performed, this could lead to a maximum of 125k losses for Maker (excluding auction slippage)   Can you please show us the Math on how you came up with a $125K loss? TY in advanced! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.958333333333333
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#4",
+                    "likes": "2",
+                    "time": "06/12/2020-19:55:33",
+                    "content": "    flipflopflapdelegate:  I think you meant WBTC-A @primoz \u2013 but it\u2019s good to see you\u2019re thinking WBTC-B already    Good catch, yes.      flipflopflapdelegate:  Can you please show us the Math on how you came up with a $125K loss? TY in advanced!   So suppose you have $130 of ETH under old PSM price, but current ETH price which is 25% lower means that you actually have only $97.5 of ETH. The system doesn\u2019t recognize new price and uses old one, which means that you can put $97.5 of ETH in collateral and mint 100 DAI, profiting 2.5 DAI per 100 DAI debt ceiling utilized. Performing such OSM attack for 5m unutilized debt means the attacker can gain 125k DAI and system looses equal amount or probably a bit more depending on auction outcome. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.140151515151516
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "07/12/2020-00:16:40",
+                    "content": "Pretty crazy how high the line is on WBTC. To infinity! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#6",
+                    "likes": "1",
+                    "time": "07/12/2020-08:38:27",
+                    "content": "Well, we used WBTC & BTC volume and liquidity metrics to assess max DC for WBTC, since we didn\u2019t want to limit it solely on WBTC volumes as the underlying asset is way more liquid. Although being very conservative on ratios used for BTC liquidity, BTC volumes are so high that we got pretty high max DC. I probably wouldn\u2019t suggest using so high WBTC Maximum DC currently as there are redemption limits at BitGo. We will need to adjust for this fact somehow in our model and suggest a bit lower value if we potentially implement DC IAM for WBTC at some point. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.89375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Jiecut",
+                    "index": "#7",
+                    "likes": "0",
+                    "time": "07/12/2020-23:15:58",
+                    "content": "ETH-B at 50M seems quite high when liquidations 2.0 hasn\u2019t been implemented yet. Though maybe most of the risk is just OSM risk which is mainly prevented by DC-IAM. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.377777777777778
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#8",
+                    "likes": "0",
+                    "time": "14/12/2020-23:16:01",
+                    "content": "This topic was automatically closed 7 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ],
+    "group_index": "3043"
+}

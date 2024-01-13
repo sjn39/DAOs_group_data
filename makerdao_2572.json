@@ -1,0 +1,143 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/urgent-configuration-change-to-eth-a-lump/3586",
+            "title": "Urgent Configuration Change to ETH-A `lump` ",
+            "index": 3586,
+            "category": [
+                "Updates"
+            ],
+            "tags": [
+                "liquidation-system",
+                "eth-a"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/brianmcmichael",
+                    "index": "#1",
+                    "likes": "12",
+                    "time": "07/08/2020-15:04:49",
+                    "content": "The current ETH-A lump with max debt at liquidation could cause an integer overflow when computing the tab that would result in a revert of that liquidation. This means large vaults in this configuration would be immune to liquidation, which could be disruptive to the health of the protocol and the keeper ecosystem. For this reason, we suggest adjusting the lump for ETH-A to 100 ETH. The resulting change will reduce lot sizes from 500 ETH to 100 ETH and result in smaller auction sizes. See GitHub - makerdao/dss-cat-overflow ",
+                    "links": [
+                        "https://forum.makerdao.com/t/maker-relay-ep-7/3630"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.357142857142857
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#2",
+                    "likes": "3",
+                    "time": "07/08/2020-15:18:14",
+                    "content": "This change will be included in today\u2019s (07/08/20) executive vote. My understanding is that this post will be updated with further details once the Smart Contracts Domain Team gets the chance. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5357142857142865
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/equivrel",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "07/08/2020-15:55:46",
+                    "content": "The linked github repo appears to be private. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/galabasquer",
+                    "index": "#4",
+                    "likes": "5",
+                    "time": "07/08/2020-16:14:19",
+                    "content": "It\u2019s public now! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#6",
+                    "likes": "6",
+                    "time": "07/08/2020-16:30:23",
+                    "content": "Could you elaborate more on this? I have a few questions:  Is this something that was known could happen ahead of time, or is this a recently discovered \u201cbug\u201d? What is a \u201cmax debt at liquidation\u201d? Does this mean a liquidation of 340M Dai? Will we need to keep adjusting the lump as the debt ceilings increase? What are the consequences of this integer overflow event occurring and how realistic a possibility is this?  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.545138888888888
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/galabasquer",
+                    "index": "#7",
+                    "likes": "5",
+                    "time": "07/08/2020-17:37:41",
+                    "content": "It was recently discovered and it doesn\u2019t have to do with the debt ceilings but with the relationship between collateral locked and debt generated. The overflow happens in this line: https://github.com/makerdao/dss/blob/master/src/cat.sol#L136 which makes art * rate * chop can not be higher than the max uint256. Taking out chop (1.13 RAY) makes the debt to be auctioned (art * rate) can not be higher than: 102,470.8754\u2026 DAI. So a vault with for example 500 ETH or less and 102,471 DAI debt couldn\u2019t be liquidated now if the price of ETH would drop (this is the only effect of this issue). This gets mitigated by reducing the lump as each auction will also split the total debt. The problem raises now as with a higher ETH price it is more normal to have higher debt with less ETH collateral locked. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.598484848484848
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/galabasquer",
+                    "index": "#8",
+                    "likes": "6",
+                    "time": "07/08/2020-17:45:42",
+                    "content": "To clarify, the same vault with a lump of 100 ETH, would be broken in 5 auctions making each auction tab 20,494.2 DAI way below the 102,470.87\u2026 limit. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#9",
+                    "likes": "5",
+                    "time": "07/08/2020-17:49:20",
+                    "content": "Thanks for the explanation. Just so I\u2019m understanding, this prevents liquidations of the vaults with more than 102k Dai per lot, but it will not put the system in a broken state, correct? As soon as the executive passes the liquidations will turn on again? Is there plans to update the contract code to address this more robustly? 102k Dai per lot is not a super high number. I\u2019m also curious as to why something like this isn\u2019t picked up with formal verification. Integer overflow seems like a common class of error to run into, especially since the system is designed to operate over many orders of magnitude of growth. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.446666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/galabasquer",
+                    "index": "#10",
+                    "likes": "4",
+                    "time": "07/08/2020-17:57:12",
+                    "content": "Yes that\u2019s right, as soon as the executive passes they would be liquidated, so no broken state. We are thinking on making a more robust change but the lump is the easiest to apply right now. The thing is the these formal verification proofs check when overflow happens is actually leading to a reversion. And that\u2019s actually what is happening, preventing to complete bite. It is not that the overflow provokes an undesired value. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.979591836734693
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/hexonaut",
+                    "index": "#11",
+                    "likes": "5",
+                    "time": "07/08/2020-18:03:37",
+                    "content": "Awesome, thanks again for the detailed explanation. I guess MKR holders should vote on this quick especially now that ETH is dropping a bit. We could take on bad debt if the value drops too rapidly. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.027777777777778
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "08/08/2020-21:14:22",
+                    "content": "",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/system",
+                    "index": "#14",
+                    "likes": "0",
+                    "time": "05/10/2020-15:59:46",
+                    "content": "This topic was automatically closed 7 days after the last reply. New replies are no longer allowed. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0606060606060606
+                }
+            ]
+        }
+    ]
+}

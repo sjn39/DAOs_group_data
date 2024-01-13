@@ -1,0 +1,1452 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4626-yield-bearing-vault-standard/7900",
+            "title": "EIP-4626: Yield Bearing Vault Standard ",
+            "index": 7900,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "vaults"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "1",
+                    "likes": "11",
+                    "time": "05/01/2022-03:48:45",
+                    "content": "  eip: 4626 title: Yield Bearing Vault Standard description: A standard for yield bearing vaults. author: Joey Santoro (@joeysantoro), t11s (@transmissions11), Jet Jadeja (@JetJadeja) discussions-to: https://github.com/ethereum/EIPs/pull/4626 status: Draft type: Standards Track category: ERC created: 2021-12-22  Yield Bearing Vault Standard  Simple Summary A standard for yield bearing vaults.  Abstract The following standard allows for the implementation of a standard API for yield bearing vaults within smart contracts. This standard provides basic functionality for depositing and withdrawing tokens and reading balances with an optional extension for tokenized vaults using ERC-20.  Motivation Yield bearing vaults have a lack of standardization leading to diverse implementation details. Some various examples include lending markets (Compound, Aave, Fuse), aggregators (Yearn, Rari Vaults, Idle), and intrinsically interest bearing tokens (xSushi). This makes integration difficult at the aggregator or plugin layer for protocols which need to conform to many standards. This forces each protocol to implement their own adapters which are error prone and waste development resources. A standard for yield bearing vaults will allow for a similar cambrian explosion to ERC-20, unlocking access to yield in a variety of applications with little specialized effort from developers.  Specification  Methods  deposit function deposit(address _to, uint256 _value) public returns (uint256 _shares) Deposits _value tokens into the vault and grants ownership of them to _to. MAY return a pro-rata ownership _shares value corresponding _value, if not MUST return 0. MAY represent _shares using internal accounting or an ERC-20 token. If pro-rata shares ownership is implemented, the vault SHOULD implement balanceOf, redeem, totalSupply and exchangeRate.  withdraw function withdraw(address _to, uint256 _value) public returns (uint256 _shares) Withdraws _value tokens from the vault and transfers them to _to. MAY return a pro-rata ownership _shares value corresponding to _value,  if not MUST return 0.  totalHoldings function totalHoldings() public view returns (uint256) Returns the total amount of underlying tokens held/managed by the vault.  balanceOfUnderlying function balanceOfUnderlying(address _owner) public view returns (uint256) Returns the total amount underlying tokens held in the vault for _owner.  underlying function underlying() public view returns (address) Returns the address of the token the vault uses for accounting, depositing, and withdrawing. SHOULD return a token implementing the ERC-20 standard.  totalSupply function totalSupply() public view returns (uint256) Returns the total number of unredeemed vault shares in circulation. OPTIONAL - This method is only needed for vaults that implement a pro-rata share mechanism for deposits.  balanceOf function balanceOf(address _owner) public view returns (uint256) Returns the total amount of vault shares the _owner currently has. OPTIONAL - This method is only needed for vaults that implement a pro-rata share mechanism for deposits.  redeem function redeem(address _to, uint256 _shares) public returns (uint256 _value) Redeems a specific number of _shares for underlying tokens and transfers them to _to. MAY return a pro-rata ownership _shares value corresponding _value, if not MUST return 0. OPTIONAL - This method is only needed for vaults that implement a pro-rata share mechanism for deposits.  exchangeRate function exchangeRate() public view returns (uint256) The amount of underlying tokens one baseUnit of vault shares is redeemable for. e.g. _shares * exchangeRate() / baseUnit() = _value. exchangeRate() * totalSupply() MUST equal totalHoldings(). OPTIONAL - This method is only needed for vaults that implement a pro-rata share mechanism for deposits.  baseUnit function baseUnit() public view returns(uint256) The decimal scalar for vault shares and operations involving exchangeRate(). OPTIONAL - This method is only needed for vaults that implement a pro-rata share mechanism for deposits.  Events  Deposit MUST be emitted when tokens are deposited into the vault. event Deposit(address indexed _from, addres indexed _to, uint256 _value) Where _from is the user who triggered the deposit and approved _value underlying tokens to the vault, and _to is the user who is able to withdraw the deposited tokens.  Withdraw MUST be emitted when tokens are withdrawn from the vault by a depositor. event Withdraw(address indexed _owner, addres indexed _to, uint256 _value) Where _from is the user who triggered the withdrawal and held _value underlying tokens in the vault, and _to is the user who received the withdrawn tokens.  Rationale The vault interface is designed to be optimized for minimal implementation and integration logic while maintaining flexibility for both parties. Details such as accounting and allocation of deposited tokens are intentionally not specified, as vaults are expected to be treated as black boxes on-chain and inspected off-chain before use.  Reference Implementation Solmate Minimal Implementation - a tokenized vault using the ERC-20 extension with hooks for developers to add logic in deposit and withdraw. Rari Vaults are an implementation that is nearly ready for production release. Any discrepancies between the vaults abi and this ERC will be adapted to conform to the ERC before mainnet deployment.  Security Considerations This specification has similar security considerations to the ERC-20 interface. Fully permissionless yield aggregators, for example, could fall prey to malicious implementations which only conform to the interface but not the specification.  Copyright Copyright and related rights waived via CC0. ",
+                    "links": [
+                        "https://github.com/Rari-Capital/solmate/pull/88",
+                        "https://github.com/Rari-Capital/vaults/blob/main/src/Vault.sol",
+                        "https://creativecommons.org/publicdomain/zero/1.0/"
+                    ],
+                    "GPT-summary": "The post presents EIP-4626, which proposes a standard API for yield-bearing vaults within smart contracts. The proposal aims to address the lack of standardization in yield-bearing vaults, which makes integration difficult for protocols that need to conform to many standards. The post provides a detailed specification of the proposed standard, including methods and events, and a reference implementation. The proposal is open for discussion and feedback, and the post invites questions and constructive criticism.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Token economics",
+                        "Interoperability and Scalability",
+                        "None",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.061122134038801
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aallamaa",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "07/01/2022-15:40:27",
+                    "content": "Hello, EnreachDAO is looking at using your standard for our upcoming vaults. Would it be possible to add a deposit with permit function \u201cdepositWithPermit\u201d in the standard (ERC2612 permit)? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "10/01/2022-15:27:27",
+                    "content": "Hi, the logic to execute ERC2612 permits in deposit doesn\u2019t belong in the ERC4626 vault itself, but in an external contract that would interact with the vault. Example: ERC4626/ERC4626Router.sol at 7a947f2507b760ae470578cfb106f71ff5b1a14b \u00b7 fei-protocol/ERC4626 \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "4",
+                    "likes": "1",
+                    "time": "10/01/2022-15:29:22",
+                    "content": "The ERC4626 states that calculateShares(calculateUnderlying(sharesAmount)) MUST equal sharesAmount. That would prevent vaults to implement deposit or withdraw fees. Same for calculateUnderlying(calculateShares(underlyingAmount)) MUST equal underlyingAmount. I suggest those two requirements are dropped. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aallamaa",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "10/01/2022-16:18:19",
+                    "content": "Thanks for the pointer, the only issue here is that this implies 2 transfers, one from sender to router, then from router to vault, instead of a single transfer from sender to vault, having a deposit with permit would allow to reduce gas cost by having a single transfer, and for tokens with taxes this would reduce the amount of taxes on transfer. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.071428571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "6",
+                    "likes": "0",
+                    "time": "12/01/2022-20:23:34",
+                    "content": "In favor, lets adjust the language to be more flexible to different use cases ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "12/01/2022-20:44:40",
+                    "content": "  Ethereum Improvement Proposals   EIP-4626: Tokenized Vault Standard A standard for tokenized vaults with a single underlying ERC-20 token.      ^ this is the up-to-date proposed standard Thread explaining the changes: https://twitter.com/joey__santoro/status/1478489634300588032 ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-4626",
+                        "https://twitter.com/joey__santoro/status/1478489634300588032"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 4.910714285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "12/01/2022-21:48:38",
+                    "content": " calculateShares(calculateUnderlying(shareAmount)) MUST equal shareAmount calculateUnderlying(calculateShares(underlyingAmount)) MUST equal underlyingAmount  Aren\u2019t there cases where due to integer division this can\u2019t be guaranteed? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexTheEntreprenerd",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "12/01/2022-22:27:48",
+                    "content": "The reference implementation from Rari Vaults doesn\u2019t handle tokens with feeOnTransfer, using one of those tokens will break accounting. Despite the comments implying that the transfer will transfer the exact amount of tokens:  github.com   Rari-Capital/vaults/blob/ebf83010c1e326569465443927300ae7a2cbbd7b/src/Vault.sol#L282                           // We don't allow depositing 0 to prevent emitting a useless event.               require(underlyingAmount != 0, \"AMOUNT_CANNOT_BE_ZERO\");                           // Determine the equivalent amount of rvTokens and mint them.               _mint(msg.sender, underlyingAmount.fdiv(exchangeRate(), BASE_UNIT));                           emit Deposit(msg.sender, underlyingAmount);                           // Transfer in underlying tokens from the user.               // This will revert if the user does not have the amount specified.               UNDERLYING.safeTransferFrom(msg.sender, address(this), underlyingAmount);           }                       /// @notice Withdraw a specific amount of underlying tokens.           /// @param underlyingAmount The amount of underlying tokens to withdraw.           function withdraw(uint256 underlyingAmount) external {               // We don't allow withdrawing 0 to prevent emitting a useless event.               require(underlyingAmount != 0, \"AMOUNT_CANNOT_BE_ZERO\");                           // Determine the equivalent amount of rvTokens and burn them.               // This will revert if the user does not have enough rvTokens.                     The check in safeTransferFrom is checking for the token optionally returning True, and is not a guarantee that you received the amount specified:  github.com   Rari-Capital/solmate/blob/dd13c61b5f9cb5c539a7e356ba94a6c2979e9eb9/src/utils/SafeTransferLib.sol#L53                               mstore(freeMemoryPointer, 0x23b872dd00000000000000000000000000000000000000000000000000000000) // Begin with the function selector.                   mstore(add(freeMemoryPointer, 4), and(from, 0xffffffffffffffffffffffffffffffffffffffff)) // Mask and append the \"from\" argument.                   mstore(add(freeMemoryPointer, 36), and(to, 0xffffffffffffffffffffffffffffffffffffffff)) // Mask and append the \"to\" argument.                   mstore(add(freeMemoryPointer, 68), amount) // Finally append the \"amount\" argument. No mask as it's a full 32 byte value.                               // Call the token and store if it succeeded or not.                   // We use 100 because the calldata length is 4 + 32 * 3.                   callStatus := call(gas(), token, 0, freeMemoryPointer, 100, 0, 0)               }                           require(didLastOptionalReturnCallSucceed(callStatus), \"TRANSFER_FROM_FAILED\");           }                       function safeTransfer(               ERC20 token,               address to,               uint256 amount           ) internal {               bool callStatus;                           assembly {                     ",
+                    "links": [
+                        "https://github.com/Rari-Capital/vaults/blob/ebf83010c1e326569465443927300ae7a2cbbd7b/src/Vault.sol#L282",
+                        "https://github.com/Rari-Capital/solmate/blob/dd13c61b5f9cb5c539a7e356ba94a6c2979e9eb9/src/utils/SafeTransferLib.sol#L53",
+                        "https://github.com/Rari-Capital/solmate/blob/dd13c61b5f9cb5c539a7e356ba94a6c2979e9eb9/src/utils/SafeTransferLib.sol#L53"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.85
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexTheEntreprenerd",
+                    "index": "10",
+                    "likes": "3",
+                    "time": "12/01/2022-22:33:50",
+                    "content": "    joeysantoro:  withdraw function withdraw(address _to, uint256 _value) public returns (uint256 _shares) Withdraws _value tokens from the vault and transfers them to _to. MAY return a pro-rata ownership _shares value corresponding to _value, if not MUST return 0.   My criticism of the standard is very simple: The majority of already existing vault systems use: withdraw(uint256 shares) That\u2019s because shares become the unit of measure for the vault once you have deposited. This is used because:  The token takes it\u2019s own meaning and life (bBADGER, yveCRV) The user interface is simpler: \u201cYou are going to burn X shares and receive underlying back\u201d The _value math is provenly more complicated, can break (especially if you add fees (e.g. withdrawal fees), and tends to leave dust. This is a known issue by all protocols that use the interface you are recommending. To prove this I\u2019ll just search for \u201cDust\u201d on the Rari Capital Discord:  Screenshot 2022-01-12 at 23.32.48818\u00d71464 280 KB    Practically this interface causes more issues than necessary, offer sub-par DX and UX and implicitly makes the majority of already existing Vault Systems non-compliant ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.611111111111111
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/AlexTheEntreprenerd",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "12/01/2022-22:41:12",
+                    "content": "A separate criticism which I\u2019ll leave for the developers considering this standard is that the reference implementation (Rari Vaults), while audited, has not been battle tested nor used in any meaningful capacity. At first scrutiny, I can tell that the system offers very strong admin privileges which can put user deposits at risk. (Replacing withdrawal queue with a list of fake strategies being the first example I found, at the very least a DOS exploit, at worst a rug vector)  Screenshot 2022-01-12 at 23.38.211372\u00d7446 102 KB  It also is a system with multiple strategies, which from my experience is a lot more complicated than one with single strategies. So while I won\u2019t speak about it\u2019s security, I highly recommend you dive deep into the code to understand what you\u2019re actually getting into as well as show a little skepticism for something that hasn\u2019t been used in production. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 4.904236694677871
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TransmissionsDev",
+                    "index": "12",
+                    "likes": "2",
+                    "time": "13/01/2022-01:00:03",
+                    "content": " My criticism of the standard is very simple: The majority of already existing vault systems use: withdraw(uint256 shares)  Yes, we provide this functionality as well via redeem which is standard in the Compound system. Having a withdraw function that takes a fixed amount is useful for users who treat their accounts like bank accounts, withdrawing amounts they need for specific payments.  To prove this I\u2019ll just search for \u201cDust\u201d on the Rari Capital Discord  This is petty and pretty uncool man. That message is referring to the old yield aggregator which was legacy code written months before I even joined the company as a frontend engineer. I agree with you that providing only a mechanism to withdraw a fixed amount of underlying is not a good idea because it leaves dust, which is why we provide a redeem method! The only argument here is about the naming, and considering this standard is already not backwards compatible we want to move in a more logical direction.  makes the majority of already existing Vault Systems non-compliant  There is an incredible amount of diversity in vault interfaces, there\u2019s no way we could make a standard backwards compatible with even a tiny fraction of them. We want to develop a standard for the next generation of vaults, working towards that goal will allows us to achieve a better interface, and not blow up trying to shim our interface into a bunch of existing designs. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.6101190476190474
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/TransmissionsDev",
+                    "index": "13",
+                    "likes": "2",
+                    "time": "13/01/2022-01:21:38",
+                    "content": "As the comment in your screenshot states, the queue is validated at withdrawal time, which prevents it from being used as a rug vector. In terms of DOS the queue will be capped after we push the changes from our latest audit. You\u2019re correct the Vaults intentionally don\u2019t handle fee on transfer tokens, but that has nothing to do with the standard or its viability as a reference implementation. Find the criticism about centralization odd because this is a pretty standard yield aggregator, we don\u2019t have much more control over the system than any governed system like Yearn or Idle does, and again irrelevant to the discussion here. It\u2019s provided as a reference impl to show how a complex system could implement this standard, not as a minimal base for other contracts, that\u2019s the purpose of the Solmate impl. I\u2019d be happy to side with its removal if you and others think it\u2019s important. I think there\u2019s plenty of room for skepticism about the robustness of the Rari Vaults contract, which is why they\u2019re not in production and one of the reasons why we made this standard (to reach community consensus on an optimal interface)! Would love to field more of your feedback but would request we do it outside of this forum if it\u2019s about implementation details and not pertaining to the ERC4626 interface. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.4050925925925934
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "13/01/2022-03:18:36",
+                    "content": "Correct! I believe @albertocuestacanada updated the language in favor of a better invariant related to it returning the same value as a mint/deposit call in the same transaction ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "13/01/2022-06:59:17",
+                    "content": "mint and withdraw, but yes, it\u2019s fixed now. The issue was not on rounding, but on the fact that some vaults might have fees. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "13/01/2022-07:06:27",
+                    "content": "Approving the vault to pull underlying from users, with permit or any other method, would open the door for griefing attacks. If you want to have single-transfer deposits or mints I suggest you check how we do it at yield. You can implement an ERC4626 vault that allows the router to use a single transferFrom from the user to the vault, then kick deposit in the same tx, and have the vault find the underlying that was transferred. Example (not yet 4626) vault-v2/Join.sol at 72a441a69e692b57050d0d9282db7eb3e7535519 \u00b7 yieldprotocol/vault-v2 \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.754464285714286
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/furchill",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "13/01/2022-17:30:53",
+                    "content": "I would like to add, that a fair share of vaults implement a minimum lock in period, and with deposit to, won\u2019t that make it a target of grief attack where people use it and deposit to some address and lock for to address would updated, thus locking funds in the address for that lock duration. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jparklev",
+                    "index": "18",
+                    "likes": "2",
+                    "time": "13/01/2022-21:10:03",
+                    "content": "Without exchangeRate, what\u2019s the idiomatic way to query the exchange rate for one share?  Is it vault.calculateUnderlying(baseUnit)? Or I see that baseUnit isn\u2019t in the spec, so maybe it\u2019s vault.calculateUnderlying(10**vault.decimals())? Also could you expand on this @albertocuestacanada  Approving the vault to pull underlying from users, with permit or any other method, would open the door for griefing attacks.  I was going to see if there\u2019d been any discussion about having from in mint & deposit, but it seems like you\u2019d have a concern? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "19",
+                    "likes": "1",
+                    "time": "14/01/2022-01:31:21",
+                    "content": "    jparklev:  Without exchangeRate, what\u2019s the idiomatic way to query the exchange rate for one share? Is it   This is a great point and we may need to keep exchangeRate for oracles etc  I was going to see if there\u2019d been any discussion about having from in mint & deposit, but it seems like you\u2019d have a concern?  I\u2019m open to it if and only if from and msg.sender BOTH have ERC20 approval, otherwise this presents a major risk when approving the vault as anyone can force your tokens into the vault. However the extra approval would need to be checked asynchronously and be left dangling. None of these improve developer experience or save gas, so we left it out ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.616071428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jparklev",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "14/01/2022-02:40:02",
+                    "content": "    joeysantoro:  I\u2019m open to it if and only if from and msg.sender BOTH have ERC20 approval, otherwise this presents a major risk when approving the vault as anyone can force your tokens into the vault. However the extra approval would need to be checked asynchronously and be left dangling. None of these improve developer experience or save gas, so we left it out   Yea, good shout. I can\u2019t think of many benefits if there\u2019s a double approval like that, and I see the justification for it now ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.701388888888888
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "21",
+                    "likes": "3",
+                    "time": "14/01/2022-06:41:12",
+                    "content": " maybe it\u2019s vault.calculateUnderlying(10**vault.decimals()) ?  That\u2019s correct, and that\u2019s intentional. A function such as exchangeRate returns a factor, and there is no standard as to which how many decimals a factor should have. Compound notoriously defines this as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals). If you want to know how much underlying you need to pay for one share, you ask for that, and that\u2019s what you get with no further guessing. Note that if the vault would have no decimals, the query would still work fine. Also, in multi-hop oracle conversions, as we do for Yield, you don\u2019t need to worry about decimals at all, it just works.   github.com   yieldprotocol/vault-v2/blob/master/contracts/oracles/composite/CompositeMultiOracle.sol // SPDX-License-Identifier: BUSL-1.1 pragma solidity 0.8.6;  import \"@yield-protocol/utils-v2/contracts/access/AccessControl.sol\"; import \"@yield-protocol/utils-v2/contracts/cast/CastBytes32Bytes6.sol\"; import \"@yield-protocol/vault-interfaces/IOracle.sol\";   /**  * @title CompositeMultiOracle  */ contract CompositeMultiOracle is IOracle, AccessControl {     using CastBytes32Bytes6 for bytes32;      event SourceSet(bytes6 indexed baseId, bytes6 indexed quoteId, IOracle indexed source);     event PathSet(bytes6 indexed baseId, bytes6 indexed quoteId, bytes6[] indexed path);      mapping(bytes6 => mapping(bytes6 => IOracle)) public sources;     mapping(bytes6 => mapping(bytes6 => bytes6[])) public paths;       This file has been truncated. show original      ",
+                    "links": [
+                        "https://github.com/yieldprotocol/vault-v2/blob/master/contracts/oracles/composite/CompositeMultiOracle.sol",
+                        "https://github.com/yieldprotocol/vault-v2/blob/master/contracts/oracles/composite/CompositeMultiOracle.sol"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.828703703703704
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aallamaa",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "16/01/2022-00:06:18",
+                    "content": "Also, when there is a fee on transfer during deposit, the amount of underlying token received by the vault will be less than the actual value of underlyingAmount in function deposit(address to, uint256 underlyingAmount), so when we account for the real underlyingAmount received (let\u2019s call it realUnderlyingAmount), should we emit a Deposit event with realUnderlyingAmount or underlyingAmount. See code: /// @notice Deposit a specific amount of underlying tokens. /// @param to The address to receive shares corresponding to the deposit /// @param underlyingAmount The amount of the underlying token to deposit. function deposit(address to, uint256 underlyingAmount) external virtual returns (uint256 shares) {     uint exchangeRate_ = exchangeRate();     uint initialBalance = totalHoldings();     // Transfer in underlying tokens from the user.     underlying.safeTransferFrom(_msgSender(), address(this), underlyingAmount);     // Determine the real amount of underlying token received .     uint realUnderlyingAmount = totalHoldings() - initialBalance;     shares = realUnderlyingAmount.fdiv(exchangeRate_, baseUnit);     // Determine the equivalent amount of shares and mint them.     _mint(to, shares);     // Should we state realUnderlyingAmount or underlyingAmount in the Deposit event     emit Deposit(_msgSender(), to, underlyingAmount);     // This will revert if the user does not have the amount specified.          afterDeposit(underlyingAmount); } ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.194444444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/svanas",
+                    "index": "23",
+                    "likes": "0",
+                    "time": "20/01/2022-13:23:27",
+                    "content": "Before you can deposit an asset, all of the existing protocols (Compound, Aave, Yearn, etc) first require you to approve the contract to spend the underlying asset. Can we somehow extend this standard and prevent every depositor from having to make two transactions? I believe EIP-2612 tried to accomplish this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/svanas",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "20/01/2022-13:29:21",
+                    "content": "When you deposit into Aave or Rari or Origin or the (now deprecated) dYdX lending protocol on L1, you include the address of the underlying asset as one of the function arguments. This allows for a general lending pool contract that isn\u2019t necessarily restricted to one specific reserve and allows for more than one reserve as the underlying asset. Can we include this as an optional argument? Here is how Aave is doing it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.6875
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/svanas",
+                    "index": "25",
+                    "likes": "0",
+                    "time": "20/01/2022-13:37:09",
+                    "content": "Aave and Idle include a referral code with every deposit. This allows for future broker programs. Something to consider as an optional argument. Here is how Idle is doing it. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SmoothBot",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "22/01/2022-02:40:50",
+                    "content": "I think the withdraw() and redeem() functions need an argument for allowable slippage. For a lot of protocols this will could be ignored, though Yearnv2 for instance has a slippage argument. There are a lot of less-liquid strategies that wouldn\u2019t be possible without the slippage argument. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/internetuser",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "22/01/2022-11:23:22",
+                    "content": "Maybe this is the wrong EIP for this but having the ability to set up vaults where positions were represented by NFTs, e.g. as in UNIv3 LPs, might be really useful from how vaults are viewed from a tax perspective. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "23/01/2022-05:14:48",
+                    "content": "    svanas:  Before you can deposit an asset, all of the existing protocols (Compound, Aave, Yearn, etc) first require you to approve the contract to spend the underlying asset. Can we somehow extend this standard and prevent every depositor from having to make two transactions? I believe EIP-2612  tried to accomplish this.   Whether or not the underlying uses EIP-2612 is irrelevant to this proposal, as it only cares about the allowances post any approval logic.     svanas:  When you deposit into Aave or Rari or Origin or the (now deprecated) dYdX lending protocol on L1, you include the address of the underlying asset as one of the function arguments. This allows for a general lending pool contract that isn\u2019t necessarily restricted to one specific reserve and allows for more than one reserve as the underlying asset. Can we include this as an optional argument?   This proposal is for a tokenized vault on a single underlying. Making it too general hurts many use cases as it helps others.     svanas:  Aave and Idle include a referral code with every deposit. This allows for future broker programs. Something to consider as an optional argument. Here is how Idle is doing it .   Referrals are great, applications can add their own referral logic as an overloaded method in addition to the core spec. This is too peripheral to include in the spec. ",
+                    "links": [
+                        "https://docs.idle.finance/best-yield-documentation/methods/mintidletoken"
+                    ],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.778061224489796
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "23/01/2022-05:15:39",
+                    "content": "    SmoothBot:  I think the withdraw() and redeem() functions need an argument for allowable slippage. For a lot of protocols this will could be ignored, though Yearnv2 for instance has a slippage argument. There are a lot of less-liquid strategies that wouldn\u2019t be possible without the slippage argument.   slippage should be handled at the router layer. For example see [DRAFT] router here: ERC4626/ERC4626Router.sol at main \u00b7 fei-protocol/ERC4626 \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.416666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "23/01/2022-05:16:55",
+                    "content": "    internetuser:  Maybe this is the wrong EIP for this but having the ability to set up vaults where positions were represented by NFTs, e.g. as in UNIv3 LPs, might be really useful from how vaults are viewed from a tax perspective.   Probably the wrong EIP for this. A pseudo-ERC4626 could implement the core interface without implementing ERC20 to avoid certain tax treatment. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.392857142857142
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/j0xhn",
+                    "index": "31",
+                    "likes": "0",
+                    "time": "23/01/2022-05:59:47",
+                    "content": "Has anyone put this into deployable code? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/naddison",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "24/01/2022-06:48:46",
+                    "content": "There are inconsistencies in the naming of function and return parameters   deposit, mint, withdraw and redeem refer to the amount of underlying tokens as value, while calculateShares and calculateUnderlying uses underlyingAmount. The Deposit and Withdraw events also use value. I prefer underlyingAmount over value as its clearer on what it is, but I also think just underlyings will do. The unit256 type makes it clear it\u2019s an amount, not the address of the underlying token. Using the plural also makes it more obvious that its an amount.   deposit, mint, withdraw and redeem refer to the amount of shares as shares, while calculateShares and calculateUnderlying uses shareAmount. I suggest just shares is used across all function these calls.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "33",
+                    "likes": "1",
+                    "time": "24/01/2022-11:49:13",
+                    "content": "Still mulling over the spec, a few comments:   exchangeRate() was a nice addition to the standard. With Yearn v2 we use pricePerShare() which is perhaps more clear semantically that the underlying amount is per 1 unit of shares (10**decimals). \u201cExchange Rate\u201d to me seems to express that a like-kind exchange is not happening, when actually it is (I am swapping the underlying for shares the represent similar value of the underlying I deposit)   Whenever I\u2019ve written code that interacts with the Vault, I prefer to directly measure the balance of the underlying via the token\u2019s own balanceOf function, because that is a better guarantee of accuracy in the amount. totalUnderlying and balanceOfUnderyling can be set by the user of this ERC in a fairly arbitrary way, but that might be a good thing. Either way, you are accessing at least two SLOADs and probably 2 STATICCALLs as well. We\u2019ve found with Yearn v2 that storing the balance locally prevents the type of issue that occured during the most recent Cream hack where the Yearn vault share price was boosted via airdrop. Still mulling this bit over, not sure which direction I\u2019d advocate for.   underlying as a term is perhaps a bit verbose. I also question whether it is a word that translates well to other languages. Yearn v3 uses token for this same concept. Consider tokens vs. underylings (which I don\u2019t think is even a word) or underylingAmounts as a simpler term.   Having to support both mint/redeem and deposit/withdraw (and the similar preview* methods) is additional overhead for methods that do essentially the same thing. A good spec would have one way of doing a thing, since you could replicate other ways quite easily. If you still prefer supporting both, consider making one (or both) of them extensions (selecting one of both as a \u201cmandatory extension\u201d?). That might make it more complicated overall though.   As @SmoothBot noted, a slippage argument was very handy for us with Yearn v2, because often when withdrawing there are contextual issues that leads to there being not a 1-to-1 relationship between the share price and the actual amount available. In general, there are a lot of contextual issues on deposit and/or withdraw where one or both might not work the way the user expects (slippage, deposit limits, etc.). Perhaps a way to support this is to add a bool success return value to the preview* methods that show whether depositing or withdrawing is not allowed. You can also measure the preview* methods return amount against the similar way of computing share price to see if there is a loss you do not expect. A vault with a withdrawal fee would naturally have a % loss in the preview method that could be checked. I\u2019m not sure how you\u2019d specify a slippage loss though (would it be success = false?), but you could also measure the difference there to show the owner of the shares what the likely effects would be. In general, I like the idea of being able to simulate the outcome.   Some Vaults have the concept of locked up withdrawals. I sort of mentioned that in a previous comment, but it is really an important point to make, and I\u2019m not sure how else to make it. I suppose the preview* method returning success = false is one way to represent that, although there might be a partial amount available for withdrawals.   In general, the amounts of shares/tokens to deposit/withdraw should be considered a \u201cmaximum\u201d amount, if there is a deposit limit or a limited amount of funds to withdraw from, it should take the lesser of that or the user\u2019s specified amount. In Yearn v2 we often use MAX_UINT256 to specify \u201ctake as much as possible\u201d, which makes it the lesser of the user\u2019s holdings or the available deposit limit/withdrawal amount. We also use overloading there, so when the amount argument is not specified, this is assumed.   Lastly, I understand why the ordering of the arguments in the methods are they way they are (to evoke similarity to the ERC20 transfer/transferFrom methods), but here the context is much different. With Yearn v2, we optimized the ordering of arguments according to their frequency of use, for example deposit(amount, to) would be a better ordering because the overloaded methods deposit() (deposit everything I have and keep the shares) and deposit(amount) (deposit a specific amount and keep the shares) would be used much more often than deposit(amount, to) (deposit a specific amount and send the shares to someone else). This of course assumes there is overloading, which there is not currently in this ERC. If we stay away from rampant overloading, this is probably okay to keep as is.   I still have to think about how this might work. I like the concept behind the spec, and it will be something that Yearn very seriously considers for future iterations of the protocol. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.541053391053391
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "24/01/2022-12:54:39",
+                    "content": "    fubuloubu:  Perhaps a way to support this is to add a bool success return value to the preview* methods that show whether depositing or withdrawing is not allowed.   maybe something more like bool fullExchangeProcessed to show that a partial or full exchange occured. Other ways of doing this would be extensions for deposit limit, deposit/withdrawal fee, locked withdrawals, etc. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.925000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "26/01/2022-13:30:11",
+                    "content": "I\u2019ve been thinking about how to simplify this proposal down more, so that it has one obvious flow to it (without extensions or duplicate APIs), and also how to reflect various issues with yield-bearing vaults (from my perspective working with Yearn\u2019s Strategies there are many things to consider: deposit limits, slippage on withdrawal, withdrawal lockups, fee accounting, etc.), and I came up with this:   gist.github.com   https://gist.github.com/fubuloubu/61dd062f6508852895e31319d8ab2cd4 ERC4626.yaml # ERC4626: Yield-Bearing Vaults  # Definitions: # - share: 1 unit token of the Vault. has a ratio of underlying tokens #          exchanged on deposit/withdraw (defined by the vault) # - slippage: any difference between advertised share price and economic realities of #             depositto or withdrawal from the Vault, which is not accounted by fees # - deposit fee: fee charged on deposit to Vault # - performance fee: fee charged on the yield generated by the Vault # - management fee: fee charged on deposited tokens while in Vault     This file has been truncated. show original        Please feel free to read this and leave comments about format directly on it, or we can discuss/move parts of the design to this ERC discussion. I\u2019d like to contribute to the design of this ERC with everything that we have learned in the past 2+ years of supporting production Vaults ourselves, and integrations with various types of them. ",
+                    "links": [
+                        "https://gist.github.com/fubuloubu/61dd062f6508852895e31319d8ab2cd4",
+                        "https://gist.github.com/fubuloubu/61dd062f6508852895e31319d8ab2cd4"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.799768518518519
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "36",
+                    "likes": "0",
+                    "time": "27/01/2022-08:56:06",
+                    "content": "That\u2019s a good point, I\u2019d be inclined to emit events from the point of view of the contract, so that it\u2019s state can be reproduced from them. For example if there is a fee on transfer Deposit should show the amount received by the contract, after the fee is subtracted. Likewise, on a Withdraw it should show the amount deduced from the contract. The counterparties on a transfer should also emit events reflecting their own state changes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 8.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "27/01/2022-08:59:09",
+                    "content": "Thanks for the suggestion, I think it has been corrected in later versions of the EIP ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "27/01/2022-09:25:45",
+                    "content": "Lots of good points here, my own 2c:  I also prefer pricePerShare(), but not a hill I will die on. Some vaults might do a difference between the tokens received, and the tokens managed, much like Uniswap v2 does. In those cases totalUnderlying reflects tokens that the contract recognizes as being managed. I.E. donations don\u2019t count towards it.  token is fairly vague. We could call it yeet if we go that route so that at least it\u2019s not overloaded with meaning. With its verbosity, underlying is fairly well understood. There are good use cases for all four methods. deposit and withdraw are denominated in underlying, as in the user deciding how much USDC to deposit to or how much USDC to withdraw from his position. If that same user decides to completely close his position, he would need to make a reverse calculation to find out exactly how much USDC to withdraw as to not leave any xUSDC. The redeem method enables closing a position in a much easier way. Expanding on this, shares gain their own life via composability, and it is previsible that someone might want to exchange an exact number of shares for whatever underlying they are worth (within limits). Likewise, it is conceivable for someone to want to mint an exact number of shares, for example to pay off a share-denominated debt. I lost you here, could you please rephrase it? I think that in the case of an specific function call not being possible, both the mutable and the preview should revert. In other contexts we have implemented separate functions that compute limits, which are used in the frontend. Not sure about applicability here, though. That\u2019s a good point, although in that case the preview functions should return both the amount that was taken from the user, and the amount that was given to the user. You should blame Fabian and Vitalik for this. While your parameter ordering makes sense, I feel it breaks convention too much.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.055000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "27/01/2022-09:26:35",
+                    "content": "If preview methods return both tokens taken and tokens given, a (0, 0) would easily represent that it is not allowed. Maybe a revert is still better, though. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 7.333333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "28/01/2022-17:57:59",
+                    "content": "I feel like I\u2019ve seen this mentioned before but I can\u2019t find it. Does this EIP support vaults where withdrawal is a two-step process with a waiting period in between? Would it be compliant to require an initiateWithdraw function call in order for withdraw/redeem to work? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/svanas",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "28/01/2022-18:06:54",
+                    "content": "I noticed how the EIP doesn\u2019t really includes a function that computes the APY and returns something nice. In my experience, this is another aspect that all of the lending protocols and yield optimizers are doing slightly different, making life hard on DeFi dashboard apps. Here are a few examples of the differences between the protocols:   gist.github.com   https://gist.github.com/svanas/f6ed67f75907b06ddf543be0e836d444 apy.md * [Compound](https://github.com/svanas/delphereum/blob/master/web3.eth.compound.pas#L413-L427) * [Fulcrum](https://github.com/svanas/delphereum/blob/master/web3.eth.fulcrum.pas#L269-L288) (now Ooki) * [Aave v2](https://github.com/svanas/delphereum/blob/master/web3.eth.aave.v2.pas#L279-L314) * [dYdX](https://github.com/svanas/delphereum/blob/master/web3.eth.dydx.pas#L255-L278) (now deprecated) * [Yearn Vaults v2](https://github.com/svanas/delphereum/blob/master/web3.eth.yearn.vaults.v2.pas#L572-L602) * [Rari](https://github.com/svanas/delphereum/blob/master/web3.eth.rari.capital.v2.pas#L450-L480) * [OUSD](https://github.com/svanas/delphereum/blob/master/web3.eth.origin.dollar.pas#L327-L354) (aka Origin Dollar) * [mStable](https://github.com/svanas/delphereum/blob/master/web3.eth.mstable.save.v2.pas#L205-L232)        Can we have a simple abstract function that returns the APY as a percentage with 4 decimals? ",
+                    "links": [
+                        "https://gist.github.com/svanas/f6ed67f75907b06ddf543be0e836d444"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.256944444444445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aallamaa",
+                    "index": "43",
+                    "likes": "0",
+                    "time": "29/01/2022-14:52:21",
+                    "content": "I am in favor of an APY function as well. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "29/01/2022-21:14:22",
+                    "content": "This smells more like an extension ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "29/01/2022-21:15:38",
+                    "content": "There is pricePerShare. Anything more complex should be submitted as a separate EIP that builds on this one (not even as an extension), because describing it would make it really difficult to get this EIP across the finish line. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "01/02/2022-02:47:09",
+                    "content": "Last call before Last Call folx:  github.com   ethereum/EIPs/blob/master/EIPS/eip-4626.md --- eip: 4626 title: Tokenized Vault Standard description: A standard for tokenized Vaults with a single underlying ERC-20 token. author: Joey Santoro (@joeysantoro), t11s (@transmissions11), Jet Jadeja (@JetJadeja), Alberto Cuesta Ca\u00f1ada (@alcueca), Se\u00f1or Doggo (@fubuloubu) discussions-to: https://ethereum-magicians.org/t/eip-4626-yield-bearing-vault-standard/7900 status: Review type: Standards Track category: ERC created: 2021-12-22 ---  ## Abstract  The following standard allows for the implementation of a standard API for tokenized Vaults representing shares of a single underlying [ERC-20](./eip-20.md) token. This standard is an extension on the ERC-20 token that provides basic functionality for depositing and withdrawing tokens and reading balances.  ## Motivation      This file has been truncated. show original      ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4626.md",
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4626.md"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.096726190476191
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/blackbigswan",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "01/02/2022-18:04:29",
+                    "content": "I like the proposal. Started to play around with it few days back. I\u2019ve refitted old Yearn V2 arch (less work than with V3) to be compatible with 4626, using 4626 minimal implementation in place of Yearn vault and with controller/strategies untouched (using basic dai strat). I was mostly interested in shares/underlying calculations playing nice and that seems to work out of the box (screenshot in readme). I didn\u2019t do extensive testing, actually only scripted simulation. Ran it against forked network and actual Compound strategy with earn/harvest calls, setting min/max parameters in the Vault. https://github.com/shortdoom/vault-fun Not included in repo, but 4626 in current form allows for xSushi-like (yield bearing tokens) implementation fully out-of-the-box. Hope this passes and gets cemented. It should be as easy to implement AAVE-like lending or Balancer-like swap-vaults as it was with Yearn\u2019s V2. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.352564102564102
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/marktoda",
+                    "index": "48",
+                    "likes": "2",
+                    "time": "02/02/2022-20:56:15",
+                    "content": "Hi all - great proposal, really appreciate the work to standardize this! I\u2019m chiming in as I worked with Buttonwood and Ampleforth to build a vault token which rebases to $1/token but maintains the value of the underlying: ButtonToken. Interestingly, despite being in a very different design space, we ended up with a pretty similar interface to what you have in EIP4626. I wanted to share a couple of suggestions from our team:   It would be useful to include redeemAll(address to) and/or withdrawAll(address to) functions (as an extension). This is especially useful for vault designs which have asynchronous balance updates (like the rebasing mechanics of ours). For example, a frontend trying to close a position will fetch balance, then call redeem, after which the balance may have changed causing either a revert or dust. Of course, this could be solved with an external contract to combine redeem(vault.balanceOf(me), to, me), but we think that this is an important enough feature to include as an extension.   Are the Deposit and Withdraw events necessary given that Transfer(0x0, ..) and Transfer(.., 0x0) are required by ERC20 spec in this case? In the past, some tokens have used Mint and Burn events to extend ERC20 spec which led to confusion thinking that they could then omit the Transfer event itself.   For what it\u2019s worth, we preferred the underlying terminology to asset as it was less ambiguous (when reading asset in isolation it\u2019s unclear whether it refers to underlying or vault token)   Thanks and really appreciate the hard work on this proposal! ",
+                    "links": [
+                        "https://github.com/buttonwood-protocol/button-wrappers/blob/main/contracts/interfaces/IButtonWrapper.sol"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.838541666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/FBrinkkemper",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "03/02/2022-12:58:06",
+                    "content": "Great efforts to standardize this! Without being aware of this EIP, we have been talking to a few people about creating a standard like this - but luckily there is already an effort going on, so we will join in on this effort. If there are people interested in doing something with this EIP in practice at ETHDenver, please talk to me on discord: FrankB#5720 Concluding for now with that this effort will especially lead to enormous defi innovation if it is used to create many small lego bricks, which can then be aggregated together into new EIP-4626-tokens. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.9180440771349865
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mosinnik",
+                    "index": "50",
+                    "likes": "1",
+                    "time": "03/02/2022-19:18:40",
+                    "content": "Starting to implement and found that description for assetsPerShare isn\u2019t enough in part of scaling. Now it described as The current exchange rate of shares to assets, quoted per unit share e.g. 10 ** Vault.decimals()  So \u201ce.g.\u201d is not look like hard requirement and may be ignored, but at standart should defined scale of assetsPerShare result or we need another method like assetsPerShareDigits that will define scale. Question appeared because of in my usage there are tokens with 6 digits in external balances but 27 (ray) rate for rebasing balance calculation and for me be better to stay at e27 or at least e18 for preventing potential precision issues ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.942708333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "03/02/2022-19:38:54",
+                    "content": "    marktoda:  It would be useful to include redeemAll(address to) and/or withdrawAll(address to) functions (as an extension). This is especially useful for vault designs which have asynchronous balance updates (like the rebasing mechanics of ours). For example, a frontend trying to close a position will fetch balance, then call redeem, after which the balance may have changed causing either a revert or dust. Of course, this could be solved with an external contract to combine redeem(vault.balanceOf(me), to, me), but we think that this is an important enough feature to include as an extension.   We wanted to skip being too prescriptive here, but that\u2019s why we made the ordering of the arguments to these methods the way they are. In Vyper, you can do the following: def withdraw(     assets: uint256 = MAX_UINT256,  # Meaning \"withdraw all\"     receiver: address = msg.sender,  # Sends to caller by default     sender: address = msg.sender,  # Redeem from caller by default ) -> uint256:  # Number of shares minted     ...  and that will create withdraw() (withdraw all and send assets to self), withdraw(uint256) (withdraw some and send assets to self), withdraw(uint256,address) (withdraw some and send assets to receiver), and withdraw(uint256,address,address) (withdraw some from sender and send assets to receiver) The thing to note is that you would handle this yourself in your implementation as per your needs.     marktoda:  Are the Deposit and Withdraw events necessary given that Transfer(0x0, ..) and Transfer(.., 0x0) are required by ERC20 spec in this case? In the past, some tokens have used Mint and Burn events to extend ERC20 spec which led to confusion thinking that they could then omit the Transfer event itself.   This is a fair point. If both the Vault and the asset Token implement the events correctly, you could get the same information as these events by following the transfer events from both ERC20 implementations in the transaction. I would support removing these events in clarification that Transfer events must follow ERC20 convention of minting/burning in their place.     marktoda:  For what it\u2019s worth, we preferred the underlying terminology to asset as it was less ambiguous (when reading asset in isolation it\u2019s unclear whether it refers to underlying or vault token)   assets translates better into other languages vs. underlying, it was also shorter to spell, and didn\u2019t require further clarification on it\u2019s use e.g. underlyingTokensOf vs. assetsOf     mosinnik:  So \u201ce.g.\u201d is not look like hard requirement and may be ignored, but at standart should defined scale of assetsPerShare result or we need another method like assetsPerShareDigits that will define scale.   I agree with this, and would recommend submitting a PR to remove the \u201ce.g.\u201d language as it is an exact definition.     mosinnik:  Question appeared because of in my usage there are tokens with 6 digits in external balances but 27 (ray) rate for rebasing balance calculation and for me be better to stay at e27 or at least e18 for preventing potential precision issues   Being \u201cper unit share\u201d means it has an exact definition, but could also add a recommendation that the decimals of Vault matches asset to reduce units confusion, and that \u201ccare should be taken in precision loss on advanced calculations\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.638888888888889
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mosinnik",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "04/02/2022-07:40:38",
+                    "content": "PR with clarification \u201cper unit share\u201d: https://github.com/ethereum/EIPs/pull/4764 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mosinnik",
+                    "index": "53",
+                    "likes": "0",
+                    "time": "04/02/2022-09:42:38",
+                    "content": "For Withdraw event there is a little bit misleading - sender field should be msg.sender or owner from redeem params? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.0625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aallamaa",
+                    "index": "54",
+                    "likes": "0",
+                    "time": "04/02/2022-10:05:28",
+                    "content": "In the events, I think we should specify from which perspective the assets value is, let\u2019s say that we use a token which has a fee or tax, when sending 100 tokens, the vault might only receive 98, so we should specifiy whether it is the amount of assets sent by sender, or the amount of assets received by the vault, I would be in favor of the using the assets from the vault perspective. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/blackbigswan",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "07/02/2022-02:03:57",
+                    "content": "Few thoughts based on recent updates in EIP and after following Rari\u2019s solmate/vault repositories to keep my minimal implementation up to date. Vaults most basic primitive is share accounting and then everything else. I think in case of Vault as such, accounting operations are in reality on two sets of funds: a) Total funds under management, equal to sum of all token transfers into the Vault, wherever currently residing (in Vault or outside of it as deployed liquidity) b) Idle funds (Funds in Vault, not deployed liquidity, may be collateral or exit amount for withdraws etc.) And between those sits necessity to allow for an easy plug-in of per protocol specific accounting. I see that Rari vaults (and solmate implementation) introduces a concept of a float variable (totalFloat) to keep track of Vault-only funds. However, its kept internal and returned by totalAsset() getter. I think it\u2019s worth iterating. EIP already proposes totalAsset() function. I think that totalAsset() and totalFloat should also be kept separate. Additionally, totalFloat may become public variable to avoid creating separate getter. At the same time, totalAsset() could stay free to be overridden by developers. For example, in case of yearn v2 it\u2019s useful to return total assets across vault + strategy, but it\u2019s also useful to know value of idle funds in the vault only. I imagine this can be true for many more modern implementations of vault architecture. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.669871794871795
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "56",
+                    "likes": "1",
+                    "time": "07/02/2022-09:33:04",
+                    "content": "Hello, I\u2019m just juming in from the EIP, and I have not yet read the full discussion here.   Any reason to not include a solidity interface in the document? I understand solidity is not the only way to write smart contract, but its definitely the most common one.   In the description of the deposit function, we can read    Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.  Yet the function interface describe bellow as no mention of amount, am I to understand that the first (assets) argument is that amount? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.790178571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/aallamaa",
+                    "index": "57",
+                    "likes": "0",
+                    "time": "07/02/2022-12:49:20",
+                    "content": "Hello, I also have an issue with the mint function, if the underlying asset is a token with fees or taxes on transfer on it, it won\u2019t work according to the plan. Let\u2019s say previewMint says 100 shares requires 100 underlying assets based on current assetsPerShare condition (previewMint has no way to know in advance without executing the actual transfer how much fees or taxes is going to be taken out of the transfer). if we mint 100 shares, when the transfer of 100 underlying assets is going to be done, the vault might for instance only receive 98 underlying assets, and hence we should only mint 98 shares. This could be acceptable, but the function only returns the amount of assets (would this assets value be 100 or 98, this has to be agreed, I would say 98 since we need to account from the contract perspective). I would request that we also return the number of actual shares created. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.142857142857142
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "58",
+                    "likes": "0",
+                    "time": "08/02/2022-19:42:45",
+                    "content": "    mosinnik:  For Withdraw event there is a little bit misleading - sender field should be msg.sender or owner from redeem params?   The owner of the redeemed shares.     aallamaa:  In the events, I think we should specify from which perspective the assets value is, let\u2019s say that we use a token which has a fee or tax, when sending 100 tokens, the vault might only receive 98, so we should specifiy whether it is the amount of assets sent by sender, or the amount of assets received by the vault, I would be in favor of the using the assets from the vault perspective.   It should be the raw input and net output (e.g. Net of any fees). This way everyone is on an equal playing field from a data analysis perspective. Otherwise, deposit/withdrawal fees won\u2019t be represented in the output. Basically, log whatever the input argument is and whatever the output argument is.     blackbigswan:  I think that totalAsset() and totalFloat should also be kept separate.   You can add this function separately, nothing stops you. We have added the max* functions to account for any limits on deposits or withdrawals. The preview* functions can account for slippage loss (or fees).     Amxx:  Any reason to not include a solidity interface in the document   We are trying out a meta EIP where interfaces can be specified as Yaml for easier use in tooling. It is easy to convert from this format to solidity or any other language (in fact Vyper supports loading JSON ABI files directly). Eventually, the EIP website can display example interfaces in all languages that add a parser.     Amxx:  Yet the function interface describe bellow as no mention of amount, am I to understand that the first (assets) argument is that amount?   This is a typo! Thanks for catching. If you don\u2019t mind submitting a PR to update, I will approve it.     aallamaa:  I would request that we also return the number of actual shares created   See above discussion about max* functions. Note that the transaction will revert if it cannot exchange exactly 98 assets for shares. If you get less shares than you expect (e.g. Slippage loss), you should assert (as the caller) a particular slippage bound on the amount of shares you get in return. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.397812971342383
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/naddison",
+                    "index": "59",
+                    "likes": "1",
+                    "time": "09/02/2022-02:56:51",
+                    "content": "The spec is looking good. The following comments are on the use of the term caller rather than owner:   maxWithdraw should use input argument owner and not caller as the account calling the withdraw function can be different to the owner of the shares.  previewWithdraw should have an owner parameter like the withdraw function does. The function caller can be different to the owner of the shares for withdrawals. Change withdraw text from \u201cAny discrepancy could cause a revert due to tight slippage bounds by caller\u201d to \u201cAny discrepancy could cause a revert due to tight slippage bounds by owner\u201d.  maxRedeem should use input argument owner and not caller as the account calling the redeem function can be different to the owner of the shares.  previewRedeem should have an owner parameter like the redeem function does. The function caller can be different to the owner of the shares for redemptions. Change redeem text from \u201cAny discrepancy could cause a revert due to tight slippage bounds by caller\" to \u201cAny discrepancy could cause a revert due to tight slippage bounds by owner\u201d. Change sender in the Withdraw event to owner as both redeem and withdraw allow the owner of the shares to be different to the sender of the transaction call. Alternatively, leave sender and add a new owner input argument to the Withdraw event. Or, rename sender to caller to be consistent with the rest of the spec and add owner. Change sender in the Deposit event to caller to be consistent with the term used in the rest of the specification.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.033910533910534
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/FBrinkkemper",
+                    "index": "60",
+                    "likes": "0",
+                    "time": "09/02/2022-10:58:17",
+                    "content": "Don\u2019t know where else to post this, but I\u2019ve made a thread about promoting usage of this standard on the Maker forums: Scaling On-chain collateral (in a bear market), using EIP-4626 - Proposal Ideas - The Maker Forum Making EIP-4626 as simple as possible will improve the amount of expected integrations greatly. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.700000000000001
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/naddison",
+                    "index": "61",
+                    "likes": "0",
+                    "time": "11/02/2022-03:50:03",
+                    "content": "Some more comments:  The assetsOf function uses depositor while the redeem and withdraw functions use owner for the same thing. I\u2019d recommend using owner in assetsOf for consistency. Change maxDeposit note from \u201cTotal number of underlying assets that callercan be deposit.\u201d to \u201cThe maximum number of underlying assets the caller can deposit.\u201d Change deposit note from \u201cMints shares Vault shares to receiver by depositing exactly amount of underlying tokens.\u201d to \u201cMints enough vault shares to the receiver from transferring the exact assets amount of underlying asset tokens from the caller.\u201d Change maxMint note from \u201cTotal number of underlying shares that caller can be mint.\u201d to \u201cThe maximum number of vault shares the caller can mint.\u201d Change mint note from \u201cMints exactly sharesVault shares to receiver by depositing amount of underlying tokens.\u201d to \u201cMint exact shares amount of vault shares to the receiver from transferring enough underlying asset tokens from the caller.\u201d Change maxWithdraw note from \u201cTotal number of underlying assets that caller can withdraw.\u201d to \u201cThe maximum number of underlying asset tokens the owner can withdraw.\u201d Change withdraw note from \u201cRedeems shares from owner and sends assets of underlying tokens to receiver.\u201d to \u201cBurns enough vault shares from the owner to transfer the exact assets amount of underlying asset tokens to the receiver.\u201d Change redeem note from \u201cRedeems shares from owner and sends assets of underlying tokens to receiver.\u201d to \u201cBurns exact shares amount of vault shares from the owner and transfers enough underlying asset tokens to the receiver.\u201d  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "62",
+                    "likes": "1",
+                    "time": "18/02/2022-09:28:22",
+                    "content": "I rewrote the parameters and the text referring to them in most functions to fix these consistency issues. I\u2019m inclined to change previewWithdraw and previewRedeem as suggested. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/mosinnik",
+                    "index": "63",
+                    "likes": "0",
+                    "time": "18/02/2022-15:09:34",
+                    "content": "In last changes (https://github.com/ethereum/EIPs/commit/6c0b89e7838d43042bcb0e2bb72b573591549b74) in Withdraw sender has been renamed to caller. So now we will log not owner as you answered me and is it ok to change owner to caller in event to log? Do we need log both owner and caller? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "64",
+                    "likes": "0",
+                    "time": "19/02/2022-18:14:13",
+                    "content": " previewWithdraw should have an owner parameter like the withdraw function does. The function caller can be different to the owner of the shares for withdrawals.  The preview* functions don\u2019t take into consideration limits imposed on the owner or caller. If integrators want to call a preview* with those limits into consideration, they should call the appropriate max* function first.   github.com   ethereum/EIPs/blob/master/EIPS/eip-4626.md#previewdeposit --- eip: 4626 title: Tokenized Vault Standard description: A standard for tokenized Vaults with a single underlying ERC-20 token. author: Joey Santoro (@joeysantoro), t11s (@transmissions11), Jet Jadeja (@JetJadeja), Alberto Cuesta Ca\u00f1ada (@alcueca), Se\u00f1or Doggo (@fubuloubu) discussions-to: https://ethereum-magicians.org/t/eip-4626-yield-bearing-vault-standard/7900 status: Review type: Standards Track category: ERC created: 2021-12-22 requires: 20, 2612 ---  ## Abstract  The following standard allows for the implementation of a standard API for tokenized Vaults representing shares of a single underlying [ERC-20](./eip-20.md) token. This standard is an extension on the ERC-20 token that provides basic functionality for depositing and withdrawing tokens and reading balances.       This file has been truncated. show original      ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4626.md#previewdeposit",
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4626.md#previewdeposit"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.377747252747253
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "65",
+                    "likes": "0",
+                    "time": "19/02/2022-18:24:35",
+                    "content": "The event fields needed a bit of further thinking, indeed. Proposal. Deposit(caller, receiver, assets, shares) \u2192 Deposit(caller, owner, assets, shares) Withdraw(caller, receiver, assets, shares) \u2192 Withdraw(caller, receiver, owner, assets, shares) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/EricForgy",
+                    "index": "66",
+                    "likes": "1",
+                    "time": "20/02/2022-01:09:33",
+                    "content": "Hi there  I\u2019m late to the review and new to the whole process. This seems like a pretty important EIP and is directly relevant to something I\u2019ve been working on. I\u2019ll try to review the comments and the EIP and provide timely feedback if I have anything useful to say about it. I saw this was about to be moved to \u201cLast Call\u201d and wanted to introduce myself and let you know I may have some late feedback  Quick question: The first post here specifically refers to Compound, Aave, Fuse, Yearn, Rari Vaults, Idle, and xSushi. Are people from those protocols aware of this EIP and have they provided their feedback? A standard like this could impact them and others, e.g. Bancor, Balancer, not mentioned. I\u2019m wondering if enough eyes are on this since it seems to have been introduced not long ago on Jan 3. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.694534632034633
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "67",
+                    "likes": "2",
+                    "time": "22/02/2022-17:06:59",
+                    "content": "The EIP states that the \u201cpreview\u201d functions should not revert. This leaves me wondering what to do with absurd input:  what should previewDeposit and previewWithdraw return is the \u201cexpected\u201d value doesn\u2019t fit into a uint256 ?  this could happen if each asset unit is represented by multiple shares units, and the previewDeposit is called with type(uint256).max as an input.   what should previewWithdraw and previewRedeem return is the input is higher then totalAssets / totalSupply ?  Has anyone worked on an ERC4626 implementation based on bounding curve, I\u2019d be curious to see that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.05
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/EricForgy",
+                    "index": "68",
+                    "likes": "1",
+                    "time": "22/02/2022-19:15:04",
+                    "content": "    Amxx:  Has anyone worked on an ERC4626 implementation based on bounding curve, I\u2019d be curious to see that.    I am working on something that can be thought of as a \u201cVault + Bonding Curve\u201d which is why this EIP got my attention. My priority is to work out my own thing (without bias) and then I hope to compare what I come up with to this EIP. At that point I hope to have something useful to say about this proposal, but I\u2019m not there yet obviously  Btw, I heard about this EIP from an ETH Denver session (link to the exact timestamp the comment is made): https://www.youtube.com/watch?v=wPXvmjZxjj8&t=879s where Jai Bhavnani says,  \u201cJoey, who\u2019s in the crowd here, even wrote a new token standard ERC4626 that makes it so that we literally own the standard that our fuse pools are using.\u201d  I hadn\u2019t heard of EIP4626 until then and found it a little odd that a protocol would claim to own the standard and use it as a marketing tool  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.7816142191142195
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/blackbigswan",
+                    "index": "69",
+                    "likes": "0",
+                    "time": "23/02/2022-16:13:32",
+                    "content": "previewFunctions should take already validated input, at least that was my working assumptions when I experimented with this EIP twice. There is no point to burden calculation logic with validation logic if those can be kept separate. This would also break interoperability of this standard as expectations about what happens in shares calculations wouldn\u2019t be kept. I also don\u2019t see a scenario in which previews get input higher than total assets managed by the Vault and somehow are supposed to return correct value. Let\u2019s keep in mind that Vaults are purely accounting and I think this EIP also tries to standardize this notion. As for current EIP doc. I would stress more that EIP in current form works ONLY for single underlying token. And multiple underlying Vaults should propose there own extension. This is something I\u2019ve ran into while doing second small experiment with building Stablecoin. Share accounting will break or will be unpredictable from the perspective of 3rd party if multiple underlying tokens are used. Here\u2019s a code for 4626-Stablecoin (based on USM which I think is in part work of @albertocuestacanada). A lot of concessions were made, but I only wanted to see if it\u2019s feasible to also build stable currency of this standard without breaking out of it (yes, can be done easily) :   GitHub    GitHub - shortdoom/stablecoin-fun: REALLY minimal stablecoin with erc-4626 REALLY minimal stablecoin with erc-4626. Contribute to shortdoom/stablecoin-fun development by creating an account on GitHub.      ",
+                    "links": [
+                        "https://github.com/shortdoom/stablecoin-fun"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.1977225672877845
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/edag",
+                    "index": "70",
+                    "likes": "0",
+                    "time": "02/03/2022-16:17:51",
+                    "content": "I know this is in last call, but a few comments.     joeysantoro:  Whether or not the underlying uses EIP-2612 is irrelevant to this proposal, as it only cares about the allowances post any approval logic.   Agreeing with this comment, we should remove the requirement of EIP-2612 on EIP-4626: Tokenized Vault Standard, to only require EIP-20. - name: withdraw   type: function   stateMutability: nonpayable    inputs:   - name: assets     type: uint256   - name: receiver     type: address   - name: owner     type: address    outputs:   - name: shares     type: uint256  For withdraw and redeem, including an owner param introduces an easy pitfall to fall into: users redeeming/withdrawing shares they don\u2019t own. The common scenario with vaults is requiring msg.sender to be the owner of the shares. This standard makes it pretty easy for whoever who intends to implement the most common scenario to forget the require(msg.sender == owner) and introduce a devastating vulnerability. While exposing owner provides extra flexibility, couldn\u2019t that signature be exposed as a signature outside of the standard, if the uncommon scenario is desired, and only expose redeem(uint256 assets, address receiver)? In addition, a redeem on behalf of can be easily implemented by an integrating contract by first having the user transfer the shares to the integrating contract, and the integrating contract calling redeem(userShares, userRedeemingOnBehalfOf), sending the assets to the user as the recipient. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.318181818181818
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "71",
+                    "likes": "0",
+                    "time": "02/03/2022-18:50:57",
+                    "content": "Thanks for the additional feedback!     edag:  Agreeing with this comment, we should remove the requirement of EIP-2612 on EIP-4626: Tokenized Vault Standard, to only require EIP-20.   Its optional and a super useful standard, I\u2019m inclined to keep it as-is.     edag:  including an owner param introduces an easy pitfall to fall into: users redeeming/withdrawing shares they don\u2019t own. The common scenario with vaults is requiring msg.sender to be the owner of the shares. This standard makes it pretty easy for whoever who intends to implement the most common scenario to forget the require(msg.sender == owner) and introduce a devastating vulnerability.   This is only possible if the spec isn\u2019t followed. Imo the feature saves a ton of gas on a useful interaction and it shares the same approval system. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.473684210526316
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "72",
+                    "likes": "1",
+                    "time": "02/03/2022-18:56:26",
+                    "content": "    EricForgy:  Quick question: The first post here specifically refers to Compound, Aave, Fuse, Yearn, Rari Vaults, Idle, and xSushi. Are people from those protocols aware of this EIP and have they provided their feedback? A standard like this could impact them and others, e.g. Bancor, Balancer, not mentioned. I\u2019m wondering if enough eyes are on this since it seems to have been introduced not long ago on Jan 3.   We\u2019ve had representatives from Aave, Alchemix, Maple, Tracer, Paradigm, and many other teams comment on and potentially integrate the spec. The Authors span Fei, Rari, Yield, and Yearn and have been discussing the spec at length across an extremely diverse set of use cases and nuances.     EricForgy:  I hadn\u2019t heard of EIP4626 until then and found it a little odd that a protocol would claim to own the standard and use it as a marketing tool    Probably a mis-speak. Obviously no team owns the spec. What he probably meant and how I discuss the spec is that the Tribe DAO will be building a TON of its infrastructure around the standard (Turbo, Vaults, Fuse plugins, fixed income, etc) and that its adoption will further the interoperability with Tribe products.     blackbigswan:  I would stress more that EIP in current form works ONLY for single underlying token. And multiple underlying Vaults should propose there own extension.   Bingo, multiple underlyings + alternate reward tokens are left out of scope as the standard is already covering quite a wide array of use cases. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None"
+                    ],
+                    "Sentiment": 5.410816912972085
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/edag",
+                    "index": "73",
+                    "likes": "0",
+                    "time": "02/03/2022-19:37:15",
+                    "content": "I\u2019m not sure I understand what you mean by This is only possible if the spec isn\u2019t followed. I don\u2019t see anywhere in the 4626 spec protecting against unwanted redemptions-on-behalf of. I didn\u2019t see the solmate implementation linked on the EIP site until now (solmate/ERC4626.sol at fd67739ec00b8441605f6dcf04d83458884fa3d0 \u00b7 Rari-Capital/solmate \u00b7 GitHub) and the approval scheme of checking the msg.sender\u2019s allowance for from (in the new spec owner) makes a lot of sense, so maybe you meant the ERC20 spec not being followed, but maybe a note about making sure approvals are accounted for correctly in redeem/withdraw in the 4626 spec can help guide users to make sure they implement redeem/withdraw correctly? Despite the above, I definitely do see the point about gas savings, and can see it enabling smoother implementations, so I think it makes sense to leave the interface as is. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.3188131313131315
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/FBrinkkemper",
+                    "index": "74",
+                    "likes": "2",
+                    "time": "10/03/2022-11:34:16",
+                    "content": "    joeysantoro:  Bingo, multiple underlyings + alternate reward tokens are left out of scope as the standard is already covering quite a wide array of use cases.   Is anyone working on an extension that covers multiple underlyings? I think this standard could also be used for LP positions, and projects like GUNI (see: Sorbet Finance - Automation for Uniswap, Quickswap and PancakeSwap) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.928571428571429
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "75",
+                    "likes": "0",
+                    "time": "10/03/2022-14:45:46",
+                    "content": "The owner parameter works the same as transferFrom, implementors should use similar logic from there to fulfill this feature. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "76",
+                    "likes": "0",
+                    "time": "10/03/2022-14:47:57",
+                    "content": "You would need the concept of a price or exchange rate here for multiple assets to work. We\u2019ve also heard of people ask for one underlying asset, and a second redemption asset for farming, but that use cases is also more complex and should be handled separately if desired to have a formal spec around it. In over a year, I\u2019ve heard of many people ask for this and not a single version of it was built out, so I\u2019m inclined to think no one actually needs this. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.525510204081633
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jon",
+                    "index": "77",
+                    "likes": "0",
+                    "time": "23/03/2022-20:40:16",
+                    "content": "I feel like supporting multiple shares and assets would open up a lot more use cases for this standard. I\u2019m making a stablecoin similar to shortdoom\u2019s and while it is possible to use this standard, it doesn\u2019t cover the full interface of the contract (shortdoom had to add additional methods for a second share token), which is less than ideal and IMO makes it not worth conforming to the standard. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.601190476190476
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "78",
+                    "likes": "2",
+                    "time": "27/03/2022-05:59:30",
+                    "content": "This standard has been finalized, explicitly with the intent of only working with single asset vaults. You are definitely welcome to take the design of this ERC and try to expand on it separately for a multi-asset or pooled asset use case, or a number of other use cases that might deviate from the standard, like separate base and reward assets. There are numerous ideas we have heard on how to expand this ERC, but we found it difficult to support all of these in practice, and found them somewhat underutilized in real use cases. Perhaps if a separate standard or standards existed, that would change. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.77435064935065
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/k06a",
+                    "index": "79",
+                    "likes": "0",
+                    "time": "05/04/2022-22:24:39",
+                    "content": "Why don\u2019t this ERC utilize EIP-2612 for a managed asset? I would prefer to have depositWithPermit and mintWithPermit with additional argument bytes memory permitData doing smth like this: solidity-utils/Permitable.sol at master \u00b7 1inch/solidity-utils \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "80",
+                    "likes": "0",
+                    "time": "06/04/2022-22:55:41",
+                    "content": "Have you seen the router on github at fei-protocol/ERC4626 (for some reason the forum isn\u2019t allowing me to post the link) It could be used to deposit with permit on any vault ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/poojaranjan",
+                    "index": "81",
+                    "likes": "0",
+                    "time": "02/05/2022-17:16:02",
+                    "content": "Checkout a wonderful explainer of tokenized vault Ethereum standard by @JetJadeja on PEEPanEIP      ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/thedavidmeister",
+                    "index": "82",
+                    "likes": "0",
+                    "time": "09/05/2022-15:53:33",
+                    "content": "i think there\u2019s a typo in the final spec, see - typo in 4626 \u00b7 Issue #5084 \u00b7 ethereum/EIPs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "83",
+                    "likes": "0",
+                    "time": "16/05/2022-18:50:14",
+                    "content": "I find the spec for the convert methods somewhat confusing. It says these methods must not reflect slippage or \u201cother on-chain conditions\u201d. Obviously the price will depend on on-chain conditions to some degree and conversion has to reflect that in some way. So what is the point that the spec is trying to make? Would it be correct for convert methods to behave like a spot price? The security considerations section says that convert methods are \u201callowed\u201d to be inexact and that they \u201ccan\u201d be implemented as robust price oracles like TWAPs. Can you confirm that this is not mandatory? I think there is some abiguity or potential for confusion by consumers of the spec. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "84",
+                    "likes": "0",
+                    "time": "16/05/2022-19:44:27",
+                    "content": "Amount the convertion methods, I\u2019m also wondering if they should reflect the average price of existing shares, or if they should reflect the local tangent to the price curve. These might be two different things in the case of bounding curve. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xbok",
+                    "index": "85",
+                    "likes": "0",
+                    "time": "17/05/2022-12:45:48",
+                    "content": "Suppose we want to have a ERC-4626 contract which takes in an asset A and then swaps it for another token B on deposit. That token B itself is yield bearing. Similarly, for withdraw, it swaps back B to A. What do we return for totalAssets() in this case? Is this standard a good fit for this use case? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.1
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/albertocuestacanada",
+                    "index": "86",
+                    "likes": "0",
+                    "time": "18/05/2022-08:21:01",
+                    "content": "The wording could be more explicit that the convert* methods are supposed to be robust against on-chain manipulation, and cheaper that the preview* methods, at the expense of precision. Robust against on-chain manipulation: Each specific implementation has some freedom here, but if you see that the conversion rate in your vault can be manipulated, and you intend to provide a conversion function that is resistant to such manipulation, convert* methods are where that logic goes. It\u2019s important to see this against the goal of the preview* methods, that are expected to be exact to the wei, and therefore often manipulable with flash loans and the like. If you are an integrator looking for a price feed, for example to determine collateralization levels, you know that you need to get your data from convert* to have the best chances of not being exploited. Cheaper than the preview* methods preview* methods are expected to be exact to the wei to allow for tight integrations, and this comes at a cost in gas. When calling preview* as a given user all on-chain conditions will be taken into account so that the result will be exact. For this reason, preview* methods can be expensive. convert* methods don\u2019t take an account parameter, so they can\u2019t take individual conditions into account, reducing gas cost. Likewise, they could and should ignore a number of other conditions to obtain an approximate value that is still fit for purpose, but cheap to use. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.601890756302521
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "87",
+                    "likes": "0",
+                    "time": "19/05/2022-09:15:16",
+                    "content": "This is still not clear to me what the convert* method should use as a base reference:  the price of historical assets (basically the ratio between totalSupply() and totalAssets()) the current marginal price (local tangent to the price curve)  The two might be significantly different ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.291666666666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "88",
+                    "likes": "0",
+                    "time": "19/05/2022-11:59:40",
+                    "content": " IMG_0044.PNG1536\u00d7844 145 KB  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "89",
+                    "likes": "0",
+                    "time": "19/05/2022-20:15:24",
+                    "content": "There is definitely some degree of ambiguity here. In non-bonding curve pro rata use cases, these two are the same. I would consider using the ratio between totalSupply and totalAssets as this is a conservative bound on the price if a massive redemption were to occur. ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "90",
+                    "likes": "0",
+                    "time": "24/05/2022-00:35:37",
+                    "content": "if the vault is denominated in A on input and output, totalAssets should return the total value of A that would be received by liquidating the position in B. Is B a derivative of A like cDAI:DAI? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xbok",
+                    "index": "91",
+                    "likes": "1",
+                    "time": "24/05/2022-18:46:14",
+                    "content": "Thanks for taking the time! A is WETH and B is icETH, and the swapping happens through a DEX. icETH has a debt component of WETH and an equity component of stETH. So, we would need an oracle to get DEX prices. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/joeysantoro",
+                    "index": "92",
+                    "likes": "0",
+                    "time": "27/05/2022-23:07:21",
+                    "content": "ideally the vault would report underlying in WETH as I mentioned above. Make sure the share price is manipulation resistant (an oracle would be a good way to do this). ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 7.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/tsudmi",
+                    "index": "93",
+                    "likes": "0",
+                    "time": "28/05/2022-17:20:24",
+                    "content": "What should be the flow for the native currency (ETH) as an underlying? Is it better to change the deposit/withdraw to payable or have an additional function for handling ETH deposits (depositETH/withdrawETH)? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "94",
+                    "likes": "2",
+                    "time": "08/06/2022-22:52:27",
+                    "content": "Its a bit late now that the ERC is finalized, but I\u2019m wondering why \u201cminOut\u201d / \u201cmaxIn\u201d parameters were not included in the deposit, mint, withdraw and redeem functions. While the preview functions give an accurate prediction, this may change between the moment a user signs a transaction and the moment its mined. Frontrunning in particular make this ERC possibly dangerous without these additional checks.  I would recommend this ERC gets extended to include function deposit(uint256 assets, address receiver, uint256 minShares) external returns (uint256 shares) {     shares = deposit(assets, receiver);     require(shares >= minShares); }  function mint(uint256 shares, address receiver, uint256 maxAssets) external returns (uint256 assets)  {     assets = mint(shares, receiver);     require(assets <= maxAssets); }  function withdraw(uint256 assets, address receiver, address owner, uint256 maxShares) external returns (uint256 shares) {     shares = withdraw(assets, receiver, owner);     require(shares <= maxShares); }  function redeem(uint256 shares, address receiver, address owner, uint256 minAssets) external returns (uint256 assets) {     assets = redeem(shares, receiver, owner);     require(assets >= minAssets); } ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.791666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jaglinux",
+                    "index": "95",
+                    "likes": "0",
+                    "time": "08/06/2022-23:15:28",
+                    "content": "As per the spec,  totalAssets \u201cTotal amount of the underlying asset that is \u201cmanaged\u201d by Vault.\u201d Should the totalAssets return the underlying asset deposited + extra assets including airdrops, donation etc OR only assets deposited to the vault ? If its latter, then only returning vault balance of asset is not enough. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/naddison",
+                    "index": "96",
+                    "likes": "0",
+                    "time": "04/07/2022-06:16:14",
+                    "content": "At mStable we are building a number of different EIP-4626 vaults. One of them deposits assets in an AMM. We have implemented a mechanism to protect against sandwich attacks by limiting the amount of slippage allowed on operational functions like deposit, mint, withdraw and redeem. My question is in regards to the preview functions. Should the preview functions revert if there is too much slippage like the operational functions? For previewDeposit, the EIP states \u201cMUST NOT revert due to vault specific user/global limits. MAY revert due to other conditions that would also cause deposit to revert.\u201d So is too much slippage a \u201cvault specific user/global limit\u201d? Or is it \u201cother conditions that would also cause deposit to revert\u201d? Personally, don\u2019t think the preview functions should revert if there is more slippage than what the vault allows. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.2625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/naddison",
+                    "index": "97",
+                    "likes": "0",
+                    "time": "04/07/2022-06:29:06",
+                    "content": "Should totalAssets include slippage or not? The EIP for convertToShares and convertToAssets states  MUST NOT reflect slippage or other on-chain conditions, when performing the actual exchange.  Does this same statement apply to totalAssets? BTW, I don\u2019t like the \u201cor other on-chain conditions\u201d statement. Transactions can only see on-chain conditions so it\u2019s impossible for convertToShares and convertToAssets not to reflect on-chain conditions. eg the amount of shares and assets in the vault is an on-chain condition. Personally, I think totalAssets needs to be consistent with convertToShares and convertToAssets and not include slippage or fees. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.583333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/naddison",
+                    "index": "98",
+                    "likes": "0",
+                    "time": "04/07/2022-09:01:48",
+                    "content": "I have another clarification to the preview functions. The specification for previewDeposit states  Allows an on-chain or off-chain user to simulate the effects of their deposit at the current block, given current on-chain conditions.  The \u201ccurrent block\u201d implies that the on-chain conditions is at a block level and not transaction level. That is, previewDeposit needs to allow for other transactions being included before it in the block. For vaults that have slippage, that would mean previewDeposit would have to return the worst case of a sandwich attacked transaction before it reverted with a slippage error. But the previewDeposit specification also states  MUST return as close to and no more than the exact amount of Vault shares that would be minted in a deposit call in the same transaction. I.e. deposit should return the same or more shares as previewDeposit if called in the same transaction.  This statement implies that the on-chain conditions is at a transaction level and not block level. Personally, I think the preview functions should be at a transaction level rather than block level. I would recommend changing the first line of the previewDeposit specification to  Allows an on-chain or off-chain user to simulate the effects of their deposit at the current transaction, given current on-chain conditions.  The same also applies to mint, redeem and withdraw. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.78515625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "99",
+                    "likes": "1",
+                    "time": "04/07/2022-13:20:37",
+                    "content": "    naddison:  Personally, I think the preview functions should be at a transaction level rather than block level. I would recommend changing the first line of the previewDeposit specification to   100% agree with that. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "100",
+                    "likes": "0",
+                    "time": "04/07/2022-13:23:43",
+                    "content": "    naddison:  So is too much slippage a \u201cvault specific user/global limit\u201d?   I think its for the caller to decide what outcomes are good for him.  It the caller is a contract, it should do a preview, and only continue if that is ok It the caller is an EOA, then it should either use an extensions like this, or use a \u201crouter\u201d like this   ",
+                    "links": [
+                        "https://github.com/fei-protocol/ERC4626/blob/main/src/ERC4626Router.sol"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.4
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/nimcon",
+                    "index": "101",
+                    "likes": "0",
+                    "time": "01/08/2022-10:03:00",
+                    "content": "I would like to suggest an extension of EIP-4626 that allows for more cost-efficient redemptions. Currently, redemptions return the underlying asset of a vault. However, in cases where yield is generated by taking positions in assets other than the vault\u2019s underlying asset, it would be more efficient for an EOA to source their own liquidity upon redemption, for example via an off-chain RfQ. A solution would be a multi-asset redeem function that returns a basket of tokens. The return values of such a function and the corresponding preview would be dynamic arrays address[] and uint256[] for the tokens and amounts (to be) returned. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.053571428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/naddison",
+                    "index": "102",
+                    "likes": "0",
+                    "time": "06/09/2022-00:44:29",
+                    "content": "To revert, or not to revert, that is the question. The specifications does not explicitly state if a deposit, mint, withdraw, redeem should revert or not revert if zero amounts are returned. Looking at the various implementations, most are going with they should not revert unless there is an integer overflow. For example, rounding down the result by subtracting it by one when the value is an unsigned zero will revert. See Should ERC4626 txs revert with zero amounts? \u00b7 Issue #314 \u00b7 transmissions11/solmate \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.5740740740740735
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/CareWater333",
+                    "index": "103",
+                    "likes": "0",
+                    "time": "13/10/2022-19:17:07",
+                    "content": "I\u2019m too late for this comment, given the standard has been finalized and is now seeming to get some traction (yay!). So I guess I\u2019m asking for advice. In accounting, Assets - Liabilities == Equity. Given many vaults don\u2019t have liabilities, Assets == Equity. However, for vaults that do have liabilities (accrued fees, or senior loans to the vault), they are not the same. I\u2019d love to see totalLiabilities() and totalEquity() as part of the standard, but I\u2019m a little late for that. Here\u2019s the advice I\u2019d like: seems like a lot of clients might make the assumption that totalAssets() == convertToAssets(totalSupply()). So I have a choice: implement so totalAssets() is actually equity value (assets - liabilities), so that assumption is correct, and provide a nonstandard totalLiabilities() function so clients could add them to get actual total assets.  Or, totalAssets() can be the total amount managed by the vault, and there\u2019s a separate function totalEquity() which equals convertToAssets(totalSupply()). Thoughts? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.088541666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "104",
+                    "likes": "0",
+                    "time": "28/11/2022-19:01:51",
+                    "content": "Could someone point out a compliant implementation of ERC4626 with fees? We don\u2019t know how to interpret the specification\u2019s wording about functions being \u201cinclusive of fees\u201d. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "105",
+                    "likes": "2",
+                    "time": "20/01/2023-13:32:35",
+                    "content": "There are many different types of fees that you could use, but some common ones are:  Deposit fee, typically a % of assets deposited is taken as a fee, with shares issued being against the remaining portion Withdrawal fee, a % of shares (or assets) is levied as a fee for exiting the vault, with a portion of the assets represented by those shares being returned Performance fee, a % of total yield is deducted Management fee, a % of the assets your shares represent reduces over time at a specific rate (like how a Trust works e.g. GBTC)  In all cases, we designed 4626 to be inclusive of fees so that apples to apples comparisons of protocols are more possible. For example, on deposit and withdrawal, the language enforces that it must be the total amount coming in, and the final amount issued as well as the total amount redeemed and the final amount sent out. This means that withdrawal and deposit fees should be levied internally to the code, and the amount post fee is given as an output. The end result is the effective exchange rate you paid is worse, which means the vault would accurately describe the exchange of assets to shares and back again that is occurring. Management fees and performance fees are a little easier, both are basically the rate at which the conversion functions change their output. The guidance there is that both preview and convert functions should be inclusive of these types of fees so that their answer remains accurate to what real depositors would see. Originally we tried to be more specific about fees, but that\u2019s a hard battle because there are so many different ways of imposing them. The guidance provided by ERC4626 is more general, essentially just try to make your functions be as honest as possible to what real depositors should expect. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.621744791666666
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "106",
+                    "likes": "0",
+                    "time": "07/02/2023-13:23:37",
+                    "content": "It is unclear to me what the events should be when dealing with fees. Lets take an example, where there is a 5% deposit fee,  a user calls deposits with 100 DAI 5 DAI go to the feeRecipient (whoever that is) 95 DAI go to the vault 95 shares are minted in exchange.  In that context, previewDeposit(100) is 95. But what should the use for assets ? 100? 95? Same question for a mint:  a user calls mint with 100 shares  these 100 shares need 100 DAI, plus 6 DAI of fees   6 DAI go to the feeRecipient (whoever that is) 100 DAI go to the vault 100 shares are minted in exchange.  In that context, previewMint(100) is 106. But what should the use for assets in the event ? 100? 106? FIY, the event is described as  Deposit sender has exchanged assets for shares, and transferred those shares to owner. MUST be emitted when tokens are deposited into the Vault via the mint and deposit methods. - name: Deposit   type: event   inputs:     - name: sender       indexed: true       type: address     - name: owner       indexed: true       type: address     - name: assets       indexed: false       type: uint256     - name: shares       indexed: false       type: uint256   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.9
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "107",
+                    "likes": "0",
+                    "time": "08/02/2023-15:21:01",
+                    "content": "said otherwize, should the \u201cassets\u201d params in these event reflect:  How much the user paid/got How much the vault gained/lost  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frangio",
+                    "index": "108",
+                    "likes": "1",
+                    "time": "08/02/2023-19:14:44",
+                    "content": " How much the user paid/got  After some discussion we think this is the right option according to the guideline shared above:     fubuloubu:  The end result is the effective exchange rate you paid is worse, which means the vault would accurately describe the exchange of assets to shares and back again that is occurring.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.775510204081633
+                }
+            ]
+        }
+    ],
+    "group_index": "1554"
+}

@@ -1,0 +1,75 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-for-execute-as/3986",
+            "title": "ERC for \"Execute as\" ",
+            "index": 3986,
+            "category": [
+                "Wallets"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "1",
+                    "likes": "1",
+                    "time": "07/02/2020-06:35:39",
+                    "content": "I\u2019ve been tossing around this concept of being able to perform actions as different types of smart contracts with group memberships like Multi-sigs, DAOs, and Smart Contract wallets, and I think there really needs to be a standard built for how this works. Here\u2019s a tweet for teh lulz:   twitter.com    King Snek (fubuloubu)  I think there's an opportunity to define an ERC for multi-sig wallets (like @gnosisSafe) that contains a few simple things like registration of whether a contract is a multisig, a lookup if someone is an member, and the ability to submit a raw transaction to the multisig.  9:47 AM - 6 Feb 2020     6              The Problem Smart contracts can\u2019t do things by themselves, only with outside parties (with private keys) initiating a transaction and paying the gas. However, we\u2019ve devised many different types of \u201cgroup\u201d contracts that require 1 or more keys with certain permissioned rights to perform an operation for assets under the contract\u2019s control. The problem is that sometimes the actions I want to perform in dapps (like upgrading a Resolver in an ENS entry my Multi-sig owns) where the asset is owned by the \u201cgroup\u201d contract, but almost all applications assume the keyholder is the party of interest when using their interface. This is not a good assumption! I want to be able to go to an interface, have some mechanism of stating \u201cExecute as\u201d, and then have the transaction I would normally perform as a keypair \u201ctranslated\u201d into how the group contract I am interacting with expects to receive and interact with this action, whether it be a number of confirmations (multi-sig), voting (DAOs), or simply authentication that the keypair is allowed to perform this action (smart contract wallets, limits and beneficiaries for multi-sigs and DAOs).  The Solution I have no idea what the solution should look like, I wanted to talk about it here to garner a better idea of how this might best be implemented between various wallets, dapps, or ERC interfaces. The problem is made harder that multiple such types of contracts are in moderate use, and almost nothing is standardized. I think this puts an ERC out of the question, at least one that attempts to standardize interfaces for these actions. A better attempt might be at creating a \u201cregistry\u201d of how to check and perform a few basic things, such as:  Lookup/authentication that a keypair is an owner/member of a given contract; or, which contract(s) a keypair is a owner/member of How to translate an Ethereum transaction into a transaction that is suitable for submission to the contract How to get feedback on the state of that transaction, and whether it requires further action on behalf of the user to process (or otherwise is waiting on some confirmation/voting process to continue)  I have no idea if this makes sense to integrate at the wallet level, but that seems to be an attractive option, allowing people to \u201cAdd\u201d group membership of some contract they are party to and have the ability to perform actions as that group in exactly the same way they would their normal keypairs. This would reduce the work required of dapp makers, but increase the burden on wallet makers as an advanced feature. I also have no idea how to integrate this proposal into various dashboards that these group contracts use, like a DAO\u2019s voting dashboard, or a Multi-sig\u2019s management dashboard. I feel like they could just as easily be overlays on what a wallet does (at least a minimally functional overlay that links to the full dashboard), but that also requires a degree of standardization I don\u2019t think exists.  If someone wants to talk further about this at ETHDenver, please let me know. ",
+                    "links": [
+                        "https://twitter.com/fubuloubu/status/1225476091642548228",
+                        "https://twitter.com/fubuloubu/status/1225476091642548228",
+                        "https://ethereum-magicians.org/t/discussion-ens-login/3569/7"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6849502621561445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/Amxx",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "07/02/2020-08:17:46",
+                    "content": "You should have a look at ERC734 (the old ERC725). FYI, this effort was made about 2 years ago, and lead nowhere but to many incompatible solutions. I\u2019ll be un EthDenver ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "07/02/2020-14:26:01",
+                    "content": "Yeah, I noticed there were quite a few attempts made at this that didn\u2019t seem to pan out. I think with the rise of \u201cJust DAO it\u201d and Gnosis Safe/Argent gaining so much traction, now might be a really good time to get this working though. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.166666666666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/3esmit",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "15/02/2020-13:03:36",
+                    "content": "What do you think about EIP-1271? For me it seems to solve this problem. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/fubuloubu",
+                    "index": "5",
+                    "likes": "1",
+                    "time": "16/02/2020-13:40:25",
+                    "content": "It seems\u2026 Related, but not quite what I was going for. The general idea is to build a standard where it would be possible to build a mechanism where a smart wallet and an EOA could perform the same action, by having a lookup of how to make that happen. So, it\u2019s not a signature standard persay, merely a \u201ctranslation\u201d standard for how to convert a transaction (that an EOA would directly sign) into something useful for smart wallets, DAOs, meta-txns, etc. by \u201cconverting\u201d to another transaction format. A secondary part of the standard would be another \u201ctranslation\u201d for how to view it\u2019s progress and completion status. I don\u2019t want to specify the \u201chow\u201d of the conversion, just have a standard way of referring to what would be many different ways of performing that conversion. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.188492063492064
+                }
+            ]
+        }
+    ],
+    "group_index": "1001"
+}

@@ -1,0 +1,80 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-4747-simplify-eip-161/8246",
+            "title": "EIP-4747: Simplify EIP-161 ",
+            "index": 8246,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/petertdavies",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "09/02/2022-14:17:53",
+                    "content": "Pull Request  Background Empty accounts (defined as having no nonce, no balance, no code and no storage) exist as a consequence of design flaws in early versions of the EVM. After an unknown attacker created large numbers of them during the Shanghai DOS attacks, EIP-161 both banned the creation of new empty accounts and provided that the old ones would be deleted if they were \u201ctouched\u201d. Vitalik Buterin then bulk touched all the accounts created by the Shanghai DOS attacker, but neglected to deal with 196 that had been created by accident. These remaining empty accounts were largely forgotten about, but their continued existance raised the threat of consensus issues with this obscure corner of the protocol. This is best illustrated by this comment in the Geth source code, which incorrectly stated that STATICCALLs and empty accounts can never interact on Mainnet. Additionally there were edge cases involving empty accounts with storage, that I have been unable to find a test for. I deleted every single remaining empty account in block 14,049,881. This makes all the edge cases that never happened impossible, retroactively vindicates the Geth comment. However, the Ethereum specification and testsuite still requires implementors to implement EIP-161 state clearing with all the impossible edgecases even where it is irrelevant. As an extreme, a post-merge only client would have to implement state-clearing solely to pass the Ethereum testsuite. The EIP removes as much of this technical debt as possible.  Technical validation The EIP requires that certain facts about Mainnet be validated in order to be equivalent to EIP-161. 1 and 2 can be validated by dumping the state at the start of Byzantium to get the list of all 196 accounts that existed post-Byzantium and checking that they were deleted in the transactions named in the EIP. 3 is slightly more complicated. EIP-161 is usually implemented by marking an account as \u201ctouched\u201d and then checking if it is still empty at the end of the transaction. Condition 3 can be checked by testing that the \u201cif still empty\u201d never fails during a sync to the start of Byzantium. I have performed these checks by informally modifying the akula client, but something more rigorous will be needed before the EIP becomes final. ",
+                    "links": [
+                        "https://etherscan.io/address/0xb992592df1b30ce37ffba6f7167e58bfbdfe4b91",
+                        "https://github.com/ethereum/go-ethereum/blob/fb3a6528cfa49f623570575c4fe9e8a716cfcdf7/core/vm/evm.go#L346",
+                        "https://etherscan.io/tx/0xf955834bfa097458a9cf6b719705a443d32e7f43f20b9b0294098c205b4bcc3d/",
+                        "https://github.com/akula-bft/akula/"
+                    ],
+                    "GPT-summary": "The post explains the proposal for EIP-4747, which aims to simplify EIP-161 by removing technical debt related to empty accounts in the Ethereum Virtual Machine (EVM). The author explains the background of the issue and how it was partially addressed in EIP-161, but some empty accounts were left behind. The proposal suggests deleting all remaining empty accounts to prevent potential consensus issues and simplify implementation for future clients. The author also provides technical validation for the proposal and acknowledges the need for more rigorous testing. A 3rd party could provide constructive criticism or audit/review the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Interoperability and Scalability",
+                        "Privacy, Security and risk management",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.886281647645284
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/petertdavies",
+                    "index": "2",
+                    "likes": "1",
+                    "time": "09/02/2022-14:39:08",
+                    "content": "@axic on github:  This EIP is focused on Mainnet, and can not be used as-is on testnets, because  these blocks, if they do exists on a testnet, are containing different transactions testnets may have other accounts in inconsistent states   I have added the words \u201con Mainnet\u201d in a couple of places to clarify this. As explained in the \u201cOther Networks\u201d section, the only testnet that ever had empty accounts is Ropsten. All the others are too new. Ropsten\u2019s empty accounts were created at genesis and cleared early in its history in entirely straightforward ways, so the EIP applies vanilla to it without having to list special cases. I checked Ropsten by scrolling Etherscan for a bit rather that checking with a sync, so I am less sure than I am for Mainnet though. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.444018103109012
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/axic",
+                    "index": "3",
+                    "likes": "0",
+                    "time": "12/11/2022-22:11:18",
+                    "content": " A client may assume that STATICCALLs to empty accounts never occur and that CALLs to empty accounts in STATICCALL contexts never occur.  A CALL within a STATICCALL context is failing in any case. What is the change/clarification here? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rmeissner",
+                    "index": "4",
+                    "likes": "0",
+                    "time": "14/11/2022-12:37:09",
+                    "content": "Only if the CALL would change state (e.g. trabsfer eth or update the storage), right? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.7142857142857135
+                }
+            ]
+        }
+    ],
+    "group_index": "1597"
+}

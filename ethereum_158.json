@@ -1,0 +1,905 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/eip-5749-the-window-evmproviders-object/11195",
+            "title": "EIP-5749: The 'window.evmproviders' object ",
+            "index": 11195,
+            "category": [
+                "EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "1",
+                    "likes": "10",
+                    "time": "05/10/2022-10:24:53",
+                    "content": " Abstract A Javascript Ethereum Provider interface injection that will allow for the interoperability of multiple browser wallets at the same time. Replacing window.ethereum with window.evmproviders is a simple solution that will provide multiple benefits including: improving user experience, encouraging innovation in the space, removing race conditions and a \u2018winner-takes-most\u2019 environment, and lowering barriers to user adoption.  Motivation At present, window.ethereum is the prevailing method by which Ethereum-compatible applications interact with injected wallets. This originated with Mist Wallet in 2015 to interact with other applications. With the proliferation of both applications and wallets, window.ethereum has unintended negative consequences:   window.ethereum only permits one wallet to be injected at a time, resulting in a race condition between two or more wallets. This creates an inconsistent connection behavior that makes having and using more than one browser wallet unpredictable and impractical. The current solution is for wallets to inject their own namespaces, but this is not feasible as every application would need to be made aware of any wallet that might be used. The aforementioned race condition means users are disincentivized to experiment with new wallets. This creates a \u2018winner-takes-most\u2019 wallet market across EVM chains which forces application developers to optimize for a particular wallet experience. The \u2018winner-takes-most\u2019 wallet environment that results from the window.ethereum standard hinders innovation because it creates a barrier to adoption. New entrants into the space have difficulty gaining traction against legacy players because users can have no more than one injected wallet. With new entrants crowded out, legacy wallet providers are put under little pressure to innovate. Wallets continue to be the most fundamental tool for interacting with blockchains. A homogeneous wallet experience in Ethereum and EVM chains risks stunting UX improvement across the ecosystem and will allow other ecosystems that are more encouraging of competition and innovation to move ahead. Some wallets that currently use window.ethereum as of August, 2022. Currently a user will have inconsistent behavior if they use multiple of these wallets in a single browser.  Metamask Coinbase wallet Enkrypt Trust wallet Rainbow \u2026etc    Replacing window.ethereum with window.evmproviders will allow solutions such as web3modal and web3onboard to only display all injected wallets the user has installed. This will simpify the UX and remove race conditions between wallet providers in case multiple wallets are installed. Over time, as window.evmproviders supplants the current standard and removes barriers to choice, we can hope to see a wallet landscape more reflective of user preference.  Specification The key words \u201cMUST\u201d, \u201cMUST NOT\u201d, \u201cREQUIRED\u201d, \u201cSHALL\u201d, \u201cSHALL NOT\u201d, \u201cSHOULD\u201d, \u201cSHOULD NOT\u201d, \u201cRECOMMENDED\u201d, \u201cMAY\u201d, and \u201cOPTIONAL\u201d in this document are to be interpreted as described in RFC 2119.  window.evmproviders={}  interface ProviderInfo { \tname: string \ticon:  `data:image/svg+xml;base64,${string}` \tdescription: string } interface ProviderWithInfo extends EIP1193Provider { \tinfo: ProviderInfo } interface EVMProvidersType { \t[key: string]: ProviderWithInfo; } interface  Window { \tevmproviders: EVMProvidersType }  /**  * @typedef {Object} ProviderInfo  * @property {string} name  * @property {string} icon - format: `data:image/svg+xml;base64,${string}`  * @property {number} description  */  /**  * @typedef {EIP1193Provider} ProviderWithInfo  * @property {ProviderInfo} info  */  /**  * @typedef {Object.<string, { name: string, lang: string }>} EVMProvidersType  */  /**  * @typedef {Object} Window  * @property {EVMProvidersType} evmproviders  */   Type EIP1193Provider is well documented at EIP-1193 interface ProviderInfo  name: Name of the Wallet icon: base64 encoded svg image description: Description for your wallet  interface EVMProvidersType key is RECOMMENDED to be the name of the extension  By adopting an object for EIP-1193 compliant providers we can have multiple different ethereum/evm compatible wallets coexists in the same browser. This will prevent race conditions and inconsistent behaviors.  Rationale By introducing ProviderInfo type web onboarding libraries such as Web3Modal Web3React Web3Onboard can easily grab the necessary information to populate their popup window to choose the wallet. The name evmproviders was chosen in order to be inclusive of other evm-compliant chains. data:image/svg+xml; svg data uri was chosen since it is easier to be modified if the application requires for example different size for the image.  Backwards Compatibility This EIP doesn\u2019t require supplanting window.ethereum, so it doesn\u2019t directly break existing applications. However, the recommended behavior of eventually supplanting window.ethereum would break existing applications that rely on it.  Reference Implementation  Injection const provider: ProviderWithInfo = [your wallet] window.evmproviders = window.evmproviders || {}; window.evmproviders[name] = provider   Retrieving all EVM providers const allproviders = Object.values(window.evmproviders)   Security Considerations The security considerations of EIP-1193 apply for this EIP. The use of SVG images introduces a cross-site scripting risk as they can include JavaScript code. Applications and libraries must render SVG images using the <img> tag to make sure no JS executions can happen.  Copyright Copyright and related rights waived via CC0. ",
+                    "links": [],
+                    "GPT-summary": "The proposal suggests replacing the prevailing method of interaction between Ethereum-compatible applications and injected wallets, window.ethereum, with window.evmproviders. This will allow for the interoperability of multiple browser wallets at the same time, improving user experience, encouraging innovation, and lowering barriers to user adoption. The proposal provides a detailed specification and rationale for the change, as well as addressing backwards compatibility and security considerations. The proposal also mentions some wallets that currently use window.ethereum and how the proposed change will simplify the user experience. The proposal invites feedback and constructive criticism.",
+                    "GPT-proposal-categories": [
+                        "Interoperability and Scaleability",
+                        "Smart contract updates",
+                        "Community and engagement",
+                        "Token economics",
+                        "Privacy, Security and risk management"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.3682138439791505
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "2",
+                    "likes": "0",
+                    "time": "05/10/2022-18:10:23",
+                    "content": "EIP PR link Add EIP-5749: Deprecate 'window.ethereum' by kvhnuke \u00b7 Pull Request #5749 \u00b7 ethereum/EIPs \u00b7 GitHub ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "3",
+                    "likes": "2",
+                    "time": "06/10/2022-18:36:54",
+                    "content": "If we are going to deprecate window.ethereum, I would rather replace it with a better mechanism for dapp <=> browser communication than go through all of that effort only to replace it with an equally bad (but differently named) solution. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/0xwagmiwarrior",
+                    "index": "4",
+                    "likes": "2",
+                    "time": "06/10/2022-20:44:10",
+                    "content": "I\u2019m a big fan of any solution that can help fix the browser extension \u201crace\u201d. It\u2019s a poor user experience to be forced to choose between a single browser wallet or managing multiple browser / browser profiles. Would love to see how if this implementation can fix that issue and leave room for user adoption and experimentation of many browser wallet solutions ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.163265306122449
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "5",
+                    "likes": "0",
+                    "time": "06/10/2022-21:00:11",
+                    "content": "is there any specific ideas you have? because no matter what kind of communication we come up with, we have to open up a channel to the browser wallet. This needs to be a specific variable, this EIP addresses the injection part not the communication part. In the future once we have a better solution than EIP-1193 we can replace each provider to follow that standard but we can assume those providers will still be part of evmproviders={} object At the same time, EIP-1193 (current communication standard) was implemented in 2018, to this day there are websites that doesn\u2019t follow that standard. Changing the whole communication model is not as easy as it sounds. Current problem has existed for years, we need a simple enough solution we can implement easily. This eip only requires two lines of code to implement, every browser wallet already has rest of the functionality window.evmproviders = window.evmproviders || {}; window.evmproviders[name] = provider  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 5.601851851851852
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "6",
+                    "likes": "1",
+                    "time": "07/10/2022-15:35:27",
+                    "content": "@SamWilsn has a concept using scheme handlers, which lets us use the browser\u2019s built-in scheme handler selection system for user choice of wallets.  It also supports both in-browser wallets, desktop wallets, and (in theory) mobile wallets via QR codes. I had another idea using window.postMessage, which I believe can be handled by a browser plugin or iframe host without the broadcasting page being aware of what handlers exist. The general idea is that the browser extensions shouldn\u2019t be injecting code into every page, there should be a well defined mechanism for the application to probe for wallets and (ideally) a mechanism for the user to choose their wallet without the page knowing that any of the other wallets even exist (or choose no wallet so the page is unaware of them all). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "7",
+                    "likes": "0",
+                    "time": "07/10/2022-16:09:23",
+                    "content": "You can see a really early sketch of the idea here: GitHub - SamWilsn/wallet-demo The general idea is that every wallet registers a protocol handler for a well-known scheme (maybe eth://, evm://, or even wc://). The dapp encodes connection information into the rest of the URI. I was thinking a WebRTC data channel, but I\u2019m far from an expert on web technology. When you open a URI with that scheme (say in a hidden <iframe>), the browser asks the user which wallet they want to use. The advantages over injecting a script are that this requires no special privileges and works with wallets running in web sites, extensions, and external programs. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.931972789115646
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "8",
+                    "likes": "0",
+                    "time": "07/10/2022-18:19:52",
+                    "content": "@MicahZoltu I believe your main concern is when the injection happens. Yes, I\u2019m also not a fan of injecting to every page. I did look into @SamWilsn code. Basically, it makes the dapp responsible for what browser wallets currently inject. window.postMessage is how the currently injected code communicates with the extension background script. Based on Sam\u2019s sketch, instead of letting the extension inject it, it becomes part of the dapp itself and dapp devs are responsible for adding the iframe communication model. Yes, this could be simplified, and turned into a library that they can easily add. However, to re-emphasize the original goal of this EIP, suggested solutions still don\u2019t solve the multi-wallet problem. Here is why? A quick test on registerProtocolHandler on chrome, made me realize you cant have multiple handlers for same scheme. Meaning, each wallet still needs to register its own scheme, and all schemes must start with web+ as browsers dont  allow arbitrary schemes. Navigator.registerProtocolHandler() - Web APIs | MDN If we let browser wallets pick their own scheme, let\u2019s say web+enkrypt and web+metamask, there is still no way for a dapp to know which wallets are installed, and the dapp devs need to add a growing number of iframes to support all possible schemes. Which brings us back to square one. The main reason for EIP-5749 is to have a way for multiple browser wallets to coexist and for dapps to easily figure out which wallets are available. Even if we go with @MicahZoltu idea of another extension to keep track of handlers. Then we again have to maintain another whole extension, that needs to keep track of all new browser wallets as they come into existence. I do like @SamWilsn\u2019s idea of switching communication to webrtc (MV3 introduced a whole set of new issues to webrtc but I\u2019m sure those will be solved in the near future). However, since this EIP is not about communication channels, I think we have to address that in a different EIP. @MicahZoltu I also would like to say that, it is possible for a user to want to use multiple browser extension wallets at the same time. For example, eth_accounts can return all approved accounts over multiple different wallets. If we limit users to using just one wallet at a time, then we are back to square one.  However, to address your concern of always injecting into every page, maybe in a different EIP we can put together a library that dapps can integrate, which sends out a window.postMessage, that extension wallets can listen to and prompt the user to ask whether that extension needs to be injected to this site. If the user agrees, then it could be part of window.evmproviders={}. Also, evmproviders object would be undefined if none of the wallets accepted. This will prevent random websites from knowing what wallets the user has installed. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.654437229437229
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "9",
+                    "likes": "0",
+                    "time": "07/10/2022-21:36:40",
+                    "content": "    kvhnuke:  Based on Sam\u2019s sketch, instead of letting the extension inject it, it becomes part of the dapp itself and dapp devs are responsible for adding the iframe communication model.   I think we\u2019ve settled on having the dapp listen over WebRTC (so it\u2019s uniform for web extensions and external programs.)     kvhnuke:  However, to re-emphasize the original goal of this EIP, suggested solutions still don\u2019t solve the multi-wallet problem.   When I was testing, firefox displays a selector to change between handlers for each link. Apparently Chrome has it buried in the settings\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.78125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "10",
+                    "likes": "0",
+                    "time": "07/10/2022-21:52:09",
+                    "content": "    SamWilsn:  When I was testing, firefox displays a selector to change between handlers for each link. Apparently Chrome has it buried in the settings\u2026   yea even with that kind of selection, it wont let you select multiple wallets, and who knows when chrome and safari will add even the selection box  I dont think safari even supports registerProtocolHandler ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.083333333333334
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "11",
+                    "likes": "0",
+                    "time": "08/10/2022-14:34:53",
+                    "content": "    kvhnuke:  I believe your main concern is when the injection happens.   My concerns:  Wallets should not inject into every page. Non-extension wallets should mostly share a protocol with extension wallets. Code injection isn\u2019t an appropriate way for wallets to communicate with dapps. Many other things related to wallets that are out of scope of this discussion.     If you want to see a prototype I built a while ago you can check out GitHub - Zoltu/ethereum-browser-sdk: An SDK for communicating between Ethereum dapps and Ethereum enabled browsers via events..  It may have some bit rot, and I think I only really tested it extensively back in the day on Firefox, but at one point it was fully functional and you could actually use it.  I even created a backward compatibility extension that injects into the page so existing dapps could work with it.  It supports multiple simultaneous wallets with no injection into the page.  It works either as a browser extension or an iframe host (e.g., wallet hosts the dapp inside an iframe).  It uses window.postMessage to communicate, which both a hosting iframe and an extension can see, and the dapp/site is completely blind to what wallets are installed/registered until the wallet reveals itself (dapp is the first mover in the handshake).     kvhnuke:  A quick test on registerProtocolHandler on chrome, made me realize you cant have multiple handlers for same scheme.   This is unfortunate.  I have only used scheme registration in Firefox where you can register multiple handlers with the same scheme and you get a selector dialog.       kvhnuke:  I also would like to say that, it is possible for a user to want to use multiple browser extension wallets at the same time.   This is possible with the window.postMessage mechanism.  When the dapp broadcasts its message expressing interest in using a wallet, any number of wallets that are listening in on this well defined channel can respond and the application can establish communication with all of them, or prompt the user to select one.     kvhnuke:  to address your concern of always injecting into every page, maybe in a different EIP we can put together a library that dapps can integrate, which sends out a window.postMessage, that extension wallets can listen to and prompt the user to ask whether that extension needs to be injected to this site.   There is no need for injection.  All communication can happen over window.postMessage. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.265
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "12",
+                    "likes": "0",
+                    "time": "09/10/2022-19:37:44",
+                    "content": "    MicahZoltu:  My concerns:  Wallets should not inject into every page. Non-extension wallets should mostly share a protocol with extension wallets. Code injection isn\u2019t an appropriate way for wallets to communicate with dapps. Many other things related to wallets that are out of scope of this discussion.       Yea this is something I definitely agree with you, wallets shouldn\u2019t inject to every page, but unfortunately 6+ years of always injecting to window has led lot of dapps to expect it to be there. Ive seen many dapps simply fail if there is no ethereum object. Thats why even on this EIP I mentioned to deprecate it, and not completely take it away. Im not exactly clear on this, are you referring to wallet connections such as \u201cwalletconnect\u201d as non-extension wallets? if so aren\u2019t they already sharing the eip 1193 as a communication protocol? I agree with you on not injecting every page, however, Im not sure why you think code injection in general bad practice? Lot of major extensions use the injection to achieve their desired behavior. This is why even MV3 supports this behavior.  I looked into your repo, it was impressive. Here are my concerns. Iframe communication can work and you proved it is possible, Since the change is for dapps to implement, this change is not feasibly over a short term. We have to clearly define the protocol, message communication channels. A complicated and time consuming process. At that point we should completely switch to webrtc per @SamWilsn suggestion. At the same time Im unclear on why this is better than injection as the injected script also uses postMessage for communication and this is the standard we\u2019ve been using for the past 6+ years. Only difference I see here is who injects the code. per your suggestion dapps needs to add the iframe code vs currently extension it self add the injected code. Also, in your example, dapp is wrapped in an iframe. Not sure whether this was intentional, in real life we cant ask users to load the dapps in an iframe. This will lead to bad UI/UX. If it is the other way around, similar to Sam\u2019s code what will be the src of the iframe? is it an extension url or is it a code remotely hosted. Basically, there will be lot of CORS and CSP issues, also how can we trust the validity of the remote frame? Imo, letting the extension it self inject the code is better overall, since there are only few extensions compared to hundreds of thousands of dapps out there. It is easier to extend the feature set, and issue updates over time. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.014423076923077
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "13",
+                    "likes": "0",
+                    "time": "10/10/2022-09:31:40",
+                    "content": "    kvhnuke:  Ive seen many dapps simply fail if there is no ethereum object. Thats why even on this EIP I mentioned to deprecate it, and not completely take it away.   We can very easily create an adapter extension that either a standalone extension (or wallet extensions in \u201clegacy mode\u201d) auto-inject into every page.  This would allow us to have a smooth transition away from this behavior without breaking the world.     kvhnuke:  Im not exactly clear on this, are you referring to wallet connections such as \u201cwalletconnect\u201d as non-extension wallets? if so aren\u2019t they already sharing the eip 1193 as a communication protocol?   Yeah, WalletConnect I think would classify.  I don\u2019t know much about the protocol they speak under the hood, and maybe there already is a standard for this.  I was just listing the things I think should be kept in mind when we are talking about wallet <=> dapp communication protocols.       kvhnuke:  I agree with you on not injecting every page, however, Im not sure why you think code injection in general bad practice? Lot of major extensions use the injection to achieve their desired behavior. This is why even MV3 supports this behavior.   The page is sandboxed away from extensions for a good reason.  When an extension \u201cnaively\u201d injects into the page using content scripts the JS that executes has its own JS environment that is sandboxed away from the page while it shares a DOM with the page.  This ensures that the page and the extension injected script don\u2019t clobber each other e.g., by both touching the global namespace.  MetaMask (and others) have hacked around this sandboxing by injecting a script tag into the page which is then executed in the page\u2019s JS environment rather than the sandboxed one. I suspect that one day this \u201cbug\u201d will be fixed, as sandboxes shouldn\u2019t have backdoors in them.  That being said, I am under the impression that the browser standardization people don\u2019t consider this a serious security concern so it may not be fixed anytime soon. One important distinction is that an iframe host cannot inject code into its child.  This means it is impossible to run a dapp inside an iframe, which I believe is why tools like Gnosis have to custom integrate every dapp they support rather than just throwing any old dapp into an iframe. Another important distinction is that there is a well established, documented, and supported mechanism for having pages talk to extensions and that is via window.postMessage.  Injecting a script that adds a global variable to the page\u2019s JS environment is non-trivial, introduces complexities/risks with sharing an execution environment, and isn\u2019t well documented at all (I suspect because it is basically a hack).     kvhnuke:  Since the change is for dapps to implement, this change is not feasibly over a short term.   An adapter extension can be written (and in fact it has been in that repository) and can be trivially integrated into existing wallets like MM and MV3.  There is no need for dapps to move first here, we can have extensions move first and then incentivize new dapps to build using the new approach and eventually legacy dapps to update to the new approach.  The adapter extension (or wallet in legacy mode) would just inject window.ethereum into the page as normal and any calls to those methods would just get wrapped up into a window.postMessage call to communicate with the extension(s) via the new protocol.     kvhnuke:  per your suggestion dapps needs to add the iframe code vs currently extension it self add the injected code.   This is incorrect, no iframe is necessary (that is just a new way to build a wallet that you can\u2019t do with injection).  A new dapp would just do window.postMessage({ method: 'eth_blockNumber' }) (+ an envelope for the communication protocol) instead of window.ethereum.request({ method: 'eth_blockNumber' }).  An existing dapp would get an adapter injected into their page that just converts window.ethereum.request into window.postMessage calls.     kvhnuke:  in your example, dapp is wrapped in an iframe. Not sure whether this was intentional, in real life we cant ask users to load the dapps in an iframe.   This is an example of a new type of wallet that can exist if we switch to using window.postMessage butt cannot exist with the current injection mechanism.  This is a very powerful type of wallet because it can be IPFS hosted and you don\u2019t need to have custom browser extensions yet (because it is statically hosted) you can trust it.  In fact, if you have IPFS already then this model is significantly lower trust then the current model of extension based wallets.     kvhnuke:  Imo, letting the extension it self inject the code is better overall, since there are only few extensions compared to hundreds of thousands of dapps out there. It is easier to extend the feature set, and issue updates over time.   I think you have misunderstood what I am proposing here, but hopefully the above answers/comments have cleared things up.  Let me know if you still feel this way after reviewing this response! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.3961902680652685
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "14",
+                    "likes": "0",
+                    "time": "20/10/2022-22:44:36",
+                    "content": "Sorry I was away for devcon and another conference, finally got some time to respond     MicahZoltu:  The page is sandboxed away from extensions for a good reason. When an extension \u201cnaively\u201d injects into the page using content scripts the JS that executes has its own JS environment that is sandboxed away from the page while it shares a DOM with the page. This ensures that the page and the extension injected script don\u2019t clobber each other e.g., by both touching the global namespace. MetaMask (and others) have hacked around this sandboxing by injecting a script tag into the page which is then executed in the page\u2019s JS environment rather than the sandboxed one. I suspect that one day this \u201cbug\u201d will be fixed, as sandboxes shouldn\u2019t have backdoors in them. That being said, I am under the impression that the browser standardization people don\u2019t consider this a serious security concern so it may not be fixed anytime soon. One important distinction is that an iframe host cannot inject code into its child. This means it is impossible to run a dapp inside an iframe, which I believe is why tools like Gnosis have to custom integrate every dapp they support rather than just throwing any old dapp into an iframe. Another important distinction is that there is a well established, documented, and supported mechanism for having pages talk to extensions and that is via window.postMessage. Injecting a script that adds a global variable to the page\u2019s JS environment is non-trivial, introduces complexities/risks with sharing an execution environment, and isn\u2019t well documented at all (I suspect because it is basically a hack).   I see your concern, since current approach seems like a hack due to the fact that we are injecting the script into DOM. However, this isnt the case with new MV3 they actually made it a feature. I believe  since it is more useful in real world now. Enkrypt did intergrate this, however we are waiting for couple more chrome release before adding it to our main codebase.  Fix: \ud83d\udd27 immediately inject code by kvhnuke \u00b7 Pull Request #89 \u00b7 enkryptcom/enKrypt \u00b7 GitHub basically, with MV3 you can execute a script in \u201cMAIN\u201d world and this will prevent the current way of injecting scripts. I personally tested it and it works as it should. I believe, this legitimize and make it more of standard to execute a script in the DOM. Since this exists now I dont think it will no longer can be considered as a hack or a bug. Not only that, they also added injectImmediately: true which forces the browser to execute the script immediately before executing any other scripts. This actually fixes a current bug, where the dapp scripts load first and it cant detect window.ethereum since the extension is lagging.     MicahZoltu:  We can very easily create an adapter extension   It is easy to create an adapter extension however, getting users to install it and getting devs to maintain it will be the tough part. Overall user experience will not be good. If we decide to make it part of for example MM or Enkrypt then we are back to square one where we still inject to window.ethereum and needs to fight over the implementation. Which also means, the extensions that dont want to follow will still inject and override window.ethereum to be a EIP 1193 provider.     MicahZoltu:  This is incorrect, no iframe is necessary (that is just a new way to build a wallet that you can\u2019t do with injection). A new dapp would just do window.postMessage({ method: 'eth_blockNumber' }) (+ an envelope for the communication protocol) instead of window.ethereum.request({ method: 'eth_blockNumber' }). An existing dapp would get an adapter injected into their page that just converts window.ethereum.request into window.postMessage calls.   I dont believe it will be easy as this, now we have to define how to respond to these requests since for example which extension is responsible for responding to eth_blockNumber (since all extensions will receive the same request). If we decide to add an extra parameter, then we have to clearly define things such as, name/id who maintains this list, how can dapps know which extensions installed. Also, in the case of being backwards compatible, which extension will get all the requests\u2026etc It seems like communication layer will be a big change that requires both extension devs, dapps, and onboarding libs to work together.     MicahZoltu:  This is an example of a new type of wallet that can exist if we switch to using window.postMessage butt cannot exist with the current injection mechanism. This is a very powerful type of wallet because it can be IPFS hosted and you don\u2019t need to have custom browser extensions yet (because it is statically hosted) you can trust it. In fact, if you have IPFS already then this model is significantly lower trust then the current model of extension based wallets.   Ah I see! since this is a whole another topic I\u2019ll skip this for now. Overall, I do understand some of the benefits of what you are proposing however, It is hard to justify the problems of current approach specially since the scriptExecution is now becoming a standard. Change to the whole communication model will be extremely hard, time consuming and not necessary if the benefits cant justify the change. May be in the future, we can move away from window.postMessage completely and use something like WEBRTC, However, this will be a major change that can take years. Whole purpose of this EIP is to fix an issue that millions of users facing today, and I do believe the simplest solution will be the best solution. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.599273739377906
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "15",
+                    "likes": "0",
+                    "time": "22/10/2022-09:29:20",
+                    "content": "    kvhnuke:  since this is a whole another topic I\u2019ll skip this for now.   I don\u2019t agree this is a different topic because this is, IMO, one of the strongest arguments against using injection for wallet communication. The current injection mechanism doesn\u2019t allow us to create purely web based wallets, and this results in situations like Gnosis Safe\u2019s wallet being unable to work with arbitrary dapps and people having to install wallets into their browser and give those wallets full access to every webpage they view (pending 679238 - chromium - An open-source project to help move the web forward. - Monorail getting fixed).  iframe based wallets require zero permissions and can be IPFS hosted which gives us strong decentralization in the distribution of the wallet rather than relying on Chorme/Firefox/Safari extension stores (which have been known to randomly shutdown/block wallets in the past). The changes to manifest v3 you mentioned are compelling in suggesting this isn\u2019t \u201cjust a hack\u201d as I previously expressed, though I would like to hear if Firefox is going to implement that or not as they have been pushing back on Chrome\u2019s machinations for manifest v3 due to Chrome seemingly having forgotten to put its user\u2019s first.  However, I don\u2019t think injection being not-a-hack is enough to convince me that we should continue down the injection road.  I would want to see a viable path away from extension wallets to iframe wallets, which I think is very important. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.150104427736006
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "16",
+                    "likes": "0",
+                    "time": "28/10/2022-21:08:06",
+                    "content": "    MicahZoltu:  The current injection mechanism doesn\u2019t allow us to create purely web based wallets, and this results in situations like Gnosis Safe\u2019s wallet being unable to work with arbitrary dapps and people having to install wallets into their browser and give those wallets full access to every webpage they view (pending 679238 - chromium - An open-source project to help move the web forward. - Monorail  getting fixed). iframe based wallets require zero permissions and can be IPFS hosted which gives us strong decentralization in the distribution of the wallet rather than relying on Chorme/Firefox/Safari extension stores (which have been known to randomly shutdown/block wallets in the past).   you should look into walletconnect they are doing something similar to what you are referring, basically their relays acts as the middleware to create a communication channel between 2 websites. With that for example uniswap user can communicate with a myetherwallet user, only problem with this is having to switch between tabs as you have to sign txs on MEW (this feature is not implemented on MEW im just referring to it as an example). However, I still believe this is a whole another communication model, we cannot simply expect all dapps to host themselves inside an iframe. Gnosis problem is actually not a problem, it is feature that they implemented to be secure and they follow a different wallet model, and libraries such as walletconnect can enable more features they need. This EIP is specifically addressing extension wallets and the current injection model, which is used by over 15 million users out there, and how we can solve a major problem by changing few lines of code. Regarding your ipfs comment, afaik current extension wallets work fine with ipfs so Im not sure why we need iframes.     MicahZoltu:  iframe based wallets require zero permissions and can be IPFS hosted which gives us strong decentralization in the distribution of the wallet rather than relying on Chorme/Firefox/Safari extension stores (which have been known to randomly shutdown/block wallets in the past).   At the same time, lets say one of the extension wallets gets shutdown by the respective store, user will still lose access to that wallet whether it is an iframe wallet or not.     MicahZoltu:  The changes to manifest v3 you mentioned are compelling in suggesting this isn\u2019t \u201cjust a hack\u201d as I previously expressed, though I would like to hear if Firefox is going to implement that or not as they have been pushing back on Chrome\u2019s machinations for manifest v3 due to Chrome seemingly having forgotten to put its user\u2019s first. However, I don\u2019t think injection being not-a-hack is enough to convince me that we should continue down the injection road. I would want to see a viable path away from extension wallets to iframe wallets, which I think is very important.   Firefox already implemented it even on MV2 scripting.executeScript() - Mozilla | MDN     MicahZoltu:  don\u2019t think injection being not-a-hack is enough to convince me that we should continue down the injection road. I would want to see a viable path away from extension wallets to iframe wallets,   Please dont think Im trying to discourage your view or opinion, I do believe iframe wallets can work as another type of wallet. If you want it to be the main type of wallet, it is a major change that involves dapp devs, wallet devs, well documented communication layer, and ton of time. Unfortunately, current market is too big to make such a big change immediately. ",
+                    "links": [
+                        "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/scripting/executeScript"
+                    ],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.139611992945326
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "17",
+                    "likes": "0",
+                    "time": "02/11/2022-05:27:46",
+                    "content": "    kvhnuke:  you should look into walletconnect they are doing something similar to what you are referring, basically their relays acts as the middleware to create a communication channel between 2 websites.   WalletConnect requires a centralized (and hence censorable and privacy violating) relay in the middle.  I hear they are working on trying to figure out a way to connect without a relay, but at the moment this solution is going in the opposite direction of censorship resistance, unpermissioned, trust minimization, and privacy preservation.     kvhnuke:  we cannot simply expect all dapps to host themselves inside an iframe   Dapps would not host themselves in iframes, the user would choose to load a dapp within their wallet\u2019s iframe.  Dapps would be hosted normally (ideally IPFS, but via whatever means they currently do).     kvhnuke:  Gnosis problem is actually not a problem, it is feature that they implemented to be secure and they follow a different wallet model   Having spoken with Gnosis on this issue, they do it this way because it is the only viable option, not because they want to.  They either need to author an extension (which greatly complicates things when users want to sign a transaction with an extension wallet), or they need every supported app to have a custom integration, or they need to centralize by using WalletConnect.  These aren\u2019t great options, and in their view the custom integration route was the preferred of the options, not because it is good but because it is better than the others.     kvhnuke:  how we can solve a major problem by changing few lines of code.   I think this is where we disagree.  While I agree that this is a small change, it is none the less a breaking change.  If we are going to go through the process of introducing a breaking change, a deprecation cycle, and end of life policy we should use that opportunity to fix more than the \u201csmallest possible thing\u201d.  The cost of any breaking change is extremely high and we should spend it making large changes that solves multiple problems rather than just using it to fix one tiny little thing.     kvhnuke:  Regarding your ipfs comment, afaik current extension wallets work fine with ipfs so Im not sure why we need iframes.   Extension wallets work fine with IPFS hosted dapps. IPFS hosted web wallets do not work at all with current extension wallets (that use injection).     kvhnuke:  At the same time, lets say one of the extension wallets gets shutdown by the respective store, user will still lose access to that wallet whether it is an iframe wallet or not.   It seems like you still may be misunderstanding my proposal.  The wallet is just a website like ipfs://<cid> or (if you don\u2019t care about security) https://whatever.  There is nothing hosted on any store, and if you use IPFS there is nothing even hosted on a central server that can be taken down.  As long as the IPFS network is functional and someone somewhere is pinning or using the wallet (thus keeping the cache warm), it will be available to everyone.  The wallet has an iframe inside of it that loads the dapp in question.  This could be loaded via some sort of dapp browser, or it may allow the user to just enter any website into an internal address bar and load it.     kvhnuke:  Firefox already implemented it even on MV2 scripting.executeScript() - Mozilla | MDN    Ah, nice!     kvhnuke:  it is a major change that involves dapp devs, wallet devs, well documented communication layer, and ton of time   See above, I suspect you still may not be understanding the model I\u2019m proposing.  While long term it would require changes from both wallets and dapps (just as your proposal would), there are intermediate solutions that allow us to create a transition path that doesn\u2019t require getting everyone to do everything at once.  I just want to highlight that my primary argument at this point is that any breaking change (such as what you and I are both proposing) should including fixing as much as possible because breaking changes are extremely expensive to get adopted (I think we agree on this point).  Your proposal is to make the smallest breaking change possible, while I am advocating that if we are going to eat that cost we should fix as much as possible and not waste the effort on a relatively small change. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.612289682539683
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "18",
+                    "likes": "0",
+                    "time": "09/11/2022-21:27:59",
+                    "content": "    MicahZoltu:  WalletConnect requires a centralized (and hence censorable and privacy violating) relay in the middle. I hear they are working on trying to figure out a way to connect without a relay, but at the moment this solution is going in the opposite direction of censorship resistance, unpermissioned, trust minimization, and privacy preservation.   Yea I think their main way of decentralizing is by letting anyone becomes a relay, and the relay is open-source as well. but yea I agree, it does introduce a level of centralization.     MicahZoltu:  Dapps would not host themselves in iframes, the user would choose to load a dapp within their wallet\u2019s iframe. Dapps would be hosted normally (ideally IPFS, but via whatever means they currently do).   Going back to iframe wallet comment, currently in order to do that it doesn\u2019t require a whole new EIP  afaik you can simply call parent.ethereum (I know you are not a fan of this) from the iframe so dapps can simply do something like const provider = window.ethereum || parent.ethereum and current functionality will be there. Parent window only need to implement the provider interface as a global variable. You achieved a similar functionality in your code as well. However, Iframes have whole another set of problems, starting from ton of vulnerabilities to all the UX/UI issues this is why lot of other projects gave up on it. I remember there was another project who tried to integrate dapps into their wallet interface however, dapps UI doesnt scale properly as no one is expecting it to be inside an iframe also responsiveness goes out the door as soon as you put a website inside an iframe. Security issues are whole another conversation. Due to potential phishing, lot of website also use a header so you cant embed it inside an iframe. Due to all this, I dont think iframe wallet will be a good approach. That said, I am not against rest of your proposal of using window.postMessage directly instead of injecting. However, my argument is that we already use it behind the scenes with injected wallets. Your approach client->postMessage->wallet but the postMessage communication layer needs to be rewritten to handle the issues I mentioned on one of my previous comments. Current approach client->dedicated variable->postMessage->wallet This way lets you communicate and make use of existing code base without major changes.     MicahZoltu:  Having spoken with Gnosis on this issue, they do it this way because it is the only viable option, not because they want to.   I honestly dont believe best approach for Gnosis to try and host every dapp inside and iframe, it will vastly reduce the user experience and they will run into ton of security issues.     MicahZoltu:  They either need to author an extension (which greatly complicates things when users want to sign a transaction with an extension wallet), or they need every supported app to have a custom integration, or they need to centralize by using WalletConnect.   Not sure why it would complicates things when the user wants to sign a transaction? with a proper support to multi wallet standard, they can simply add window.evmprovider.gnosis variable and handle the communication however they want. Also, we all need to understand, at the end of the day there will be 100s of different wallet types. If you open any of the wallet onboarding libraries (web3onboard, web3modal, web3react) they all have different integrations for wallets. We will never have just one standard that every wallet will follow. Because of this, if you are a wallet provider part of the deal is going after dapps and adding custom integrations and thats unfortunately what lot of wallets including Enkrypt needs to do since there is no proper way of letting dapps know which wallets are available.     MicahZoltu:  I think this is where we disagree. While I agree that this is a small change, it is none the less a breaking change. If we are going to go through the process of introducing a breaking change, a deprecation cycle, and end of life policy we should use that opportunity to fix more than the \u201csmallest possible thing\u201d. The cost of any breaking change is extremely high and we should spend it making large changes that solves multiple problems rather than just using it to fix one tiny little thing.   Breaking changes are not binary, you have to take into consideration how much work you are expecting the world to do in order to support your change. More popular you are even changing one line of code across every place it is used could be next to impossible. This is why we are stuck with internet protocols that were invented in 3-4 decades ago. Changes proposed by this EIP is easier to adopt than the changes you are proposing. At the same time, your proposed changes doesnt provide any significant advantages. We can come up with an extremely complex model that could be applied to every blockchain out there, however it doesn\u2019t mean people will adopt it and we will still have issues around window.ethereum for the foreseeable future.     MicahZoltu:  IPFS hosted web wallets do not work at all with current extension wallets (that use injection).   I am consfused about this, wdym by \u201cIPFS hosted web wallets\u201d also I am not sure whether wallet could be fully decentralized. Blockchain data is not in ipfs so the wallet needs to connect to a centralized node at some point to get the data and broadcast tx.     MicahZoltu:  it will be available to everyone. The wallet has an iframe inside of it that loads the dapp in question. This could be loaded via some sort of dapp browser, or it may allow the user to just enter any website into an internal address bar and load it.   I dont think this could be done with current technology, how is the wallet getting blockchain data? it still needs to interact with a node. Only way this could work without a node, if the user willing to manually set the gasprices, nonce and willing to take the signed tx and broadcast it somewhere else or user needs to have a node running or access to rpc address. This is a very specific use case and not sure how many users are technical enough to even achieve this.     MicahZoltu:  Your proposal is to make the smallest breaking change possible, while I am advocating that if we are going to eat that cost we should fix as much as possible and not waste the effort on a relatively small change.   Yea but like I mentioned before all breaking changes are not the same, if we can make a change that can solve a problem with least amount of work I believe that will get adopted rather than a massive change. Otherwise users will be the ones who\u2019ll suffer forever. Also dont forget the fact that, each new line of code can introduce a vulnerability that we didn\u2019t think about, injection method has been battle tested for 7+ years. I think best cause of action for your proposal is to make it an EIP and have a separate discussion around it. I will be more than happy to participate and give you my thoughts around the extra communication layer we need, I can also make Enkrypt team implement it if it is satisfactory. There is no reason for a wallet to only support one standard. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.363094662429769
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "19",
+                    "likes": "0",
+                    "time": "10/11/2022-05:26:02",
+                    "content": "    kvhnuke:  Breaking changes are not binary, you have to take into consideration how much work you are expecting the world to do in order to support your change. More popular you are even changing one line of code across every place it is used could be next to impossible. This is why we are stuck with internet protocols that were invented in 3-4 decades ago. Changes proposed by this EIP is easier to adopt than the changes you are proposing. At the same time, your proposed changes doesnt provide any significant advantages. We can come up with an extremely complex model that could be applied to every blockchain out there, however it doesn\u2019t mean people will adopt it and we will still have issues around window.ethereum for the foreseeable future.   Putting this first (out of order from your message) since I think the rest of the discussion is largely not relevant as long as we disagree on this point. While you are correct that a tiny change is easier to get adopted than a large one, I think this is lost in the noise to the overall cost of an ecosystem wide breaking change.  If we assign arbitrary units, getting the entire ecosystem to adopt any breaking change (e.g., epsilon sized) is say 1000 units of effort and a one line change is +1 units of effort and a big change like switching to window.postMessage is +10 units of work.  Yes, it is 10x harder, but it is still insignificant compared to the cost of doing any change. Your mentioning of decades old protocols I feel helps my argument here because it exemplifies just how amazingly hard it is to do any change.  IPv6 is arguably one of the smallest possible breaking changes to a core internet protocol, just changing the size of a number essentially, yet it has taken ~25 years to get adopted and it still hasn\u2019t supplanted IPv4.  I really think we need to get this right rather than doing the smallest thing possible because it may take us years to get broad adoption of anything, and that thing should be provide the maximum utility as we may not get another chance to do a breaking change (the more Ethereum grows, the harder it will be).      kvhnuke:  Yea I think their main way of decentralizing is by letting anyone becomes a relay, and the relay is open-source as well. but yea I agree, it does introduce a level of centralization.   Due to firewalls, this generally doesn\u2019t work because users don\u2019t run servers that can accept incoming HTTP connections.  I have heard that there is a way to get two devices on the same internal network communicating (thus potentially avoiding NAT issues), but I\u2019m not sure how realistic this is.     kvhnuke:  Iframes have whole another set of problems, starting from ton of vulnerabilities to all the UX/UI issues this is why lot of other projects gave up on it. I remember there was another project who tried to integrate dapps into their wallet interface however, dapps UI doesnt scale properly as no one is expecting it to be inside an iframe also responsiveness goes out the door as soon as you put a website inside an iframe. Security issues are whole another conversation. Due to potential phishing, lot of website also use a header so you cant embed it inside an iframe. Due to all this, I dont think iframe wallet will be a good approach.   I would like more details on the downsides to iframe wallets you see.  I have implemented one, and Gnosis has implemented one, and I haven\u2019t run into any of the problems you mentioned here.  The only problem we have both run into is the fact that dapps require an injected provider and so don\u2019t work by default (you need an extension to do the injecting, or you need the dapp to support another mechanism of connecting to the host wallet). What are the fishing vectors you see here? What are the security vulnerabilities? What are the performance problems? For the UI issues I think perhaps you are imagining a visual iframe with the host all around it and it has its own scrollbars and whatnot?  I\u2019m envisioning something more like the host page just has a little toolbar on the top or bottom, or perhaps a floating tab on one of the sides but the app\u2019s iframe is basically the entire window.  In the one I wrote, it was a floating header bar that could be collapsed down to just a tab that you could click to bring it back, but the dapp got essentially 100% of the viewport to itself.  Gnosis does have left and top bars, and I haven\u2019t noticed any problems with it but perhaps I just haven\u2019t used enough dapps to run into trouble?     kvhnuke:  lot of website also use a header so you cant embed it inside an iframe   This one is quite unfortunate, and frustrates me quite a bit.  I don\u2019t think dapps should be doing this (I am not convinced it offers meaningful protection for a dapp), but you are correct that some do it none the less.     kvhnuke:  Your approach client->postMessage->wallet but the postMessage communication layer needs to be rewritten to handle the issues I mentioned on one of my previous comments.   I\u2019m not sure which comment you are referring to specifically, but I believe I have already replied and mentioned that these things were already solved in my prototype SDK?  I would be happy to discuss more, but I feel like it is out of scope of this specific discussion beyond just saying that it is a very solvable problem and one I believe is in fact already solved in my prototype (so not just theoretically solvable).     kvhnuke:  they can simply add window.evmprovider.gnosis variable and handle the communication however they want   They literally cannot do this.  This is exactly the problem I\u2019m trying to describe.  An iframe host cannot inject into or mutate the hosted iframe.  This is a core browser security/sandbox thing that is very unlikely to go away.  They cannot provide any variables to the dapp they have in an iframe.  The only way they can communicate with the iframe dapp is via window.postMessage.     kvhnuke:  I am consfused about this, wdym by \u201cIPFS hosted web wallets\u201d also I am not sure whether wallet could be fully decentralized.   Meaning iframe host wallets like Gnosis, which can be hosted on IPFS (unlike a browser extension, which cannot be).     kvhnuke:  Blockchain data is not in ipfs so the wallet needs to connect to a centralized node at some point to get the data and broadcast tx.   Users should be running their own node or using an embedded light client, but that is a separate problem that I am advocating for elsewhere.     kvhnuke:  I dont think this could be done with current technology, how is the wallet getting blockchain data? it still needs to interact with a node. Only way this could work without a node, if the user willing to manually set the gasprices, nonce and willing to take the signed tx and broadcast it somewhere else or user needs to have a node running or access to rpc address. This is a very specific use case and not sure how many users are technical enough to even achieve this.   The iframe host wallet behaves the same as an extension wallet.  It would allow the user to set a JSON-RPC provider, or it would have an embedded light client, or it would provide a centralized RPC for the user. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.34639190821256
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "20",
+                    "likes": "0",
+                    "time": "10/11/2022-21:35:31",
+                    "content": "    MicahZoltu:  While you are correct that a tiny change is easier to get adopted than a large one, I think this is lost in the noise to the overall cost of an ecosystem wide breaking change. If we assign arbitrary units, getting the entire ecosystem to adopt any breaking change (e.g., epsilon sized) is say 1000 units of effort and a one line change is +1 units of effort and a big change like switching to window.postMessage is +10 units of work. Yes, it is 10x harder, but it is still insignificant compared to the cost of doing any change.   I can get behind this if the extra work you are proposing can add additional advantages. We shouldn\u2019t do extra work if the extra work can be boiled down to few lines. What you are proposing is only applicable to a very specific use case where 99.9% of the the current Ethereum users are not technical enough to handle [running nodes (either full/light), I understand the fact this proper decentralization however not good user experience].     MicahZoltu:  IPv6 is arguably one of the smallest possible breaking changes to a core internet protocol, just changing the size of a number essentially, yet it has taken ~25 years to get adopted and it still hasn\u2019t supplanted IPv4.   I definitely do not agree with this, IPv6 is one of the biggest major changes internet protocol is going through. It might look simple but definitely not simple, they even had to abandon IPv5.     MicahZoltu:  Due to firewalls, this generally doesn\u2019t work because users don\u2019t run servers that can accept incoming HTTP connections. I have heard that there is a way to get two devices on the same internal network communicating (thus potentially avoiding NAT issues), but I\u2019m not sure how realistic this is.   Firewalls blocking is not something we can fix with any standards. Firewalls can prevent users from visiting any site or running any node including Ethereum and even ipfs. Iframe issue? A simple google search on \u201cIframe vulnerabilities\u201d will give you everything you need from clickjacking to phishing. X-Frame-Options is a recomended header for you to follow for best security practices in web, thus preventing your site being embeded inside other sites. You should also check \u201cwhy X-Frame-Options\u201d. At the same time, based on my understanding you do believe having scrollbars in a frame is ok. However, if you talk with any UI/UX person they will highly disagree with you. So yea iframes have ton of issues and since this is EIP is not about that I wouldn\u2019t get into those. Like I mentioned before, I dont believe advocating for iframe wallets is the best way to propose your idea. I do believe the technical side of things that you achieved with your way, however it is hard to justify the extra work that goes into it. If you\u2019d like iframes wallets to work then the easiest way would be asking web3onboarding libraries to change one line of code to something like this const provider = parent.ethereum || window.ethereum or based on this EIP const providers = parent.evmproviders || window.evmproviders. This will let the iframe talk to the host frame. Again, if you make your idea into EIP I would be more than happy to contribute ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.245242408557625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/jmcho",
+                    "index": "21",
+                    "likes": "0",
+                    "time": "23/11/2022-19:21:30",
+                    "content": "Hey @kvhnuke, I\u2019m from the Coinbase Wallet team. What\u2019s the status on this EIP? We\u2019re very supportive of this idea and would be happy to support. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "22",
+                    "likes": "0",
+                    "time": "23/11/2022-20:14:53",
+                    "content": "hey @jmcho thank you for the support! we are getting it merged to Last Call! https://github.com/ethereum/EIPs/pull/6018 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kdenhartog",
+                    "index": "23",
+                    "likes": "1",
+                    "time": "24/11/2022-22:55:29",
+                    "content": "First, off I want to thank the author for taking the time to try and address this concern. I believe this is a legitimate problem so it\u2019s good that we\u2019re taking the time to find a solution. However, I don\u2019t think the way in which this is being done right now by shoving an EIP through the process is a good solution that will lead to actually solving the problem personally. In fact, I think it stands to cause additional harm and it\u2019s only through coordination between a large number of wallet providers (beyond just the Ethereum ecosystem too) that will lead to solving this problem. I\u2019ll note 7 concerns I have with this current EIP:  This proposal as it stands pollutes the global namespace further It doesn\u2019t assign a specified date that window.ethereum should be expected to be deprecated This is highly EVM specific when numerous wallets are moving to a multichain approach. It only recommends a method for assigning keys in order to distinguish different chains.  What\u2019s to stop another wallet from intentionally prototype polluting other keys in order to stop other wallets from being used? How will a web3modal style library know that the key is associated with the appropriate wallet?   It doesn\u2019t address fingerprinting concerns that would arise from websites being able to uniquely identify users based on the unique assortment of wallets they support. It doesn\u2019t comment in the security considerations section about how prototype pollution attacks are expected to be prevented here if a malicious wallet wanted to modify a transaction before it got sent to the wallet in order to It doesn\u2019t address compatibility concerns with other related EIPs such as EIP-5593 or CASA\u2019s approach with CAIP-25  For these reasons Brave does not intend to support this at this point. From my understanding some other large wallets are also hesitant to support this too and will chime in here shortly. As it stands this proposal has not gathered appropriate consensus, has been rushed through the entire EIP status in under 2 months, and will create a greater fracture in wallet compatibility for the web3 ecosystem that will limit their ability to interoperably work with multiple wallets. By this I mean dApps will now have to question whether they should support window.evmprovider along with window.ethereum,  window.solana, window.web3 if they\u2019re a multichain dApp like Opensea. At this point, I\u2019d hardly consider this a \u201cstandard\u201d as there\u2019s not been appropriate discussion to confirm interopability, make sure time has been given for wallets to review this and provide feedback, and address legitimate concerns with this approach. At best, it\u2019s a documentation of a direction \u201ca few major wallets and major web3 onboarding libraries\u201d have decided to go without appropriately gathering consensus. Looking at this thread so far it\u2019s basically just been a discussion between the Author (@kvhnuke) and @MicahZoltu with one other wallet (coinbase - @jmcho) expressing support for it. If this is the minimum bar that EIP editors feel is necessary in order to upgrade this EIP to the \u201cfinal call\u201d status that impacts interoperablity for the entire Ethereum and web3 ecosystem and delegitimizes the entire organisational process of EIPs and shows that EIPs are not intended to be for \u201cgathering consensus and shipping code\u201d. Is that really what we\u2019re looking to achieve here? Let\u2019s slow down, properly alert other wallets to this EIP, get them to provide feedback, address concerns to gain consensus on an approach together and find a solution to this problem. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "3rd party asking questions about proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.6172330447330445
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "24",
+                    "likes": "0",
+                    "time": "26/11/2022-00:35:02",
+                    "content": "Speaking for MetaMask, I second the reservations put forth by @kdenhartog / Brave, and we also have no intention of implementing this standard as written. While the problems noted by the EIP authors are real, we believe that injected providers are fundamentally flawed, and we should seek to abandon that practice and window.ethereum entirely. We encourage all wallets to invest our collective resources in provider standards that support non-EVM chains and do not rely on injection, such as CAIP-25 and its related standards (WIP). In addition to @kdenhartog\u2019s points, we oppose this EIP in its current form because:  Extensions must possess extremely broad powers over every webpage in the user\u2019s browser in order to inject a script tag. The Google Chrome team recently fixed a bug such that it is now possible for an extension to receive messages from any webpage using chrome.runtime.connect and/or .sendMessage. This makes it relatively straightforward to abandon injection entirely, which is what MetaMask intends to do.  See the externally_connectable permission in the Chrome extensions documentation for more details. Valid matches patterns now includes http://*/* and https://*/*.   The EIP does not specify who will maintain the namespace for wallets, or in what manner they will do so.  Solving the problem of injection race conditions is fundamentally a social coordination problem for wallets. While this standard could help facilitate that coordination, we don\u2019t believe that laying claim to another global name is the solution. We should instead invest our energies in provider standards that avoid injection entirely. ",
+                    "links": [
+                        "https://bugs.chromium.org/p/chromium/issues/detail?id=679238#c32",
+                        "https://developer.chrome.com/docs/extensions/mv3/manifest/externally_connectable/",
+                        "https://ethereum-magicians.org/t/discussion-of-criteria-for-advancing-eip-status-a-straw-man-proposal/11995/13"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving negative feedback on proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.392708333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/rekmarks",
+                    "index": "25",
+                    "likes": "1",
+                    "time": "26/11/2022-00:35:49",
+                    "content": "All of the above said, in the process of writing my objection, it does strike me that this EIP could be more palatable with some modifications. Rather than adding a property to window, we could define a property of window.ethereum that serves the same purpose as window.evmproviders, perhaps simply window.ethereum.providers. This would be pretty ugly, but so is window.ethereum itself, and this ought to be completely non-disruptive for both dapps and wallets. I\u2019m curious what to hear what the authors, @kdenhartog, and others have to say about this idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.03125
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "26",
+                    "likes": "1",
+                    "time": "07/12/2022-23:39:08",
+                    "content": "@kdenhartog and @rekmarks  thank you for joining the discussion, I was trying to get as many wallets as possible to enter the discussion since we need a solution now and not in few years, specially since we had this issue for the past 6 years or so without anyone trying to solve it. We personally reached out to MM team multiple times however, up until now no one wanted to enter the discussion. Probably because they are the least affected wallet due to current issue. That said, I am glad you both joined.     kdenhartog:  This proposal as it stands pollutes the global namespace further   Can you clarify? what is the disadvantage of adding a new variable to global namespace?     kdenhartog:  It doesn\u2019t assign a specified date that window.ethereum should be expected to be deprecated   I don\u2019t believe adding a specific date to deprecated window.ethereum will help the EIP at all, specially since it is a proposal and not a mandatory standard that everyone should follow. Also EIPs should pass the test of time, adding a date to an EIP is simply not necessary.     kdenhartog:  This is highly EVM specific when numerous wallets are moving to a multi-chain approach.   I don\u2019t believe Ethereum Proposals should try to improve all other chains, and this is not going to be feasible. For example, Enkrypt is built to be multi-chain because of that we have to go over ton of other non-evm chains.  There is no way we can limit them to following an Ethereum proposal or even a CAIP. Even if we try to do that, there is no reason for other chains to follow that.     kdenhartog:  It only recommends a method for assigning keys in order to distinguish different chains.  What\u2019s to stop another wallet from intentionally prototype polluting other keys in order to stop other wallets from being used? How will a web3modal style library know that the key is associated with the appropriate wallet?    UUID is assigned in this EIP is enforce the use of a single unique identifier for web3 providers. Since we are dealing with JS there is no way we can prevent some other extension from overriding an existing variable. That is what currently happening with window.ethereum every installed wallet is trying to fight for window.ethereum. I cant think of a way to make sure this doesn\u2019t happen, again this is a JS issue that I don\u2019t believe we will be able to address in an EIP     kdenhartog:  It doesn\u2019t address fingerprinting concerns that would arise from websites being able to uniquely identify users based on the unique assortment of wallets they support.   as I mentioned in a previous comment this still comes down to the wallet, wallet can decide when to inject. This is a wallet requirement rather than an EIP. I do believe wallets should inject only if the user wants to inject. For example by clicking the wallet icon on the browser, however persistent injection over the past 6 years made many libraries to automatically detect and wait for window.ethereum to be present at the DOM load, if it is not there those libraries will simply fail. That said, yea this still needs to be handled at wallet level. This EIP only address the namespace to follow during injection.     kdenhartog:  It doesn\u2019t comment in the security considerations section about how prototype pollution attacks are expected to be prevented here if a malicious wallet wanted to modify a transaction before it got sent to the wallet in order to   Again, this is not something we can address specially since it is JS. Any wallet can override the variable. However, I believe with what @rekmarks mentioned in his comment using chrome.runtime.connect might be a potential future solution. However, please see my below questions regarding that.     kdenhartog:   It doesn\u2019t address compatibility concerns with other related EIPs such as EIP-5593 or CASA\u2019s approach with CAIP-25    EIP-5593 does not interfere with this EIP, if anything we can extend EIP-5593 to support evmproviders rather than ethereum CAIP-25 is a good first step trying to unify all blockchains, however success of this is yet to be determined. CAIP is clearly written by evm devs and didnt take into consideration lot of other types of chains mainly substrate ones. Like I mentioned before, trying to unify every single type of blockchain is not feasible, there is no way we can make every chain follow a certain set of guidelines.     kdenhartog:  By this I mean dApps will now have to question whether they should support window.evmprovider along with window.ethereum, window.solana, window.web3 if they\u2019re a multichain dApp like Opensea.   There is no need for them to pick anything, they can support all of them at the same time, this is how it currently works. Maybe thats why I dont see the problem with this, what kind of problem do you see?     kdenhartog:  Let\u2019s slow down, properly alert other wallets to this EIP, get them to provide feedback, address concerns to gain consensus on an approach together and find a solution to this problem.   Actually, we reached out to all major wallets. I dont believe we reached out to brave as we didnt think you were affected. After waiting 2 months I decided to move the EIP to review process. There was no reason for me to wait any longer if no one has any other comments. Users were affected by this issue for over 6 years now and no other EIP even tried to address this issue.     kdenhartog:  If this is the minimum bar that EIP editors feel is necessary in order to upgrade this EIP to the \u201cfinal call\u201d status that impacts interoperablity for the entire Ethereum and web3 ecosystem and delegitimizes the entire organisational process of EIPs and shows that EIPs are not intended to be for \u201cgathering consensus and shipping code\u201d. Is that really what we\u2019re looking to achieve here?   Actually Im not sure whether you understand the EIP process, it is not the job of EIP reviewers to go through every single EIP to make sure it is valid, verified and all good. It is up the EIP author (in this case me) to make sure all of that. Also, once an EIP become final if does not mean everyone should follow that. EIPs are proposals to improve Ethereum. EIP-1: EIP Purpose and Guidelines ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.381968394260061
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "27",
+                    "likes": "0",
+                    "time": "07/12/2022-23:47:41",
+                    "content": "    rekmarks:  We encourage all wallets to invest our collective resources in provider standards that support non-EVM chains and do not rely on injection, such as CAIP-25 and its related standards (WIP).   Please see my above comment regarding this.     rekmarks:  Extensions must possess extremely broad powers over every webpage in the user\u2019s browser in order to inject a script tag. The Google Chrome team recently fixed a bug such that it is now possible for an extension to receive messages from any webpage using chrome.runtime.connect and/or .sendMessage. This makes it relatively straightforward to abandon injection entirely, which is what MetaMask intends to do.  See the externally_connectable permission in the Chrome extensions documentation for more details. Valid matches patterns now includes http://*/* and https://*/*.    Thank you for bringing this to my attention, I was not aware of this. This will definitely improve the communication method from window to background. However, I do have couple of questions.  Do you have a test implementation somewhere? This doesnt seem to be supported by firefox? What is process you are thinking of to let the dapp know which extensionIDs are available? specially during development extensionID changes alot and both chrome.runtime.connect and chrome.runtime.sendMessage requires an extension ID. Without that no dapps will be able to connect and we should have a way of letting dapps know which IDs are available.      rekmarks:  The EIP does not specify who will maintain the namespace for wallets, or in what manner they will do so.   No one needs to maintain the namespace, if someone needs to maintain a namespace for any EIP we cant make sure that maintainer will be present in 20 years. simply wallets needs to use their wallet name as the key in the evmproviders object     rekmarks:  We should instead invest our energies in provider standards that avoid injection entirely.   I am all ears for a solution, unfortunate truth is no one is proposing any      rekmarks:  All of the above said, in the process of writing my objection, it does strike me that this EIP could be more palatable with some modifications. Rather than adding a property to window, we could define a property of window.ethereum that serves the same purpose as window.evmproviders, perhaps simply window.ethereum.providers. This would be pretty ugly, but so is window.ethereum itself, and this ought to be completely non-disruptive for both dapps and wallets. I\u2019m curious what to hear what the authors, @kdenhartog, and others have to say about this idea.   Main reason why I dont like this approach is if for example there is wallet that doesnt follow the EIP they can replace the whole window.ethereum object and therefor remove all wallets under window.ethereum.providers ",
+                    "links": [
+                        "https://bugs.chromium.org/p/chromium/issues/detail?id=679238#c32",
+                        "https://developer.chrome.com/docs/extensions/mv3/manifest/externally_connectable/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.466610863095238
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "28",
+                    "likes": "0",
+                    "time": "08/12/2022-05:59:13",
+                    "content": "    kvhnuke:      rekmarks:  We should instead invest our energies in provider standards that avoid injection entirely.   I am all ears for a solution, unfortunate truth is no one is proposing any       GitHub    GitHub - Zoltu/ethereum-browser-sdk: An SDK for communicating between... An SDK for communicating between Ethereum dapps and Ethereum enabled browsers via events. - GitHub - Zoltu/ethereum-browser-sdk: An SDK for communicating between Ethereum dapps and Ethereum enabled...      ",
+                    "links": [
+                        "https://github.com/Zoltu/ethereum-browser-sdk"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 3.75
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "29",
+                    "likes": "0",
+                    "time": "09/12/2022-09:06:31",
+                    "content": "    MicahZoltu:  cheme handle   This idea with the scheme handlers is not bad. But it doesnt solve the problem to know which ones are available, and which extension to use for them (should there be multiple existing) If you have a good idea, I would like to see a standard proposal that solves all these issues. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.45
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "30",
+                    "likes": "0",
+                    "time": "09/12/2022-10:46:14",
+                    "content": "    frozeman:  This idea with the scheme handlers is not bad. But it doesnt solve the problem to know which ones are available, and which extension to use for them (should there be multiple existing) If you have a good idea, I would like to see a standard proposal that solves all these issues.   I think we have ruled out scheme handlers at this point for some reason, maybe because they only work the way we want in a subset of browsers or something? The link I shared above has a handshake via window.postMessage that is initiated by the app and any extension can choose to respond to the handshake broadcast.  This allows many extensions to all be setup and the individual extensions can decide on how to alert the user that \u201can app wants to connect, should I respond?\u201d.  This provides the user with privacy by default by not telling the app about any attached extensions until after the app has requested to connect and the extension has prompted the user. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.075
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "31",
+                    "likes": "1",
+                    "time": "10/12/2022-15:20:44",
+                    "content": "The big problem is, that then three extensions will respond if you have three installed , and it will get very annoying to cancel to away. From a UX perspective, it\u2019s better if the user gets to select which extension he wants to use in a single window, or the app chooses extension ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.628571428571428
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "32",
+                    "likes": "0",
+                    "time": "11/12/2022-05:47:28",
+                    "content": "    frozeman:  the app chooses extension   This fingerprints users and violates their privacy.  By having the dapp announce itself to the plugins first, we have a workflow that encourages user privacy protection by default rather than defaulting to a flow that violates user privacy. That being said, if users are OK with sacrificing their privacy, they can simply tell their signer to auto-respond to dapp announcements so they don\u2019t get a prompt/pop-up/whatever.  It is also worth noting that the extensions are loaded off local disk while dapps are loaded from remote sources.  Also, not all dapps need access to a signer at the same point in their workflow.  For example, one can browse peep.eth without signing in and the sign-in is triggered by a user interaction in the dapp and a dapp may not actually be prepared to receive extension announcements until sometime very late in the page\u2019s lifecycle. By having the dapp initiate the handshake (e.g., when a user clicks connect button), we can be relatively confident that the extensions are ready to handle the handshake, but if the extension initiates the handshake there is a good chance the dapp isn\u2019t ready. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8307692307692305
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "33",
+                    "likes": "0",
+                    "time": "11/12/2022-15:51:45",
+                    "content": "@MicahZoltu Don\u2019t forget in Ethereum eco system wallets are not just signers. Wallets also provide access to the nodes. Sure a dapp can have it\u2019s own connection to a node but that is not how it currently works. At the same time going back to what I mentioned previously and what @frozeman said. It is going to be a disaster from a UX point of view when the user initiate a sign request, where 5 different wallets will popup with the same signing request. Regarding fingerprinting, yea it definitely comes down to wallet settings where the user can decide at which point they want to let the app know. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.388888888888888
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "34",
+                    "likes": "0",
+                    "time": "11/12/2022-16:41:50",
+                    "content": "    kvhnuke:  At the same time going back to what I mentioned previously and what @frozeman said. It is going to be a disaster from a UX point of view when the user initiate a sign request, where 5 different wallets will popup with the same signing request.   That isn\u2019t the UX.  The UX is that the dapp broadcasts that it wants to know if any wallets are connected, and then each of the wallets can respond (or not!)  The dapp can then present the list to the user, similar to today.  Once the dapp has established a connection (or multiple!) it can then use that going forward with the same UX as today. For a dapp, the UX doesn\u2019t really change other than instead of listing only one of MM + Brave + Gnosis + other in the selection UI, it can list many.     kvhnuke:  @MicahZoltu Don\u2019t forget in Ethereum eco system wallets are not just signers. Wallets also provide access to the nodes. Sure a dapp can have it\u2019s own connection to a node but that is not how it currently works.   I would really like to see this changed, but I\u2019ve accepted it is out of scope for this discussion.  I have my limits\u2026   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.658333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "35",
+                    "likes": "0",
+                    "time": "13/12/2022-14:42:53",
+                    "content": "I haven\u2019t read the entire conversation but i try to summarise the gist of the problem, so we can find a good solution faster. Some precursor:  When I proposed the initial ethereum provider (https://github.com/ethereum/interfaces/issues/16), there were not many wallets, mainly MetaMask, thats why the idea of multiple providers was not really considered. The idea of multiple chains was. But there was always the option to extend the options object with more properties like chainId  in the later EIP 1193 it was purposefully that the object exposed on window was not specified in the standard, to make multiple objects possible. ideally the dapp shouldn\u2019t be required to know which extension is used (therefore i was never a fan of the .isMetaMask); but since we have a lot of EVM chains and extensions, this need is now here. Going forward even more so, as extension will not be simple \u201cwallets\u201d with keys, but full on internet account tools I chose initially the window.ethereum as window.web3 was already taken by the web3.js lib, and we needed to move away from injecting web3 the lib directly. I would prefer now the word window.web3Providers for example. we are building a new browser extension for universal profiles (ERC725 smart contract based accounts), so we are exactly hitting this issue now (mainly relevant for the LUKSO blockchain initially, but later also for others).  The options:  using simply a certain type window.postMessage() message (with or without handshake request):  This would be clean Issue is that you won\u2019t know to which extension you are talking to and multiple could react. leading to many window popping up (if the user has many extensions), which is bad UX even if the dapp loads a provider lib, that knows how to talk through postMessage to a specific extension, the dapp doesnt know which ones exist, and would need to try/catch send messages, until the correct extension responds. If this message would contain network IDs etc like CAIP25 proposes, there could still be multiple extension that respond for the same chain.  requiring the lib to show a popup asking which extension that responded to use.     exposing an object like window.web3Providers (or as you propose @kvhnuke window.evmProviders)  advantage:  the dapp/user can choose as he can be asked which extension to use dapps can choose extension, if they know a certain works well for a certain network extensions don\u2019t overwrite each other   disadvantage:  the object could be overwritten by a malicious extension (though the user will notice and deinstall this extension fast) pollutes the window object it would need a default provider, or also be present on the object as array keys, so window.web3Providers[0] can be chosen if the dapp doesnt want to chose/let the user chose     Concerning privacy:  this can be solved on the user side by choosing \u201cThis extension can only read the site data, if clicked\u201d.  This could also work as a solution to choose which extenison to use, but its cumbersome; not the default setting in chrome; and when multiple extension are enabled for a website, you end up with the same issue; or need to close the tab to get to the initial state (where none is enabled)   identifying the user based on a set of extension installed  the dapp already has other means to identify users: ip, browser type/version, cookie; the set of extension installed will not increase identifiability significantly (as most users will have 1-2 common extensions max)  eth_requestAccounts solved already the address exposure issue, but even exposing an address, is no proof of ownership \u2192 for that we can use SIWE (In the future i would like to propose a new web3_auth two way signing protocol)      From a UX perspective:  the user wants to chose the extension thats being used (or default to the only one he has) ideally one click, and a choice thats remembered/can be changed later and dapp should be able to choose fallback mechanism for a default one, ideally also chosen by the user at some point (in the browser settings?)  Given all of the above, i can see two ways:   define a window.postMessage() protocol like CAIP25, but one that responds not only with addresses and methods available. But extension name and/or ID, icon AND session ID, to be used when posting messages to the respective extension so that they are identifiable so the user can choose in a dapp/provider lib provided popup.  advantage: extensions cant mess with other extensions disadvantage is that one post message call is required, with many responses (from all extensions that want to respond);  extensions can send fake answers in the name of other extensions      add window.web3Providers and let extension populate it themselves with the CAIP25 infos + name and id  advantage: \u201cinstantly\u201d available (with MV3 a bit delayed) disadvantage:  messes with the websites scripts loading, as it injects scripts extensions can override providers of other extensions      ",
+                    "links": [
+                        "https://eips.ethereum.org/EIPS/eip-1193",
+                        "https://docs.lukso.tech/standards/universal-profile/lsp0-erc725account",
+                        "https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-25.md"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.620388318149512
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "36",
+                    "likes": "2",
+                    "time": "13/12/2022-15:56:25",
+                    "content": "After thinking about it I prefer a window.postMessage() protocol with:  initial handshake request answered by all extensions that support the requested chains (CAIP25 + extension name, id?, icon, session ID) every request following a standardised request body + session id (or just extension id??) \u2192 only the extension that have the right session id should answer. maybe something like this  Request {   type: \"web3Request\", // differentiate from other protocols that use window.postMessage   version: \"1.0.0\",   sessionId/extensionId/channelId: null, // empty in handshake request ; targets ALL extensions that want to answer   requestBody: {        \"id\": 1,        \"jsonrpc\": \"2.0\",        \"method\": \"provider_authorization\",        \"params\": {          \"requiredNamespaces\": { // I would rename these properties              \"eip155\": {               \"chains\": [\"eip155:1\", \"eip155:137\"],               \"methods\": [\"eth_sendTransaction\", \"eth_signTransaction\", \"eth_sign\", \"get_balance\", \"personal_sign\"],             \"events\": [\"accountsChanged\", \"chainChanged\"]           },           \"eip155:10\": {             \"methods\": [\"get_balance\"],             \"events\": [\"accountsChanged\", \"chainChanged\"]           },           \"cosmos\": {             ...           }         },         \"optionalNamespaces\":{           \"eip155:42161\": {             \"methods\": [\"eth_sendTransaction\", \"eth_signTransaction\", \"get_balance\", \"personal_sign\"],             \"events\": [\"accountsChanged\", \"chainChanged\"]         },         \"sessionProperties\": {           \"expiry\": \"2022-12-24T17:07:31+00:00\", // better unix timestamp?           \"caip154-mandatory\": \"true\"         }                }   } }  Result {   type: \"web3Response\",   version: \"1.0.0\",   sessionId/extensionId: '1234565432', // each extension answer with their extension id/session id   requestBody: {        \"id\": 1,        \"jsonrpc\": \"2.0\",        \"result\": {           // whatever goes here, like for a handshake, the extension name, id, icon, supported schemes/networks/chains           ...        }   } }  Benefits:  removes any injected object lets dapps load any provider lib: basic one, one with modal to select extension, or whatever UX they like clear direction to talk to any extension, and even have chainId/type selection possible  Question:  why sessions? ist a simple static channelId/extensionId enough?  (As for CAIP 25 i would rename some of the properties, to make it simpler and cleaner) @kvhnuke @rekmarks @kdenhartog @MicahZoltu What you guys think? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 3.145562770562771
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "37",
+                    "likes": "0",
+                    "time": "14/12/2022-07:23:35",
+                    "content": "IIUC, what you have described here is almost exactly what I implemented in GitHub - Zoltu/ethereum-browser-sdk: An SDK for communicating between Ethereum dapps and Ethereum enabled browsers via events., so I agree with you on supporting that.  It looks like you have a slightly different layout from me, but I\u2019m not tightly married to what I built. For the curious, you can see the protocol I came up with at https://github.com/Zoltu/ethereum-browser-sdk/blob/master/ethereum-browser-sdk/library/source/shared.ts (HotOstrich is a placeholder name for the first version of the protocol).  I think the interesting bits that should be retained are:  Protocol should be versioned, and version negotiation should happen during the handshake. There should be a mechanism for negotiating capabilities.  We shouldn\u2019t assume that every provider has the exact same set of capabilities. During the handshake the provider gives a name/icon so the dapp can present something useful to the user.  For features I think are nice but not critical: I think we should move away from using the Ethereum client JSON-RPC when communicating between dapp and wallets as it doesn\u2019t serve our needs well (for example, the method signature is lost when submitting a transaction), but as long as we have version negotiation during handshaking we could address this later. ",
+                    "links": [
+                        "https://github.com/Zoltu/ethereum-browser-sdk/blob/master/ethereum-browser-sdk/library/source/shared.ts"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.708333333333333
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "38",
+                    "likes": "0",
+                    "time": "17/12/2022-06:59:35",
+                    "content": "    MicahZoltu:  I think we have ruled out scheme handlers at this point for some reason, maybe because they only work the way we want in a subset of browsers or something?   I dropped the idea because Chrome doesn\u2019t show a dialog to choose the handler when opened, and the setting is buried deep in the menus. I\u2019ve heard that may be changing though, so it might be worth revisiting the idea. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "39",
+                    "likes": "0",
+                    "time": "19/12/2022-21:57:40",
+                    "content": "    frozeman:  After thinking about it I prefer a window.postMessage() protocol with:   My main concern is window.postMessage has its own set of problems, right now it works as a broadcast. Which means, any and every extension can potentially listen to every message between dapp and wallet. I do understand this is how it works currently but I dont think this will be the case in the future specially with things like chrome.runtime.connect and chrome.runtime.sendMessage or even WebRTC. Bottom line is I dont think we should define the protocol how the dapp should communicate with the wallet. This is why Im a big proponent of injection since this will let wallet to decide how to communicate. That said, Im ok with using window.postMessage as the broadcast to let wallets inject that way wallets know when to inject or even have a popup to confirm injection.    developer.mozilla.org    Window.postMessage() - Web APIs | MDN The window.postMessage() method safely enables   cross-origin communication between Window objects; e.g., between   a page and a pop-up that it spawned, or between a page and an iframe embedded within it.          frozeman:  advantage: \u201cinstantly\u201d available (with MV3 a bit delayed)   This is no longer the case either MV3 recently added IMMEDIATE where itll inject the code immediately similar to MV2 ",
+                    "links": [
+                        "https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.08058608058608
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "40",
+                    "likes": "0",
+                    "time": "20/12/2022-04:43:43",
+                    "content": "    kvhnuke:  My main concern is window.postMessage has its own set of problems, right now it works as a broadcast. Which means, any and every extension can potentially listen to every message between dapp and wallet.   The handshake announcement from the extension could include an encryption public key, that way all communication to the selected wallet is encrypted.     kvhnuke:  I do understand this is how it works currently but I dont think this will be the case in the future specially with things like chrome.runtime.connect and chrome.runtime.sendMessage or even WebRTC.   Can you go into more details what your thinking here is?  Can iframe hosts listen on browser.runtime ports (not only extensions)?  What would a WebRTC solution look like? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.867965367965367
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "41",
+                    "likes": "0",
+                    "time": "20/12/2022-19:25:55",
+                    "content": "    MicahZoltu:  The handshake announcement from the extension could include an encryption public key, that way all communication to the selected wallet is encrypted.   Now we have to add a whole another encryption layer to communication as well, at the same time this encryption public key needs to be random, otherwise anyone would know the decryption key. Also the dapps needs to generate an encryption key as well to receive the communication. Now we have to define what is the proper encryption type \u2026etc. I strongly believe we shouldn\u2019t decide how the communication should be handled from dapp to extension, specially we dont know which new more secure ways would be introduced in the future.     MicahZoltu:  Can you go into more details what your thinking here is? Can iframe hosts listen on browser.runtime ports (not only extensions)? What would a WebRTC solution look like?   Like I mentioned before iframe wallets are not a priority at least for me based on the issues which I outlined earlier. WebRTC solution is where the extension acts as a webrtc server and dapps can connect to it. This is just an example on different ways to communicate which are way more secure than window.postMessage     MicahZoltu:  Can iframe hosts listen on browser.runtime ports (not only extensions)?   For me this itself a huge vulnerability with window.postMessage just imagine, you are on MEW and we decided to embed an iframe thinking it is safe however it turned out to be a bad actor, now the user will get a popup to sign a tx and since they are on MEW they thinks it is from MEW however, the tx is malicious I think as an EIP our goal should be to standardize the methods which dapps needs to access to communicate rather than the actual communication protocol. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.504792826221397
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "42",
+                    "likes": "1",
+                    "time": "23/12/2022-07:43:57",
+                    "content": "    kvhnuke:  I strongly believe we shouldn\u2019t decide how the communication should be handled from dapp to extension, specially we dont know which new more secure ways would be introduced in the future.   I\u2019m strongly in agreement with not building ourselves into a corner which is why I advocate for a versioned protocol.  That being said, we do need to standardize on something for the communication protocol as we want all dapps to be able to talk to all wallets.  We could have multiple competing versions of this protocol and iterate on it over time but we need something for v1.  My preference is to not include encryption in v1 and then work on a v2 that adds encryption.  This is because I think the use case that would be protected here is fairly narrow (users with a malicious extension installed that is snooping on their wallet traffic) and the risks are somewhat low (snooping extension farms public user transaction that many wallets/pages/extensions are already farming anyway).     kvhnuke:  For me this itself a huge vulnerability with window.postMessage just imagine, you are on MEW and we decided to embed an iframe thinking it is safe however it turned out to be a bad actor, now the user will get a popup to sign a tx and since they are on MEW they thinks it is from MEW however, the tx is malicious   An iframe inside of MEW won\u2019t have access to the window message bus of MEW.  The iframe host has window message bus access for any iframes it hosts, and extensions have message bus access to all pages and iframes. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.018804112554113
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "43",
+                    "likes": "1",
+                    "time": "24/12/2022-10:34:22",
+                    "content": "I agree on the version, and I think something like encryption could be added later. The good thing about my proposal is that you can do one initial call, receive a notification from each extension, And then the dapps extension lib (self loaded,  it injected) could show a nice selection, modal, or simply connect to one if only one responded. This gives a lot more flexibility on the dapp side, a lot more improvements overtime on the UI side, and the ability to access any extension directly without d the user having to click away every extensions modal. At the same time it prevents extensions from overriding each other (except they pretend being another one, which becomes very fast obvious, as to extensions, would respond with almost the same Message. And the user wouldn\u2019t notice it right away, when he clicks on an extension, I can, and another extension pops up. Like @MicahZoltu said malicious extensions are an edge case anyway) The issue with not standardizing the way we communicate, is that you create a very difficult way for the apps to talk to extensions. Dapps should not be concerned to talk to a specific extension, they should ideally not care which extensions used as long as you user chose it. The idea of the encryption key is great. And can be added a little later. Also new ways of communication can be added later including switching to webrtc, after the initial handshake notification. In order to make a standard adopt, they cannot require too many massive changes. Otherwise no one will adopt it, except the change is specifically better. the RPC might not be the best communication, but it\u2019s good enough, and I don\u2019t see any reason to change this now because there\u2019s nothing significantly better right now. So I would propose one step at a time, to switch to window post message. It\u2019s already a huge one different changes can be discussed later in different discussions. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.808370795870797
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "44",
+                    "likes": "0",
+                    "time": "27/12/2022-00:56:31",
+                    "content": "@frozeman @kvhnuke I encourage you to join the Ethereum Wallets discord server as we have been having a lot of discussions on this topic over there.  Ethereum Wallets  I think it would really help to have you two join in those discussions.  There is also a monthly AllWalletDevs voice call where we discuss this sort of thing regularly that would be great to get your input into! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "3rd party or author wants to collaborate on proposal",
+                        "None"
+                    ],
+                    "Sentiment": 7.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/frozeman",
+                    "index": "45",
+                    "likes": "0",
+                    "time": "03/01/2023-12:25:06",
+                    "content": "I would, if my time allows that. But the link is expired. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "46",
+                    "likes": "0",
+                    "time": "03/01/2023-13:57:05",
+                    "content": "Sorry, here is an update link that shouldn\u2019t expire: Ethereum Wallets ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/sbacha",
+                    "index": "47",
+                    "likes": "0",
+                    "time": "12/01/2023-11:57:35",
+                    "content": "Frame Wallet supports being connected to multiple chains now fwiw. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "48",
+                    "likes": "0",
+                    "time": "09/02/2023-22:50:44",
+                    "content": "@frozeman @MicahZoltu did  you guys make any progress in discord? I am not a discord user so I wont be able to join, plus I believe discussions related to EIPs should happen at the discussion link. If you made any progress that could be converted to an EIP let me know if not I\u2019d like to move forward with this EIP in the mean time. More complicated an EIP can get will only decrease the adoption process. Also no matter which way we take, we still need same amount of permissions for chrome extensions ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is asking for feedback",
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.133928571428571
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "49",
+                    "likes": "0",
+                    "time": "10/02/2023-12:22:04",
+                    "content": "We have discussed all of this (plus other stuff) more, but I don\u2019t think anyone in discord currently is strongly in favor of window.evmproviders so it is mostly just everyone discussing the viability of alternative options to that. I do agree that any fruitful discussions that happen in Discord should eventually make their way into a broader and more publicly accessible discussion forum! If you don\u2019t want to join Discord but want to participate in the AllWalletDev community a bit more, you could perhaps attend the All Wallet Dev meetings.  I think @SamWilsn is planning on moving them to Zoom (or similar) in the near future specifically so they are more accessible to people without Discord accounts.     kvhnuke:  Also no matter which way we take, we still need same amount of permissions for chrome extensions   I\u2019m quite confident that this is not true.  If no injection is happening (only winodw.postMessage), then the extension doesn\u2019t need the ability to read/write to all pages (sudo). ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 6.274088541666667
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "50",
+                    "likes": "0",
+                    "time": "10/02/2023-18:45:20",
+                    "content": "    MicahZoltu:  I\u2019m quite confident that this is not true. If no injection is happening (only winodw.postMessage), then the extension doesn\u2019t need the ability to read/write to all pages (sudo).   {   \"author\": \"https://www.enkrypt.com\",   \"homepage_url\": \"https://www.enkrypt.com\",   \"version\": \"1.11.1\",   \"name\": \"Enkrypt: Ethereum, Polkadot & Canto Wallet\",   \"short_name\": \"Enkrypt\",   \"permissions\": [     \"storage\",     \"unlimitedStorage\",     \"notifications\",     \"tabs\",     \"clipboardRead\",     \"clipboardWrite\"   ],   \"commands\": {     \"_execute_action\": {       \"suggested_key\": {         \"windows\": \"Alt+Shift+E\",         \"mac\": \"Alt+Shift+E\",         \"chromeos\": \"Alt+Shift+E\",         \"linux\": \"Alt+Shift+E\"       }     }   },   \"content_scripts\": [     {       \"matches\": [         \"file://*/*\",         \"http://*/*\",         \"https://*/*\"       ],       \"js\": [         \"scripts/contentscript.js\"       ],       \"run_at\": \"document_start\",       \"all_frames\": false     },     {       \"matches\": [         \"*://connect.trezor.io/*/popup.html\"       ],       \"js\": [         \"vendor/trezor-content-script.js\"       ],       \"run_at\": \"document_start\"     }   ],   \"description\": \"Everything in the blockchain made easy\",   \"icons\": {     \"16\": \"assets/img/icons/icon16.png\",     \"32\": \"assets/img/icons/icon32.png\",     \"64\": \"assets/img/icons/icon64.png\",     \"192\": \"assets/img/icons/icon192.png\"   },   \"manifest_version\": 3,   \"action\": {     \"default_icon\": {       \"16\": \"assets/img/icons/icon16.png\",       \"32\": \"assets/img/icons/icon32.png\",       \"64\": \"assets/img/icons/icon64.png\",       \"192\": \"assets/img/icons/icon192.png\"     },     \"default_title\": \"Enkrypt\",     \"default_popup\": \"action.html\"   },   \"background\": {     \"service_worker\": \"scripts/background.js\"   },   \"web_accessible_resources\": [     {       \"resources\": [         \"scripts/inject.js\",         \"scripts/*.js.map\"       ],       \"use_dynamic_url\": false,       \"matches\": [         \"http://*/*\",         \"https://*/*\"       ]     }   ],   \"minimum_chrome_version\": \"95\",   \"content_security_policy\": {     \"extension_pages\": \"script-src 'self'; object-src 'self'\"   } }  this is the current manifest for Enkrypt (with injection) which permission do you think we can remove? ",
+                    "links": [],
+                    "GPT-discussion-categories": [],
+                    "Sentiment": 2.655448717948717
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "51",
+                    "likes": "0",
+                    "time": "10/02/2023-20:08:34",
+                    "content": "I\u2019m able to receive a postMessage with just: {   \"manifest_version\": 3,   \"name\": \"WalletDemo\",   \"version\": \"1.0\",   \"description\": \"Is a fake wallet\",   \"icons\": {},    \"background\": {     \"service_worker\": \"worker.js\"   },    \"web_accessible_resources\": [     {       \"resources\": [ \"wallet.html\" ],       \"matches\": [ \"<all_urls>\" ]     }   ] }  source ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 2.7777777777777777
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "52",
+                    "likes": "0",
+                    "time": "10/02/2023-20:50:00",
+                    "content": "it is because your wallet.html is hosted inside the extension chrome.runtime.sendMessage({         data: event.data,         origin: event.origin,     });  this call cannot be done if you are not in chrome-extension:// in order to listen to messages from other domains you need a contentscript, and contentscript requires \"content_scripts\": [     {       \"matches\": [         \"file://*/*\",         \"http://*/*\",         \"https://*/*\"       ],       \"js\": [         \"scripts/contentscript.js\"       ],       \"run_at\": \"document_start\",       \"all_frames\": false     },  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 2.2250000000000005
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "53",
+                    "likes": "0",
+                    "time": "10/02/2023-21:01:34",
+                    "content": "Or are you thinking of embedding this inside an iframe on dapps page? so it is like dapp->iframe->extension->iframe->dapp? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "54",
+                    "likes": "0",
+                    "time": "10/02/2023-21:26:05",
+                    "content": "    kvhnuke:  so it is like dapp->iframe->extension->iframe->dapp?   Exactly this. The dapp inserts an <iframe src=\"web+evm://\"> into its page, and the wallet\u2019s wallet.html gets loaded with the help of navigator.registerProtocolHandler. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.25
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "55",
+                    "likes": "0",
+                    "time": "10/02/2023-21:36:45",
+                    "content": "Im sure you are aware, chrome doesnt let you register multiple schema handlers under one namespace assuming that issue is solved, we can either use   developer.mozilla.org    runtime.sendMessage() - Mozilla | MDN Sends a single message to event listeners within your extension or a different extension.      or for two way communication   developer.mozilla.org    runtime.connect() - Mozilla | MDN Make a connection between different contexts inside the extension.      that way we dont have to do the dance around with iframes. If the goal is to prevent injection, I think we shouldnt inject iframes either. At the same time, I dont know when schema handlers will be fixed, if they are not fixed we need a way to communicate the extension ids so the dapps can populate the iframes. Even if they fix it and let a user have multiple extensions under on schema handler, itll prompt the user every time the user visit a dapp to select which extension they want to use, also if they want to use multiple extensions itll just keep prompting user multiple times, leading to bad UX ",
+                    "links": [
+                        "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/sendMessage",
+                        "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/connect",
+                        "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/connect"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.010989010989011
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "56",
+                    "likes": "0",
+                    "time": "10/02/2023-22:32:55",
+                    "content": "    kvhnuke:  Im sure you are aware, chrome doesnt let you register multiple schema handlers under one namespace   Yeah, that\u2019s the main reason I haven\u2019t been pushing hard for this approach. Telling people to navigate to chrome://settings/handlers whenever they want to switch wallets is rather impractical      kvhnuke:  we can either use runtime.sendMessage() - Mozilla | MDN or for two way communication runtime.connect() - Mozilla | MDN   Do those work with non-extensions? Like can https://example.com communicate with an extension or a website under a different domain? If so, those sound perfect! I\u2019m really not a web developer, so forgive my lack of knowledge here.     kvhnuke:  If the goal is to prevent injection, I think we shouldnt inject iframes either.   To be clear, the wallet doesn\u2019t inject anything at all. The dapp would insert the iframe itself.     kvhnuke:  At the same time, I dont know when schema handlers will be fixed, if they are not fixed we need a way to communicate the extension ids so the dapps can populate the iframes.   The iframe+scheme handler idea is basically dead if chrome doesn\u2019t show a dialog to choose a handler. I 100% agree with you here.     kvhnuke:  Even if they fix it and let a user have multiple extensions under on schema handler, itll prompt the user every time the user visit a dapp to select which extension they want to use   Is asking the user once per session a huge issue? If it is, Firefox does have a \u201cUse as Default\u201d checkbox for scheme handlers.     kvhnuke:  if they want to use multiple extensions itll just keep prompting user multiple times, leading to bad UX   If a user has multiple extensions, how would the dapp know which one to use? Wouldn\u2019t it have to prompt the user too?  If, and this is a big if, we get better browser support for scheme handlers, I think they are one of the better options for the next gen wallet<->dapp communication protocol. What we get with scheme handlers:  Security: Wallet dapps don\u2019t need any permissions on arbitrary domains. Privacy: Dapps can\u2019t detect whether or not a wallet (or which wallet) is installed without alerting the user. Flexibility: Wallets can be extensions, but also web page wallets (like Sequence and Portis) become first class citizens. Hardware and mobile wallets only need a tiny proxy web page to work too!  What we need before this is viable:  Multiple handlers in Chrome (and maybe Safari, I don\u2019t know the story there.) Better granularity for saving defaults in Firefox (per domain, global, etc.)  ",
+                    "links": [
+                        "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/connect",
+                        "https://sequence.app/",
+                        "https://www.portis.io/"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.52016129032258
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kvhnuke",
+                    "index": "57",
+                    "likes": "0",
+                    "time": "10/02/2023-22:58:32",
+                    "content": "    SamWilsn:  Do those work with non-extensions? Like can https://example.com communicate with an extension or a website under a different domain? If so, those sound perfect! I\u2019m really not a web developer, so forgive my lack of knowledge here.   yea basically websites can directly talk to extensions, only thing the website needs is the extension id. If there is a way to communicate the available extension ids (such as using schema handlers) best way would be to use chrome.runtime     SamWilsn:  To be clear, the wallet doesn\u2019t inject anything at all. The dapp would insert the iframe itself.   Yea but it can still get cumbersome, as the dapps needs to inject multiple iframes if they want to use multiple wallets at the same time. This also doesn\u2019t solve the privacy issue, if the extension wants to extract information from the dapp or change things in the dapp, it can just use window.parent.getElementById(\"#sensitivedata\") but then again there is only very little could be done about malicious extensions     SamWilsn:  Is asking the user once per session a huge issue? If it is, Firefox does have a \u201cUse as Default\u201d checkbox for scheme handlers.   Well dont forget the user already had to choose from a wallet select such as \u201cweb3modal\u201d to get the browser wallet, then the user needs to select the popup from the browser, then if the user already didnt approve need to select approve on dapp connect window by the extension. Now imaging, a dapp wants to use multiple extensions at the same time. User needs to do this, all over again.     SamWilsn:  If a user has multiple extensions, how would the dapp know which one to use? Wouldn\u2019t it have to prompt the user too?   base on this EIP, all extensions will be simply part of evmproviders object, so the \u201cwallet select modal\u201d is already aware of approved extensions. Privacy: Dapps can\u2019t detect whether or not a wallet (or which wallet) is installed without alerting the user.  this can be done even with this EIP, user can decide which domains they want to inject to.     SamWilsn:  What we need before this is viable:  Multiple handlers in Chrome (and maybe Safari, I don\u2019t know the story there.) Better granularity for saving defaults in Firefox (per domain, global, etc.)    Honestly knowing how slow chromium team move, these two are kind big asks Bottom line is, I love how you made it work. It is actually kinda cool! this can definitely be improved and lead to better communication model once we have all the right pieces. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.793350563909774
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "58",
+                    "likes": "0",
+                    "time": "10/02/2023-23:07:00",
+                    "content": "    kvhnuke:  Yea but it can still get cumbersome, as the dapps needs to inject multiple iframes if they want to use multiple wallets at the same time.   I don\u2019t think it\u2019s really that cumbersome      kvhnuke:  This also doesn\u2019t solve the privacy issue, if the extension wants to extract information from the dapp or change things in the dapp, it can just use window.parent.getElementById(\"#sensitivedata\")   Oh really? That\u2019s an issue. I assumed that if the iframe and page were on different domains, they wouldn\u2019t be able to access each other\u2019s DOM. Would the sandbox attribute help here?     kvhnuke:  Well dont forget the user already had to choose from a wallet select such as \u201cweb3modal\u201d to get the browser wallet   Why would we need web3modal at all with this? Dapp injects iframe, browser prompts for wallet. Mobile/desktop/hardware/wallet connect wallets can all use Navigator.registerProtocolHandler as easily as an extension can.     kvhnuke:  Honestly knowing how slow chromium team move, these two are kind big asks   Trust me, I know\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.8690476190476195
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/MicahZoltu",
+                    "index": "59",
+                    "likes": "0",
+                    "time": "11/02/2023-06:05:31",
+                    "content": "    kvhnuke:  this is the current manifest for Enkrypt (with injection) which permission do you think we can remove?   It appears my confidence was misplaced, sorry!  I went and dug up my old extension project to see how I did it, and it appears I still inject a content script into the page.  Unrelated to the discussion at hand, you can get rid of tabs and replace it with activeTab.  This will require the user interact with the extension to inject it, but it makes it so the extension needs much lower permissions (no longer needs read/write all websites). The thing I was thinking of that can be avoided with window.postMessage is that we don\u2019t need to do the <script> injected into DOM hack that is necessary to write into the app\u2019s sandbox.  Since I finally bothered to get my extension/iframe provider up and running, this is the prototype UI I had for a sample dapp.  The iframe provider was available when the dapp first loaded, and the extension was injected later (because it uses activeTab permission).  The dapp was able to detect both providers and can switch between them freely:   I\u2019m pretty  on scheme handlers at this point due to Chrome\u2019s lack of support for a chooser interface.  This is unfortunate because scheme handler choosers work great in Firefox and Android.   My position still stands that I think if we are going to make a breaking change to the dapp API (window.ethereum \u2192 window.evmproviders) then I think we should fix as much as we can with a single breaking change rather than going through all of the headache of a breaking change to fix one thing (multiple wallet support). The impression I get is that there many wallets are generally in favor of doing a big breaking change that fixes a bunch of stuff, but we currently don\u2019t have a champion who is really pushing this forward strongly (e.g., writing specs, building prototypes, etc.)  I was interested in doing so several years ago, but my energy is focused elsewhere now. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.557760141093474
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kdenhartog",
+                    "index": "60",
+                    "likes": "0",
+                    "time": "13/02/2023-04:27:34",
+                    "content": "In my experience working in W3C, many of the browser vendors are skeptical of what web3 brings to the web platform and are unlikely to support any feature requests that are driven by web3 use cases. I\u2019d be a -1 to holding a change like this up until we get support for specific features in the browser. I also think it\u2019s important that we look beyond the scope of EOA support (how\u2019s account abstraction designs going to impact this) and EVM specific API support. Many wallets are considering going multichain (or already have like Enkrypt which prompted this discussion) so I\u2019d be a +1 to setting the requirement that this solution MUST support non-evm based chains. That probably also means we\u2019ll need to consider a venue other than EIPs to standardize this so that we can bring other large wallets to the table. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.182142857142857
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "61",
+                    "likes": "0",
+                    "time": "15/02/2023-22:18:03",
+                    "content": "    kdenhartog:  unlikely to support any feature requests that are driven by web3 use cases   What about people who have gmail and outlook email accounts? I\u2019m sure they\u2019d love this feature      kdenhartog:  I\u2019d be a -1 to holding a change like this up until we get support for specific features in the browser.   I would generally agree, but not in this case. We can use scheme handlers today and get a significant improvement on functionality over window.ethereum. If/when chrome adds the chooser, users get the benefit for free, no dapp or wallet changes required.     kdenhartog:  I\u2019d be a +1 to setting the requirement that this solution MUST support non-evm based chains. That probably also means we\u2019ll need to consider a venue other than EIPs to standardize this so that we can bring other large wallets to the table.   We can use the EIPs process to set precedent for other chains to follow. For example, with the scheme handler approach, wallets can register handlers for bitcoin://, ethereum://, solana://, etc. and the actual message structures can be defined independently for each chain. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.447802197802197
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/kdenhartog",
+                    "index": "62",
+                    "likes": "0",
+                    "time": "22/02/2023-13:35:27",
+                    "content": "    SamWilsn:  What about people who have gmail and outlook email accounts? I\u2019m sure they\u2019d love this feature    Yeah that seems like a reasonable way to push this feature through. Just wouldn\u2019t suggest mentioning anything web3 related was my only point.     SamWilsn:  I would generally agree, but not in this case. We can use scheme handlers today and get a significant improvement on functionality over window.ethereum. If/when chrome adds the chooser, users get the benefit for free, no dapp or wallet changes required.   From what I\u2019m seeing on Navigator.registerProtocolHandler() - Web APIs | MDN Chrome does support this, but I\u2019ve not actually tried to implement with this. Do they just not support the web+<string> support or something? Given this support I\u2019d withdraw the original -1 since this seems like a promising feature to build on.  We can use the EIPs process to set precedent for other chains to follow. For example, with the scheme handler approach, wallets can register handlers for bitcoin:// , ethereum:// , solana:// , etc. and the actual message structures can be defined independently for each chain.  Yeah this is likely the biggest tradeoff here is what\u2019s the proper way to handle registration and coordination of the schemes. I think there\u2019s probably some considerations that need to be made around this, but nows probably a bit early hash these out. Let me play around with this approach a bit more and try and get some implementation experience with this approach so I can better understand the tradeoffs here. Thanks for sharing! ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party extending to proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.95625
+                },
+                {
+                    "author_link": "https://ethereum-magicians.org/u/SamWilsn",
+                    "index": "63",
+                    "likes": "0",
+                    "time": "22/02/2023-23:25:28",
+                    "content": "    kdenhartog:  From what I\u2019m seeing on Navigator.registerProtocolHandler() - Web APIs | MDN Chrome does support this, but I\u2019ve not actually tried to implement with this.   I\u2019ve tested it in Chrome here. ",
+                    "links": [
+                        "https://github.com/SamWilsn/wallet-demo/blob/master/chrome/foo.js#L6"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ],
+    "group_index": "158"
+}

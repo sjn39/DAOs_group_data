@@ -1,0 +1,63 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/proposal-remove-the-scd-mkr-oracle-security-module/837",
+            "title": "Proposal: Remove the SCD MKR Oracle Security Module ",
+            "index": 837,
+            "category": [
+                "Core Units",
+                "Oracles"
+            ],
+            "tags": [
+                "analysis",
+                "oracles",
+                "proposal"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/NikKunkel",
+                    "index": "#1",
+                    "likes": "3",
+                    "time": "22/11/2019-00:15:33",
+                    "content": "Problem The MKR Oracle Security Module (OSM) determines the reference price of MKR within the Maker Protocol. The one hour delay incorporated in the OSM can lead to a drift in price between the reported OSM value and the fair market value of MKR. This unique situation is triggered by high volatility in the MKR price over a short time interval (less than one hour). Impact Part of the process of migrating a Single-Collateral Dai (SAI) CDP to Multi-Collateral Dai (MCD) involves paying off the accrued stability fees. The Sai Proxy is utilized by the user to pay off their accrued stability fees in Sai or MKR. If the user pays in Sai, the Sai Proxy will trade it for MKR on OasisDex and then use it to pay the stability fee. There are three problems associated with the Sai Proxy in combination with the aforementioned price drift due to the OSM. 1. The user is overcharged for the stability fee. If the price of MKR increases in a very short time frame (under one hour) the MKR OSM will report a price under the fair market value of MKR. This leads the Sai Proxy to incorrectly calculate that a greater amount of MKR is needed to cover the stability fee. 2. The user is undercharged for the stability fee. If the price of MKR decreases in a very short time frame (under one hour) the MKR OSM will report a price above the fair market value of MKR. This leads the Sai Proxy to incorrectly calculate that a lower amount of MKR is needed to cover the stability fee. 3. The migration fails If the price of MKR increases in a very short time frame (under one hour) the MKR OSM will report a price below the fair market value of MKR. Now the miscalculation in (1) leading to a greater amount of MKR owed results in the Sai Proxy trying to draw more MKR or Sai from the user than it should. If the user does not have the required amount of MKR or Sai the transaction will fail. If the user is paying in Sai, this problem is exacerbated when the sell-side liquidity of MKR/SAI is low. Proposed Solution  The best solution moving forward is to remove the MKR OSM in the next governance executive vote. With the removal of the MKR OSM, the SCD system will read the MKR reference price directly from the Medianizer, without a delay. This will remove the slippage between the MKR reference price and the fair market value of MKR. This will rectify the miscalculation of the MKR price and therefore remedy the three aforementioned problems. Will this open up an attack vector on the system? No, this will not result in additional opportunities to attack the system. If an attacker were to compromise a sufficient amount of Feeds to achieve quorum on the MKR Medianizer, they could do one of two things:  The attacker could set the price of MKR to (2^256 -1) and thereby allow CDP stability fees to be repaid for free. While at first glance this seems really bad, imagine the alternative were the OSM still in place. The malicious price would be queued up in the OSM for one hour during which the Emergency Oracles would trigger an Emergency Shutdown of the system. The Emergency Shutdown procedure would forgive CDP owners of their stability fee and allow them to withdraw their collateral minus their principal. The attacker could se the price of MKR to 0 and thereby prevent any CDP owner from paying their stability fees. Emergency Oracles would react by trigger an Emergency Shutdown of the system. Just as in the previous scenario this seems bad, but the alternative scenario with an OSM in place follows the exact same procedure of trigger an Emergency Shutdown.  As such there is no additional risk in removing the MKR OSM and replacing it with the Medianizer. Next Steps  Executive vote to replace the SCD MKR Oracle Security Module with the Medianizer  If this proposal is accepted, the following will occur:  Removal of the MKR OSM. More specifically, we will be redirecting the price feed (pep) from pointing to the MKR OSM, to point to the MKR Medianizer.  In conclusion, we believe this is a necessary measure in order to make the migration process to go more smoothly for CDP users. For all questions and concerns, please comment here directly on the forum post. ",
+                    "links": [],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.723412698412699
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "22/11/2019-02:44:25",
+                    "content": "Hello Nik\u2013I read this article by Justine Humenansky of UC Berkeley and wondering what your thoughts are: Single collateral Dai oracles update every time the price of ETH fluctuates by +/-1.0% but multi-collateral Dai (MCD) oracles will update once an hour.\u00b9 This allows the sixteen oracle inputs to be viewable for an hour before they are acted upon, increasing transparency. However, such a long lag time may not be appropriate considering the volatility of cryptoassets. The company\u2019s argument that this delay can be compensated for by the risk model is questionable. Furthermore, liquidation of collateralized positions (essentially defaults) will be executed via auction with MCD, which means it will \u201csix hours or more\u201d to liquidate positions as the protocol accesses \u201call the arbitrageurs and liquidity across the whole marketplace and ecosystem.\u00b9\u201d The impact of having to wait 6 hours to unwind a single position during times of market distress, or failure, would be significant. Compound takes a different approach with its oracle, aggregating and averaging price feeds from a series of exchanges and posting them on-chain consistently. The data updates every time the underlying value fluctuates by +/- 0.1%, but data is updated on-chain every 15\u201330 seconds, confined by the processing speed of Ethereum.\u00b2 Given the importance of oracles in these systems, DeFi projects may want to more closely consider which method they use or choose to implement their own methods. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6384920634920634
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/NikKunkel",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "25/11/2019-12:03:23",
+                    "content": "Hi @flipflopflapdelegate This is a little bit tangential, but I\u2019d like to address it nonetheless. When we talk about Maker\u2019s Oracles with respect to smart contracts, there are two, the Medianizer and the Oracle Security Module (OSM). Essentially the Medianizer updates every 1% change or ~4 hours. On the hour, a value is then fed into the Oracle Security Module where it is queued up for an hour before it becomes the canonical price the system uses. The reason for the OSM delay is to give Emergency Oracles time to react to an Oracle attack and freeze the OSM before the price takes effect. Lets explore the ramifications of an Oracle attack in MCD without the OSM. The attacker has two options. The first is to submit the maximum price possible for a collateral, let\u2019s say ETH. This allows the attacker to generate Dai until the debt ceiling has been exhausted by only locking up a minuscule amount of ETH. This Dai can then be sold on the open market as pure profit. The second involves an attacker opening a large leveraged short position on ETH, let\u2019s say on Bitmex. Then they would submit a price of 0 for ETH, causing all Vaults with open ETH positions to be liquidated. This causes a sell-side shock on ETH crashing the price, and the attacker profits on their short position. As you can see both of these scenarios are terrible. Without an OSM we would have no way to defend the system from an Oracle attack, but with the OSM attacks can be neutralized before they take effect. Now I understand that you\u2019re concerned the delay in price will allow collateral to depreciate before it\u2019s able to be sold off in an auction, potentially causing bad debt and inflation of the MKR token. Let\u2019s break this down. The first layer of defense is to set healthy collateralization requirements for assets based on their volatility profile (risk). For ETH the value that has been used in the Maker system is 150%, which you may notice is significantly higher than the collateralization requirements used by Compound, dYdX, and other lending protocols. This allows the system to withstand up to a 33% flash-crash in ETH price without sustaining bad debt. However considering that most Vault positions aren\u2019t on the bleeding edge of 150% collateralization, the actual percentage change in ETH the system can tolerate is significantly higher. Second, the auction model in MCD is designed for true price discovery that gives it much more flexibility than the 3% discount to spot price used in SCD. The Collateral Auction seeks to recover the debt from the Vault position. There are a lot more intricate details to the auctions but I just want to cite one specific property. When an auction is kicked off by an individual they enter the first bid in the auction. The auction has a parameter ttl (time-to-live) which is defined as a period of time of no bids after which an auction ends. There is also a parameter tau which defines the maximum length of time before an auction ends. Although tau is set to 3 days, ttl is set to 10 minutes. Hence an auction could be over in as little as 10 minutes. The bidders have an incentive to have auctions finish quickly because their capital is locked up during the duration of an auction. The author of the article seems to be misinformed when she references 6 hours The OSM has some neat side effects as well, such as giving users with open Vault positions a heads up one hour in advance that they\u2019ll be liquidated. This gives them the opportunity to add more collateral or pay back some debt to prevent their position from being liquidated. On the topic of Compound, they most certainly do not update their price every 0.1%. That would ludicrously expensive in terms of gas price, nor is their price updated every 15-30 seconds. Nothing is really confined by the processing speed of Ethereum, it\u2019s more just how much money one wants to spend on gas to boost sensitivity of the Oracle. I personally think 1% is more than enough for now given the maturity of the markets. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.361349206349207
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/PatrickDehkordi",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "25/11/2019-18:13:16",
+                    "content": "Where can I learn more about the price oracle? Does it throw out data that is few standard deviations away? Is it a simple average? It should NOT be allowed under any circumstance to  set eth  to 2^256.  Can we have  an adjustable ETH price ceiling? There is nothing like this in the current capital markets, but we can talk to major exchanges and high frequency traders, and see  how they deal with similar events, like flash crashes, and faulty price feeds.  We need to apply some sort of AI into it if at all possible. One hour delay not the best solution for this problem. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.6238636363636365
+                }
+            ]
+        }
+    ]
+}

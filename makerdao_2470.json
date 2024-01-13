@@ -1,0 +1,385 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/eurs-erc20-token-smart-contract-domain-community-assessment/3769",
+            "title": "[EURS] ERC20 Token Smart Contract Domain Community Assessment ",
+            "index": 3769,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "eurs",
+                "sc-domain-work"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#1",
+                    "likes": "6",
+                    "time": "22/08/2020-12:50:00",
+                    "content": "[EURS] ERC20 Token SC Assessment Under @befitsandpiper guidance, I reviewed EURS token smart contract. @wil would you be kind enough to review it when you have some time? Thanks. The MIP6 submission is here. CC @StasisMarketing, @Gregory_Klumov General Information  Symbol: EURS Address: 0xdb25f211ab05b1c97d595516f45794528a807ad8 - EURSToken Deployment Date: Jun-22-2018 04:46:52 PM +UTC Contract size : 891 loc (Solidity + assembly) Total supply: 31,979,207 (as of 2020-08-17) Developers allotment: 0 Project website: https://eurs.stasis.net/  Github repository: https://github.com/STASISNET/STASIS-EURS-token-smart-contract  Can use existing MCD collateral type adapter? Standard ERC-20 so the GemJoin adapter should work  Risk Summary  Does the contract implement the ERC20 token standards? Yes Risk analysis: MEDIUM The contract can have delegation but the delegate is not public.  Technical Information  Compiler version: v0.4.21+commit.dfe3193c Decimals: 2 Overflow checks: Yes safemath (custom SafeMath contract) Mitigation against allowance race-condition: No, the approve function does have a race condition Upgradeable contract patterns: yes with a custom delegatable modifier Access control or restriction lists: yes Non-standard features or behaviors: possible delegation to another contract,fee collector, pausing and freezing, minting and burning  Formal Verification Considerations:  Does transfer have simple semantics? Yes it seems Does transferFrom have simple semantics? Yes it seems Can balances be arbitrarily modified by some actor? Only the owner can mint and burn tokens on his own address. But the owner can also freeze (and unfreeze) accounts. Fees can also be set to 100% or even higher (with fixed fee). Fees can be waived for some accounts. Are there any external calls? Most methods can be delegated to another contract using a method modifier.  Testnet Information  Two on ropsten (with fees): 0x11Da60B99815C867Ee73E1528153CFA7ca00fB03 0x6d9a2703cc1b11E558Fd9B87ba454bb195D13546  Contract Logic Summary How the contract is upgraded There is a delegate modifier on most methods. The owner of the contract can set the delegate smart contract address with the setDelegate method. A Delegation event is then logged. When using the delegation call, the owner and the delegate can\u2019t be changed (if they are, there is a revert). Couldn\u2019t find if delegate == 0x0 currently. Administrative addresses (EOAs, controller contracts, and similar) Owner: non public field feeCollector: non public field but it\u2019s 0x70250fcfef983c9b912c8eefb7021b4b7bae836e delegate: non public field All can be changed by the owner using methods. Fees The fee structure contains a variable fee (% of the transferred amount) that can range between 0% and 100% plus a fixed fee (by default @ 5 EURS, currently 0). Those fees are on top of the value transferred. It can be changed by the contract owner. There are currently no fees. fixedFee = 0; minVariableFee = 0; maxVariableFee = 0; variableFeeNumerator = 0; // <= MAX_FEE_NUMERATOR FEE_DENOMINATOR = 100000; MAX_FEE_NUMERATOR = FEE_DENOMINATOR; MIN_FEE_NUMERATIOR = 0; // Never used DEFAULT_FEE = 5e2; // 5 EURS for fixedFee at contract init fees = max(minVariableFee, min(maxVariableFee, amount * variableFeeNumerator / FEE_DENOMINATOR)) + fixedFee A fee event transfer is generated even in the absence of actual fees. That explains why there are always two transfers per transaction. The current feeCollector is 0x70250fcfef983c9b912c8eefb7021b4b7bae836e  When fees parameters are changed (with setFeeParameters) a FeeChange event is logged. delegatedTransfer Allows a delegate to pay for the gas by paying him with the token. delegatedTransfer change some accounts and can fail later. I would hit an assert and revert, but not sure it is clean code by solidity standard. uint256 balance = accounts [_from]; if (_value > balance) return false; balance = safeSub (balance, _value); if (fee > balance) return false; balance = safeSub (balance, fee); Contract Risk Summary This is a medium risk contract. The ERC20 functions are implemented to the industry standard. The ERC20 allowance race condition is not mitigated. The contract makes use a SafeMath contract inheritance to avoid overflows. The owner can freeze some accounts from wallets, mint and burn tokens on it\u2019s own account. These features are similar to other real asset and custodial tokens. Some settings (like the owner, feeCollector or delegate) are not public. Two majors points should be monitored closely if this token is onboarded:  The contract has a complex fees structure that can be 100% (rendering liquidation impossible). No fees currently but should follow FeeChange events. The contract can be updated by delegation. Should follow Delegation events.  Supporting Materials N/A Contracts Description Table     Contract Type Bases       \u2514 Function Name Visibility Mutability Modifiers          SafeMath Implementation      \u2514 safeAdd Internal       \u2514 safeSub Internal       \u2514 safeMul Internal              Token Implementation      \u2514 totalSupply Public    NO\u2757\ufe0f   \u2514 balanceOf Public    NO\u2757\ufe0f   \u2514 transfer Public    NO\u2757\ufe0f   \u2514 transferFrom Public    NO\u2757\ufe0f   \u2514 approve Public    NO\u2757\ufe0f   \u2514 allowance Public    NO\u2757\ufe0f          AbstractToken Implementation Token, SafeMath     \u2514  Public    NO\u2757\ufe0f   \u2514 balanceOf Public    NO\u2757\ufe0f   \u2514 transfer Public    NO\u2757\ufe0f   \u2514 transferFrom Public    NO\u2757\ufe0f   \u2514 approve Public    NO\u2757\ufe0f   \u2514 allowance Public    NO\u2757\ufe0f          EURSToken Implementation AbstractToken     \u2514  Public    NO\u2757\ufe0f   \u2514  Public    delegatable   \u2514 name Public    delegatable   \u2514 symbol Public    delegatable   \u2514 decimals Public    delegatable   \u2514 totalSupply Public    delegatable   \u2514 balanceOf Public    delegatable   \u2514 transfer Public    delegatable   \u2514 transferFrom Public    delegatable   \u2514 approve Public    delegatable   \u2514 allowance Public    delegatable   \u2514 delegatedTransfer Public    delegatable   \u2514 createTokens Public    delegatable   \u2514 burnTokens Public    delegatable   \u2514 freezeTransfers Public    delegatable   \u2514 unfreezeTransfers Public    delegatable   \u2514 setOwner Public    NO\u2757\ufe0f   \u2514 setFeeCollector Public    delegatable   \u2514 nonce Public    delegatable   \u2514 setFeeParameters Public    delegatable   \u2514 getFeeParameters Public    delegatable   \u2514 calculateFee Public    delegatable   \u2514 setFlags Public    delegatable   \u2514 flags Public    delegatable   \u2514 setDelegate Public    NO\u2757\ufe0f   \u2514 thisAddress Internal       \u2514 messageSenderAddress Internal        Legend     Symbol Meaning      Function can modify state    Function is payable     ",
+                    "links": [
+                        "https://etherscan.io/token/0xdb25f211ab05b1c97d595516f45794528a807ad8",
+                        "https://eurs.stasis.net/",
+                        "https://github.com/STASISNET/STASIS-EURS-token-smart-contract",
+                        "https://github.com/makerdao/dss/blob/b280b98e0c661d5d8effe2e9626e51978dab33ce/src/join.sol#L62",
+                        "https://ropsten.etherscan.io/token/0x11da60b99815c867ee73e1528153cfa7ca00fb03",
+                        "https://ropsten.etherscan.io/token/0x6d9a2703cc1b11e558fd9b87ba454bb195d13546",
+                        "https://etherscan.io/address/0x70250fcfef983c9b912c8eefb7021b4b7bae836e",
+                        "https://etherscan.io/address/0x70250fcfef983c9b912c8eefb7021b4b7bae836e",
+                        "https://forum.makerdao.com/t/collateral-status-index/2231",
+                        "https://forum.makerdao.com/t/mip7c3-sp5-domain-team-onboarding-risk-domain-team/5476",
+                        "https://forum.makerdao.com/t/mip41c4-sp1-facilitator-onboarding-real-world-finance/6226",
+                        "https://forum.makerdao.com/t/rwa-resena-de-los-ultimos-dos-meses-actualizaciones-y-lo-que-viene/5272",
+                        "https://forum.makerdao.com/t/rwa-last-2-months-review-updates-and-looking-forward/5225",
+                        "https://forum.makerdao.com/t/collateral-status-index/2231/25"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.135384316770186
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aaron_Bartsch",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "22/08/2020-13:09:32",
+                    "content": "Great work! ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 10.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/StasisMarketing",
+                    "index": "#3",
+                    "likes": "0",
+                    "time": "16/09/2020-18:48:06",
+                    "content": "Hello from the STASIS Team! It\u2019s been quite a while and the community is excited to know the latest news. So are we. Please kindly update our team on the situation. We are ready to provide additional data if needed and in case it can speed up the process. Regards. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.09375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ejbarraza",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "22/10/2020-02:12:26",
+                    "content": "So is EURS dead in the water or not? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/LongForWisdom",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "22/10/2020-10:13:43",
+                    "content": "I don\u2019t think that\u2019s the case, it just hasn\u2019t had risk or oracle assessments yet. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/comp-erc20-token-smart-contract-domain-community-assessment/3587",
+            "title": "[COMP] ERC20 Token Smart Contract Domain Community Assessment ",
+            "index": 3587,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "comp",
+                "sc-domain-work"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#1",
+                    "likes": "5",
+                    "time": "07/08/2020-15:36:49",
+                    "content": "General Information  Symbol: COMP Address: https://etherscan.io/address/0xc00e94cb662c3520282e6f5717214004a7f26888#code  Deployment Date: March 4, 2020 Total supply: 10,000,000 Developers allotment: 5,770,051 (reservoir distribution contract initially had 4,229,949) Project website: https://compound.finance/  Github repository: https://github.com/compound-finance/  Can use existing MCD collateral type adapter? Yes, the GemJoin adapter  Risk Summary  Does the contract implement the ERC20 token standards? Yes, the contract implements all the required ERC20 functions. Risk analysis: Low  Technical Information  Compiler version:  v0.5.16+commit.9c3226ce  Decimals: 18 Overflow checks: Yes, the contract has custom safe Integer and add functions Mitigation against allowance race-condition: No, the approve function has a race condition Upgradeable contract patterns: No Access control or restriction lists: No Non-standard features or behaviors: voting, and vote delegation related functions  Formal Verification Considerations:  Does transfer have simple semantics? Yes Does transferFrom have simple semantics? Yes Can balances be arbitrarily modified by some actor? No Are there any external calls? Yes, voting functions and erc20 functions are external.  Testnet Information Rinkeby testnet address: 0xd6801a1dffcd0a410336ef88def4320d6df1883e compound networks deployment information: https://compound.finance/docs#networks Contract Logic Summary At its core the implementation is a standard erc20 contract which uses the custom safe integer and add functions. The contract also implements various voting, and vote delegation functions. Administrative Addresses Below is a list of addresses related to token management: delegation typehash: 0xe48329057bfd03d55e49b547132e39cffd9c1820ad7b9d4c5307691425d15adf domain typehash: 0x8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a866 Contract Risk Summary This is a low risk contract. The ERC20 functions are implemented to the industry standard, although approve does have a race condition. The contract makes use of custom functions to prevent integer underflow and overflow. A number of voting functions are also implemented as COMP is a governance token. Contracts Description Table     Contract Type Bases       \u2514 Function Name Visibility Mutability Modifiers          Comp Implementation      \u2514  Public    NO\u2757\ufe0f   \u2514 allowance External    NO\u2757\ufe0f   \u2514 approve External    NO\u2757\ufe0f   \u2514 balanceOf External    NO\u2757\ufe0f   \u2514 transfer External    NO\u2757\ufe0f   \u2514 transferFrom External    NO\u2757\ufe0f   \u2514 delegate Public    NO\u2757\ufe0f   \u2514 delegateBySig Public    NO\u2757\ufe0f   \u2514 getCurrentVotes External    NO\u2757\ufe0f   \u2514 getPriorVotes Public    NO\u2757\ufe0f   \u2514 _delegate Internal       \u2514 _transferTokens Internal       \u2514 _moveDelegates Internal       \u2514 _writeCheckpoint Internal       \u2514 safe32 Internal       \u2514 safe96 Internal       \u2514 add96 Internal       \u2514 sub96 Internal       \u2514 getChainId Internal        Legend     Symbol Meaning      Function can modify state    Function is payable     ",
+                    "links": [
+                        "https://compound.finance/",
+                        "https://github.com/compound-finance/",
+                        "https://github.com/makerdao/dss/blob/b280b98e0c661d5d8effe2e9626e51978dab33ce/src/join.sol#L62",
+                        "https://compound.finance/docs#networks",
+                        "https://forum.makerdao.com/t/collateral-status-index/2231/33",
+                        "https://forum.makerdao.com/t/mip12c2-sp5-comp-collateral-onboarding/4065"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.128378378378379
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#2",
+                    "likes": "1",
+                    "time": "07/08/2020-15:37:22",
+                    "content": "@wil I decided to publish this, but let me know if anything looks weird here. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 2.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/wil",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "25/08/2020-13:51:51",
+                    "content": "Awesome, again thank you, this is very helpful now that we\u2019re preparing for the September governance cycle. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.0
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/husd-erc20-token-smart-contract-domain-community-assessment/3770",
+            "title": "[HUSD] ERC20 Token Smart Contract Domain Community Assessment ",
+            "index": 3770,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "collateral-onboard",
+                "sc-domain-work"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#1",
+                    "likes": "5",
+                    "time": "22/08/2020-12:55:47",
+                    "content": " [HUSD] ERC20 Token SC Assessment Under @befitsandpiper guidance, I reviewed HUSD token smart contract. @wil would you be kind enough to review it when you have some time? Thanks. The MIP6 submission is here. CC @Claude  General Information  Symbol: HUSD Address(es):  HUSDToken: 0xdF574c24545E5FfEcb9a659c229253D4111d87e1 (solidity only, 500loc)   Deployment Date: Jul-18-2019 11:30:44 AM +UTC Total supply: 136,459,788 (as of 2020-08-18) Developers allotment: N/A Project website: https://www.stcoins.com/  Github repository: none? Can use existing MCD collateral type adapter? Yes, GemJoin    Risk Summary  Does the contract implement the ERC20 token standards? Yes. Risk analysis: MEDIUM.   Technical Information  Compiler version: v0.5.8+commit.23d335f2 Decimals: 8 Overflow checks: Yes, the contract uses a SafeMath uint256 library. Mitigation against allowance race-condition: No Upgradeable contract patterns: Not upgradable Access control or restriction lists: Yes, using a role library for Pause, Blacklist, CoinFactory (see below) Non-standard features or behaviors: Yes.  Transfers can be paused by anyone having PauserRole. Coin can be added or removed to anyone by anyone having CoinFactoryAdminRole Accounts can be frozen by anyone having BlacklistAdminRole. Owner can be changed by the owner     Formal Verification Considerations:  Does transfer have simple semantics? Yes. Does transferFrom have simple semantics? Yes. Can balances be arbitrarily modified by some actor? Yes, the contract can freeze/unfreeze any on-chain address and/or change their balance. Are there any external calls? No.   Testnet Information  N/A   Contract Logic Summary  Administrative Addresses  owner: 0x2bd9caa19a724608bef32dd3c10c0fd1f70b309d (multisig wallet, 3 of 7) Other roles are private, only the owner can add roles.   Inheritance Structure The inheritance structure is relatively complex. There is one inheritance lineage that goes from IERC20 (interface) to ERC20 (basic ERC20 implementation) to HUSDToken that overload some methods using some non standard feature in methods or modifiers from other inheritance lineages. Each non standard feature inherit from Owner (to have the contract owner) then a Role contract that manage who can use the non standard feature then an implementation of the non standard feature (like BlackList) HUSDToken: ERC20, ERC20Pausable, CoinFactory, Blacklist Blacklist: ERC20, BlacklistAdminRole BlacklistAdminRole: Ownable CoinFactory: ERC20, CoinFactoryAdminRole CoinFactoryAdminRole: Ownable ERC20Pausable: ERC20, Pausable ERC20: IERC20 (interface), Ownable Pausable: PauserRole PauserRole: Ownable  Contract Risk Summary This is a medium risk contract. The ERC20 functions are implemented to industry standard, it uses a SafeMath library to prevent over/underflows. However, the non-standard features can freeze, change balance of some accounts and pause the contract which introduces additional risk. Control over accounts balances and transfers is usual in stablecoin contracts.  Contracts Description Table     Contract Type Bases       \u2514 Function Name Visibility Mutability Modifiers          SafeMath Library      \u2514 add Internal       \u2514 sub Internal       \u2514 mul Internal       \u2514 div Internal       \u2514 mod Internal              Ownable Implementation      \u2514  Internal       \u2514 owner Public    NO\u2757\ufe0f   \u2514 isOwner Public    NO\u2757\ufe0f   \u2514 transferOwnership Public    onlyOwner   \u2514 _transferOwnership Internal              Roles Library      \u2514 add Internal       \u2514 remove Internal       \u2514 has Internal              PauserRole Implementation Ownable     \u2514  Internal       \u2514 isPauser Public    NO\u2757\ufe0f   \u2514 addPauser Public    onlyOwner   \u2514 removePauser Public    onlyOwner   \u2514 renouncePauser Public    NO\u2757\ufe0f   \u2514 _addPauser Internal       \u2514 _removePauser Internal              Pausable Implementation PauserRole     \u2514  Internal       \u2514 paused Public    NO\u2757\ufe0f   \u2514 pause Public    onlyPauser whenNotPaused   \u2514 unpause Public    onlyPauser whenPaused          IERC20 Interface      \u2514 totalSupply External    NO\u2757\ufe0f   \u2514 balanceOf External    NO\u2757\ufe0f   \u2514 transfer External    NO\u2757\ufe0f   \u2514 allowance External    NO\u2757\ufe0f   \u2514 approve External    NO\u2757\ufe0f   \u2514 transferFrom External    NO\u2757\ufe0f          ERC20 Implementation IERC20, Ownable     \u2514 totalSupply Public    NO\u2757\ufe0f   \u2514 balanceOf Public    NO\u2757\ufe0f   \u2514 transfer Public    NO\u2757\ufe0f   \u2514 allowance Public    NO\u2757\ufe0f   \u2514 approve Public    NO\u2757\ufe0f   \u2514 transferFrom Public    NO\u2757\ufe0f   \u2514 increaseAllowance Public    NO\u2757\ufe0f   \u2514 decreaseAllowance Public    NO\u2757\ufe0f   \u2514 _transfer Internal       \u2514 _approve Internal       \u2514 _issue Internal       \u2514 _redeem Internal              ERC20Pausable Implementation ERC20, Pausable     \u2514 transfer Public    whenNotPaused   \u2514 transferFrom Public    whenNotPaused   \u2514 approve Public    whenNotPaused   \u2514 increaseAllowance Public    whenNotPaused   \u2514 decreaseAllowance Public    whenNotPaused          CoinFactoryAdminRole Implementation Ownable     \u2514  Internal       \u2514 isCoinFactoryAdmin Public    NO\u2757\ufe0f   \u2514 addCoinFactoryAdmin Public    onlyOwner   \u2514 removeCoinFactoryAdmin Public    onlyOwner   \u2514 renounceCoinFactoryAdmin Public    NO\u2757\ufe0f   \u2514 _addCoinFactoryAdmin Internal       \u2514 _removeCoinFactoryAdmin Internal              CoinFactory Implementation ERC20, CoinFactoryAdminRole     \u2514 issue Public    onlyCoinFactoryAdmin   \u2514 redeem Public    onlyCoinFactoryAdmin          BlacklistAdminRole Implementation Ownable     \u2514  Internal       \u2514 isBlacklistAdmin Public    NO\u2757\ufe0f   \u2514 addBlacklistAdmin Public    onlyOwner   \u2514 removeBlacklistAdmin Public    onlyOwner   \u2514 renounceBlacklistAdmin Public    NO\u2757\ufe0f   \u2514 _addBlacklistAdmin Internal       \u2514 _removeBlacklistAdmin Internal              Blacklist Implementation ERC20, BlacklistAdminRole     \u2514 isBlacklist Public    NO\u2757\ufe0f   \u2514 addBlacklist Public    onlyBlacklistAdmin   \u2514 removeBlacklist Public    onlyBlacklistAdmin   \u2514 _addBlacklist Internal       \u2514 _removeBlacklist Internal              HUSDToken Implementation ERC20, ERC20Pausable, CoinFactory, Blacklist     \u2514  Public    NO\u2757\ufe0f   \u2514 transfer Public    whenNotPaused   \u2514 transferFrom Public    whenNotPaused     Legend     Symbol Meaning      Function can modify state    Function is payable     ",
+                    "links": [
+                        "https://etherscan.io/address/0xdf574c24545e5ffecb9a659c229253d4111d87e1",
+                        "https://www.stcoins.com/",
+                        "https://github.com/makerdao/dss/blob/b280b98e0c661d5d8effe2e9626e51978dab33ce/src/join.sol#L62",
+                        "https://etherscan.io/address/0x2bd9caa19a724608bef32dd3c10c0fd1f70b309d",
+                        "https://forum.makerdao.com/t/rwa-last-2-months-review-updates-and-looking-forward/5225",
+                        "https://forum.makerdao.com/t/collateral-status-index/2231/29",
+                        "https://forum.makerdao.com/t/collateral-status-index/2231",
+                        "https://forum.makerdao.com/t/mip41c4-sp1-facilitator-onboarding-real-world-finance/6226",
+                        "https://forum.makerdao.com/t/mip7c3-sp5-domain-team-onboarding-risk-domain-team/5476",
+                        "https://forum.makerdao.com/t/rwa-resena-de-los-ultimos-dos-meses-actualizaciones-y-lo-que-viene/5272"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.018973214285714
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Claude",
+                    "index": "#2",
+                    "likes": "0",
+                    "time": "30/10/2020-07:50:02",
+                    "content": "Thank you team, just want to know how to push things forward, since the risk is medium, and the situation is similiar with all other centralized stablecoins like USDC, TUSD, GUSD or PAX. Maybe the nest step is HUSD oracle Assessment\uff1fPlease share your ideas. Thank you. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.375
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/lend-erc20-token-smart-contract-domain-team-assessment/3094",
+            "title": "[LEND] ERC20 Token Smart Contract Domain Team Assessment ",
+            "index": 3094,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "lend-token",
+                "sc-domain-work"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/wil",
+                    "index": "#1",
+                    "likes": "6",
+                    "time": "06/07/2020-21:21:52",
+                    "content": "LEND ERC20 Token Smart Contract Domain Team Assessment General Information   Symbol: LEND  Address: 0x80fB784B7eD66730e8b1DBd9820aFD29931aab03   Deployment date: September 17th, 2017   Total Supply: 1299999941703168126810575000 (uint256)  Developers Allotment: 300000000000000000000000000 (uint256)  Project website: https://aave.com/   Github repository: https://github.com/ETHLend/ICO_SmartContract   Can use existing MCD collateral adapter: Yes, the GemJoin adapter.  Risk Summary   Does the contract implement the ERC20 token standard? Yes, the contract implements all the required ERC20 functions. Aside from a few auxiliary functions, the contract is a basic ERC20 implementation.  Risk analysis: LOW.  Technical Information   Compiler version: v0.4.16+commit.d7661dd9  Decimals: 18  Overflow checks: Yes, the contract uses a SafeMath library.  Mitigation against allowance race-condition: Yes.  Upgradeable contract patterns: No.  Access control or restriction lists: No.  Non-Standard decimals:   uint256 instead of standard uint8     Formal Verification Considerations   Does transfer have simple semantics? Yes.  Does transferFrom have simple semantics? Yes.  Can balances be arbitrarily modified by some actor? No.  Are there any external calls?  Yes, one. In the \u2018withdrawEther()` function there is an external call: \u2018escrow.send(this.balance)\u2019. This function contains the onlyTokenManager modifier, and can only be called by the tokenManager address.    Testnet Information  Kovan LEND token address: 0x1BCe8A0757B7315b74bA1C7A731197295ca4747a (unverified) Aave Developer Documentation mainnet & testnet addresses list:  https://docs.aave.com/developers/deployed-contracts/deployed-contract-instances    Audits & Related Documentation  Smart Contract Security Audit Report:  https://github.com/ETHLend/ICO_SmartContract/blob/master/ETHLend Token Sale Smart Contract Security Audit Report.pdf    Contract Logic Summary The token uses a SafeMath contract as its base contract. The standard ERC20 interface, Token, inherits the SafeMath contract, and then a StdToken contract inherits the Token interface and provides the basic ERC20 function implementations. Lastly, an EthLendToken contract then inherits the StdToken contract. This EthLendToken contract contains all the ICO logic and a set of overriding ERC20 functions that wrap the inherited StdToken ERC20 specific functions. The contract has six states, as defined in the \u2018State\u2019 enum: Init, Paused, PresaleRunning, PresaleFinished, ICORunning, and ICOFinished. The contract is in its terminal state, ICOFinished, and can no longer return to any other state. Most of the ICO logic in EthLendToken is now defunct or inaccessible. The token audit reported several issues that \u201cdid not affect the security of the ICO contract directly.\u201d And further cited that \u201cmost of the issues are fixed.\u201d The audit then cites the contract initialization design pattern as one of the unfixed issues. Administrative Addresses Below is a list of several addresses related to token management:   Address teamTokenBonus: 0x3533F9798c34E3971888043871E0b4fc1702adeA  Address that receives the 300,000,000 LEND developers bonus.    Address tokenManager: 0xFe1A6056EE03235f30f7a48407A5673BBf25eD48  Address that can call onlyTokenManager functions (\u2018setState()\u2019, \u2018withdrawEther()\u2019, and \u2018setTokenManager()\u2019).    Address escrow: 0xA8EB8Ee66e94f883D764Ee55df9DA2B3d517a662  Gathered funds can only be withdrawn to this escrow address.    Contract Risk Summary This is a low risk contract. The ERC20 functions are implemented to the industry standard and does not use upgradeable design patterns. The ERC20 allowance race condition is mitigated and noted in their code. The contract makes use of a SafeMath library to prevent overflows & underflows. The teamTokenBonus, tokenManager, and escrow addresses can not interact with any of the ERC20 contract logic. The ICO has concluded, and as a result all of the ICO code is now defunct and unusable, but still present. Lastly, the contract does not make use of any access control lists or restrictive features. It\u2019s also worth noting that the contract has been operational on mainnet since September 17th, 2017. **== ERC20 functions definition == [\u2713] transfer (address, uint256) -> (bool) [\u2713] approve (address, uint256) -> (bool) [\u2713] transferFrom (address, address, uint256) -> (bool) [\u2713] allowance (address, address) -> (uint256) [\u2713] balanceOf (address) -> (uint256)  == Custom modifiers == [\u2713] No custom modifiers in ERC20 functions (there are requires)  == ERC20 events == [\u2713] Transfer (address, address, uint256) [\u2713] Approval (address, address, uint256) [x] transfer must emit Transfer (address, address, uint256) [x] approve must emit Approval (address, address, uint256) [x] transferFrom must emit Transfer (address, address, uint256)  == ERC20 getters == [\u2713] totalSupply () -> (uint256) [x] decimals () -> (uint8) [\u2713] symbol () -> (string) [\u2713] name () -> (string)  == Allowance frontrunning mitigation == [x] increaseAllowance (address, uint256) -> (bool) [x] decreaseAllowance (address, uint256) -> (bool)  == Balance check in approve function == [\u2713] approve function should not check for sender's balance**  ",
+                    "links": [
+                        "https://etherscan.io/tx/0xca4a7821624b27f1cfddf865c401fa01018f9494ec94fad21e6ef17d6baf11d9",
+                        "https://aave.com/",
+                        "https://github.com/ETHLend/ICO_SmartContract",
+                        "https://github.com/makerdao/dss/blob/82044f2c0cdf86414f3543b09608d449c67798e9/src/join.sol#L62",
+                        "https://github.com/ETHLend/ICO_SmartContract/blob/d89209f8b2b50fa8d1f54084024c59e2cd287298/contracts/EthLendICO.sol#L3",
+                        "https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729",
+                        "https://en.wikipedia.org/wiki/Semantics_(computer_science)",
+                        "https://en.wikipedia.org/wiki/Semantics_(computer_science)",
+                        "https://kovan.etherscan.io/address/0x1BCe8A0757B7315b74bA1C7A731197295ca4747a",
+                        "https://docs.aave.com/developers/deployed-contracts/deployed-contract-instances",
+                        "https://github.com/ETHLend/ICO_SmartContract/blob/master/ETHLend%20Token%20Sale%20Smart%20Contract%20Security%20Audit%20Report.pdf",
+                        "https://github.com/ETHLend/ICO_SmartContract/blob/master/ETHLend%20Token%20Sale%20Smart%20Contract%20Security%20Audit%20Report.pdf",
+                        "https://etherscan.io/address/0x3533f9798c34e3971888043871e0b4fc1702adea",
+                        "https://etherscan.io/address/0xfe1a6056ee03235f30f7a48407a5673bbf25ed48",
+                        "https://etherscan.io/address/0xa8eb8ee66e94f883d764ee55df9da2b3d517a662",
+                        "https://github.com/ETHLend/ICO_SmartContract/blob/d89209f8b2b50fa8d1f54084024c59e2cd287298/contracts/EthLendICO.sol#L105",
+                        "https://github.com/ETHLend/ICO_SmartContract/blob/d89209f8b2b50fa8d1f54084024c59e2cd287298/contracts/EthLendICO.sol#L3",
+                        "https://etherscan.io/tx/0xca4a7821624b27f1cfddf865c401fa01018f9494ec94fad21e6ef17d6baf11d9",
+                        "https://forum.makerdao.com/t/maker-relay-ep-2/3097",
+                        "https://forum.makerdao.com/t/discussion-of-collateral-onboarding-process/3338/7",
+                        "https://forum.makerdao.com/t/week-6-dai-distributions-sourcecred-trial/3202",
+                        "https://forum.makerdao.com/t/collateral-status-index/2231/17"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.12734962406015
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/mana-erc20-token-smart-contract-domain-team-assessment/3095",
+            "title": "[MANA] ERC20 Token Smart Contract Domain Team Assessment ",
+            "index": 3095,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "mana",
+                "sc-domain-work"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/wil",
+                    "index": "#1",
+                    "likes": "5",
+                    "time": "06/07/2020-21:22:52",
+                    "content": "MANA ERC20 Token Smart Contract Domain Team Assessment General Information   Symbol: MANA  Address: 0x0F5D2fB29fb7d3CFeE444a200298f468908cC942   Deployment date: August 15th, 2017   Total Supply: 2196559685435138954648519268 (uint256)  Project website: https://www.decentraland.org/   Github repository: https://github.com/decentraland/mana   Can use existing MCD collateral adapter: Yes, the GemJoin adapter.  Risk Summary   Does the contract implement the ERC20 token standard? Yes, although the inheritance structure used is undesirable. Aside from a few auxiliary functions, the majority of the contract is the implementation of the ERC20 functions.  Risk Analysis: LOW.  Technical Information   Compiler version: v0.4.11+commit.68ef5810  Decimals: 18  Checks for overflow? Yes, the contract uses a SafeMath library.  Mitigation against allowance race-condition: Yes, via the inheritance of the OpenZeppelin StandardToken contract.  Upgradeable contract patterns: No.  Access control or restriction lists: No.  Formal Verification Considerations   Does transfer have simple semantics? Yes.  Does transferFrom have simple semantics? Yes.  Can balances be arbitrarily modified by some actor? No.  Are there any external calls? No.  Testnet Information  Kovan MANA token address: 0x230Fc362413D9e862326C2C7084610a5a2fdF78A (unverified) Other contract links found here: https://contracts.decentraland.org/links   Audits & Related Documentation  OpenZeppelin Smart Contract Security Audit Write-up:  https://blog.openzeppelin.com/decentraland-mana-token-audit-ee56a6bca708/    Contract Logic Summary MANAToken contract This contract inherits BurnableToken, and OpenZeppelin\u2019s PausableToken and MintableToken contracts. There are three state variables:   string symbol \u201cMANA\u201d  string name \u201cDecentraland Mana\u201d and uint256 decimals 18  There is one function:   burn(uint256 _value) that calls the parent BurnableToken contract.  To understand MANAToken, it\u2019s important to know the context of its surrounding MANACrowdsale and MANAContinuousSale contracts.  The owner of the MANAToken is the MANACrowdsale contract. Only the owner can pause or unpause the MANAToken contract. The owner of the MANACrowdsale contract is address 0xDf861993Edbe95BAFbfA7760838f8ebbd5Afda9F and it was deployed and self-destructed on November 20th, 2018, rendering it unusable. The owner of MANAContinuousSale is MANACrowdsale, meaning that the previously mentioned self-destructed address is the parent owner of all underlying contracts. Any pause(), unpause(), or transferOwnership() calls would have  to originate from the parent owner address, which is impossible as it has self-destructed.  The inheritance structure in MANAToken is undesirable but has no affect on the security of the token. Contract Risk Summary This is a low risk contract. The ERC20 functions are implemented to the industry standard and uses a SafeMath library, although the inheritance structure utilized is undesirable. The contract does not use upgradeable design patterns. The parent owner of the MANAToken and the MANACrowdsale token is a self-destructed address that cannot access the pause(), unpause(), and transferOwnership() functions. Lastly, the contract does not make use of any access control lists or restrictive features. It\u2019s also worth nothing that the contract has been operational on mainnet since August 15th, 2017. == ERC20 functions definition == [\u2713] transfer (address, uint256) -> (bool) [\u2713] approve (address, uint256) -> (bool) [\u2713] transferFrom (address, address, uint256) -> (bool) [\u2713] allowance (address, address) -> (uint256) [\u2713] balanceOf (address) -> (uint256)  == Custom modifiers == [\u2713] No custom modifiers in ERC20 functions  == ERC20 events == [\u2713] Transfer (address, address, uint256) [\u2713] Approval (address, address, uint256) [x] transfer must emit Transfer (address, address, uint256) [x] approve must emit Approval (address, address, uint256) [x] transferFrom must emit Transfer (address, address, uint256)  == ERC20 getters == [\u2713] totalSupply () -> (uint256) [\u2713] decimals () -> (uint8) [\u2713] symbol () -> (string) [\u2713] name () -> (string)  == Allowance frontrunning mitigation == [x] increaseAllowance (address, uint256) -> (bool) [x] decreaseAllowance (address, uint256) -> (bool)  == Balance check in approve function == [\u2713] approve function should not check for sender's balance  ",
+                    "links": [
+                        "https://etherscan.io/tx/0xc276acd60857b70bc986f6ccf0d2b968411b4194f02c34050f708e536d9369e9",
+                        "https://www.decentraland.org/",
+                        "https://github.com/decentraland/mana",
+                        "https://github.com/makerdao/dss/blob/82044f2c0cdf86414f3543b09608d449c67798e9/src/join.sol#L62",
+                        "https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729",
+                        "https://en.wikipedia.org/wiki/Semantics_(computer_science)",
+                        "https://en.wikipedia.org/wiki/Semantics_(computer_science)",
+                        "https://kovan.etherscan.io/address/0x230fc362413d9e862326c2c7084610a5a2fdf78a",
+                        "https://contracts.decentraland.org/links",
+                        "https://blog.openzeppelin.com/decentraland-mana-token-audit-ee56a6bca708/",
+                        "https://etherscan.io/address/0xdf861993edbe95bafbfa7760838f8ebbd5afda9f",
+                        "https://etherscan.io/tx/0xc276acd60857b70bc986f6ccf0d2b968411b4194f02c34050f708e536d9369e9",
+                        "https://forum.makerdao.com/t/maker-relay-ep-2/3097",
+                        "https://forum.makerdao.com/t/collateral-status-index/2231/13",
+                        "https://forum.makerdao.com/t/mip12c2-sp3-domain-work-requirements-for-the-onboarding-of-mana/3139"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 4.982660455486542
+                }
+            ]
+        },
+        {
+            "thread_link": "https://forum.makerdao.com/t/paxg-erc20-token-smart-contract-domain-community-assessment/3443",
+            "title": "[PAXG] ERC20 Token Smart Contract Domain Community Assessment ",
+            "index": 3443,
+            "category": [
+                "Collateral Onboarding",
+                "Domain Work"
+            ],
+            "tags": [
+                "paxg",
+                "sc-domain-work"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#1",
+                    "likes": "14",
+                    "time": "29/07/2020-15:05:43",
+                    "content": "General Information   Symbol: PAXG   Addresses:   Proxy (entry point):  AdminUpgradeabilityProxy : https://etherscan.io/address/0x45804880de22913dafe09f4980848ece6ecbaf78/advanced#code   Current Implementation PAXGImplementation: https://etherscan.io/address/0x74271f2282ed7ee35c166122a60c9830354be42a#code     Deployment Date: Aug 29, 2019   Total supply: 25,079.00 (as of Jul 27, 2020)   Developers allotment: 0   Project website: https://www.paxos.com/paxgold   Github repository: https://github.com/paxosglobal/paxos-gold-contract#paxos-gold-paxg   Can use existing MCD collateral type adapter? Yes, the GemJoin adapter   Risk Summary  Does the contract implement the ERC20 token standards? Yes, the contract implements all the required ERC20 functions. PAXG is a pausable erc20 token with burn and mint controlled by a central SupplyController. The contract also has additional asset protection functions. Risk analysis: Medium  Technical Information  Compiler version:  v0.4.24+commit.e67f0147  Decimals: 18 Overflow checks: Yes, the contract uses a SafeMath library. Mitigation against allowance race-condition: No, the approve function does have a race condition Upgradeable contract patterns: yes, contract provides UpgradeabilityProxy Access control or restriction lists: ability to freeze/pause wallets, seize tokens from wallets Non-standard features or behaviors: upgradeability, admin proxy, pausing and freezing, minting and burning, asset protection functions, BetaDelegateTransfer allowing end user to pay gas for token transfers.  Formal Verification Considerations:  Does transfer have simple semantics? Yes, seems standard Does transferFrom have simple semantics? Yes, seems standard Can balances be arbitrarily modified by some actor? AssetProtectionRole can freeze/unfreeze wallets and seize tokens Are there any external calls? Only the Proxy which can change the contract implementation. There is also an external function \u201conlyOwner\u201d which uses the AssetProtectionRole to seize PAXG  Testnet Information No Testnet Information available Contract Logic Summary The token uses a Proxy contract which links to an implementation contract. The implementation contract is an upgradeable, freezable, contract with special asset protection functions. At its core the implementation is a standard erc20 contract which uses the SafeMath contract. But these additional functions are added to comply with regulation, and due to being a physical asset custodial token. The contract is upgraded by pointing the Proxy contract to a new implementation contract. This is done by actors with administrative permissions. Administrative Addresses Below is a list of several addresses related to token management: feeRecipient: 0x611479ce1d3d457ffe9fb2abbaf8d3fe2ad8fffb  feeController: 0x5195427ca88df768c298721da791b93ad11eca65  owner: 0xb87cec7baa2ce4a055f8563e9cc5a210cedc329f  supplyController: 0x5195427ca88df768c298721da791b93ad11eca65  assetProtectionRole: 0xb87cec7baa2ce4a055f8563e9cc5a210cedc329f  All of these addresses are EOAs with private keys, and no associated code. This presents more risk because there is no way to know who holds these keys and how the security is being handled. Contract Risk Summary This is a medium risk contract. The ERC20 functions are implemented to the industry standard and uses upgradeable design patterns. The ERC20 allowance race condition is noted in their code and not mitigated. The contract makes use of a SafeMath library to prevent overflows & underflows. The contract also has pausable, freezable features, and the ability for an administrator to seize funds from wallets. These features are similar to other real asset and custodial tokens. Supporting Materials BetaDelegateTransfer function: https://github.com/paxosglobal/paxos-gold-contract#betadelegatetransfer Contracts Description Table Proxy Contract:     Contract Type Bases       \u2514 Function Name Visibility Mutability Modifiers          Proxy Implementation      \u2514  External    NO\u2757\ufe0f   \u2514 _implementation Internal       \u2514 _delegate Internal       \u2514 _willFallback Internal       \u2514 _fallback Internal              AddressUtils Library      \u2514 isContract Internal              UpgradeabilityProxy Implementation Proxy     \u2514  Public    NO\u2757\ufe0f   \u2514 _implementation Internal       \u2514 _upgradeTo Internal       \u2514 _setImplementation Private              AdminUpgradeabilityProxy Implementation UpgradeabilityProxy     \u2514  Public    UpgradeabilityProxy   \u2514 admin External    ifAdmin   \u2514 implementation External    ifAdmin   \u2514 changeAdmin External    ifAdmin   \u2514 upgradeTo External    ifAdmin   \u2514 upgradeToAndCall External    ifAdmin   \u2514 _admin Internal       \u2514 _setAdmin Internal       \u2514 _willFallback Internal        Implementation Contract:     Contract Type Bases       \u2514 Function Name Visibility Mutability Modifiers          SafeMath Library      \u2514 sub Internal       \u2514 add Internal       \u2514 mul Internal       \u2514 div Internal              PAXGImplementation Implementation      \u2514 initialize Public    NO\u2757\ufe0f   \u2514  Public    NO\u2757\ufe0f   \u2514 initializeDomainSeparator Public    NO\u2757\ufe0f   \u2514 totalSupply Public    NO\u2757\ufe0f   \u2514 transfer Public    whenNotPaused   \u2514 balanceOf Public    NO\u2757\ufe0f   \u2514 transferFrom Public    whenNotPaused   \u2514 approve Public    whenNotPaused   \u2514 allowance Public    NO\u2757\ufe0f   \u2514 _transfer Internal       \u2514 proposeOwner Public    onlyOwner   \u2514 disregardProposeOwner Public    NO\u2757\ufe0f   \u2514 claimOwnership Public    NO\u2757\ufe0f   \u2514 reclaimPAXG External    onlyOwner   \u2514 pause Public    onlyOwner   \u2514 unpause Public    onlyOwner   \u2514 setAssetProtectionRole Public    NO\u2757\ufe0f   \u2514 freeze Public    onlyAssetProtectionRole   \u2514 unfreeze Public    onlyAssetProtectionRole   \u2514 wipeFrozenAddress Public    onlyAssetProtectionRole   \u2514 isFrozen Public    NO\u2757\ufe0f   \u2514 setSupplyController Public    NO\u2757\ufe0f   \u2514 increaseSupply Public    onlySupplyController   \u2514 decreaseSupply Public    onlySupplyController   \u2514 nextSeqOf Public    NO\u2757\ufe0f   \u2514 betaDelegatedTransfer Public    NO\u2757\ufe0f   \u2514 _betaDelegatedTransfer Internal    whenNotPaused   \u2514 betaDelegatedTransferBatch Public    NO\u2757\ufe0f   \u2514 isWhitelistedBetaDelegate Public    NO\u2757\ufe0f   \u2514 setBetaDelegateWhitelister Public    NO\u2757\ufe0f   \u2514 whitelistBetaDelegate Public    onlyBetaDelegateWhitelister   \u2514 unwhitelistBetaDelegate Public    onlyBetaDelegateWhitelister   \u2514 setFeeController Public    NO\u2757\ufe0f   \u2514 setFeeRecipient Public    onlyFeeController   \u2514 setFeeRate Public    onlyFeeController   \u2514 getFeeFor Public    NO\u2757\ufe0f    Legend     Symbol Meaning      Function can modify state    Function is payable     ",
+                    "links": [
+                        "https://etherscan.io/address/0x74271f2282ed7ee35c166122a60c9830354be42a#code",
+                        "https://www.paxos.com/paxgold",
+                        "https://github.com/paxosglobal/paxos-gold-contract#paxos-gold-paxg",
+                        "https://github.com/makerdao/dss/blob/b280b98e0c661d5d8effe2e9626e51978dab33ce/src/join.sol#L62",
+                        "https://etherscan.io/address/0x611479ce1d3d457ffe9fb2abbaf8d3fe2ad8fffb",
+                        "https://etherscan.io/address/0x5195427ca88df768c298721da791b93ad11eca65",
+                        "https://etherscan.io/address/0xb87cec7baa2ce4a055f8563e9cc5a210cedc329f",
+                        "https://etherscan.io/address/0x5195427ca88df768c298721da791b93ad11eca65",
+                        "https://etherscan.io/address/0xb87cec7baa2ce4a055f8563e9cc5a210cedc329f",
+                        "https://ethdocs.org/en/latest/contracts-and-transactions/account-types-gas-and-transactions.html",
+                        "https://etherscan.io/address/0x74271f2282ed7ee35c166122a60c9830354be42a#code",
+                        "https://etherscan.io/address/0x74271f2282ed7ee35c166122a60c9830354be42a#code",
+                        "https://github.com/paxosglobal/paxos-gold-contract#betadelegatetransfer",
+                        "https://forum.makerdao.com/t/collateral-status-index/2231",
+                        "https://forum.makerdao.com/t/paxg-collateral-onboarding-risk-evaluation/4833/18",
+                        "https://forum.makerdao.com/t/collateral-onboarding-and-mip-updates-2020-12-11/5661",
+                        "https://forum.makerdao.com/t/maker-relay-ep-22-en-espanol/5290",
+                        "https://forum.makerdao.com/t/maker-relay-episode-22/5288",
+                        "https://forum.makerdao.com/t/collateral-onboarding-updates-2020-11-18/5215",
+                        "https://forum.makerdao.com/t/g-r-snippets-en-espanol/4782",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-114-thursday-october-15-16-00-utc/4657/3",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-114-thursday-october-15-16-00-utc/4657/2",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-114-thursday-october-15-16-00-utc/4657/5",
+                        "https://forum.makerdao.com/t/collateral-status-index/2231/19",
+                        "https://forum.makerdao.com/t/agenda-discussion-scientific-governance-and-risk-103-thursday-july-30-4-00-pm-utc/3318/2",
+                        "https://forum.makerdao.com/t/week-9-dai-distributions-sourcecred-trial/3516",
+                        "https://forum.makerdao.com/t/collateral-onboarding-and-mip-updates-2020-12-18/5726",
+                        "https://forum.makerdao.com/t/relay-semanal-28-de-marzo-4-de-abril-de-2022/14495",
+                        "https://forum.makerdao.com/t/weekly-relay-march-28-april-4-2022/14450",
+                        "https://forum.makerdao.com/t/relay-semanal-22-28-de-marzo-de-2022/14333",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-march-24-30-2022/14332",
+                        "https://forum.makerdao.com/t/weekly-relay-march-22-28-2022/14300",
+                        "https://forum.makerdao.com/t/forum-at-a-glance-march-17-23-2022/14191",
+                        "https://forum.makerdao.com/t/signal-request-onboard-paxg/13768"
+                    ],
+                    "GPT-summary": null,
+                    "GPT-proposal-categories": null,
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.088707269741752
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#2",
+                    "likes": "3",
+                    "time": "30/07/2020-03:49:42",
+                    "content": "How difficult would it be to get PAXG included in the next governance cycle? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.75
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/befitsandpiper",
+                    "index": "#3",
+                    "likes": "1",
+                    "time": "30/07/2020-15:52:48",
+                    "content": "Btw if anyone wants to get involved in writing these smart contract assessments, and has some technical knowledge of the erc20 standard and a bit of solidity, reach out to me and/or @wil see this post here: Discussion of collateral onboarding process ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.517857142857143
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ilan",
+                    "index": "#4",
+                    "likes": "1",
+                    "time": "11/08/2020-21:52:13",
+                    "content": "Thanks for the review @befitsandpiper. Happy to answer any questions about these findings ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/wil",
+                    "index": "#5",
+                    "likes": "3",
+                    "time": "25/08/2020-13:49:54",
+                    "content": "This is great work, @befitsandpiper. After doing a lot of research on the Tether adapter, we\u2019ll have to use a custom GemJoin adapter for PAXG to handle its fee structure. Something along the lines of: // GemJoin8 // For a token that implements fees on transfer (like PAXUSD)  interface GemLike8 {     function decimals() external view returns (uint);     function transfer(address,uint) external returns (bool);     function transferFrom(address,address,uint) external returns (bool);     function balanceOf(address) external view returns (uint); }  contract GemJoin8 is LibNote {     // --- Auth ---     mapping (address => uint) public wards;     function rely(address usr) external note auth { wards[usr] = 1; }     function deny(address usr) external note auth { wards[usr] = 0; }     modifier auth {         require(wards[msg.sender] == 1, \"GemJoin8/not-authorized\");         _;     }      VatLike  public vat;   // CDP Engine     bytes32  public ilk;   // Collateral Type     GemLike8 public gem;     uint     public dec;     uint     public live;  // Active Flag      constructor(address vat_, bytes32 ilk_, address gem_) public {         wards[msg.sender] = 1;         live = 1;         vat = VatLike(vat_);         ilk = ilk_;         gem = GemLike8(gem_);         dec = gem.decimals();     }     function sub(uint x, uint y) internal pure returns (uint z) {         require((z = x - y) <= x);     }     function cage() external note auth {         live = 0;     }     function join(address usr, uint wad) external note {         require(live == 1, \"GemJoin8/not-live\");         uint bal = gem.balanceOf(address(this));         require(gem.transferFrom(msg.sender, address(this), wad), \"GemJoin8/failed-transfer\");         wad = sub(gem.balanceOf(address(this)), bal);         require(int(wad) >= 0, \"GemJoin8/overflow\");         vat.slip(ilk, usr, int(wad));     }     function exit(address usr, uint wad) external note {         require(wad <= 2 ** 255, \"GemJoin8/overflow\");         vat.slip(ilk, msg.sender, -int(wad));         require(gem.transfer(usr, wad), \"GemJoin8/failed-transfer\");     } }  Similar to the GemJoin7 tether adapter but without the decimal conversion (as Tether uses 6 decimals while PAXG uses 18). ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.2687590187590185
+                }
+            ]
+        }
+    ],
+    "group_index": "2470"
+}

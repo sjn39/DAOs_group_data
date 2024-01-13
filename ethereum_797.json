@@ -1,0 +1,52 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://ethereum-magicians.org/t/erc-1930-allows-specification-of-a-strict-amount-of-gas-for-calls/3132",
+            "title": "ERC-1930 Allows specification of a strict amount of gas for calls ",
+            "index": 3132,
+            "category": [
+                "EIPs",
+                "Core EIPs"
+            ],
+            "tags": [
+                "NONE"
+            ],
+            "content": [
+                {
+                    "author_link": "https://ethereum-magicians.org/u/wighawag",
+                    "index": "1",
+                    "likes": "0",
+                    "time": "13/04/2019-21:57:00",
+                    "content": "Hi, I\u2019d like to propose a core EIP to allow contract to ensure external call get a specific amount of gas and not just a maximum value (as present). If we could get this included in the next fork that would be great for meta transaction and smart contract wallet. I copy the content of the EIP here but created an issue for that on github, see : https://github.com/ethereum/EIPs/issues/1930 One thing I am not entirely sure about it is whether we need new opodes (as proposed in the current draft) or if it is safe to break the current behavior. In other words what will be the impact on existing contracts. Let me know what you think. Specification   add a new variant of the CALL opcode where the gas specified is enforced so that if the gas left at the point of call is not enough to give the specified gas to the destination, the current call revert   add a new variant of the DELEGATE_CALL opcode where the gas specified is enforced so that if the gas left at the point of call is not enough to give the specified gas to the destination, the current call revert   In other words, based on EIP-150, the current call must revert unless G >= I x 64/63 where G is gas left at the point of call (after deducing the cost of the call itself) and I is the gas specified. So instead of availableGas = availableGas - base gas := availableGas - availableGas/64 ... if !callCost.IsUint64() || gas < callCost.Uint64() { return gas, nil }  see https://github.com/ethereum/go-ethereum/blob/7504dbd6eb3f62371f86b06b03ffd665690951f2/core/vm/gas.go#L41-L48 we would have availableGas = availableGas - base gas := availableGas - availableGas/64 if !callCost.IsUint64() || gas < callCost.Uint64() {   return 0, errNotEnoughGas }  Rationale Currenlty the gas specified as part of these opcodes is simply a maximum value. And due to the behavior of EIP-150 it is possible for an external call to be given less gas than intended (less than the gas specified as part of the CALL) while the rest of the current call is given enough to continue and succeed. Indeed since with EIP-150, the external call is given at max G - Math.floor(G/64) where G is the gasleft() at the point of the CALL, the rest of the current call is given Math.floor(G/64) which can be plenty enough for the transaction to succeed. For example, when G = 6,400,000 the rest of the transaction will be given 100,000 gas plenty enough in many case to succeed. This is an issue for contracts that require external call to only fails if they would fails with enough gas. This requirement is present in smart contract wallet and meta transaction in general, where the one executing the transaction is not the signer of the execution data. Because in such case, the contract needs to ensure the call is executed exactly as the signing user intended. While such requirement can be enforced by checking the gas left according to EIP-150 and the precise gas required before the call (see solution presented in that bug report : https://web.solidified.io/contract/5b4769b1e6c0d80014f3ea4e/bug/5c83d86ac2dd6600116381f9) or after the call (see the native meta transaction implementation here https://github.com/pixowl/thesandbox-contracts/blob/623f4d4ca10644dcee145bcbd9296579a1543d3d/src/Sand/erc20/ERC20MetaTxExtension.sol#L176), it would be much better if the EVM allowed us to strictly specify how much gas is to be given to the CALL so contract implementations do not need to follow EIP-150 behavior and the current gas pricing so closely. This would also allow the behaviour of EIP-150 to be changed without having to affect contract that require this strict gas behaviour. As mentioned, such strict gas behaviour is important for smart contract wallet and meta transaction in general. The issue is actually already a problem in the wild as can be seen in the case of Gnosis safe which did not consider the behavior of EIP-150 and thus fails to check the gas properly, requiring the safe owners to add otherwise unecessary extra gas to their signed message to avoid the possibility of losing funds. See https://github.com/gnosis/safe-contracts/issues/100 While such issue can be prevented today by checking the gas with EIP-150 in mind, a solution at the opcode level is more elegant. Indeed, the two possible ways to currently enforce that the correct amount of gas is sent are as follow :  check done before the call  uint256 gasAvailable = gasleft() - E; require(gasAvailable - gasAvailable / 64 >= `txGas`, \"not enough gas provided\") to.call.gas(txGas)(data); // CALL  where E is the gas required for the operation beteen the call to gasleft() and the actual call PLUS the gas cost of the call itself. While it is possible to simply over estimate E to prevent call to be executed if not enough gas is provided to the current call it would be better to have the EVM do the precise work itself. As gas pricing continue to evolve, this is important to have a mechanism to ensure a specific amount of gas is passed to the call so such mechanism can be used without having to relies on a specific gas pricing.  check done after the call:  to.call.gas(txGas)(data); // CALL require(gasleft() >= txGas / 63, \"not enough gas left\");  This solution does not require to compute a E value and thus do not relies on a specific gas pricing (except for the behaviour of EIP-150) since if the call is given not enough gas and fails for that reason, the condition above will always fail, ensuring the current call will revert. But this check still pass if the gas given was less AND the external call reverted or succeeded EARLY (so that the gas left after the call >= txGas / 63). This can be an issue if the code executed as part of the CALL is reverting as a result of a check against the gas provided. Like a meta transaction in a meta transaction. Similarly to the the previous solution, an EVM mechanism would be much better. References  EIP-150, https://github.com/ethereum/EIPs/blob/master/EIPS/eip-150.md   ",
+                    "links": [
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-150.md",
+                        "https://github.com/ethereum/go-ethereum/blob/7504dbd6eb3f62371f86b06b03ffd665690951f2/core/vm/gas.go#L41-L48",
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-150.md",
+                        "https://web.solidified.io/contract/5b4769b1e6c0d80014f3ea4e/bug/5c83d86ac2dd6600116381f9",
+                        "https://github.com/pixowl/thesandbox-contracts/blob/623f4d4ca10644dcee145bcbd9296579a1543d3d/src/Sand/erc20/ERC20MetaTxExtension.sol#L176",
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-150.md",
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-150.md",
+                        "https://github.com/gnosis/safe-contracts/issues/100",
+                        "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-150.md",
+                        "https://ethereum-magicians.org/t/eip-2489-deprecate-the-gas-opcode/3958/7"
+                    ],
+                    "GPT-summary": "The author proposes a core EIP to allow contracts to ensure external calls get a specific amount of gas and not just a maximum value. The proposal includes adding a new variant of the CALL and DELEGATE_CALL opcodes where the gas specified is enforced. The author is unsure if new opcodes are needed or if it is safe to break the current behavior. The proposal is important for smart contract wallets and meta transactions. The post includes rationale and references. A 3rd party could give constructive criticism, ask questions, or collaborate on the proposal.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Change to proposal pipeline",
+                        "Token economics",
+                        "Privacy, Security and risk management",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author wants to collaborate on proposal"
+                    ],
+                    "Sentiment": 5.150014504395948
+                }
+            ]
+        }
+    ],
+    "group_index": "797"
+}

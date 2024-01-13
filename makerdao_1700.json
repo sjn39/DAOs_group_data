@@ -1,0 +1,1061 @@
+{
+    "poll_list": [],
+    "discourse_list": [
+        {
+            "thread_link": "https://forum.makerdao.com/t/mip84-activate-protocol-owned-vault-emulation/17713",
+            "title": "MIP84: Activate Protocol-Owned Vault Emulation ",
+            "index": 17713,
+            "category": [
+                "Maker Improvement Proposals",
+                "Archive"
+            ],
+            "tags": [
+                "impact-:-high",
+                "endgame",
+                "endgame-prelaunch-mip-set"
+            ],
+            "content": [
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#1",
+                    "likes": "1",
+                    "time": "06/09/2022-22:05:21",
+                    "content": " MIP84: Activate Protocol-Owned Vault Emulation  Preamble MIP#: 84 Title: Activate Protocol-Owned Vault Emulation Author(s): @rune Contributors: @juan, @retro Tags: template, endgame, endgame-prelaunch-mip-set Type: MIP Type Status: Accepted Date Proposed: 2022-09-07 Date Ratified: 2022-10-24 Dependencies: n/a Replaces: n/a Forum URL: https://forum.makerdao.com/t/mip84-activate-protocol-owned-vault-emulation/17713 Ratification Poll URL: https://vote.makerdao.com/polling/QmTmS5Nf   Sentence Summary This MIP activates the preliminary implementation of the Protocol-Owned Vault.  Paragraph Summary This MIP activates the preliminary implementation of the Protocol-Owned Vault, using the Protocol-Owned Vault Emulation (POVE) approach which uses a non-standard configuration of the existing Maker Protocol to achieve the effects of a Protocol-Owned Vault.  Component Summary MIP84c1: Protocol-Owned Vault Emulation Definitions Defines elements of the POVE. MIP84c2: Protocol-Owned Vault Administrative Mandate Defines the powers of the administrative team(s) on the POVE. MIP84c3: Protocol-Owned Vault Acceptable Collateral Defines acceptable collateral and their use within the POVE. MIP84c4: Protocol-Owned Vault Starting Collateral Defines how the POVE collateral is to be bootstrapped. MIP84c5: The Collateralization Ratio of the Protocol-Owned Vault Emulation Defines the POVE Debt Ceiling calculation. MIP84c6: Modify the Collateralization Ratio of the Protocol-Owned Vault Emulation Defines the ability to modify the POVE Debt Ceiling calculation. MIP84c7: DssKiln Parameters Defines the DssKiln parameters used to do recurring purchases of POVE collateral. MIP84c8: Modify the DssKiln Parameters Defines the ability to modify the DssKiln parameters. MIP84c9: Protocol Surplus and the Emulated Surplus Buffer Upper Limit Defines the relationship between the protocol\u2019s surplus and the POVE\u2019s buffer. MIP84c10: Modify Emulated Surplus Buffer Upper Limit Defines the ability to modify the Emulated Surplus Buffer Upper Limit. MIP84c10: Protocol-Owned Vault Emulation Collateral Virtual Price Ceiling Defines a virtual maximum for collateral assets in the POVE. MIP84c11: Modify Protocol-Owned Vault Emulation Collateral Virtual Price Ceiling Defines the ability to modify the POVEC\u2019s Virtual Price Ceiling. MIP84c13: Long-term Replacement of the Protocol-Owned Vault Emulation Defines how the POVE must eventually be replaced by a smart contract based Protocol-Owned Vault.  Motivation The Protocol-Owned Vault is a key element of the Endgame Plan that helps achieve real resilience and decentralization by increasing the amount of Dai backed by Staked ETH. The Protocol-Owned Vault Emulation is an approach to emulate the outcome of operating a Protocol-Owned Vault, but only using existing features of the Maker Protocol as it exists today. This is achieved by using the ability to set a negative lower limit to the surplus buffer in order to emulate a vault with an available debt ceiling, and using the Pause Proxy and DssKiln to accumulate collateral assets.  Specification / Proposal Details  MIP84c1: Protocol-Owned Vault Emulation Definitions This MIP will activate the Protocol-Owned Vault Emulation (POVE). It is an approach to emulate the outcome of operating a Protocol-Owned Vault, but only using existing features of the Maker Protocol as it exists today. This is achieved by using the ability to set a negative lower limit to the surplus buffer in order to emulate a vault with an available debt ceiling, and using the Pause Proxy and DssKiln to accumulate collateral assets. Protocol-Owned Vault Emulation Collateral (POVEC) is any Lido Staked ETH, EtherDai or Dai held in the Pause Proxy. It is used to calculate the amount of Dai that Maker can use to accumulate more POVEC. Protocol-Owned Vault Emulation Debt Ceiling (POVEDC) is the amount of debt that Maker can incur based on the value of the POVEC and the target overcollateralization defined in this MIP. The lower limit of the Surplus Buffer is set to be equal to the POVEDC, allowing Maker to draw Dai from the Surplus Buffer in the same way as a vault user can draw Dai from a Maker Vault with available Debt Ceiling. Emulated Surplus Buffer Upper Limit is a quantity of Dai above the current surplus buffer lower limit. Protocol-Owned Vault Emulation Collateral Virtual Price Ceiling is a set price for the POVE\u2019s Collateral, used to determine the POVEDC.  MIP84c2: Protocol-Owned Vault Administrative Mandate The POVE will operate based on manual processes defined in this MIP that are controlled directly by MKR holders using Executive Votes. The Risk Core Unit is mandated with following these pre-defined processes, making parameter adjustment proposals, and is given the emergency powers to derisk POVE activity if it becomes necessary, including the immediate cessation of additional collateral purchases. This can be done through weekly governance polls, or if necessary be bundled directly into weekly or emergency Executive Votes. RISK-001 Facilitators can propose actions to derisk the POVE via weekly governance polls or into emergency or weekly executive votes. These actions include but are not limited to:  Stopping the DssKiln from purchasing  more collateral. Installing a new DssKiln with custom parameters to sell collateral for Dai to wind down the debt of the POVE. Partially or fully liquidating the vault using a custom method. Modifying any of the parameters that are relevant for derisking the POVE. Parameters can only be modified this way if it makes them more conservative and reduces risk. This action cannot be used to increase risk, such as by lowering the Collateralization Ratio parameter.  The POVE is exclusively controlled and owned by Maker Governance, and no third-party, individual, multisig, or another point of control has any technical access to the POVE or its assets in any way.  MIP84c3: Protocol-Owned Vault Acceptable Collateral The POVE is able to use Lido Staked ETH and EtherDai as collateral assets (POVEC) for the purposes of calculating the Protocol-Owned Vault Emulation Debt Ceiling (POVEDC), which is used to define the lower limit on the Surplus Buffer and determine whether Dai can be transferred from the Surplus Buffer to the Pause Proxy. Dai that has been transferred to the Pause Proxy from POVEDC or as starting collateral, that has not yet converted to Lido Staked ETH or EtherDai, also counts as POVEC. Available POVEDC can only be used to accumulate Lido Staked ETH. When EtherDai becomes available, the POVE must convert all of its existing Lido Staked ETH to EtherDai, and from then on can only use its available POVEDC to accumulate more EtherDai.  MIP84c4: Protocol-Owned Vault Starting Collateral The POVE will be bootstrapped with 20 million Dai that will be used to acquire the initial Lido Staked ETH collateral. This Dai is directly transferred from the Surplus Buffer to the Pause Proxy.  MIP84c5: The Collateralization Ratio of the Protocol-Owned Vault Emulation The collateralization ratio of the POVE is 225%, which results in 1.8x leverage on the collateral. The POVEDC is determined by the equation: POVEDC = POVEC / 1.25 Calculating the POVEDC and modifying the lower limit to the surplus buffer correspondingly is done on a monthly basis by the Risk Core Unit, before calculating the amount of Dai to transfer from the Surplus Buffer to the Pause Proxy (if any) as defined in MIP84c9.  MIP84c6: Modify the Collateralization Ratio of the Protocol-Owned Vault Emulation This process component establishes the process to modify the Collateralization Ratio as defined in MIP84c5 above.  Subproposal Parameters and Template The parameters for MIP84c6 subproposals are:   Minimum Feedback Period: 4 weeks.  Minimum Frozen Period: 1 week.  Governance Cycle: Monthly.  Facilitators with relevant mandates may propose weekly polls to amend the Collateralization Ratio of the Protocol-Owned Vault Emulation when they deem necessary. MIP84c6 subproposals must use this template:   MIP84c6: Modify the Collateralization Ratio of the Protocol-Owned Vault Emulation  Preamble MIP84c6-SP#: # Author(s): Contributors: Tags: template Status: Date Proposed: <yyyy-mm-dd> Date Ratified: <yyyy-mm-dd>   Sentence Summary  Paragraph Summary  Specification  Motivation  Why are you proposing this modification to the state?   New collateralization ratio  This section contains the new Collateralization Ratio and the new POVEDC equation to replace the current parameters if the subproposal passes.    MIP84c7: DssKiln parameters Any Dai available in the Pause Proxy, whether from POVEDC or Starting Collateral, is used to accumulate Lido Staked ETH, and later EtherDai, using a DssKiln implementation sourcing liquidity from a liquid DEX. After the launch of Elixir, the DssKiln target will be the Elixir balancer pool.   sell: Dai  buy: stETH  hop: 20 minutes  lot: 7000   MIP84c8: Modify the DssKiln parameters This process component establishes the process to modify the Dss-kiln parameters as defined in MIP84c7.  Subproposal Parameters and Template The parameters for MIP84c8 subproposals are:   Minimum Feedback Period: 4 weeks.  Minimum Frozen Period: 1 week.  Governance Cycle: Monthly.  Facilitators with relevant mandates may propose weekly polls to amend the DssKiln parameters when they deem necessary. MIP84c8 subproposals must use this template:   MIP84c8: Modify the Dss-kiln parameters  Preamble MIP84c8-SP#: # Author(s): Contributors: Tags: template Status: Date Proposed: <yyyy-mm-dd> Date Ratified: <yyyy-mm-dd>   Sentence Summary  Paragraph Summary  Specification  Motivation  Why are you proposing this modification to the dss-kiln parameters?   New dss-kiln parameters   This section contains the new dss-kiln parameters that will override the current parameters in MIP84c7   The following parameters must be specified:   sell: The token to be deposited into DssKiln and sold.  buy: The token to be bought in exchange for the sold token.  hop: Duration specified in seconds. It represents a minimum number of seconds that must pass before the lot can be sold.  lot: The maximum quantity of tokens to be sold per hop.      MIP84c9: Protocol Surplus and the Emulated Surplus Buffer Upper Limit All additional income generated by the Maker Protocol is used to fund the POVE, until Maker Governance implements a new burn engine that also draws from the Surplus Buffer alongside the POVE according to the long-term tokenomics defined by the Endgame Plan. To enable this with the POVE, this MIP also defines the concept of the Emulated Surplus Buffer Upper Limit. The Emulated Surplus Buffer Upper Limit is a quantity of Dai above the current surplus buffer lower limit. Each month, any Dai accumulated in the Surplus Buffer above the Emulated Surplus Buffer Upper Limit is transferred to the Pause Proxy to be deployed in the POVE. This is calculated and executed AFTER first calculating and modifying the new POVEDC, if applicable. The initial Emulated Surplus Buffer Upper Limit is set to 40 million Dai.  MIP84c10: Modify Emulated Surplus Buffer Upper Limit This process component enables Maker Governance to modify the Emulated Surplus Buffer Upper Limit as defined in MIP84c9  Subproposal Parameters and Template The parameters for MIP84c10 subproposals are:   Minimum Feedback Period: 4 weeks.  Minimum Frozen Period: 1 week.  Governance Cycle: Monthly.  Facilitators with relevant mandates may propose weekly polls to amend the Protocol Surplus and the Emulated Surplus Buffer Upper Limit when they deem necessary. MIP84c10 subproposals must use this template:   MIP84c10: Modify Emulated Surplus Buffer Upper Limit  Preamble MIP84c10-SP#: # Author(s): Contributors: Tags: template Status: Date Proposed: <yyyy-mm-dd> Date Ratified: <yyyy-mm-dd>   Sentence Summary  Paragraph Summary  Specification  Motivation  Why are you proposing this modification to the Emulated Surplus Buffer Upper Limit?   New Emulated Surplus Buffer Upper Limit parameter  This section contains the new Emulated Surplus Buffer Upper Limit parameter that will override the current parameter in MIP84c9    MIP84c11: Protocol-Owned Vault Emulation Collateral Virtual Price Ceiling To prevent overleverage of the POVE due to unsustainable price appreciation of the POVE\u2019s collateral assets, this MIP defines virtual price ceilings for POVEC. If the price of the collateral assets is above the POVEC virtual price ceilings, they are only counted as being equal to the virtual price ceiling when calculating the POVEDC. The POVEC Virtual Price Ceiling of ETH (For Lido Staked ETH or EtherDai): 1500 USD  MIP84c12: Modify Protocol-Owned Vault Emulation Collateral Virtual Price Ceiling This process component establishes the process to modify the POVEC Virtual Price Ceiling defined in MIP84c11.  Subproposal Parameters and Template The parameters for MIP84c12 subproposals are:   Minimum Feedback Period: 4 weeks.  Minimum Frozen Period: 1 week.  Governance Cycle: Monthly.  Facilitators with relevant mandates may propose weekly polls to amend the Protocol-Owned Vault Emulation Collateral Virtual Price Ceiling when they deem necessary. MIP84c12 subproposals must use this template:   MIP84c12: Modify Protocol-Owned Vault Emulation Collateral Virtual Price Ceiling  Preamble MIP84c12-SP#: # Author(s): Contributors: Tags: template Status: Date Proposed: <yyyy-mm-dd> Date Ratified: <yyyy-mm-dd>   Sentence Summary  Paragraph Summary  Specification  Motivation  Why are you proposing this modification to the POVEC Virtual Price Ceiling?   New POVEC Virtual Price Ceiling parameter  This section contains the New POVEC Virtual Price Ceiling parameter  that will override the current parameter in MIP84c11    MIP84c13: Long-term replacement of the Protocol-Owned Vault Emulation The POVE is not meant to be a permanent feature of the Endgame, rather it is a short-term solution that allows Maker to quickly begin accumulating staked ETH, at a steady rate, reducing risks. The POVE must eventually be replaced by a fully smart contract based, automated, Protocol-Owned Vault. The Endgame Plan Launch MIPs must contain an Endgame Product MIP for the Protocol-Owned Vault that will eventually replace the POVE. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/has-there-been-a-shift-in-regulatory-risk-informal-poll/18035",
+                        "https://forum.makerdao.com/t/weekly-mips-update-105/17999",
+                        "https://forum.makerdao.com/t/weekly-forum-recap/16247/17",
+                        "https://forum.makerdao.com/t/weekly-mips-update-104/17861",
+                        "https://forum.makerdao.com/t/endgame-rfc-dvc-calls/17773/7",
+                        "https://forum.makerdao.com/t/weekly-forum-recap/16247/32",
+                        "https://forum.makerdao.com/t/weekly-makerdao-recap/16382/15",
+                        "https://forum.makerdao.com/t/weekly-makerdao-recap/16382/24",
+                        "https://forum.makerdao.com/t/relay-semanal-20-de-octubre-28-de-octubre-del-2022/18703",
+                        "https://forum.makerdao.com/t/weekly-makerdao-recap/16382/22",
+                        "https://forum.makerdao.com/t/gfx-labs-delegate-platform/11556/69",
+                        "https://forum.makerdao.com/t/signal-request-change-psm-gusd-a-parameters/18142/10",
+                        "https://forum.makerdao.com/t/crimson-creator-cluster/18241/7",
+                        "https://forum.makerdao.com/t/weekly-mips-update-107/18199",
+                        "https://forum.makerdao.com/t/weekly-mip-update-106/18103",
+                        "https://forum.makerdao.com/t/sucesos-quincenales-del-sourcecred-14-traduccion/18059",
+                        "https://forum.makerdao.com/t/sourcecred-bi-weekly-happenings-14/18039"
+                    ],
+                    "GPT-summary": "The post is a Maker Improvement Proposal (MIP) that proposes the activation of the Protocol-Owned Vault Emulation (POVE) approach to emulate the outcome of operating a Protocol-Owned Vault, but only using existing features of the Maker Protocol as it exists today. The proposal defines the elements of the POVE, the powers of the administrative team(s) on the POVE, acceptable collateral, starting collateral, collateralization ratio, DssKiln parameters, Protocol Surplus and the Emulated Surplus Buffer Upper Limit, and the long-term replacement of the POVE. The post does not contain any feedback or questions from third parties.",
+                    "GPT-proposal-categories": [
+                        "Smart contract updates",
+                        "Grants, Funding and resource allocation",
+                        "Board composition",
+                        "Law and regulations",
+                        "None"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "3rd party or author is advertising proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.48850468975469
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/CodeKnight",
+                    "index": "#2",
+                    "likes": "7",
+                    "time": "06/09/2022-22:56:25",
+                    "content": "As stated elsewhere, MakerDAO revenue is highly correlated with stEth prices. This proposal would convert over half our current surplus buffer. Buying up staked Eth increase our risk in the event Eth prices drop. We would see both a decline in revenue and in assets. In the worst case, we would accumulate a large amount of stEth during a bull market that we are forced to sell off during a bear market. As such, setting the surplus buffer lower limit will be of paramount importance.     rune:  The initial Emulated Surplus Buffer Upper Limit is set to 20 million Dai.   How was this number determined?     rune:  Calculating the POVEDC and modifying the lower limit to the surplus buffer correspondingly is done on a monthly basis by the Risk Core Unit   Would governance be voting on these modifications? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.393121693121693
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Sebix",
+                    "index": "#3",
+                    "likes": "2",
+                    "time": "07/09/2022-17:10:38",
+                    "content": " MIP84 GovAlpha Summary This is a summary of the contents of this proposal and its impact, from GovAlpha\u2019s perspective:  MIP84 is a valid part of the Endgame Prelaunch MIP Set. MIP84 uses existing features of the protocol to emulate a protocol-owned vault. The Protocol-Owned Vault Emulation (POVE) is exclusively controlled and owned by Maker Governance. The protocol purchases decentralized assets (limited to Lido stETH until EtherDAI is developed) with DAI from the Surplus Buffer and creates a protocol-owned vault with these assets as collateral. Asset purchases are performed using DssKiln. DAI is then minted using the POVE and used to purchase more collateral i.e. the decentralized assets are purchased with leverage. This allows the Surplus Buffer to be negative up to a certain limit as determined by the Protocol-Owned Vault Emulation Debt Ceiling (POVEDC). The collateralization ratio of the POVE provided in this MIP is 225%, which results in 1.8x leverage on the collateral. The POVEDC is determined by the equation: POVEDC = POVEC / 1.25   20 million DAI will be drawn from the Surplus Buffer to start the POVE if this MIP passes. This corresponds with a 40 million DAI initial Emulated Surplus Buffer Upper Limit, a parameter that determines the maximum value of the surplus buffer before more decentralized collateral leveraging takes place. This MIP mandates action from the Risk Core Unit (specified in MIP84c4). Calculating the POVEDC and modifying the Lower Limit to the Surplus Buffer correspondingly is done every month. The Risk Facilitator is also granted emergency powers allowing them to make the following modifications during monthly reports or in emergency circumstances:  Stopping the DssKiln from purchasing more collateral. Installing a new DssKiln with custom parameters to sell collateral for Dai to wind down the debt of the POVE. Partially or fully liquidating the vault using a custom method. Modifying any of the parameters that are relevant for derisking the POVE. Parameters can only be modified this way if it makes them more conservative and reduces risk. This action cannot be used to increase risk, such as by lowering the Collateralization Ratio parameter.   This MIP contains the following Subcomponents:  MIP84c6 allows for the modification of the collateralization ratio that governs the POVE. MIP84c8 allows for the modification of the DssKiln parameters used to buy POVE assets. MIP84c10 allows for modification of the upper limit of the Surplus buffer (defined by the POVEDC). MIP84c12 allows for the modification of the Virtual Price Ceiling of POVEC.   If this proposal is ratified, it would affect DAI supply, collateralization of DAI, and Surplus Buffer management. This proposal has been assigned High-Impact based on the methodology listed here.  Disclaimer: These summaries are intended to be a guide and not a source of truth. You remain responsible for any actions you take on the grounds of this information. Please note the date when the summary was last updated to judge accuracy. Updated 2022-09-30 ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-mips-update-107/18199"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving entirely positive feedback on proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.570362005144613
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#4",
+                    "likes": "0",
+                    "time": "07/09/2022-17:50:59",
+                    "content": "Writing as a community member, not official ISCU communication.     rune:  1.8x leverage   What is the need to use any leverage? In the event of an ETH price drop, the treasury could get wiped out to zero. There are enough unforeseeable risks that I argue against adding such a serious foreseeable risk.     rune:  unless Dai has reached 75% collateralization by decentralized assets   So what you\u2019re saying is that the market cap of treasury ETH needs to grow to the point that it is as large as (75%) the amount of DAI in circulation? Hypothetically, let\u2019s assume that everything (ETH/USD, DAI supply, etc) stays about the same for a few decades. If Maker earned 100M/year in profit, then it would take about 50 years to accumulate enough ETH backing to support today\u2019s amount of DAI. Do we still have a goal to buy and burn MKR tokens in the near term? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 4.863095238095238
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lyt",
+                    "index": "#5",
+                    "likes": "0",
+                    "time": "07/09/2022-18:06:49",
+                    "content": "It\u2019s a protocol owned vault. There is no wiping to 0, we wouldn\u2019t liquidate ourselves ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/SebVentures",
+                    "index": "#6",
+                    "likes": "2",
+                    "time": "07/09/2022-18:16:13",
+                    "content": "@hexonaut developed a PSM with oracle (initially for Backed Finance bIBTA). Using such construct as a storage for stETH/LDO/\u2026 (only usable by MKR gov) buying (thourgh DssKiln for instance) would have some benefits vs vault emulation:  Keeping the accounting of the protocol right and have mark-to-market of the value of the assets. Keeping a Surplus Buffer that is positive and reflect safety for DAI holders. Don\u2019t have to mess with MKR minting.  DssKiln would suck from the Surplus Buffer, buy the asset and deposit it on the PSM (selling it with a 100% tin for 0 DAI), by the virtue of mark-to-market it would increase the Surplus Buffer by the sucked amount (or close). ",
+                    "links": [
+                        "https://forum.makerdao.com/t/calculating-the-value-of-rwas-and-the-surplus-buffer/18803/3"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.312847866419295
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#7",
+                    "likes": "1",
+                    "time": "07/09/2022-18:21:44",
+                    "content": "Hm, okay, but the money for leverage has to come from somewhere. Suppose the leveraged position was underwater to the tune of 20M (Surplus Buffer Upper Limit). In such a situation our effective surplus buffer would be zero and any additional loss would prompt MKR flop auctions, correct? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 6.375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/CodeKnight",
+                    "index": "#8",
+                    "likes": "1",
+                    "time": "07/09/2022-18:34:19",
+                    "content": "Doesn\u2019t that make it even more risky? Liquidation is done to limits losses. Without liquidation, POVE could cause MakerDAO to become insolvent. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 7.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lyt",
+                    "index": "#9",
+                    "likes": "0",
+                    "time": "07/09/2022-19:14:35",
+                    "content": "The way I see it, the protocol owned vault is backed by more than just the collateral within it. It is also backed by the future profits of the protocol. Also, just to put things into proper perspective, estimates are ~$100M of stETH to begin with and about $100M a year for the next few years if we spin up RWA revenue asap. At 1.8x leverage, that is $60M of debt initially (because of some LDO collateralization as well) and then about $45M a year of debt accumulation thereafter. We hope to get to $55M a year of (net, iirc) revenue. I don\u2019t think $100M-$200M of debt, a small portion of which might become bad debt temporarily, that can be covered by $55M of net revenue, would make MakerDAO insolvent. My 2c ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.675000000000001
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#10",
+                    "likes": "0",
+                    "time": "07/09/2022-19:44:19",
+                    "content": "@psychonaut @CodeKnight @PaperImperium  image1284\u00d71546 181 KB   image1284\u00d71391 147 KB  ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#11",
+                    "likes": "1",
+                    "time": "07/09/2022-20:06:57",
+                    "content": "    rune:  Protocol Owned Vault   Who owns the Protocol Owned Vault in the event that Emergency Shutdown is triggered? Update: I think the answer is that the POVE is ultimately owned by DAI holders since the point of POVE is to back DAI. It would be good to make this explicit since the name \u201cProtocol Owned\u201d could be misleading. DAI holders are actually the beneficial owners of the Protocol Owned vault, yes? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#12",
+                    "likes": "3",
+                    "time": "07/09/2022-20:20:04",
+                    "content": "Thx for all the replies. It can be difficult to understand the many details that are all put into this single MIP, but the complexity is for good reason because the major advantage of doing the protocol owned vault through this manual MIP-emulated approach initially means it\u2019s able to get started immediately. The reason why it\u2019s important to get it started immediately, is because the earlier we begin buying ETH, the slower we can perform the buying, which is the most important way to derisk this activity. Later we can then upgrade it to an actual smart contract system that is fully implemented as a special protocoled owned Maker Vault     psychonaut:  What is the need to use any leverage? In the event of an ETH price drop, the treasury could get wiped out to zero. There are enough unforeseeable risks that I argue against adding such a serious foreseeable risk.   The entire purpose of the Protocol Owned Vault is to generate decentralized Dai backed by Staked ETH. That\u2019s achieved by using leverage.     psychonaut:  So what you\u2019re saying is that the market cap of treasury ETH needs to grow to the point that it is as large as (75%) the amount of DAI in circulation? Hypothetically, let\u2019s assume that everything (ETH/USD, DAI supply, etc) stays about the same for a few decades. If Maker earned 100M/year in profit, then it would take about 50 years to accumulate enough ETH backing to support today\u2019s amount of DAI. Do we still have a goal to buy and burn MKR tokens in the near term?   This in practice means that the only way to turn burning back on is to switch to Eagle Stance, and properly secure the protocol against the risk of sudden death from an authoritarian attack. Without it, there will be an extremely strong incentive for MKR holders to just convince themselves to stay in Pigeon forever, while ignoring any evidence that there is a real threat to Dai holders. And then let me address the \u201cno liquidation\u201d concerns/confusion. So first of all, it is actually a miscommunication because what I meant to write is that there is no automatic liquidation. I will update that in the various documents once I have time. The main reason for not having automatic liquidations is that the protocol owned vault is meant as a critical tool to stabilize the Dai market price, as well as stabilize the target rate and prevent it from becoming too negative. So liquidations will of course still be possible, but they will have to be done manually, based on several dimensions of risk. It would be the responsibility of Core Units from the Decentralized Collateral Scope to practically gather the data and make proposals for MKR holders to act on, but with input from the Stability and Liquidity Scope so that Dai price stability and target rates are also taken into account beyond just the risk of the protocol owned vault becoming undercollateralized. The Protocol Owned Vault can, however, in the worst case scenario be allowed to become undercollateralized. This in practice just means that the Dai is instead also partially backed by MKR itself. That\u2019s generally not a great situation to be in, but it is a lot less bad if the target rate is very negative - in that case it is both important to consider the potential that a liquidation and subsequent contraction of the dai supply will cause the target rate to become even more negative, possibly reaching a point where it will significantly damage long term confidence of Dai holders. On the other hand it would in practice represent a very high yield on the protocol owned vault to have a very high debt that is rapidly shrinking due to a very negative target rate, which creates the option of just letting it stay undercollateralized until the staking yield, negative target rate yield, and protocol income gets it back to full collateralization. In the end however the Protocol Owned Vault will always be more risky from a pure financial risk perspective than just relying on real world assets. But as I\u2019ve argued to death at this point, we shouldn\u2019t expect to have that option safely available to us forever because we do not have the ability to be comply with financial regulation in the same way centralized stablecoins can, and the Endgame Plan consciously chooses to optimize for resilience against authoritarian attack rather than financial risk. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-makerdao-recap/16382/15"
+                    ],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.302962776659959
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#13",
+                    "likes": "0",
+                    "time": "07/09/2022-20:30:44",
+                    "content": "    rune:  chooses   Why do we have to choose between resilience against authoritarian attack and the status quo alternative? Why can\u2019t we have both? The issue is that if we switch the whole project to Pigeon stance, which seems to imply that we can have a negative target rate, then it\u2019s going to be a lot harder to on-board RWA because the DAI peg is so loose. A hard 1:1 peg is important for RWA because these deals are priced in fractions of basis points. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.859508547008547
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#14",
+                    "likes": "2",
+                    "time": "07/09/2022-21:03:43",
+                    "content": "That\u2019s actually already supported as a core feature of the endgame plan, and in a way that\u2019s realistic to govern at scale. The protectors can choose to launch one or more stablecoins and build blacklist features into them that could be put under the control of a third party regulated institution. Such a stablecoin would be suitable to be backed only by RWA collateral, and would also qualify as Cashlike RWA for dai collateral. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 5.8690476190476195
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#15",
+                    "likes": "0",
+                    "time": "07/09/2022-21:05:43",
+                    "content": "Pigeon stance doesn\u2019t have negative rates, that\u2019s only Eagle Stance which would occur after 3 years at the earliest. Eagle stance would still use centralized stablecoins and PSMs, and since the reference currency would still be usd it would actually mean that the\u201duser experience\u201d of being an RWA collateral provider to maker would be exactly identical and they would not be impacted at all by Eagle stance and dai free floating. The issue is rather on the dai demand side, obviously ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.03125
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#16",
+                    "likes": "0",
+                    "time": "08/09/2022-05:00:04",
+                    "content": "    rune:  Pigeon stance doesn\u2019t have negative rates   Hm, OK, so the hypothetical situation you mentioned above\u2014\u201cThat\u2019s generally not a great situation to be in, but it is a lot less bad if the target rate is very negative\u201d\u2014will not actually happen. Instead, DAI is \u201cpartially backed by MKR\u201d or the position is liquidated. In either case, there is the risk that our treasury is vaporized. Seems like a pretty high risk to me in comparison to the current use of this capital as part of the surplus buffer. Where are all the people who were complaining about the high risk of approving Makershire Redux? Levering up on ETH-like assets is quite a bit more risky than putting some money into LP positions.     rune:  That\u2019s actually already supported as a core feature of the endgame plan   Good to hear. So why is there even an aspiration to back the whole DAI supply with ETH-type collateral? How much demand really exists for this type of DAI? Since the existing DAI is backed by RWA, why not leave the current system as is and launch an OnChain-DAI that is backed only by on-chain assets? I like the approach this MIP takes, but I question your conceptualization of Maker\u2019s product offerings. If OnChainDAI only attracts a total supply of 100M then it will not take long to purchase enough ETH to fully back it. Why do you want to turn DAI into OnChainDAI and then launch a new product that includes RWA backing? Is the point to add a DenyList to DAI for OFAC? Why do you think a DenyList is important given that all transactions are public and unencrypted? If OFAC wants to freeze assets, they can do it at the crypto-fiat interface. Maker isn\u2019t in the same business as Zcash, Aztec, or Tornado Cash. What am I missing? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.320918866080157
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/pcfreak30",
+                    "index": "#17",
+                    "likes": "0",
+                    "time": "08/09/2022-07:18:36",
+                    "content": "    psychonaut:  Why do you want to turn DAI into OnChainDAI and then launch a new product that includes RWA backing? Is the point to add a DenyList to DAI for OFAC? Why do you think a DenyList is important given that all transactions are public and unencrypted? If OFAC wants to freeze assets, they can do it at the crypto-fiat interface. Maker isn\u2019t in the same business as Zcash, Aztec, or Tornado Cash. What am I missing?   Um what? If maker isn\u2019t in the business of having censorship-resistant currency, then what is MakerDAO\u2019s purpose??? The only difference maker has is it is an erc20 token on evm blockchains and we have not gotten to privacy as default yet.     psychonaut:  The issue is that if we switch the whole project to Pigeon stance, which seems to imply that we can have a negative target rate, then it\u2019s going to be a lot harder to on-board RWA because the DAI peg is so loose. A hard 1:1 peg is important for RWA because these deals are priced in fractions of basis points.   RWA should never have become an option, along with USDC. Simply, if Maker isn\u2019t here to resist regulations, it should just open a bank side-by-side Wells Fargo, Bank of America, and Chase and join the TradFi party. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.122591297591298
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#18",
+                    "likes": "1",
+                    "time": "08/09/2022-12:09:55",
+                    "content": "    psychonaut:  Hm, OK, so the hypothetical situation you mentioned above\u2014\u201cThat\u2019s generally not a great situation to be in, but it is a lot less bad if the target rate is very negative\u201d\u2014will not actually happen. Instead, DAI is \u201cpartially backed by MKR\u201d or the position is liquidated. In either case, there is the risk that our treasury is vaporized. Seems like a pretty high risk to me in comparison to the current use of this capital as part of the surplus buffer. Where are all the people who were complaining about the high risk of approving Makershire Redux ? Levering up on ETH-like assets is quite a bit more risky than putting some money into LP positions.   During Pigeon Stance there will be no issues with the peg or target rate, so in this case the Protocol Owned Vault can be safely liquidated. However, if the Protocol Owned Vault is still small, then it could likely be a better option to just wait for the protocols income to bring it back to a safe collateralization ratio. The Endgame Plan also directs a lot of capital towards the accumulation of LP tokens in the form of Elixir, however accumulating leveraged Staked ETH is better suited if the goal is to maximize the amount of decentralized Dai in circulation (Since LP tokens with Dai included also increases demand for Dai).     psychonaut:  Good to hear. So why is there even an aspiration to back the whole DAI supply with ETH-type collateral?   Dai itself cannot be blacklisted, so it must be prepared for a situation where it will be the subject of an authoritarian attack from an authority that demands censorship.     psychonaut:  Since the existing DAI is backed by RWA, why not leave the current system as is and launch an OnChain-DAI that is backed only by on-chain assets?   It is not possible to change the inability to blacklist Dai, so the only viable path is to create new stablecoins that have built-in blacklist from the start. Even if it was possible it is completely against the purpose of the Maker Protocol and we are lucky that it is not technically possible, since so many seem to be frothing at the idea of making it blacklistable and turning it into a bank.     psychonaut:  If OFAC wants to freeze assets, they can do it at the crypto-fiat interface. Maker isn\u2019t in the same business as Zcash, Aztec, or Tornado Cash. What am I missing?   Dealing with \u201cundesirable use\u201d at the interface level and treating Maker as a public utility like bitcoin, linux or roads, is what we are hoping will allow us to remain in Pigeon Stance for as long as possible. But realistically, it is foolish to count on special exceptions to how the spirit of financial regulation works being applied to Maker in the long run - this was only a realistic outcome before crypto ruined any chance of building a positive mainstream image among people or politicians. What you seem to be missing is that we cannot control who uses Dai and what it is used for. It\u2019s not our decision what business \u201cMaker is in\u201d, and as a result we have to take all reasonable precautions and pay attention to the writing on the wall in terms of what direction regulation of crypto is heading. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.511678900809336
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#19",
+                    "likes": "2",
+                    "time": "08/09/2022-15:01:49",
+                    "content": "Writing as a community member, not ISCU official communication.     rune:  all reasonable precautions   I hear that you are worried about gov\u2019t regulation. I agree that an authoritarian attack on Maker is a concern. What I don\u2019t understand is why the current product, DAI with no DenyList and backed by RWA, needs to change drastically. Hear me out.     psychonaut:  Why do we have to choose between resilience against authoritarian attack and the status quo alternative? Why can\u2019t we have both?   You answered my question above with, \u201cThat\u2019s actually already supported as a core feature of the endgame plan.\u201d Okay then what I hear is that there are at least two products:  DAI with no DenyList and backed by RWA (existing system, \u201cDAI\u201d) DAI with no DenyList only backed by uncensorable, on-chain assets (\u201cOnChainDAI\u201d)  I think you are saying that you expect DAI will be outlawed by regulators because it doesn\u2019t have a on-chain DenyList. Hence, it is urgent to move the whole system from DAI to OnChainDAI. To me, however, the regulatory direction is not so clear. At least two lawyers expect a legal battle over OFAC\u2019s Tornado Cash action (Jake Chervinsky and Katie Haun). Moreover, Maker is not in the same business at Tornado Cash. Besides DAI, there is another way to transfer value on the blockchain using tokens without an on-chain DenyList, namely the native ETH token itself. So the fact that DAI doesn\u2019t offer an on-chain DenyList doesn\u2019t seem very novel to me. Maybe an on-chain DenyList is slightly easier for regulators to manage than prohibiting a wallet address from interaction with crypto/fiat exchanges (an off-chain DenyList). However, either approach (on- or off-chain) achieves the same result. I don\u2019t see an on-chain DenyList as a big important thing. DAI\u2019s lack of an on-chain DenyList doesn\u2019t seem very important for gov\u2019t regulation.     pcfreak30:  we have not gotten to privacy as default yet.   Is that even planned on the roadmap? First time I\u2019ve even heard it proposed! Why should Maker take the legal risk of leading the way on privacy as default when Aztec can do that for us? Instead of moving the whole system from DAI to OnChainDAI, why not just launch OnChainDAI as a new product offering? OnChainDAI as a new product will be much easier to manage at small scale and will minimize the disruption to our successful product DAI. I ask again, why do we have to choose between resilience against authoritarian attack and the status quo alternative? Why can\u2019t we have both? ",
+                    "links": [
+                        "https://mirror.xyz/haunventures.eth/E-iD-jqgD-WmqrZOjCnGjv6U-R_N5tUk8xPzxUHhQGc",
+                        "https://shows.banklesshq.com/p/the-death-of-crypto-privacy-with#details",
+                        "https://aztec.network/",
+                        "https://forum.makerdao.com/t/has-there-been-a-shift-in-regulatory-risk-informal-poll/18035",
+                        "https://forum.makerdao.com/t/mip85-ldo-to-mkr-otc-swap/17714/5"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.618251964085298
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/pcfreak30",
+                    "index": "#20",
+                    "likes": "0",
+                    "time": "08/09/2022-15:06:23",
+                    "content": "    psychonaut:  Is that even planned on the roadmap? First time I\u2019ve even heard it proposed! Why should Maker take the legal risk of leading the way on privacy as default when Aztec can do that for us?   Because make should not be caring about legal risk. Is maker suddenly a US company that can get raided now? If you care about legal risk, your basically implying that maker is not a decentralized protocol that cannot get turned off. DAI started as successful because it is the OnChainDAI you refer to\u2026 There is no need for a second un-censored DAI, we have it. It just needs RWA to go away. It\u2019s not that hard of a concept to get. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.856770833333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/twblack88",
+                    "index": "#21",
+                    "likes": "5",
+                    "time": "13/09/2022-00:52:03",
+                    "content": " RFC-DVC feedback  Surplus buffer changes wildly if we have excess liabilities. dss-kiln was never tested or audited. is there a way to slowly scale this up test by test? (1 mil at a clip was suggested) Where is the leverage coming from? Seems like this is out of sequence? Wouldn\u2019t the POVE be after ETHD?  ",
+                    "links": [
+                        "https://forum.makerdao.com/t/weekly-makerdao-recap/16382/17"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ekryski",
+                    "index": "#22",
+                    "likes": "1",
+                    "time": "13/09/2022-07:30:34",
+                    "content": "    twblack88:  Where is the leverage coming from?   I had this exact same question. Also completely agree with @psychonaut\u2019s comment here. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.583333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ekryski",
+                    "index": "#23",
+                    "likes": "4",
+                    "time": "13/09/2022-07:54:31",
+                    "content": "I appreciate the optimism, but I think there are a lot of happy path assumptions baked into this:  Ethereum continues to appreciate in value vs. USD and we\u2019re not caught in a macro multi-year bear cycle (we\u2019ve been on a 20 year tear fuelled by QE which may be coming to a head). The bulk of the ~$100M/yr revenue comes from RWA, there are no hiccups in that, and people continue to use DAI which has extra friction and less \u201creal world\u201d applicability at present vs. something else like USDC that is better regulated and easier to access. That stETH doesn\u2019t trade at a discount to ETH. Almost all synthetic/derivative tokens have traded at a discount to NAV over enough time. GBTC being a poster child example. That the people of DeFi are willing to be patient enough to wait years for a protocol to recover vs. a death spiral sell off. History has shown they are a fickle bunch.  Additionally, I also have the same concerns as @CodeKnight.     CodeKnight:  MakerDAO revenue is highly correlated with stEth prices. This proposal would convert over half our current surplus buffer. Buying up staked Eth increase our risk in the event Eth prices drop. We would see both a decline in revenue and in assets.   Specifically, two questions come to mind:   What prevents us from seeing the same issue we had back in 2020 during the dramatic market pull back? Do you think that ETH just won\u2019t see that much of a correction again? As we saw with Terra once the confidence is shaken it\u2019s very hard to recover. Different mechanics, but the confidence game is real nonetheless, and crypto natives are fickle when it\u2019s all about speculation\u2026   Given that the End Game proposes that Maker work with Lido to become 2 major accumulators of ETH, are we not creating an oligopoly now that Ethereum is switching to PoS? I mean, I guess if it\u2019s inevitable anyway, these are probably 2 groups you want to be majority holders, but the risk is that by doing so you\u2019re undermining the censorship resistance that you\u2019re hoping makes DAI unstoppable in the long run.   Glad to see the MIP posted. Looking forward to more discussion. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.154315476190476
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/luca_pro",
+                    "index": "#24",
+                    "likes": "6",
+                    "time": "13/09/2022-14:53:28",
+                    "content": "I will be very brief, on purpose. We have witnessed the failure of stablecoin protocols basing themselves around the concept of Protocol Controlled Value, and having survived that wave we are now proposing for Maker to pivot around a concept of Protocol Controlled Value? In addition, the cross-effects with the other Endgame-related proposals - e.g. extremely higher liquidity and operational risk following deployment of the PSM off-chain, are huge. Why are we proposing this? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.173611111111112
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Moi",
+                    "index": "#25",
+                    "likes": "0",
+                    "time": "13/09/2022-15:00:57",
+                    "content": "    ekryski:  What prevents us from seeing the same issue we had back in 2020 during the dramatic market pull back?   This is what I mean, we can say that we are better than in 2020, but the global panorama tells us that we still have a long way to go in the negative, having such an amount of Eth post merge is not risky since they always tend to buy the rumor and sell the news ? The exaggerated obtaining of ETH will be practically our weak point to at least receive a price manipulation attack and even more so that we want to use 50%, using half of our surplus in a single action does not come into any head, probably because they can take some regulatory measure and leave us with no choice ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party or author is advertising proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.585609243697479
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#26",
+                    "likes": "3",
+                    "time": "15/09/2022-16:49:22",
+                    "content": "    psychonaut:  Why do you think a DenyList is important given that all transactions are public and unencrypted?   Check out Episode 245: Sanctions against Tornado Cash: a Legal Perspective - ZK Podcast The second interview is with Michael Mosier, former acting director of the U.S. Treasury\u2019s Financial Crimes Enforcement Network (FinCEN), former deputy chief of the U.S. Department of Justice\u2019s Money Laundering & Asset Recovery Section    MarketWatch    Stablecoin and other digital assets are falsely framed as a choice between... The U.S. needs smart policies to support privacy technology and set an influential example for the world.      ",
+                    "links": [
+                        "https://twitter.com/M_Mosier_",
+                        "https://www.marketwatch.com/story/stablecoin-and-other-digital-assets-are-falsely-framed-as-a-choice-between-personal-privacy-and-national-security-we-can-have-both-11658206072",
+                        "https://www.marketwatch.com/story/stablecoin-and-other-digital-assets-are-falsely-framed-as-a-choice-between-personal-privacy-and-national-security-we-can-have-both-11658206072"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.120535714285714
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/flipflopflapdelegate",
+                    "index": "#27",
+                    "likes": "1",
+                    "time": "15/09/2022-19:31:48",
+                    "content": "    psychonaut:  Check out Episode 245: Sanctions against Tornado Cash: a Legal Perspective - ZK Podcast    This is a brilliant one. The part when ToungVy Le of Bain points out how the Media printed an exaggerated  $7Billion Tornado Cash News Headline alone speaks volume. Not to mention how OFAC/Treasury is a philistine when it comes to interpreting decentralized open sourced smart contract code. Priceless. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 6.511904761904762
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Gala",
+                    "index": "#28",
+                    "likes": "0",
+                    "time": "22/09/2022-14:52:59",
+                    "content": "Reminder that this proposal will enter its Frozen Period on Wednesday, September 28 at 23:59 UTC. Substantive modifications beyond that date will render the proposal ineligible for the upcoming Governance Cycle / reset its Frozen Period, as the case may be.  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#29",
+                    "likes": "5",
+                    "time": "25/09/2022-15:01:52",
+                    "content": "Have made a lot of updates to this MIP including better specifying the dss-kiln parameters, making the parameters in this MIP overall more conservative, and removing references to the now withdrawn LDO swap proposal. SP templates have also been added. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "Author of proposal is asking for feedback"
+                    ],
+                    "Sentiment": 6.666666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Gala",
+                    "index": "#30",
+                    "likes": "4",
+                    "time": "25/09/2022-15:40:50",
+                    "content": "Tagging @Recognized-Delegates for visibility. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/CodeKnight",
+                    "index": "#31",
+                    "likes": "3",
+                    "time": "25/09/2022-21:57:10",
+                    "content": "  What does it mean for the purchases to be \u201cleveraged\u201d if we are using protocol owned funds? For example, what is the difference between buying 20 million USD worth of 1.8x leveraged stEth and buying 36 million USD worth of stEth?   How is Risk expected to determine the Surplus Buffer Upper Limit? I have seen reasonable arguments that the surplus buffer should be in the hundreds of millions. In which case, we would purchase roughly 68 million worth of stEth then spend years building up the buffer with no additional use of this vault.   ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.3671875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/TRUEMAKER",
+                    "index": "#32",
+                    "likes": "0",
+                    "time": "25/09/2022-23:40:40",
+                    "content": "What happened to the surplus buffer goal of 250M DAI before taking on additional DAI repayment/debt risk or investment options, that was one of the constraints mentioned for not burning MKR among other alternative investments. Would this MIP extend or reduce the deadline to reach that goal? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 4.375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#33",
+                    "likes": "2",
+                    "time": "26/09/2022-21:24:00",
+                    "content": "    CodeKnight:  What does it mean for the purchases to be \u201cleveraged\u201d if we are using protocol owned funds? For example, what is the difference between buying 20 million USD worth of 1.8x leveraged stEth and buying 36 million USD worth of stEth?   If liquidations are executed manually, as is the case with the POVE, then it is exactly the same. The definition of 1.8x leverage, virtual price ceiling, etc is used to define the rate of accumulation of assets owned by the protocol with surplus buffer funds.     CodeKnight:  How is Risk expected to determine the Surplus Buffer Upper Limit? I have seen reasonable arguments that the surplus buffer should be in the hundreds of millions. In which case, we would purchase roughly 68 million worth of stEth then spend years building up the buffer with no additional use of this vault.       TRUEMAKER:  What happened to the surplus buffer goal of 250M DAI before taking on additional DAI repayment/debt risk or investment options, that was one of the constraints mentioned for not burning MKR among other alternative investments. Would this MIP extend or reduce the deadline to reach that goal?   This MIP would Mandate risk to do research based on their available resources and their priorities, and then ultimately it is up to MKR holders to make decisions based on the information presented to them. Generally, the Endgame Plan also positions Maker as willing to take more financial risk in return for having a possibility to deal with the looming risk of physical/authoritarian attacks - so in this context it makes sense to use leveraged ETH rather than solely Dai to provide the risk buffer. However the most important factor is going to be that the old logic of requiring massive and ever-growing surplus buffer was to deal with the risk of real world assets. In the Endgame Plan, that risk, and the junior capital requirement, is pushed to the Protectors. The plan is also that the Protectors will be provided with a large initial grant of cash from the surplus buffer (possibly 5 or maybe even 10 million Dai each). In the long run the Protectors will implement a smart contract system to \u201crent\u201d junior capital, similar to the junior capital fundraising mechanism that was proposed for Maker earlier this year (but with one big difference, the junior capital and the yield will all be in EtherDai rather than Dai, since the goal is also to build up physical resilience against RWA seizure risk). Hope this makes sense, otherwise lmk and I will try to explain it further. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.5454799107142865
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#34",
+                    "likes": "1",
+                    "time": "26/09/2022-21:28:32",
+                    "content": "    twblack88:  Surplus buffer changes wildly if we have excess liabilities.   Can you try to rephrase this question?     twblack88:  dss-kiln was never tested or audited. is there a way to slowly scale this up test by test? (1 mil at a clip was suggested)   The pace of the accumulation is specified in the MIP, it is designed to be slow at only about 500k per day. Obviously, the implementation will have to be deemed secure before it will be allowed into an executive vote.     twblack88:  Where is the leverage coming from?   The leverage comes from Maker generating Dai by setting a lower surplus buffer lower limit.     twblack88:   Seems like this is out of sequence? Wouldn\u2019t the POVE be after ETHD?    As specified in the MIP, it starts with Staked ETH, then converts it to ETHD once it is launched. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal"
+                    ],
+                    "Sentiment": 4.916666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#35",
+                    "likes": "3",
+                    "time": "26/09/2022-21:38:27",
+                    "content": "    ekryski:  What prevents us from seeing the same issue we had back in 2020 during the dramatic market pull back? Do you think that ETH just won\u2019t see that much of a correction again? As we saw with Terra once the confidence is shaken it\u2019s very hard to recover. Different mechanics, but the confidence game is real nonetheless, and crypto natives are fickle when it\u2019s all about speculation\u2026   The only reason why there was an issue during black thursday was because of a very optimistic configuration of the auction parameters that performed badly in the selloff. The current liquidation system would have handled it flawlessly and Maker would have profited overall from black thursday. There is additional risk from using staked eth rather than regular ETH, but the Endgame attempts to deal with this through Elixir, which is heavily accumulated through multiple tokenomics pathways of the Metanomics, including all income generated by MetaDAOs, MetaDAO token selling and also Maker\u2019s surplus (the ratio of POV collateral to Elixir that goes into the Maker Burn Engine is proportional to the ratio of centralized collateral to decentralized collateral) Overall, while I think this has been iterated ad nauseam at this point, there is obviously financial risk in building up a large leveraged, staked ETH position. But it is justified by a much more significant risk posed by the bad trajectory crypto regulation is on following the crypto crash, terra and celsius collapse etc. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.989902210884354
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#36",
+                    "likes": "3",
+                    "time": "26/09/2022-22:10:57",
+                    "content": "Yeah, it looks like the EndGame is shaping up to be largely a referendum on whether the risk posed by bad crypto regulation is severe enough to justify moving most of our surplus buffer to a large leveraged, staked ETH position. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None",
+                        "None",
+                        "3rd party extending to proposal"
+                    ],
+                    "Sentiment": 5.2285714285714295
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/CodeKnight",
+                    "index": "#37",
+                    "likes": "3",
+                    "time": "27/09/2022-00:05:45",
+                    "content": "Thanks, that does help. So the purpose of leverage is to define how much value we are assigning to Eth for the surplus buffer? E.G. We are buying 36 million worth of stEth, but only subtracting 20 million from the surplus buffer because we think that is a \u201csafe\u201d ratio for Eth collateral?     rune:  This MIP would Mandate risk to do research based on their available resources and their priorities, and then ultimately it is up to MKR holders to make decisions based on the information presented to them.   Could @Risk-Core-Unit weigh in on roughly what they would consider a safe lower limit? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.9375
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/twblack88",
+                    "index": "#38",
+                    "likes": "0",
+                    "time": "27/09/2022-00:34:47",
+                    "content": "    rune:  Can you try to rephrase this question?   I can certainly give it a shot. If we are taking a larger bet on ETH comprising our liabilities, doesn\u2019t that mean the surplus buffer is harder to discern? It seems like component 9 addresses that issue though, with the limits. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 4.752232142857143
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ekryski",
+                    "index": "#39",
+                    "likes": "4",
+                    "time": "27/09/2022-06:44:36",
+                    "content": "    rune:  The only reason why there was an issue during black thursday was because of a very optimistic configuration of the auction parameters that performed badly in the selloff. The current liquidation system would have handled it flawlessly and Maker would have profited overall from black thursday.       rune:  Overall, while I think this has been iterated ad nauseam at this point, there is obviously financial risk in building up a large leveraged, staked ETH position. But it is justified by a much more significant risk posed by the bad trajectory crypto regulation is on following the crypto crash, terra and celsius collapse etc.   This is fair. The downside risk is certainly much lower if accumulation happens near bottom of a prolonged bear market as opposed to ATHs.     psychonaut:  Yeah, it looks like the EndGame is shaping up to be largely a referendum on whether the risk posed by bad crypto regulation is severe enough to justify moving most of our surplus buffer to a large leveraged, staked ETH position.   Agree. Seems to be shaping up this way.     CodeKnight:  Could @Risk-Core-Unit weigh in on roughly what they would consider a safe lower limit?   +1. Would love to see pessimistic/optimistic models based on ETH/USD price and Maker\u2019s holdings as a % of total outstanding supply (with PoS we can fairly accurately model ETH issuance rate). If Maker accumulates too much ETH I think it could end up having adverse affects. As OlympusDAO found out, too much protocol owned liquidity for certain assets can actually kill usage. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.676295518207283
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#40",
+                    "likes": "2",
+                    "time": "27/09/2022-09:34:05",
+                    "content": "    psychonaut:  Yeah, it looks like the EndGame is shaping up to be largely a referendum on whether the risk posed by bad crypto regulation is severe enough to justify moving most of our surplus buffer to a large leveraged, staked ETH position.   I don\u2019t think that\u2019s a good way to evaluate it, because it is not the biggest change introduced by the Endgame Plan, and by itself just accumulating ETH isn\u2019t gonna provide a meaningful solution to the long term problem of bad regulation. In particular the MetaDAOs with their frontends, innovation potential etc and the significant tokenomics changes that they bring, including emissions of 60000 MKR per year to benefit the MetaDAO token liquidity, and the significant yield farming value this in turn provides to MKR holders and Maker users, is a more impactful change than the Protocol Owned Vault. There\u2019s also the removal of MKR as an automatic backstop for Dai while enabling MKR as Dai collateral and using the tokenomics to accumulate massive amounts of captive liquidity for DAI, ETHD and MKR through Elixir. By combining all of these elements together we get a much higher likelihood of an equilibrium that can survive even the absolute worst case scenario of regulatory overreach without losing critical mass for self sustainability. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.436309523809523
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rspa",
+                    "index": "#41",
+                    "likes": "4",
+                    "time": "27/09/2022-10:54:48",
+                    "content": "    rune:  Any Dai available in the Pause Proxy, whether from POVEDC or Starting Collateral, is used to accumulate Lido Staked ETH, and later EtherDai, using a DssKiln implementation sourcing liquidity from a liquid DEX. After the launch of Elixir, the DssKiln target will be the Elixir balancer pool.   sell: Dai  buy: stETH  hop: 20 minutes  lot: 7000    If these parameters and some previous purchases are known, isn\u2019t there a very strong risk that arbitrageurs front run these purchases? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.796666666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#42",
+                    "likes": "3",
+                    "time": "27/09/2022-14:47:56",
+                    "content": "    rune:  By combining all of these elements together we get a much higher likelihood of an equilibrium that can survive even the absolute worst case scenario of regulatory overreach without losing critical mass for self sustainability.   The details of your full EndGame proposal are too complex for me to be able to reason about with confidence. Maybe that is the fault of my preference for simplicity or maybe I feel that way because your proposal actually is too complex for anybody to evaluated confidently. That is why I\u2019ve focused on the current MIP Set. I do feel like MIP84 is simple enough to understand. What you want to do is invest in staked ETH using money generated by RWA. That could work if the markets cooperate and we get modestly lucky. On the other hand, it\u2019s much higher risk than the status quo. Our leveraged position could get wiped out. We could see a large loss from RWA that we struggle to cover. The usual mathematical way to evaluate alternatives is to assign probabilities to all possible outcomes and then multiply the gains/losses by the probabilities. It\u2019s probably wrong, but for simplicity, let\u2019s assume that the gains/losses are equal under both scenarios. I wonder if my probabilities for the full EndGame plan look reasonable to you? Status quo:  legal problem: 2/100 insolvency: 0.1/100 human resource churn: 0.1/100  EndGame:  legal problem: 1/100 insolvency: 1/100 human resource churn: 10/100  Given that no DAO/Org re/design can address the risk of an off-chain DenyList, I have a hard time seeing a way to obtain a dramatic reduction in potential legal problems. I\u2019d like to understand in more concrete terms how the EndGame helps \u201csurvive even the absolute worst case scenario of regulatory overreach.\u201d What is your attack model? How do you define regulatory overreach in specific and concrete terms? To me, the worst possible regulatory outcome would be:  Tornado Cash style OFAC sanction of the PauseProxy, DAI, and associated contracts meaning that US allies are prohibited from interaction with the Maker protocol Lawsuits initiated by US Federal agencies against all US-based persons suspected of contributing to the Maker protocol  I don\u2019t see how the EndGame improves upon the status quo for either of these two attack vectors. There is basically no defense for (1). For (2), it seems like the only defense is for Maker protocol contributors to conceal their identity. Whether we\u2019re in the status quo or EndGame, it seems to me that contributors have an equal ability to be pseudonymous. So how does EndGame help?  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.947397563676633
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Moi",
+                    "index": "#43",
+                    "likes": "0",
+                    "time": "27/09/2022-22:48:01",
+                    "content": "    psychonaut:  Tornado Cash style OFAC sanction of the PauseProxy, DAI, and associated contracts meaning that US allies are prohibited from interaction with the Maker protocol   On some occasions, the commercial volume will not be associated with pro-American commercial partners, so a high caliber problem would not be possible, although here we can start another mission that would be to further expand commercial ties regardless of the political tone, remember that cryotocurrencies they are apolitical ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.114285714285715
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#44",
+                    "likes": "3",
+                    "time": "28/09/2022-17:22:34",
+                    "content": "    rune:  we get a much higher likelihood of an equilibrium that can survive even the absolute worst case scenario of regulatory overreach   Hm, sounds a lot like the reassurance given by the founders of Ooki DAI, \u201cBy transferring control to a DAO, bZeroX\u2019s founders touted to bZeroX community members the operations would be enforcement-proof\u2014allowing the Ooki DAO to violate the CEA and CFTC regulations with impunity, as alleged in the federal court action.\u201d ^ ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.1875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Primoz",
+                    "index": "#45",
+                    "likes": "12",
+                    "time": "28/09/2022-17:57:47",
+                    "content": "    CodeKnight:  Could @Risk-Core-Unit weigh in on roughly what they would consider a safe lower limit?   At this moment we estimate Capital at risk measures approximately $6m due to high collateralization ratio and high protection score maintained by borrowers (addressing only non RWA part). This is less than 1% of debt collateralized by volatile crypto collateral at $930m right now. However, during the bull market in November lat year Capital at risk figure reached up to $150-$200m, while the \u201crisky debt\u201d at the top measured $5.6bn, implying a 2.5%-3.5% buffer. After all the stress testing of whales in the past year and successful liquidations we believe the safe long term surplus buffer ratio is closer to 1.5%-2.0%. This means a surplus buffer of minimum $15m to about $60m if ETH grows 3x from here and the profile of the borrowers doesn\u2019t change (assumes only organic growth of exposure due to higher prices, no new implementations). I can see why holding some ETH in reserves would be beneficial, because it allows part of the surplus assets exposed to stETH to grow at the similar pace as Maker\u2019s riskier crypto collateral exposure. In the past we couldn\u2019t accumulate enough DAI in surplus from fees while the \u201crisky debt\u201d grew significantly. Of course there is the downside to it as well; when ETH starts crashing, surplus would reduce in size as well. The trick is to maintain virtual price ceilings at levels that prevent buying excessive amounts of ETH during bull runs and vice versa. This of course won\u2019t be perfectly timed but I still think the benefits of having this ability to grow surplus buffer more proportionally along risky loanbook outweigh the downsides of it. Especially since the current surplus buffer coverage allows Maker to gain exposure towards ETH. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/risk-core-unit-month-in-review-september-2022/18239",
+                        "https://forum.makerdao.com/t/mip84c10-sp1-modify-emulated-surplus-buffer-upper-limit/18315"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 5.691512654012653
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/AstronautThis",
+                    "index": "#46",
+                    "likes": "1",
+                    "time": "29/09/2022-01:17:46",
+                    "content": "    Primoz:  The trick is to maintain virtual price ceilings at levels that prevent buying excessive amounts of ETH during bull runs and vice versa.   Regarding the vice versa part, @rune does it make sense to consider adding price floors as well to the MIP prevent us from \u201cselling low\u201d in case of a crazy market crash? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 2.875
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#47",
+                    "likes": "4",
+                    "time": "29/09/2022-16:14:34",
+                    "content": "    Primoz:  addressing only non RWA part   I\u2019d like to emphasize that @Primoz was only writing in consideration of on-chain collateral. His impression is that loss reserves for RWA are partitioned into a separate bucket? I\u2019d like to learn more about the loss reserves for RWA. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.833333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#48",
+                    "likes": "3",
+                    "time": "30/09/2022-20:03:22",
+                    "content": "Regulatory overreach, attack etc can all just be though of as a physical attack against any identifiable object in the real world that Maker relies on. There are basically two categories, actions against collateral, or actions against contributor, infrastructure, voters or even holders.  Physical resilience of collateral To deal with the potential risk of attack against RWA The Protocol Owned Vault helps with reducing reliance on RWA. By itself it is not enough, but it helps as it synergizes well with the other main approaches, including incentivizing ETHD vaults, MKR generation, and Elixir accumulation. In the end it is likely impossible to remove all or most RWA exposure without also activating negative rates, and to make sure the negative rates are as low as possible (that is, less negative), we need to use every tool available - which includes using the protocol owned vault to generate decentralized Dai. The Endgame Plan also defines a category of RWA referred to as Physically Resilient RWA - the definition of such RWA collateral is that its economic value cannot simply be seized through a legal system at will. The are two main approaches to achieve collateral that can be considered Physically Resilient:   The first is to use technology that allows Maker Governance to remotely brick and unbrick machines, making it possible to, in some cases, sell off the \u201ckeys\u201d to such a machine even if it has been seized. An example of this would be the hypothetical drone cargo ship.   The second approach is to achieve sociopolitical saturation through marketing, adoption and lobbying in an independent democracy with rule of law to the point where any kind of unjust action taken against Maker RWA collateral could impact elections, making it politically impossible.    The other major type of physical resilience is the ability to survive attacks against identifiable contributors, infrastructure or users and voters.  Infrastructure resilience Resilience of infrastructure is achieved through a switch towards decentralized exchange based oracles for the main collateral types used by Maker Core in the Endgame: ETH, MKR and MetaDAO tokens. For smaller tokens supported by MetaDAO Lending Engines, the MetaDAOs themselves can operate and secure the oracle networks that power them, and can be face penalties for not following best practice, which could for instance be related to the location of an oracle node. In the end the MetaDAOs are the taking first loss with their own junior capital in case successful attacks happens against their oracles nodes.  Contributor resilience Resilience of contributors requires full anonymity of the workforce. This will not possible to implement in the short run, but it can be slowly worked towards and normalized over time, while the risk of an imminent attack is low, as it remains today. Maker Core cannot itself handle a workforce of anons, since it is a major challenge to deal with the sybil and embezzlement risk it poses. But MetaDAOs are the ideal solution to this problem, since from Maker\u2019s perspective it makes no difference if the contributors in the MetaDAOs are anonymous or not, for Maker it is just an interaction with another DAO. This way the embezzlement risk of sybil abuse is pushed to the MetaDAOs who can then iterate and develop their own solutions and frameworks to handle the root of the problem, which is tools and processes that adequately measure results rather than rely on trust and relationships.  User and voter resilience Resilience of users and voters are the final and most difficult step, and is only reasonable to do completely once all the other forms of resilience have been developed adequately. It requires a fully functional local and decentralized toolkit - in the Endgame plan the underlying system for this is called the Homefront The Homefront will enable secure interaction with Maker, Dai, blockchains, defi etc. As a part of this it also enables voting in Maker Governance, and delegating to earn voter incentives. Additionally, it must support all critical communication and coordination needs for Maker Governance, MetaDAO Governance and more generally just for anyone who may be in need of secure communications or the target of repression. The key tool that the Endgame Plan uses to make adoption of full stack decentralized tech realistic, is the MetaDAO token farming, which will require the Homefront to access. Each MetaDAO will develop and mod the Homefront to create its own unique (but equally secure) MetaDAO frontend, and its main business objective is to maximize adoption of this MetaDAO frontend as it is from its MetaDAO frontend userbase that it generates most or significant portions of its income.  How does this compare with Ooki DAO Maker have already long ago completed the same steps that Ooki DAO did, but that does not protect us from the trajectory of crypto regulation and enforcement that is in motion following the erasure of crypto goodwill due to Terra, Celsius etc The only way to deal with these risks is to go all the way and achieve actual physical resilience across the board. We should expect that over time, any attack surface that remains will be attacked with full force and could be used to destroy the entire project. Most likely we are not facing such a situation in the short run, and in all cases it is not realistic for us to get prepared within a short amount of time. So we have to assume that we have several years available to take the necessary steps and in the medium term prepare to become a real and uncompromised decentralized finance protocol operated by a real and uncompromised decentralized autonomous organization. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.599603174603175
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#49",
+                    "likes": "3",
+                    "time": "30/09/2022-20:48:08",
+                    "content": "    rune:  obviously trolling and deliberately misunderstanding and misrepresenting me at every turn   I\u2019m not sure I\u2019d characterize it that way. I\u2019m pushing you to flesh out your proposal. I do appreciate you spelling out your positions in more detail.  \u201cswitch towards decentralized exchange based oracles\u201d \u2013 Seems like something that the Oracles CU is equipt handle. \u201cfull anonymity of the workforce\u201d \u2013 Not sure why this is not feasible in the status quo. Who is @LongForWisdom? \u201cHomefront\u201d \u2013 This is the first mention I\u2019ve seen of Homefront. I searched the forums and it might be the first time you mentioned it? It sounds like a privacy tool, maybe something like the combination of PGP + Aztec?  These three goals (Infra, Contrib, & User resilience) seem equally worthwhile to pursue in the status quo or the EndGame. We are in agreement. At the same time, I\u2019m not convinced that the EndGame offers much of a difference compared to the status quo. Which brings us back to MIP84/POVE, appropriate given the topic of the original post. Here, I guess we can agree to disagree. In my judgment, the risks posed by regulation (incl. unknown risks) are not severe enough to justify moving most of our surplus buffer to a large leveraged, staked ETH position. Even if I agreed that Maker urgently needs to transition to away from RWA exposure, we can\u2019t possibly buy enough collateral (i.e. stETH) fast enough to make a practical difference. Suppose we obtain the rosy outcome of $100M/yr in profits (even after increasing the DAI Savings Rate). That just doesn\u2019t make much of a dent in the $5B worth of stablecoin exposure. Rune, with POVE, it feels like you are trying to put a square peg through a round hole. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.685267857142858
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#50",
+                    "likes": "0",
+                    "time": "30/09/2022-20:58:06",
+                    "content": "GovAlpha Summary has been updated:    MIP84: Activate Protocol-Owned Vault Emulation RFC   MIP84 GovAlpha Summary This is a summary of the contents of this proposal and its impact, from GovAlpha\u2019s perspective:   MIP84 is a valid part of the Endgame Prelaunch MIP Set. MIP84 uses existing features of the protocol to emulate a protocol-owned vault. The Protocol-Owned Vault Emulation (POVE) is exclusively controlled and owned by Maker Governance. The protocol purchases decentralized assets (limited to Lido stETH until EtherDAI is developed) with DAI from the Surplus Buffer and creates a \u2026     ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party auditing and reviewing proposal"
+                    ],
+                    "Sentiment": 5.071428571428571
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#51",
+                    "likes": "2",
+                    "time": "30/09/2022-21:18:32",
+                    "content": "You are repeating the same strawman assertion over and over again while deliberately ignoring the answer I have repeated multiple times. At this point you\u2019re obviously trolling. But let me repeat myself one more time even though I just did so in the post above. In isolation, only accumulating eth - as you so gleefully have pointed out 10+ times - is by itself obviously not enough to deal with the multidimensional risk maker is facing. But it is a critical part of a solution to the difficult problem of collateral resilience that must take advantage of all available tools. Alongside other measures including incentivizing ETHD vaults, enabling MKR backed dai generation, using metadaos to support higher leverage eth vaults, and finally and most importantly, implementing negative rates (which will have a massive negative impact on demand), then accumulating ETH does make all the difference, and the sooner we get started the bigger the impact we will make. Crucially this impact will show up directly as a lower negative rate felt by our users. It\u2019s also important to understand the massive income generation potential of products that are incentivized by MetaDAO tokens which are in turn boosted with liquidity from 60k MKR emissions per year. Indirectly, a part of the result of the metanomics is distributing MKR by exchanging it for eth that go into the protocol owned vault. Also re: the Homefront. It is better known as the MetaDAO frontends. The Homefront is just the working name for the underlying white label tech stack that enables the MetaDAOs to build their individual MetaDAO frontends ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "Author of proposal is explaining proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.272321428571428
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#52",
+                    "likes": "1",
+                    "time": "30/09/2022-21:43:34",
+                    "content": "    rune:  only accumulating eth \u2026 is by itself obviously not enough to deal \u2026 with the \u2026 risk maker is facing   Great, thanks for stating that plainly. Then you go on to claim that the following factors will fill the gap:  ETHD vaults MKR backed dai generation metadaos to support higher leverage eth vaults negative rates (but this is ruled out because we\u2019re still in Pigeon Stance, unless \u201cexternal reasons\u201d) MetaDAO tokens etc  All of these ideas look like they are endogenous to the Maker ecosystem. I don\u2019t see where you are increasing income or attracting new investment. In other words, you\u2019re just shuffling around money, like a Shell Game.     rune:  At this point you\u2019re obviously trolling   Before you accuse me of trolling, I\u2019d like to quote your own Open Decentralized Voter Committee recording from Sep 28 at about 1 minute (pls excuse the uncorrected automatic transcription):  I mean I\u2019ve actually I sort of uh refrained from doing this in the past because I knew we would get some really weird results because you it\u2019s kind of the metanomics is basically assigned to not be really possible to model and the reason for that is you you don\u2019t want to be you know if it\u2019s not possible to model it it\u2019s not possible to economically reason about it and if it\u2019s not possible you can only reason about it you can\u2019t really deconstruct it and then argue for something different or argue if something is more fair or more whatever and anything like that like any ability to kind of um you know sort of deconstructed opens up the possibility of trying to change it which is very bad for the end game right so it\u2019s kind of like somewhat something like um clean money the clean money principle for instance or sort of the more General public good principle or radical transparency principles that they basically you know they\u2019re all part of kind of keeping the end game in place right you don\u2019t want to but you want to make you know you you can\u2019t risk any of those um being changed right because then basically any of the sort of the cold pillars can start changing and then you lose the stable meta and you basically succumb to corruption it\u2019s the is the theory right  Of course you then go on to try to explain why the metanomics work, but I couldn\u2019t follow it. Maybe I\u2019m too dumb. On the other hand, your intro does not inspire confidence. Clear (i.e. non-obfuscated) new income/investment generated by the EndGame plan would help constitute a welcome rebut to this post. ",
+                    "links": [
+                        "https://en.wikipedia.org/wiki/Shell_game",
+                        "https://youtu.be/4XeKLEQTsJI?t=69"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.545955852323776
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#53",
+                    "likes": "1",
+                    "time": "01/10/2022-08:59:00",
+                    "content": "Look, so if your actual point is - as you put it yourself - that you\u2019re too stupid to understand why the measures I outlined above results in a higher ratio of decentralized collateral, why are you going in circles about the protocol owned vault before suddenly shifting the goalposts? You\u2019re a troll abusing brandolinis law. The undeniable proof is that you called activating negative rates a shell game, and nobody is that stupid - you\u2019re arguing in bad faith. Worse yet, you\u2019re a paid troll, and we\u2019re the ones paying you  ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 3.4250000000000003
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/iammeeoh",
+                    "index": "#54",
+                    "likes": "2",
+                    "time": "01/10/2022-10:06:30",
+                    "content": "    rune:  Worse yet, you\u2019re a paid troll, and we\u2019re the ones paying you       I think we should try to avoid reaching these clashes. It does not look professional nor serious. It ultimately damages the DAO. But objectively I have to say that the tone (ignore the content for a sec) of @psychonaut has often been offensive and (passive)-aggressive. I wish we had ways to place a \u201c-1\u201d beside +1 (\u201chearts\u201d) so to signal troll behaviour because ultimately this just degrades the quality of discussions in the forum. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.476190476190476
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#56",
+                    "likes": "1",
+                    "time": "01/10/2022-16:36:56",
+                    "content": "    rune:  you called activating negative rates a shell game   That is NOT what I meant to suggest. I do understand how negative target rates will \u201csolve\u201d the problem. If you have a -20% target rate then the amount of DAI outstanding will rapidly decline to the point where the accumulated stETH in the POVE is sufficient to back it. To put some numbers on this, let\u2019s say that the POVE can accumulate 500M worth of stETH in 5 years. Then we set the target rate to -20% and reduce the DAI supply from 6.8B to 500M. Voila, we get DAI backed by resilient decentralized collateral. Let\u2019s be clear about what I don\u2019t understand:  Why do you think Maker can survive against competitors if we have a negative rate steep enough to shrink the DAI supply by approx. 90% (6.8B \u2192 500M)? Presumably, other stablecoins will be ready to step in to capture our customers if Maker decides to forsake the market. Is this really the plan? What about the rest of the metanomics? What problem are you trying to solve? The target rate idea has been around for years, well before the EndGame was conceived. To be clear, when I raised the idea of a Shell Game, it was in reference to the metanomics. I believe you said that one goal of metanomics is to help achieve collateral resilience, \u201cthe difficult problem of collateral resilience that must take advantage of all available tools.\u201d How might the EndGame help achieve collateral resilience?      rune:  It\u2019s also important to understand the massive income generation potential of products that are incentivized by MetaDAO tokens which are in turn boosted with liquidity from 60k MKR emissions per year.   It is statements like this that confuse me. You claim that there is, \u201cmassive income generation potential,\u201d and mention, \u201c60k MKR emissions,\u201d in the same sentence. And I\u2019m not the only one who is confused. Clear (i.e. non-obfuscated) new income/investment generated by the EndGame plan would help constitute a welcome rebut to this post. ",
+                    "links": [
+                        "https://forum.makerdao.com/t/endgame-metanomics-diagrams/17870/10"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.1022727272727275
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#57",
+                    "likes": "3",
+                    "time": "01/10/2022-20:40:35",
+                    "content": "I will patiently respond to your trolling one last time and then from here block you to deny your adversarial time wasting tactics. If you read right below the post you linked there is a list that provides some clear examples of the positive sum dynamics that the MetaDAOs bring particularly through the broad distribution of MetaDAO tokens to diverse communities with different characteristics and specializations that can each govern and help grow the system. One key advantage is that most of these value drivers are riskless and zero governance for Maker Core through \u201cinbuilt KPIs\u201d such as revenue share, meaning Maker Core only pays for the service if it actually delivers results. In other cases it can be seen more as a seed investment where Maker gets to share the upside of value created by the MetaDAOs ability to innovate. All of this is in stark contrast to the current workforce where a huge amount of people deliver no or negative value because of how badly structured everything is, and because there is no accountability or incentive to deliver results (and all the incentives instead points towards coming to the forum to troll in order to attempt to preserve the lucrative and convenient status quo). The other key advantage requires understanding the concept of meta engineering. Maker Governance is terrible at dealing with all the drama and complexity of many of the functions we\u2019re attempting to govern. At the same time Maker is also very boring and complex by itself because of the seriousness of protecting peoples savings. Making quick and risky decisions such as what is required to succeed with tech innovation or very specialized and complex decisions such as what\u2019s needed to govern RWA related financial strategy requires a certain type of community, or a specific meta. MetaDAOs can self-select aligned groups (also called \u201cclustering\u201d) through their broad token distribution and multitude of options with something that appeals to most people available. This enables them to specialize all the way from their community culture to their core team structure in sustaining themselves in a specific niche. In the example from above of a hypothetical MetaDAO business model there are multiple synergizing revenue streams, that also benefit Maker Core in different ways. The thing that almost all MetaDAOs always have in common is that their revenue streams revolve around marketing and user acquisition based on their meta (brand, culture and authentic unique identity), with the basic yield farming revenue share opportunities as the bread and butter. There\u2019s obviously way more permutations possible, and also different classes from the Creator that are less open ended and focused either on RWA or derisking the Maker Core bureaucracy. Dai MetaDAO yield farming frontend revenue share (marketing service) ETHD Vault MetaDAO yield farming revenue share + other vaults revenue share (marketing service) Decentralized Collateral Lending Engine (outsourcing risk and marketing service) Fees from Premium Features such fixed rates exchange (marketing and tech innovation) Revenue share from premium features provided as plug and play protocols to other MetaDAOs (tech innovation) Overhead from providing smart contract services to Maker, other MetaDAOs and external customers (outsourcing human relationship risk) ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 5.104157647907648
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#58",
+                    "likes": "3",
+                    "time": "01/10/2022-21:56:39",
+                    "content": "    rune:  clear examples of the positive sum dynamics   Fair enough. So I guess it is up to MKR voters to decide whether the examples you cite add up to anywhere close to the $5B worth of stablecoin exposure. Are the items that include the language \u201crevenue share\u201d actually profitable long-term? I hope so. I suppose asking for actual financial projections would be a step too far? No need to tap Strategic Finance CU when we can make hand-wave arguments. At least, thank you for unpacking the arguments supporting the EndGame. By voting for POVE, MKR holders are expressing faith that these business lines are together going to be 10x more profitable than Maker\u2019s core business, in order to achieve collateral resilience within 5 years. If you can think of any more business lines to add, I\u2019m all ears. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "3rd party auditing and reviewing proposal",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.914335664335665
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Eumenes",
+                    "index": "#59",
+                    "likes": "4",
+                    "time": "02/10/2022-21:26:05",
+                    "content": "Good questions. Keep asking them - this is a DAO\u2026 ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 8.5
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/pcfreak30",
+                    "index": "#60",
+                    "likes": "0",
+                    "time": "04/10/2022-05:44:19",
+                    "content": "    iammeeoh:  I think we should try to avoid reaching these clashes. It does not look professional nor serious. It ultimately damages the DAO.   But it is funny when someone is speaking bluntly, which matters more than a professional \u201cimage\u201d IMHO. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None of the topics listed match."
+                    ],
+                    "Sentiment": 5.513888888888889
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lyt",
+                    "index": "#61",
+                    "likes": "3",
+                    "time": "04/10/2022-14:21:49",
+                    "content": "    psychonaut:  whether the examples you cite add up to anywhere close to the $5B worth of stablecoin exposure.   they won\u2019t, at least for some time. this is very clear. No part of the end game plan insinuates this either, this is all in your head. Once eagle stance is activated and DAI becomes free floating, the endgame plan clearly states that it expects many customers to abandon DAI.     psychonaut:  By voting for POVE, MKR holders are expressing faith that these business lines are together going to be 10x more profitable than Maker\u2019s core business, in order to achieve collateral resilience within 5 years.   Also false. A vote for POVE is a vote for the endgame plan in general. Which means eventually abandoning our current profitable (post earning yield on PSM assets) but highly risky (consistent existential risk) business for a less profitable but much less risky (& more sustainable/resilient) one. As always, my thoughts. Edit: one thing I\u2019ll add is that while the \u201cnew business\u201d is immediately less profitable, it has newfound profit/scale potential in the form of (meta)DAO incubation. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.358333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ACREinvest",
+                    "index": "#62",
+                    "likes": "2",
+                    "time": "04/10/2022-16:48:19",
+                    "content": "    lyt:  A vote for POVE is a vote for the endgame plan in general. Which means eventually abandoning our current profitable (post earning yield on PSM assets) but highly risky (consistent existential risk) business for a less profitable but much less risky (& more sustainable/resilient) one.   This is helpfully concise.   Do others agree the above captures the gist of a unified long-term vision alignment that would be confirmed by a YES outcome of the Endgame MIP set vote?   With the following as a North Star?       lyt:  Once pigeon stance is activated and DAI becomes free floating, the endgame plan clearly states that it expects many customers to abandon DAI.     Is the community objective and consensus that the resulting \u201cless risky & more sustainable/resilient\u201d model is achieved due to more or less responsiveness and compliance with laws vis-a-vis the status quo? (Either way, such assessment would first IMO require a sincere and complete official inquiry and action plan in line with the discussion in this thread The Real Legal Risks)   Has any provision been made in the Endgame MIP set for a full legal and regulatory assessment of the new business model, and how implementation will comply with any laws to which the organization or its contributors may be subject by virtual of their participation inline with the new structure?   Or, alternatively does the Endgame MIP set compel, initiate or designate resources for determining a researched and informed basis on which to conclude MakerDAO is in compliance with any laws in any jurisdiction to which it may be subject, if any?   Appreciate perspectives from @rune and other @Recognized-Delegates. I have not found where compliance and regulatory issues, in particular, are specifically addressed in the MIPs.  Thank you  ~ Kianga ",
+                    "links": [
+                        "https://forum.makerdao.com/t/acreinvest-delegate-platform/11943/54"
+                    ],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal",
+                        "None",
+                        "None",
+                        "None"
+                    ],
+                    "Sentiment": 5.699403122130395
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/CodeKnight",
+                    "index": "#63",
+                    "likes": "2",
+                    "time": "04/10/2022-17:36:13",
+                    "content": "    ACREinvest:  Is the community objective and consensus that the resulting \u201cless risky & more sustainable/resilient\u201d model is achieved due to more or less responsiveness and compliance with laws vis-a-vis the status quo?   As I understand, the intent is to be able to ignore the law by holding decentralized collateral that governments can\u2019t seize and by transitioning to a fully anonymous workforce. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal",
+                        "3rd party giving constructive criticism of proposal"
+                    ],
+                    "Sentiment": 6.006944444444445
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/TRUEMAKER",
+                    "index": "#64",
+                    "likes": "1",
+                    "time": "04/10/2022-17:42:34",
+                    "content": "Hi Kianga! Thanks for summarizing the key points! Below are my responses based on my understanding (just one data point) for the first 3 questions.     ACREinvest:  Do others agree the above captures the gist of a unified long-term vision alignment that would be confirmed by a YES outcome of the Endgame MIP set vote?   Yes, I agree. We are giving up revenue and growth oriented focus in order to reduce exposure to RWAs and governments     ACREinvest:  With the following as a North Star?     lyt:  Once pigeon stance is activated and DAI becomes free floating, the endgame plan clearly states that it expects many customers to abandon DAI.     Not sure if it explicitily states it that way, but with DAIs characteristics changing we can expect a new target DAI holder, which is not the same as DAI holders today that rely on a hard peg.     ACREinvest:  Is the community objective and consensus that the resulting \u201cless risky & more sustainable/resilient\u201d model is achieved due to more or less responsiveness and compliance with laws vis-a-vis the status quo? (Either way, such assessment would first IMO require a sincere and complete official inquiry and action plan in line with the discussion in this thread The Real Legal Risks )   Believe less responsiveness is the goal (of the endgame) as there would be no RWA regulatory bodies over DAI. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving feedback on proposal",
+                        "3rd party asking questions about proposal",
+                        "None"
+                    ],
+                    "Sentiment": 5.647272727272727
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ACREinvest",
+                    "index": "#65",
+                    "likes": "1",
+                    "time": "04/10/2022-17:53:09",
+                    "content": "Thanks for sharing your views! I wanted to make sure I have a clear picture of what is actually being implemented vs rhetoric. I\u2019ve had the same impression @CodeKnight     CodeKnight:  the intent is to be able to ignore the law by holding decentralized collateral that governments can\u2019t seize and by transitioning to a fully anonymous workforce.   which is as troubling as it is impossible. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.488095238095239
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/psychonaut",
+                    "index": "#66",
+                    "likes": "2",
+                    "time": "04/10/2022-18:00:48",
+                    "content": "    ACREinvest:  which is as troubling as it is impossible.   As I\u2019ve argued elsewhere, given the massive change in business model, I think the EndGame should launch as a separate product from DAI. The way the EndGame cannibalizes the Maker status quo seem like a good way to insure that both products fail. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving negative feedback on proposal",
+                        "3rd party extending to proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 4.416666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/lyt",
+                    "index": "#67",
+                    "likes": "5",
+                    "time": "04/10/2022-18:10:39",
+                    "content": "    TRUEMAKER:  Not sure if it explicitily states it that way,   Think I would say that if it didn\u2019t?     Endgame Plan v3 complete overview   Losing as many as 50% of the protocol users in a short period of time after free floating is a real possibility.   I do think 50% is an underestimate though ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "None",
+                        "None",
+                        "None",
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.791666666666666
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/ACREinvest",
+                    "index": "#68",
+                    "likes": "4",
+                    "time": "04/10/2022-18:21:04",
+                    "content": "Serious and rational market participants will pull that timeline to now. See e.g., MakerDAO Endgame and its Repercussions on Curve Finance ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 3.333333333333334
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Eumenes",
+                    "index": "#69",
+                    "likes": "1",
+                    "time": "04/10/2022-23:34:36",
+                    "content": "The market outlook for MKR will be key.  Will investors fear that DAI will follow a path similar to RAI? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/MakerMan",
+                    "index": "#70",
+                    "likes": "5",
+                    "time": "05/10/2022-03:46:04",
+                    "content": "While @psychonaut echos many of my problems with any Maker \u2018stance\u2019 that involves RWA and hence a Centralized Maker (MakerC) with a decentralized Pirate (or Private) DAIP the key issue here is DAIP evolving into something that is backed by collateral value that could depreciate below $1. This again is MakerDAO basically hard coding potential backing losses into the protocol.  Just like coding DAI value to $1 in so many places and the same with USDC, and GUSD btw (i.e. PSM and the USDC vault).   I have commented on this mistake in the past and only remark on it in the present given that DAI value in EndGame is slated to \u2018free float\u2019 away from $1.  Others with more protocol smart contract experience and information can comment on what it will mean for vaults if the above \u2018stable coin values\u2019 remain hard coded to $1 vs. having a value determined by oracles EVERYWHERE. I want to be clear.  I have advocated protocol owned liquidity (particularly in ETH and really Uniswap v2  ETH-DAI or ETH-USDC) because ETH-USDC v2 LP in particular has been posting ~10% automatically compounded gains for the past 18 months - these do continue to drop.   It was my intention to fully keep active liquidations on these protocol owned vaults to protect DAI holders for incurring potential collateral backing losses in the event of a emergency shutdown.  (Think Black Thursday here type event folks where collateral is sold at a loss to the protocol - FOR ANY REASON).   My intention was to follow all the basic vault rules, pay SF, maintain CR over LR, and be liquidated like any other collateral while growing the ability for the protocol not just to earn on investments but expand and contract DAI using its own collateral. There are other issues: Why LIDO and not build a balanced staked ETH portfolio?   I can\u2019t think of any greater conflict of interest here with a significant MKR holder pushing this that also owns a significant LIDO stake.   Optically not good, not just from a regulator perspective, but from a conflict of interest perspective. When it comes to EndGame honestly can say that a lot of effort has gone into creating one of the most expensive and complex changes to Maker to date. Let\u2019s recap.  No change to DAI - DAIP all the way. Still want to do RWA - but Maker is not going to be Compliant or Centralized (Phoenix stance) free floating DAI price.   (might as well go RAI here then). Not one DAO (MakerDAO is already hard enough - lets try to buy and build a whole bunch more and force them to interact not just in hours or days in the event of an emergency but days, weeks and months to build hard stuff). Costing up to 60K MKR/yr (6% inflation dropping to perhaps 4-5% after 5 years) which at current prices is a cost of 40M $$/yr which has to come from \u2018somewhere\u2019. Build protocol owned liquidity using special vault mechanics that a)  Doesn\u2019t pay SF. b)  Can only liquidate or change by Executive Spell.  Frankly my Proposal: Maker3.0 - The future of crypto lending. (RFC) is simpler and does a whole lot more focusing bifurication of Maker and DAI into two distinctly different products.  Maker2.0 and DAIP go one way and Maker3.0 and DAIC go another both synergizing and differentiating from each other to leverage the good things about Private and Decentralized DAIP - away from RWA as much as possible while building the next Centralized and regulatory compliant Maker3.0 and DAIC that could be pegged or NOT and could be very tightly integrated with RWA which could be jurisdictionally homed to boot. Expect whatever MKR I control at this point to be voting NO to this and EndGame in general as I consider this to be bad for all stakeholders, particularly DAI holders. It was my hope not just with EndGame, Growth and My Maker3.0 proposals that Maker would find a way to have a healthy discussion regarding a grander vision for Maker and DAI.  Unfortunately virtually all debate and discussion has ended and it is EndGame or no Game at this point. ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party giving constructive criticism of proposal",
+                        "3rd party asking questions about proposal",
+                        "None of the topics listed match",
+                        "None of the topics listed match"
+                    ],
+                    "Sentiment": 5.319593253968255
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/rune",
+                    "index": "#71",
+                    "likes": "1",
+                    "time": "05/10/2022-09:19:01",
+                    "content": "I am formally submitting this MIP for the October governance cycle. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/Aditya_Gupta",
+                    "index": "#72",
+                    "likes": "1",
+                    "time": "03/11/2022-07:22:53",
+                    "content": "Hi Luca Fei in many ways was successful and their failure had little to do with PCV. ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 5.932291666666667
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/luca_pro",
+                    "index": "#73",
+                    "likes": "3",
+                    "time": "03/11/2022-11:57:00",
+                    "content": "Really? And how? Apart from aggregating assets throughout the bull market with a well-functioning mouse trap? What\u2019s the use of FEI? ",
+                    "links": [],
+                    "GPT-discussion-categories": null,
+                    "Sentiment": 6.0
+                },
+                {
+                    "author_link": "https://forum.makerdao.com/u/prose11",
+                    "index": "#74",
+                    "likes": "1",
+                    "time": "10/03/2023-17:03:34",
+                    "content": "Hey @rune I was wondering if we could get an update of how POVE fits into your current iteration of endgame for some of our documentation. Will POVE be in the final phase of endgame? ",
+                    "links": [],
+                    "GPT-discussion-categories": [
+                        "3rd party asking questions about proposal"
+                    ],
+                    "Sentiment": 5.0
+                }
+            ]
+        }
+    ]
+}
